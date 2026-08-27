@@ -1031,7 +1031,7 @@
       <button class="puce-sync hidden" id="puce-sync" data-etat="attente" onclick="ouvrirModal('sync-info-modal')" title="État de la synchronisation">
         <span class="pastille" aria-hidden="true"></span><span id="puce-sync-txt">—</span>
       </button>
-      <button class="btn-icone" id="btn-compte" onclick="ouvrirCompteNormal()" aria-label="Se connecter" title="Se connecter">👤</button>
+      <button class="btn-icone" id="btn-compte" onclick="ouvrirModal('compte-modal')" aria-label="Se connecter" title="Se connecter">👤</button>
       <button class="btn-icone" id="btn-theme" onclick="basculerTheme()" aria-label="Changer de thème" title="Thème">🌗</button>
       <button class="btn-icone" onclick="ouvrirModal('settings-modal')" aria-label="Profil et réglages" title="Profil">⚙️</button>
     </div>
@@ -1344,15 +1344,14 @@
 </div>
 
 <!-- Modal Compte (connexion) -->
-<div id="compte-modal" class="modal" role="dialog" aria-modal="true" aria-labelledby="titre-compte">
+<div id="compte-modal" class="modal show" role="dialog" aria-modal="true" aria-labelledby="titre-compte">
   <div class="modal-content">
     <div class="modal-entete">
       <h3 id="titre-compte">👤 Mon compte</h3>
-      <button class="close-modal" onclick="fermerModal('compte-modal')" aria-label="Fermer">&times;</button>
+      <button class="close-modal hidden" id="compte-fermer-x" onclick="fermerModal('compte-modal')" aria-label="Fermer">&times;</button>
     </div>
 
-    <p class="note" id="compte-intro-normale">Un compte permet à plusieurs personnes d'utiliser la même application, chacune avec ses propres repas, poids et statistiques — par exemple toi et ta femme, chacun sur son téléphone. Cela suppose d'avoir déjà renseigné un projet Supabase dans ⚙️ Réglages → Synchronisation : c'est ce projet qui stockera les comptes.</p>
-    <p class="note hidden" id="compte-intro-gate">👋 <strong>Avant de commencer</strong> — connecte-toi avec ton propre compte. Sur un appareil qui n'a jamais servi, ça évite que tes journées se mélangent avec celles de quelqu'un d'autre utilisant la même appli sur un autre téléphone.</p>
+    <p class="note" id="compte-intro">Connecte-toi pour utiliser Mon Coach — un compte par personne, pour que chacun ait ses propres repas, poids et statistiques, même à deux sur le même projet.</p>
 
     <div id="compte-anonyme">
       <div class="input-group">
@@ -1363,13 +1362,16 @@
         <label for="compte-mdp-input">Mot de passe</label>
         <input type="password" id="compte-mdp-input" placeholder="6 caractères minimum" autocomplete="current-password">
       </div>
+      <label style="display:flex; align-items:center; gap:8px; font-size:0.82rem; font-weight:600; margin:-6px 0 14px; cursor:pointer;">
+        <input type="checkbox" id="compte-souvenir" style="width:auto;">
+        Se souvenir de moi sur cet appareil
+      </label>
       <p class="note" id="note-compte"></p>
       <div style="display:flex; gap:10px;">
         <button class="btn btn-primary" style="flex:1;" onclick="connexionCompte()">Se connecter</button>
         <button class="btn btn-secondaire" style="flex:1;" onclick="inscriptionCompte()">Créer un compte</button>
       </div>
-      <p class="note" style="margin-top:12px;">La première personne crée son compte ici avec sa propre adresse ; l'autre fait pareil, sur son propre appareil, avec la sienne. Chacun ne verra que ses données une fois les policies de sécurité (SQL ci-dessous) mises à jour.</p>
-      <button class="btn btn-secondaire hidden" id="compte-continuer-sans" style="width:100%; margin-top:10px;" onclick="continuerSansCompte()">Continuer sans compte (données propres à cet appareil uniquement)</button>
+      <p class="note" style="margin-top:12px;">La première personne crée son compte ici avec sa propre adresse ; l'autre fait pareil, sur son propre appareil, avec la sienne.</p>
     </div>
 
     <div id="compte-connecte" class="hidden">
@@ -1378,9 +1380,10 @@
         <p style="margin:0; font-weight:700;" id="compte-email"></p>
       </div>
       <button class="btn btn-secondaire" style="width:100%;" onclick="deconnexionCompte()">Se déconnecter</button>
+      <p class="note" style="margin-top:10px;"><a href="#" onclick="event.preventDefault(); oublierIdentifiants();" style="color:var(--accent);">Oublier les identifiants enregistrés sur cet appareil</a></p>
     </div>
 
-    <div id="compte-extras">
+    <div id="compte-extras" class="hidden">
       <hr class="sep">
       <p class="note" style="margin:0 0 10px;">⚖️ <strong>Balance connectée</strong> — lie automatiquement les pesées de ta balance Withings au poids enregistré ici, sans ressaisie manuelle.</p>
       <div id="withings-deconnecte-compte">
@@ -3916,46 +3919,33 @@ let syncRedemander = false;
    ===================================================================== */
 let sessionUtilisateur = null; // { id, email } une fois connecté, sinon null
 
-/* Tant que ceci est vrai, la modale de compte ne peut pas se fermer par la
-   croix, l'échap ou un clic à côté — seules une connexion réussie ou le lien
-   « Continuer sans compte » y mettent fin. Ça évite qu'un appareil neuf
-   commence à écrire dans le même compartiment "moi" qu'un autre appareil
-   avant même que la personne ait pu choisir de se connecter. */
-let connexionObligatoire = false;
+/* L'appli entière est verrouillée derrière une connexion : ceci est vrai en
+   permanence tant que personne n'est authentifié, et redevient vrai après
+   une déconnexion. Aucune échappatoire — c'est le seul moyen d'être sûr que
+   deux personnes différentes ne finissent jamais par écrire dans les mêmes
+   journées faute d'avoir pensé à se connecter. */
+let connexionObligatoire = true;
 
-function estAppareilNeuf() {
-  return Object.keys(appData || {}).length === 0;
-}
+const IDENTIFIANTS_LS = 'mc_identifiants_sauvegardes';
 
 function verifierConnexionObligatoire() {
-  if (sessionUtilisateur) return;
-  if (!estAppareilNeuf()) return;             // appareil déjà utilisé : pas de gate
-  let deja = false;
-  try { deja = localStorage.getItem('mc_continuer_sans_compte') === '1'; } catch (e) {}
-  if (deja) return;                            // a déjà choisi de continuer sans compte
-  connexionObligatoire = true;
-  document.getElementById('compte-intro-gate').classList.remove('hidden');
-  document.getElementById('compte-intro-normale').classList.add('hidden');
-  document.getElementById('compte-continuer-sans').classList.remove('hidden');
-  document.getElementById('compte-extras').classList.add('hidden');
-  ouvrirModal('compte-modal');
+  if (sessionUtilisateur) { connexionObligatoire = false; return; }
+  tenterConnexionAutomatique();
 }
 
-/* Ouverture volontaire (bouton 👤) : toujours l'apparence normale, même si
-   une gate a été montrée plus tôt dans la session. */
-function ouvrirCompteNormal() {
-  connexionObligatoire = false;
-  document.getElementById('compte-intro-gate').classList.add('hidden');
-  document.getElementById('compte-intro-normale').classList.remove('hidden');
-  document.getElementById('compte-continuer-sans').classList.add('hidden');
-  document.getElementById('compte-extras').classList.remove('hidden');
-  ouvrirModal('compte-modal');
-}
-
-function continuerSansCompte() {
-  try { localStorage.setItem('mc_continuer_sans_compte', '1'); } catch (e) {}
-  connexionObligatoire = false;
-  fermerModal('compte-modal');
+/* « Se souvenir de moi » : uniquement local, jamais envoyé nulle part à part
+   à Withings — ici c'est vers Supabase, exactement comme si la personne les
+   retapait à la main. Stocké en clair dans le navigateur de CET appareil :
+   quelqu'un ayant un accès physique au téléphone déverrouillé pourrait le
+   lire, mais rien ne quitte l'appareil. */
+function tenterConnexionAutomatique() {
+  let creds = null;
+  try { creds = JSON.parse(localStorage.getItem(IDENTIFIANTS_LS) || 'null'); } catch (e) {}
+  if (!creds || !creds.email || !creds.mdp) return;
+  document.getElementById('compte-email-input').value = creds.email;
+  document.getElementById('compte-mdp-input').value = creds.mdp;
+  document.getElementById('compte-souvenir').checked = true;
+  connexionCompte();
 }
 
 /* Sans compte et sans identifiant personnalisé, DEUX personnes différentes
@@ -4015,11 +4005,16 @@ function definirSessionUtilisateur(user) {
   const etaitConnecte = !!sessionUtilisateur;
   sessionUtilisateur = user ? { id: user.id, email: user.email } : null;
   majUICompte();
-  // Une connexion réussie referme la gate toute seule : sans ça, la
-  // personne resterait coincée devant une modale qui refuse de se fermer.
-  if (sessionUtilisateur && connexionObligatoire) {
+  if (sessionUtilisateur) {
+    // Une connexion réussie referme la gate toute seule : sans ça, la
+    // personne resterait coincée devant une modale qui refuse de se fermer.
     connexionObligatoire = false;
     fermerModal('compte-modal');
+  } else {
+    // Déconnexion (ou aucune session au tout premier chargement) : l'appli
+    // se reverrouille immédiatement, sans exception.
+    connexionObligatoire = true;
+    ouvrirModal('compte-modal');
   }
   // Le changement d'identifiant ne rejoue pas automatiquement les données
   // déjà en mémoire : on relance juste une synchro vers/depuis le bon compte.
@@ -4030,6 +4025,8 @@ function majUICompte() {
   const btn = document.getElementById('btn-compte');
   const zoneAnonyme = document.getElementById('compte-anonyme');
   const zoneConnecte = document.getElementById('compte-connecte');
+  const zoneExtras = document.getElementById('compte-extras');
+  const croixFermer = document.getElementById('compte-fermer-x');
   const emailAffiche = document.getElementById('compte-email');
   const champId = document.getElementById('supa-id');
   if (btn) {
@@ -4039,6 +4036,8 @@ function majUICompte() {
   }
   if (zoneAnonyme) zoneAnonyme.classList.toggle('hidden', !!sessionUtilisateur);
   if (zoneConnecte) zoneConnecte.classList.toggle('hidden', !sessionUtilisateur);
+  if (zoneExtras) zoneExtras.classList.toggle('hidden', !sessionUtilisateur);
+  if (croixFermer) croixFermer.classList.toggle('hidden', !sessionUtilisateur);
   if (emailAffiche) emailAffiche.textContent = sessionUtilisateur ? sessionUtilisateur.email : '';
   // Le champ « identifiant libre » n'a plus d'effet une fois connecté :
   // autant le désactiver pour ne pas laisser croire qu'il fait encore quelque chose.
@@ -4058,6 +4057,7 @@ async function connexionCompte() {
   if (!supa) { alert("Renseigne d'abord l'URL et la clé du projet Supabase (section Synchronisation) : la connexion utilise le même projet."); return; }
   const email = (document.getElementById('compte-email-input').value || '').trim();
   const mdp = document.getElementById('compte-mdp-input').value || '';
+  const seSouvenir = document.getElementById('compte-souvenir').checked;
   const note = document.getElementById('note-compte');
   if (!email || !mdp) { if (note) note.textContent = 'Renseigne une adresse et un mot de passe.'; return; }
   if (note) note.textContent = 'Connexion en cours…';
@@ -4065,6 +4065,13 @@ async function connexionCompte() {
     const { error } = await supa.auth.signInWithPassword({ email, password: mdp });
     if (error) throw error;
     if (note) note.textContent = '';
+    // Coché : les identifiants restent sur CET appareil pour une reconnexion
+    // automatique au prochain lancement. Décoché : on efface ce qui aurait
+    // pu être enregistré avant, pour que "se souvenir" reste réversible.
+    try {
+      if (seSouvenir) localStorage.setItem(IDENTIFIANTS_LS, JSON.stringify({ email, mdp }));
+      else localStorage.removeItem(IDENTIFIANTS_LS);
+    } catch (e) {}
     document.getElementById('compte-mdp-input').value = '';
   } catch (e) { if (note) note.textContent = messageAuth(e); }
 }
@@ -4088,6 +4095,11 @@ async function inscriptionCompte() {
 async function deconnexionCompte() {
   if (!supa) return;
   try { await supa.auth.signOut(); } catch (e) {}
+}
+
+function oublierIdentifiants() {
+  try { localStorage.removeItem(IDENTIFIANTS_LS); } catch (e) {}
+  alert('Identifiants oubliés sur cet appareil.');
 }
 
 /* Utile quand deux personnes se relaient sur le même appareil : les données
@@ -4955,11 +4967,22 @@ window.addEventListener('load', () => {
   document.getElementById('bloc-sql-accents').textContent = sqlAccents();
   document.getElementById('bloc-sql-rls').textContent = sqlRls();
   if (initSupabase()) { initAuth(); synchroniser('démarrage'); compterAliments(); }
-  else compterAliments();
+  else {
+    compterAliments();
+    // Sans client Supabase (pas de réseau au tout premier lancement, le plus
+    // souvent), la connexion est impossible pour l'instant : on le dit
+    // clairement plutôt que de laisser un formulaire de connexion muet qui
+    // échouerait sans explication.
+    const note = document.getElementById('note-compte');
+    if (note) note.textContent = "Pas de réseau pour l'instant : connecte-toi dès que tu as du signal.";
+  }
 
   /* Le réseau revient : on rattrape aussitôt. Et au retour sur l'onglet, car
      un autre appareil a pu écrire pendant ce temps. */
-  window.addEventListener('online', () => synchroniser('réseau'));
+  window.addEventListener('online', () => {
+    if (!supa && initSupabase()) { initAuth(); }
+    synchroniser('réseau');
+  });
   window.addEventListener('offline', () => majEtatSync('hors-ligne',
     'Hors ligne : les données restent sur cet appareil, l’envoi reprendra au retour du réseau.'));
   document.addEventListener('visibilitychange', () => {
