@@ -548,6 +548,9 @@
     .food-macros { font-size: 0.7rem; display: flex; gap: 8px; margin-top: 2px; }
     :root[data-densite="compact"] .food-macros { display: none; }
     :root[data-densite="compact"] .food-item { padding: 6px 0; }
+    /* Le tap révèle les macros masquées : autant que ça se voie et se sente. */
+    :root[data-densite="compact"] .food-info { cursor: pointer; border-radius: 8px; transition: background 0.15s; }
+    :root[data-densite="compact"] .food-info:active { background: var(--verre-creux); }
     .tag-p { color: var(--protein); font-weight: 700; }
     .tag-c { color: var(--carbs); font-weight: 700; }
     .tag-f { color: var(--fat); font-weight: 700; }
@@ -1237,6 +1240,34 @@
 </div>
 
 <!-- Saisie manuelle : historique personnel + base d'aliments hébergée -->
+<!-- Pop-up macros (mode compact uniquement) -->
+<div id="macros-popup-modal" class="modal" role="dialog" aria-modal="true" aria-labelledby="titre-macros-popup">
+  <div class="modal-content" style="max-width:320px;">
+    <div class="modal-entete">
+      <h3 id="titre-macros-popup" style="font-size:1rem;">🥗 <span id="macros-popup-nom"></span></h3>
+      <button class="close-modal" onclick="fermerModal('macros-popup-modal')" aria-label="Fermer">&times;</button>
+    </div>
+    <div style="display:flex; flex-direction:column; gap:11px;">
+      <div style="display:flex; justify-content:space-between; align-items:center;">
+        <span style="color:var(--text-muted); font-weight:700;">Calories</span>
+        <strong id="macros-popup-kcal" style="color:var(--primary);"></strong>
+      </div>
+      <div style="display:flex; justify-content:space-between; align-items:center;">
+        <span class="tag-p">Protéines</span>
+        <strong id="macros-popup-p"></strong>
+      </div>
+      <div style="display:flex; justify-content:space-between; align-items:center;">
+        <span class="tag-c">Glucides</span>
+        <strong id="macros-popup-c"></strong>
+      </div>
+      <div style="display:flex; justify-content:space-between; align-items:center;">
+        <span class="tag-f">Lipides</span>
+        <strong id="macros-popup-f"></strong>
+      </div>
+    </div>
+  </div>
+</div>
+
 <div id="manual-modal" class="modal" role="dialog" aria-modal="true" aria-labelledby="titre-manual">
   <div class="modal-content">
     <div class="modal-entete">
@@ -1247,7 +1278,7 @@
     <div class="input-group" style="position: relative;">
       <label for="man-name">Rechercher un aliment</label>
       <input type="text" id="man-name" placeholder="ex : poulet, riz, œuf, banane…" autocomplete="off"
-             oninput="verifierOFFAuto()" onfocus="verifierOFFAuto()">
+             oninput="verifierOFFAuto()" onfocus="verifierOFFAuto()" onblur="masquerSuggestionsDiffere()">
       <div id="zone-code" class="hidden"></div>
     </div>
 
@@ -1939,16 +1970,32 @@ function supprimerSport(index) {
   updateSummary(day);
 }
 
+/* En mode confort, les macros de chaque aliment sont déjà visibles sous son
+   nom : pas besoin d'un pop-up en plus. En mode compact, elles sont
+   masquées pour gagner de la place — le tap sur l'aliment les révèle
+   ponctuellement, sans avoir à repasser en confort pour un simple coup d'œil. */
+function voirMacrosCompact(el) {
+  if (document.documentElement.getAttribute('data-densite') !== 'compact') return;
+  document.getElementById('macros-popup-nom').textContent = el.dataset.nom;
+  document.getElementById('macros-popup-kcal').textContent = el.dataset.kcal + ' kcal';
+  document.getElementById('macros-popup-p').textContent = el.dataset.p + ' g';
+  document.getElementById('macros-popup-c').textContent = el.dataset.c + ' g';
+  document.getElementById('macros-popup-f').textContent = el.dataset.f + ' g';
+  ouvrirModal('macros-popup-modal');
+}
+
 function renderMeals(day) {
   const container = document.getElementById('meals-container');
   container.innerHTML = MEALS.map(mealId => {
     const items = day.meals[mealId];
     const rows = items.length ? items.map((it, i) => `
       <li class="food-item">
-        <div class="food-info">
+        <div class="food-info" onclick="voirMacrosCompact(this)"
+             data-nom="${escapeHtml(it.name)}" data-kcal="${Math.round(it.kcal)}"
+             data-p="${Math.round(it.p)}" data-c="${Math.round(it.c)}" data-f="${Math.round(it.f)}">
           <span class="food-name">${escapeHtml(it.name)}</span>
           <span class="food-detail">${Math.round(it.grams)} g${it.code ? `
-            <button class="chip-code" onclick="copierCode('${escapeHtml(String(it.code))}')"
+            <button class="chip-code" onclick="event.stopPropagation(); copierCode('${escapeHtml(String(it.code))}')"
                     title="Code-barres OpenFoodFacts — toucher pour copier">⌗ ${escapeHtml(String(it.code))}</button>` : ''}</span>
           <div class="food-macros">
             <span class="tag-p">P ${Math.round(it.p)}g</span>
@@ -2295,6 +2342,7 @@ function ouvrirBarcode(mealId) {
 // --- RECHERCHE : D'ABORD CE QUE J'AI DÉJÀ MANGÉ, ENSUITE LA BASE CIQUAL ---
 let offTimer = null;
 function verifierOFFAuto() {
+  clearTimeout(timerCacherSuggestions);
   const q = document.getElementById('man-name').value.trim();
   clearTimeout(offTimer);
   /* Champ vide : on montre directement les derniers aliments. C'est le cas le
@@ -2310,15 +2358,6 @@ function verifierOFFAuto() {
 // Chaque recherche reçoit un numéro : une réponse réseau lente ne doit pas
 // écraser l'affichage d'une frappe plus récente.
 let numeroRecherche = 0;
-
-/* Sur mobile, la liste se reconstruit à chaque lettre tapée : si un
-   bouton de suggestion apparaît pile sous le doigt qui s'apprête à taper
-   la lettre suivante, certains navigateurs déclenchent un clic fantôme
-   dessus. Sur ordinateur, la souris ne bouge pas pendant la frappe, donc
-   ça n'arrivait jamais là-bas. Aucune décision humaine (lire, choisir,
-   taper) ne prend moins de 300 ms : un clic plus rapide que ça après un
-   rendu est presque sûrement ce clic fantôme, pas une vraie sélection. */
-let dernierRenduSuggestions = 0;
 
 async function afficherRecherche(query, seulementHistorique) {
   const monNumero = ++numeroRecherche;
@@ -2373,7 +2412,6 @@ function afficherMessageSuggestions(texte) {
   d.textContent = texte;
   container.appendChild(d);
   container.style.display = 'block';
-  dernierRenduSuggestions = Date.now();
 }
 
 function afficherSuggestionsOFF(products, probleme) {
@@ -2436,14 +2474,9 @@ function afficherSuggestionsOFF(products, probleme) {
     container.appendChild(d);
   }
   container.style.display = 'block';
-  dernierRenduSuggestions = Date.now();
 }
 
 function selectionnerProduitOFF(prod) {
-  // Voir la note sur dernierRenduSuggestions plus haut : on ignore un clic
-  // trop rapproché du rendu, signe d'un clic fantôme plutôt que d'un choix
-  // volontaire.
-  if (Date.now() - dernierRenduSuggestions < 300) return;
   fillFromOFF(prod);
   cacherSuggestionsOFF();
 }
@@ -2451,6 +2484,17 @@ function selectionnerProduitOFF(prod) {
 function cacherSuggestionsOFF() {
   const container = document.getElementById('off-suggestions-list');
   if (container) container.style.display = 'none';
+}
+
+/* La liste flotte par-dessus les champs Quantité/Calories en dessous (elle
+   ne les repousse pas) : sans fermeture rapide en quittant le champ, un tap
+   destiné à "Quantité" atterrissait en réalité sur une suggestion cachée
+   dessous. Le petit délai laisse quand même le temps au clic sur une
+   suggestion de se déclencher avant que la liste ne disparaisse sous lui. */
+let timerCacherSuggestions = null;
+function masquerSuggestionsDiffere() {
+  clearTimeout(timerCacherSuggestions);
+  timerCacherSuggestions = setTimeout(cacherSuggestionsOFF, 180);
 }
 
 function fillFromOFF(product) {
