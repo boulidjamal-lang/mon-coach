@@ -5070,16 +5070,16 @@ begin
   end if;
   return query
     select
-      p.utilisateur,
-      u.email,
-      u.created_at,
-      u.last_sign_in_at,
+      p.utilisateur::text,
+      u.email::text,
+      u.created_at::timestamptz,
+      u.last_sign_in_at::timestamptz,
       (p.donnees->>'age')::int,
       (p.donnees->>'height')::numeric,
       (p.donnees->>'weight')::numeric,
-      p.donnees->>'gender',
-      (select count(*) from journees j where j.utilisateur = p.utilisateur),
-      p.maj
+      (p.donnees->>'gender')::text,
+      (select count(*) from journees j where j.utilisateur = p.utilisateur)::bigint,
+      p.maj::bigint
     from profil p
     left join auth.users u on u.id::text = p.utilisateur;
 end;
