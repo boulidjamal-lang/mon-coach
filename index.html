@@ -4556,6 +4556,15 @@ async function synchroniser(raison) {
     if (raison === 'manuel') majEtatSync('attente', "Renseigne l'URL et la clé du projet pour activer la synchronisation.");
     return;
   }
+  // Verrou central : la connexion est obligatoire pour utiliser l'appli, donc
+  // une synchro sans session ne devrait jamais arriver — sauf pendant la
+  // toute petite fenêtre où la vérification de session (asynchrone) n'a pas
+  // encore répondu. Sans ce garde-fou, un appel déclenché pile à ce moment
+  // (retour réseau, retour d'onglet...) retombait sur l'identifiant de repli
+  // "moi", qui contient les données d'avant même que les comptes n'existent.
+  // Le seul cas légitime sans session est le tout premier chargement avant
+  // que quiconque se soit connecté : rien à synchroniser dans ce cas non plus.
+  if (!sessionUtilisateur) return;
   if (typeof navigator !== 'undefined' && navigator.onLine === false) {
     majEtatSync('hors-ligne', 'Hors ligne : les données restent sur cet appareil, l’envoi reprendra au retour du réseau.');
     return;
