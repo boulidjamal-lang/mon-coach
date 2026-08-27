@@ -638,6 +638,7 @@
     .fab-action[aria-current="page"] { border-color: var(--primary); color: var(--primary); }
     .fab-zone.ouvert .fab-actions { pointer-events: auto; }
     .fab-zone.ouvert .fab-action { opacity: 1; transform: none; }
+    .fab-zone.ouvert .fab-action:nth-child(4) { transition-delay: 0.02s; }
     .fab-zone.ouvert .fab-action:nth-child(3) { transition-delay: 0.05s; }
     .fab-zone.ouvert .fab-action:nth-child(2) { transition-delay: 0.08s; }
     .fab-zone.ouvert .fab-action:nth-child(1) { transition-delay: 0.11s; }
@@ -1035,7 +1036,6 @@
         <span class="pastille" aria-hidden="true"></span><span id="puce-sync-txt">—</span>
       </button>
       <button class="btn-icone" id="btn-compte" onclick="ouvrirModal('compte-modal')" aria-label="Se connecter" title="Se connecter">👤</button>
-      <button class="btn-icone hidden" id="btn-admin" onclick="ouvrirAdmin()" aria-label="Administration" title="Administration">👑</button>
       <button class="btn-icone" id="btn-theme" onclick="basculerTheme()" aria-label="Changer de thème" title="Thème">🌗</button>
       <button class="btn-icone" onclick="ouvrirModal('settings-modal')" aria-label="Profil et réglages" title="Profil">⚙️</button>
     </div>
@@ -1208,6 +1208,28 @@
     </div>
   </section>
 
+  <!-- ================= ÉCRAN ADMIN (visible uniquement pour ADMIN_EMAIL) ================= -->
+  <section id="ecran-admin" class="ecran" role="region" aria-label="Administration">
+    <h2 class="titre-ecran"><span class="ic" aria-hidden="true">👑</span> Administration</h2>
+    <p class="note">Tous les comptes utilisant ce projet Supabase. Les emails ne sont pas récupérables depuis l'appli — identifie les comptes par leurs données (poids, dernière activité).</p>
+    <div id="admin-liste"><p class="note">Chargement…</p></div>
+    <button class="btn btn-secondaire" onclick="chargerAdmin()">🔄 Actualiser la liste</button>
+
+    <div id="admin-stats-zone" class="hidden">
+      <div class="titre-section">📊 Statistiques — <span id="admin-stats-nom"></span></div>
+      <div class="fitness-card" id="admin-stats-resume"></div>
+
+      <div class="titre-section">Calories consommées</div>
+      <div class="chart-container"><canvas id="adminCaloriesChart"></canvas></div>
+
+      <div class="titre-section">Poids</div>
+      <div class="chart-container"><canvas id="adminPoidsChart"></canvas></div>
+
+      <div class="titre-section">Pas quotidiens</div>
+      <div class="chart-container"><canvas id="adminPasChart"></canvas></div>
+    </div>
+  </section>
+
 </main>
 
 <div class="scrim" id="scrim" onclick="fermerFab()"></div>
@@ -1215,6 +1237,7 @@
 <!-- ============ NAVIGATION : tout passe par le bouton flottant ============ -->
 <nav class="fab-zone" id="fab-zone" aria-label="Navigation principale">
   <div class="fab-actions">
+    <button class="fab-action hidden" id="nav-admin" onclick="allerA('admin')"><span class="ic" aria-hidden="true">👑</span> Administration</button>
     <button class="fab-action" id="nav-stats" onclick="allerA('stats')"><span class="ic" aria-hidden="true">📊</span> Statistiques</button>
     <button class="fab-action" id="nav-activite" onclick="allerA('activite')"><span class="ic" aria-hidden="true">👟</span> Activité</button>
     <button class="fab-action" id="nav-repas" onclick="allerA('repas')"><span class="ic" aria-hidden="true">🍽️</span> Repas du jour</button>
@@ -1348,19 +1371,6 @@
 </div>
 
 <!-- Modal Compte (connexion) -->
-<!-- Modal Administration (visible uniquement pour le compte administrateur) -->
-<div id="admin-modal" class="modal" role="dialog" aria-modal="true" aria-labelledby="titre-admin">
-  <div class="modal-content" style="max-width:480px;">
-    <div class="modal-entete">
-      <h3 id="titre-admin">👑 Administration</h3>
-      <button class="close-modal" onclick="fermerModal('admin-modal')" aria-label="Fermer">&times;</button>
-    </div>
-    <p class="note" style="margin-top:-6px;">Tous les comptes utilisant ce projet Supabase. Les emails ne sont pas récupérables depuis l'appli — identifie les comptes par leurs données (poids, dernière activité).</p>
-    <div id="admin-liste"><p class="note">Chargement…</p></div>
-    <button class="btn btn-secondaire" style="margin-top:10px;" onclick="chargerAdmin()">🔄 Actualiser</button>
-  </div>
-</div>
-
 <div id="compte-modal" class="modal show" role="dialog" aria-modal="true" aria-labelledby="titre-compte">
   <div class="modal-content">
     <div class="modal-entete">
@@ -3726,8 +3736,8 @@ function importerDonnees(event) {
    corriger un repas du soir il fallait passer devant tout le reste. Quatre
    ecrans, une barre basse, et chaque tache tient dans une hauteur d'ecran.
    ===================================================================== */
-const ECRANS = ['repas', 'activite', 'stats'];
-const ECRAN_ICONE = { repas: '🍽️', activite: '👟', stats: '📊' };
+const ECRANS = ['repas', 'activite', 'stats', 'admin'];
+const ECRAN_ICONE = { repas: '🍽️', activite: '👟', stats: '📊', admin: '👑' };
 let ecranActif = 'repas';
 
 function allerA(nom) {
@@ -3752,6 +3762,7 @@ function allerA(nom) {
   window.scrollTo({ top: 0, behavior: 'auto' });
   if (nom === 'stats') { prepareStats(); }
   if (nom === 'repas') majNoteCleIA();
+  if (nom === 'admin') chargerAdmin();
 }
 
 function majNoteCleIA() {
@@ -4059,7 +4070,7 @@ function majUICompte() {
   // Le champ « identifiant libre » n'a plus d'effet une fois connecté :
   // autant le désactiver pour ne pas laisser croire qu'il fait encore quelque chose.
   if (champId) champId.disabled = !!sessionUtilisateur;
-  const btnAdmin = document.getElementById('btn-admin');
+  const btnAdmin = document.getElementById('nav-admin');
   if (btnAdmin) btnAdmin.classList.toggle('hidden', !(sessionUtilisateur && sessionUtilisateur.email === ADMIN_EMAIL));
 }
 
@@ -4123,46 +4134,43 @@ function oublierIdentifiants() {
 
 /* =====================================================================
    ADMINISTRATION — visible et utilisable uniquement par ADMIN_EMAIL.
-   La vraie protection vient de la policy RLS ("acces journees"/"acces
-   profil" laissent passer auth.jwt()->>'email' = ADMIN_EMAIL) : ce contrôle
-   ici ne fait que masquer le bouton pour tout le monde d'autre, il ne
-   protège rien à lui seul.
+   La vraie protection vient de la policy RLS ET de la fonction SQL
+   admin_liste_comptes() (qui vérifie elle-même l'email de l'appelant) :
+   ce contrôle ici ne fait que masquer l'écran pour tout le monde d'autre,
+   il ne protège rien à lui seul.
    ===================================================================== */
-function ouvrirAdmin() {
-  ouvrirModal('admin-modal');
-  chargerAdmin();
-}
+let adminComptes = {}; // utilisateur -> ligne renvoyée par admin_liste_comptes()
 
 async function chargerAdmin() {
   const conteneur = document.getElementById('admin-liste');
   conteneur.innerHTML = '<p class="note">Chargement…</p>';
   if (!supa) { conteneur.innerHTML = '<p class="note">Pas de connexion à Supabase.</p>'; return; }
   try {
-    const [rp, rj] = await Promise.all([
-      supa.from('profil').select('utilisateur, donnees, maj'),
-      supa.from('journees').select('utilisateur')
-    ]);
-    if (rp.error) throw rp.error;
-    if (rj.error) throw rj.error;
-    const nbJourneesPar = {};
-    (rj.data || []).forEach(j => { nbJourneesPar[j.utilisateur] = (nbJourneesPar[j.utilisateur] || 0) + 1; });
-    const profils = rp.data || [];
-    if (!profils.length) { conteneur.innerHTML = '<p class="note">Aucun compte trouvé.</p>'; return; }
-    conteneur.innerHTML = profils.map(p => {
-      const d = p.donnees || {};
-      const nbJours = nbJourneesPar[p.utilisateur] || 0;
-      const dateMaj = p.maj ? new Date(Number(p.maj)).toLocaleDateString('fr-FR') : '—';
-      const estMoi = sessionUtilisateur && p.utilisateur === sessionUtilisateur.id;
-      const idAffiche = escapeHtml(String(p.utilisateur)).slice(0, 8);
+    const { data, error } = await supa.rpc('admin_liste_comptes');
+    if (error) throw error;
+    const comptes = data || [];
+    adminComptes = {};
+    comptes.forEach(c => { adminComptes[c.utilisateur] = c; });
+    if (!comptes.length) { conteneur.innerHTML = '<p class="note">Aucun compte trouvé.</p>'; return; }
+    conteneur.innerHTML = comptes.map(c => {
+      const estMoi = sessionUtilisateur && c.utilisateur === sessionUtilisateur.id;
+      const dateMaj = c.maj ? new Date(Number(c.maj)).toLocaleDateString('fr-FR') : '—';
+      const idAffiche = escapeHtml(String(c.utilisateur)).slice(0, 8);
+      const idJs = escapeHtml(String(c.utilisateur)).replace(/'/g, "\\'");
+      const identite = c.email ? escapeHtml(c.email) : `Sans compte (identifiant : ${idAffiche}…)`;
+      const nomJs = (c.email || ('Compte ' + idAffiche)).replace(/'/g, "\\'");
       return `
         <div class="bloc-verre" style="padding:13px; margin-bottom:10px;">
-          <p style="margin:0 0 6px; font-weight:700;">${estMoi ? '👑 Toi' : '👤 Compte'} <span style="font-weight:400; color:var(--text-muted); font-size:0.72rem;">(${idAffiche}…)</span></p>
-          <p class="note" style="margin:0 0 10px;">${nbJours} journée(s) enregistrée(s)${d.age ? ' · ' + d.age + ' ans' : ''}${d.weight ? ' · ' + d.weight + ' kg' : ''} · dernière activité le ${dateMaj}</p>
-          ${estMoi ? '' : `<button class="btn btn-secondaire" style="width:100%;" onclick="supprimerCompteAdmin('${escapeHtml(String(p.utilisateur))}')">🗑️ Supprimer toutes ses données</button>`}
+          <p style="margin:0 0 6px; font-weight:700;">${estMoi ? '👑 ' : '👤 '}${identite}</p>
+          <p class="note" style="margin:0 0 10px;">${c.nb_journees || 0} journée(s) enregistrée(s)${c.age ? ' · ' + c.age + ' ans' : ''}${c.poids ? ' · ' + c.poids + ' kg' : ''} · dernière activité le ${dateMaj}</p>
+          <div style="display:flex; gap:8px;">
+            <button class="btn btn-secondaire" style="flex:1;" onclick="voirStatsCompte('${idJs}', '${nomJs}')">📊 Voir ses statistiques</button>
+            ${estMoi ? '' : `<button class="btn btn-secondaire" style="flex:1;" onclick="supprimerCompteAdmin('${idJs}')">🗑️ Supprimer</button>`}
+          </div>
         </div>`;
     }).join('');
   } catch (e) {
-    conteneur.innerHTML = '<p class="note">Erreur : ' + escapeHtml(e.message) + ' — as-tu bien exécuté le script SQL de sécurisation avec ton email admin ?</p>';
+    conteneur.innerHTML = '<p class="note">Erreur : ' + escapeHtml(e.message) + ' — as-tu bien exécuté le script SQL de sécurisation (mis à jour) avec ton email admin ?</p>';
   }
 }
 
@@ -4171,9 +4179,121 @@ async function supprimerCompteAdmin(utilisateur) {
   try {
     await supa.from('journees').delete().eq('utilisateur', utilisateur);
     await supa.from('profil').delete().eq('utilisateur', utilisateur);
+    document.getElementById('admin-stats-zone').classList.add('hidden');
     chargerAdmin();
   } catch (e) {
     alert('Erreur pendant la suppression : ' + e.message);
+  }
+}
+
+/* Variantes de dernierPoidsConnu/dernierObjectifConnu qui cherchent dans une
+   liste de journées donnée plutôt que dans les globales appData/userProfile
+   — nécessaire pour calculer l'objectif calorique du compte consulté avec
+   SES propres données, sans jamais toucher à l'état de ta propre session. */
+function dernierPoidsDansListe(jours, avant) {
+  const tries = jours.filter(j => j.jour <= avant).sort((a, b) => b.jour.localeCompare(a.jour));
+  for (const j of tries) {
+    const w = Number(j.day.weight);
+    if (Number.isFinite(w) && w > 0) return w;
+  }
+  return null;
+}
+function dernierObjectifDansListe(jours, avant) {
+  const tries = jours.filter(j => j.jour <= avant).sort((a, b) => b.jour.localeCompare(a.jour));
+  for (const j of tries) { if (j.day.goal) return j.day.goal; }
+  return 'maintien';
+}
+function targetsPourCompte(day, dateStr, jours, compte) {
+  const weight = Number(day.weight) || dernierPoidsDansListe(jours, dateStr) || Number(compte.poids) || 70;
+  const height = Number(compte.taille) || 175;
+  const age = Number(compte.age) || 25;
+  const bmr = 10 * weight + 6.25 * height - 5 * age + (compte.genre === 'f' ? -161 : 5);
+  const PAS_DEJA_COMPTES = 4000;
+  const pasEnPlus = Math.max(0, (Number(day.steps) || 0) - PAS_DEJA_COMPTES);
+  const stepsKcal = pasEnPlus * 0.03 * (weight / 70);
+  let workoutKcal = 0;
+  (day.workouts || []).forEach(w => { workoutKcal += kcalSeance(w.type, w.time, weight); });
+  const tdee = bmr * 1.2 + stepsKcal + workoutKcal;
+  const objectif = day.goal || dernierObjectifDansListe(jours, dateStr);
+  const adj = objectif === 'seche' ? -0.20 : objectif === 'masse' ? 0.15 : 0;
+  const target = Math.max(Math.round(tdee * (1 + adj)), Math.round(bmr));
+  return target;
+}
+
+let adminCaloriesChartInstance = null, adminPoidsChartInstance = null, adminPasChartInstance = null;
+
+async function voirStatsCompte(utilisateur, nomAffiche) {
+  const zone = document.getElementById('admin-stats-zone');
+  const resume = document.getElementById('admin-stats-resume');
+  zone.classList.remove('hidden');
+  document.getElementById('admin-stats-nom').textContent = nomAffiche;
+  resume.innerHTML = '<p class="note">Chargement…</p>';
+  zone.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  try {
+    const { data, error } = await supa.from('journees').select('jour, donnees').eq('utilisateur', utilisateur).order('jour');
+    if (error) throw error;
+    const compte = adminComptes[utilisateur] || {};
+    const jours = (data || []).map(r => ({ jour: r.jour, day: Object.assign({ meals: {}, workouts: [] }, r.donnees || {}) }));
+    MEALS.forEach(m => jours.forEach(j => { if (!j.day.meals[m]) j.day.meals[m] = []; }));
+
+    const labels = jours.map(j => j.jour);
+    const cal = jours.map(j => sumMeals(j.day).kcal || null);
+    const cible = jours.map(j => targetsPourCompte(j.day, j.jour, jours, compte));
+    const prot = jours.map(j => sumMeals(j.day).p || null);
+    const poids = jours.map(j => Number(j.day.weight) || null);
+    const pas = jours.map(j => Number(j.day.steps) || null);
+    const totalMinutesSport = jours.reduce((s, j) => s + (j.day.workouts || []).reduce((a, w) => a + (Number(w.time) || 0), 0), 0);
+    const joursAvecRepas = cal.filter(v => v > 0).length;
+    const moyKcal = joursAvecRepas ? Math.round(cal.filter(v => v > 0).reduce((a, b) => a + b, 0) / joursAvecRepas) : 0;
+    const moyCible = joursAvecRepas ? Math.round(cible.filter((v, i) => cal[i] > 0).reduce((a, b) => a + b, 0) / joursAvecRepas) : 0;
+    const moyProt = joursAvecRepas ? Math.round(prot.filter(v => v > 0).reduce((a, b) => a + b, 0) / joursAvecRepas) : 0;
+    const dansObjectif = cal.filter((v, i) => v > 0 && Math.abs(v - cible[i]) <= cible[i] * 0.1).length;
+    const pctDansObjectif = joursAvecRepas ? Math.round((dansObjectif / joursAvecRepas) * 100) : 0;
+
+    resume.innerHTML = `
+      <p class="note" style="margin:0;">${jours.length} journée(s) enregistrée(s), dont ${joursAvecRepas} avec des repas saisis</p>
+      <p class="note" style="margin:6px 0 0;">Moyenne : ${moyKcal} kcal/jour consommées pour un objectif moyen de ${moyCible} kcal (${pctDansObjectif}% des jours à ±10%)</p>
+      <p class="note" style="margin:6px 0 0;">${moyProt} g de protéines/jour en moyenne · ${totalMinutesSport} min de sport au total</p>`;
+
+    const styles = getComputedStyle(document.documentElement);
+    const couleurTexte = (styles.getPropertyValue('--text-muted') || '#94a3b8').trim();
+    const gridColor = (document.documentElement.getAttribute('data-theme') === 'light') ? 'rgba(14,20,32,0.10)' : 'rgba(255,255,255,0.06)';
+    const cPrimaire = (styles.getPropertyValue('--primary') || '#14b566').trim();
+    const cAccent = (styles.getPropertyValue('--accent') || '#2979ff').trim();
+    const baseOpts = {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: {
+        x: { ticks: { color: couleurTexte, maxTicksLimit: 8 }, grid: { color: gridColor } },
+        y: { ticks: { color: couleurTexte }, grid: { color: gridColor } }
+      }
+    };
+
+    if (adminCaloriesChartInstance) adminCaloriesChartInstance.destroy();
+    adminCaloriesChartInstance = new Chart(document.getElementById('adminCaloriesChart'), {
+      type: 'line',
+      data: { labels, datasets: [
+        { label: 'Consommées', data: cal, borderColor: cPrimaire, backgroundColor: 'transparent', tension: 0.3, pointRadius: 2, spanGaps: true },
+        { label: 'Objectif', data: cible, borderColor: couleurTexte, borderDash: [5, 5], backgroundColor: 'transparent', tension: 0.1, pointRadius: 0 }
+      ] },
+      options: Object.assign({}, baseOpts, { plugins: { legend: { display: true, labels: { color: couleurTexte } } } })
+    });
+
+    if (adminPoidsChartInstance) adminPoidsChartInstance.destroy();
+    adminPoidsChartInstance = new Chart(document.getElementById('adminPoidsChart'), {
+      type: 'line',
+      data: { labels, datasets: [{ data: poids, borderColor: cAccent, backgroundColor: 'transparent', tension: 0.3, pointRadius: 2, spanGaps: true }] },
+      options: Object.assign({}, baseOpts, { scales: Object.assign({}, baseOpts.scales, { y: Object.assign({}, baseOpts.scales.y, { beginAtZero: false }) }) })
+    });
+
+    if (adminPasChartInstance) adminPasChartInstance.destroy();
+    adminPasChartInstance = new Chart(document.getElementById('adminPasChart'), {
+      type: 'bar',
+      data: { labels, datasets: [{ data: pas, backgroundColor: cAccent }] },
+      options: baseOpts
+    });
+  } catch (e) {
+    resume.innerHTML = '<p class="note">Erreur : ' + escapeHtml(e.message) + '</p>';
   }
 }
 
@@ -4927,7 +5047,45 @@ create policy "profil par compte" on profil
 -- Si l'un de vous continue à utiliser l'identifiant libre sans jamais se
 -- connecter, ses lectures/écritures échoueront après ce script — dans ce
 -- cas, gardez plutôt les policies par défaut ("using (true)") tant que
--- vous n'avez pas tous les deux un compte actif.`;
+-- vous n'avez pas tous les deux un compte actif.
+
+-- Fonction dédiée au panneau Administration : la table auth.users (qui
+-- contient les emails) n'est normalement pas interrogeable directement par
+-- l'appli, même connectée — c'est une protection de Supabase. Cette
+-- fonction y accède à sa place, mais vérifie elle-même que l'appelant est
+-- bien jambou592@gmail.com avant de renvoyer quoi que ce soit : n'importe
+-- qui d'autre qui l'appellerait recevrait une erreur, jamais de données.
+create or replace function public.admin_liste_comptes()
+returns table (
+  utilisateur text, email text, cree_le timestamptz, derniere_connexion timestamptz,
+  age int, taille numeric, poids numeric, genre text, nb_journees bigint, maj bigint
+)
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  if coalesce(auth.jwt() ->> 'email', '') <> 'jambou592@gmail.com' then
+    raise exception 'Accès réservé à l''administrateur';
+  end if;
+  return query
+    select
+      p.utilisateur,
+      u.email,
+      u.created_at,
+      u.last_sign_in_at,
+      (p.donnees->>'age')::int,
+      (p.donnees->>'height')::numeric,
+      (p.donnees->>'weight')::numeric,
+      p.donnees->>'gender',
+      (select count(*) from journees j where j.utilisateur = p.utilisateur),
+      p.maj
+    from profil p
+    left join auth.users u on u.id::text = p.utilisateur;
+end;
+$$;
+
+grant execute on function public.admin_liste_comptes() to authenticated;`;
 
 function sqlRls() { return SQL_RLS; }
 
