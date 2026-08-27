@@ -37,12 +37,12 @@
       --text: #f4f7fb;
       --text-muted: #97a2b4;
 
-      --primary: #00ff66;
+      --primary: #14b566;
       --primary-txt: #04120a;          /* texte pose SUR la couleur primaire */
-      --primary-glow: rgba(0, 255, 102, 0.35);
+      --primary-glow: rgba(20, 181, 102, 0.32);
       --accent: #6aa2ff;
       --ai-color: #6aa2ff;             /* accent lisible sur fond sombre */
-      --ai-solide: #1f5fd0;            /* fond de bouton, texte blanc : 5.9:1 */
+      --ai-solide: #3a5fa8;            /* bleu adouci (moins saturé que #1f5fd0), texte blanc : ~6.2:1 */
       --danger: #ff6b6b;
 
       --protein: #ff7070;
@@ -61,19 +61,22 @@
       --verre-flou-doux: 18px;
       --verre-sat: 190%;
       --verre-sheen: linear-gradient(135deg, rgba(255,255,255,0.16) 0%, rgba(255,255,255,0.04) 30%, rgba(255,255,255,0) 55%);
+      /* Reflet plus marqué, réservé aux boutons "verre coloré" : un vrai
+         highlight qui glisse en haut à gauche, comme la matière du Liquid
+         Glass d'Apple — pas juste une teinte, un vrai reflet de lumière. */
+      --verre-sheen-vive:
+        radial-gradient(120% 180% at 12% -20%, rgba(255,255,255,0.55), transparent 42%),
+        linear-gradient(160deg, rgba(255,255,255,0.22) 0%, rgba(255,255,255,0.02) 45%, rgba(255,255,255,0) 65%);
       /* Les barres fixes se superposent au contenu qui defile : trop
          translucides, on lisait le texte du dessous a travers. */
       --barre: rgba(9, 11, 16, 0.94);
       --ombre: 0 14px 34px rgba(0, 0, 0, 0.45);
       --ombre-haute: 0 26px 60px rgba(0, 0, 0, 0.6);
 
-      /* Couche d'ambiance : ce sont ces taches colorees que le flou capte.
-         Sans elles, le verre n'a rien a refracter et parait gris. */
-      --ambiance:
-        radial-gradient(46% 34% at 12% 8%,  rgba(0, 255, 102, 0.20), transparent 70%),
-        radial-gradient(44% 32% at 88% 14%, rgba(41, 121, 255, 0.18), transparent 70%),
-        radial-gradient(50% 38% at 78% 82%, rgba(167, 139, 250, 0.14), transparent 72%),
-        radial-gradient(46% 34% at 18% 92%, rgba(255, 180, 84, 0.10), transparent 72%);
+      /* Halos retirés : le fond reste uni. Le verre garde son relief grâce
+         aux inserts lumineux (--verre-hi/--verre-lo) et au sheen diagonal,
+         sans avoir besoin de taches de couleur en arrière-plan. */
+      --ambiance: none;
 
       --densite-pad: 20px;
       --densite-gap: 16px;
@@ -96,7 +99,7 @@
         --primary-glow: rgba(0, 112, 58, 0.30);
         --accent: #1552c4;
         --ai-color: #1552c4;
-        --ai-solide: #1552c4;
+        --ai-solide: #3a5fa8;
         --danger: #c62828;
         --protein: #c62828;
         --carbs: #a05a00;
@@ -110,13 +113,12 @@
         --verre-hi: rgba(255, 255, 255, 0.95);
         --verre-lo: rgba(14, 20, 32, 0.07);
         --verre-sheen: linear-gradient(135deg, rgba(255,255,255,0.55) 0%, rgba(255,255,255,0.14) 30%, rgba(255,255,255,0) 55%);
+        --verre-sheen-vive:
+          radial-gradient(120% 180% at 12% -20%, rgba(255,255,255,0.85), transparent 42%),
+          linear-gradient(160deg, rgba(255,255,255,0.5) 0%, rgba(255,255,255,0.08) 45%, rgba(255,255,255,0) 65%);
         --ombre: 0 14px 30px rgba(20, 30, 55, 0.14);
         --ombre-haute: 0 24px 54px rgba(20, 30, 55, 0.20);
-        --ambiance:
-          radial-gradient(46% 34% at 12% 8%,  rgba(0, 190, 100, 0.22), transparent 70%),
-          radial-gradient(44% 32% at 88% 14%, rgba(41, 121, 255, 0.20), transparent 70%),
-          radial-gradient(50% 38% at 78% 82%, rgba(167, 139, 250, 0.18), transparent 72%),
-          radial-gradient(46% 34% at 18% 92%, rgba(255, 180, 84, 0.16), transparent 72%);
+        --ambiance: none;
       }
     }
 
@@ -130,7 +132,7 @@
       --primary-glow: rgba(0, 112, 58, 0.30);
       --accent: #1552c4;
       --ai-color: #1552c4;
-      --ai-solide: #1552c4;
+      --ai-solide: #3a5fa8;
       --danger: #c62828;
       --protein: #c62828;
       --carbs: #a05a00;
@@ -144,13 +146,12 @@
       --verre-hi: rgba(255, 255, 255, 0.95);
       --verre-lo: rgba(14, 20, 32, 0.07);
       --verre-sheen: linear-gradient(135deg, rgba(255,255,255,0.55) 0%, rgba(255,255,255,0.14) 30%, rgba(255,255,255,0) 55%);
+      --verre-sheen-vive:
+        radial-gradient(120% 180% at 12% -20%, rgba(255,255,255,0.85), transparent 42%),
+        linear-gradient(160deg, rgba(255,255,255,0.5) 0%, rgba(255,255,255,0.08) 45%, rgba(255,255,255,0) 65%);
       --ombre: 0 14px 30px rgba(20, 30, 55, 0.14);
       --ombre-haute: 0 24px 54px rgba(20, 30, 55, 0.20);
-      --ambiance:
-        radial-gradient(46% 34% at 12% 8%,  rgba(0, 190, 100, 0.22), transparent 70%),
-        radial-gradient(44% 32% at 88% 14%, rgba(41, 121, 255, 0.20), transparent 70%),
-        radial-gradient(50% 38% at 78% 82%, rgba(167, 139, 250, 0.18), transparent 72%),
-        radial-gradient(46% 34% at 18% 92%, rgba(255, 180, 84, 0.16), transparent 72%);
+      --ambiance: none;
     }
 
     /* ---- DENSITE : « compact » resserre les cartes sans rien supprimer ---- */
@@ -226,8 +227,8 @@
     }
 
     .splash-figure {
-      width: 128px; height: 133px; color: #00ff66; z-index: 1;
-      filter: drop-shadow(0 0 14px rgba(0, 255, 102, 0.28));
+      width: 128px; height: 133px; color: var(--primary); z-index: 1;
+      filter: drop-shadow(0 0 14px var(--primary-glow));
     }
     /* pathLength="1" normalise chaque tracé : un seul jeu de valeurs anime
        aussi bien un cercle qu'une courbe de Bézier. */
@@ -261,7 +262,7 @@
 
     .splash-hairline {
       margin-top: 16px; width: 0; height: 1px; z-index: 1;
-      background: linear-gradient(90deg, transparent, #00ff66, transparent);
+      background: linear-gradient(90deg, transparent, var(--primary), transparent);
       animation: hairline 0.7s cubic-bezier(0.65, 0, 0.35, 1) 0.92s forwards;
     }
     @keyframes hairline { to { width: 168px; } }
@@ -631,7 +632,6 @@
     .fab-action[aria-current="page"] { border-color: var(--primary); color: var(--primary); }
     .fab-zone.ouvert .fab-actions { pointer-events: auto; }
     .fab-zone.ouvert .fab-action { opacity: 1; transform: none; }
-    .fab-zone.ouvert .fab-action:nth-child(4) { transition-delay: 0.02s; }
     .fab-zone.ouvert .fab-action:nth-child(3) { transition-delay: 0.05s; }
     .fab-zone.ouvert .fab-action:nth-child(2) { transition-delay: 0.08s; }
     .fab-zone.ouvert .fab-action:nth-child(1) { transition-delay: 0.11s; }
@@ -733,24 +733,72 @@
     .input-group input:focus, .input-group select:focus { border-color: var(--primary); box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 22%, transparent); }
     :focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
 
+    /* --- MESURES PAR PARTIE DU CORPS --- */
+    .mesure-partie { margin-bottom: 14px; }
+    .mesure-partie > label {
+      display: block; font-weight: 700; font-size: 0.78rem; margin-bottom: 8px; color: var(--text);
+    }
+    .mesure-partie .trio { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+    .mesure-partie .trio > div label {
+      display: block; font-size: 0.62rem; color: var(--text-muted); margin-bottom: 4px;
+      text-transform: uppercase; letter-spacing: 0.5px; font-weight: 700;
+    }
+    .mesure-partie .trio input {
+      width: 100%; padding: 9px 8px; min-height: 38px; text-align: center;
+      background: var(--verre-creux); border: 1px solid var(--verre-brd); color: var(--text);
+      border-radius: 11px; font-size: 0.82rem; font-family: inherit; outline: none;
+      box-shadow: inset 0 1px 0 var(--verre-lo);
+    }
+    .mesure-partie .trio input:focus { border-color: var(--primary); box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 22%, transparent); }
+
     .btn {
-      padding: 14px 20px; min-height: 48px; border: 1px solid transparent; border-radius: 15px;
+      padding: 14px 20px; min-height: 48px; border: 1.5px solid transparent; border-radius: 15px;
       font-weight: 800; font-family: inherit; cursor: pointer; width: 100%;
       transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1); letter-spacing: 0.4px; font-size: 0.9rem;
     }
     .btn:active { transform: scale(0.985); }
-    .btn-primary {
-      background: var(--primary); color: var(--primary-txt);
-      box-shadow: 0 10px 26px var(--primary-glow), inset 0 1px 0 rgba(255,255,255,0.3);
+
+    /* --- BOUTONS "VERRE COLORÉ" ---
+       Le principe du Liquid Glass : pas d'aplat de couleur, juste un contour
+       teinté et un vrai verre dépoli derrière lui — flou et saturation poussés
+       au maximum, un reflet net qui glisse en haut à gauche comme sur du verre
+       bombé, et une lueur douce de la couleur qui sourd depuis le bord plutôt
+       que de remplir tout le bouton. Le texte reprend la couleur du contour :
+       ce sont les mêmes teintes déjà validées ailleurs comme texte sur le
+       fond de l'appli, donc le contraste reste bon dans les deux thèmes. */
+    .btn-primary, .btn-analysis {
+      -webkit-backdrop-filter: blur(calc(var(--verre-flou) + 14px)) saturate(240%);
+      backdrop-filter: blur(calc(var(--verre-flou) + 14px)) saturate(240%);
     }
-    .btn-primary:hover { box-shadow: 0 12px 32px var(--primary-glow); }
-    /* #3d82f6 sous du texte blanc ne donnait que 3,67:1 — sous le seuil AA. */
+    .btn-primary {
+      background: var(--verre-sheen-vive), color-mix(in srgb, var(--primary) 16%, var(--verre-fort));
+      border-color: var(--primary); color: var(--primary);
+      box-shadow:
+        0 10px 26px color-mix(in srgb, var(--primary) 30%, transparent),
+        inset 0 1px 0 var(--verre-hi), inset 0 -1px 0 var(--verre-lo),
+        inset 0 0 22px color-mix(in srgb, var(--primary) 16%, transparent);
+    }
+    .btn-primary:hover {
+      background: var(--verre-sheen-vive), color-mix(in srgb, var(--primary) 24%, var(--verre-fort));
+      box-shadow:
+        0 14px 32px color-mix(in srgb, var(--primary) 38%, transparent),
+        inset 0 1px 0 var(--verre-hi), inset 0 -1px 0 var(--verre-lo),
+        inset 0 0 26px color-mix(in srgb, var(--primary) 22%, transparent);
+    }
     .btn-analysis {
-      background: var(--ai-solide); color: #ffffff; margin-top: 10px;
-      box-shadow: 0 10px 26px rgba(21, 82, 196, 0.35), inset 0 1px 0 rgba(255,255,255,0.28);
+      margin-top: 10px;
+      background: var(--verre-sheen-vive), color-mix(in srgb, var(--ai-color) 16%, var(--verre-fort));
+      border-color: var(--ai-color); color: var(--ai-color);
+      box-shadow:
+        0 10px 26px color-mix(in srgb, var(--ai-color) 28%, transparent),
+        inset 0 1px 0 var(--verre-hi), inset 0 -1px 0 var(--verre-lo),
+        inset 0 0 22px color-mix(in srgb, var(--ai-color) 14%, transparent);
+    }
+    .btn-analysis:hover {
+      background: var(--verre-sheen-vive), color-mix(in srgb, var(--ai-color) 24%, var(--verre-fort));
     }
     .btn-secondaire {
-      background: var(--verre-creux); border-color: var(--verre-brd); color: var(--text);
+      background: var(--verre-sheen), var(--verre-creux); border-color: var(--verre-brd); color: var(--text);
       box-shadow: inset 0 1px 0 var(--verre-hi);
     }
 
@@ -1030,11 +1078,34 @@
     </div>
 
     <div id="meals-container"></div>
+
+    <div class="titre-section">🤖 Bilan de la journée</div>
+    <div class="analysis-card">
+      <p class="note">Un bilan de ta nutrition et de ton activité (pas, séances) pour la date affichée en haut.</p>
+      <button class="btn btn-analysis" onclick="lancerAnalyseJour()">✨ Analyser ma journée</button>
+      <span class="puce-ia"></span>
+      <div id="analysis-loader" class="loader hidden">🧠 Analyse en cours…</div>
+      <div id="analysis-box" class="analysis-output hidden"></div>
+      <p class="note" id="note-cle-ia" style="margin-top:10px;"></p>
+    </div>
   </section>
 
   <!-- ================= ÉCRAN 2 : ACTIVITÉ ================= -->
   <section id="ecran-activite" class="ecran" role="region" aria-label="Activité">
     <h2 class="titre-ecran"><span class="ic" aria-hidden="true">👟</span> Activité du jour</h2>
+
+    <div class="fitness-card">
+      <h3>🎯 Objectif</h3>
+      <div class="input-group" style="margin-bottom:0;">
+        <label for="objectif-select">Objectif actuel</label>
+        <select id="objectif-select" onchange="changerObjectif()">
+          <option value="maintien">Maintien</option>
+          <option value="seche">Sèche / Perte</option>
+          <option value="masse">Prise de masse</option>
+        </select>
+      </div>
+      <p class="note" style="margin:10px 0 0;">Pas besoin de le re-choisir chaque jour : une fois réglé, il reste actif jusqu'à ce que tu le changes — inutile de le retoucher avant ton prochain vrai changement d'objectif, dans quelques mois. Le changer ne modifie que la suite : l'historique de tes statistiques passées n'est jamais réécrit.</p>
+    </div>
 
     <div class="fitness-card">
       <h3>👟 Pas &amp; séances</h3>
@@ -1052,6 +1123,13 @@
     </div>
 
     <p class="note" id="note-poids" style="margin: -4px 2px 14px;"></p>
+
+    <div class="fitness-card">
+      <h3>📏 Mesures corporelles</h3>
+      <p class="note" id="resume-mesures" style="margin:0 0 12px;">Aucune mesure enregistrée pour l'instant.</p>
+      <button class="btn btn-secondaire" style="width:100%;" onclick="ouvrirMesuresModal()">➕ Ajouter une mesure</button>
+      <p class="note" style="margin:10px 0 0;">Une fois par semaine suffit : pas besoin de repeser tous les jours. La dernière valeur connue continue d'être utilisée entre deux mesures.</p>
+    </div>
 
     <div class="bloc-verre">
       <h3 style="margin-top:0;margin-bottom:10px;font-size:0.85rem;text-transform:uppercase;letter-spacing:0.8px;">🔥 Dépense estimée</h3>
@@ -1106,29 +1184,21 @@
 
     <div class="titre-section">🏋️ Activités (minutes par sport)</div>
     <div class="chart-container"><canvas id="workoutChart"></canvas></div>
-  </section>
 
-  <!-- ================= ÉCRAN 4 : COACH IA ================= -->
-  <section id="ecran-ia" class="ecran" role="region" aria-label="Bilan">
-    <h2 class="titre-ecran"><span class="ic" aria-hidden="true">🤖</span> Bilan &amp; conseils</h2>
-    <div class="analysis-card">
-      <h3>🤖 Bilan de la journée</h3>
-      <p class="note">Un bilan de ta nutrition et de ton activité pour la date affichée en haut.</p>
-      <button class="btn btn-analysis" onclick="lancerAnalyseJour()">✨ Analyser ma journée</button>
-      <span class="puce-ia"></span>
-      <div id="analysis-loader" class="loader hidden">🧠 Analyse en cours…</div>
-      <div id="analysis-box" class="analysis-output hidden"></div>
-    </div>
+    <div class="titre-section">📏 Masse grasse &amp; musculaire (cumul des parties mesurées)</div>
+    <div class="chart-container"><canvas id="compoChart"></canvas></div>
+    <p class="note" id="note-compo" style="margin: -6px 2px 4px;"></p>
 
+    <div class="titre-section">🧍 Dernière mesure, par partie du corps</div>
+    <div class="chart-container"><canvas id="segmentsChart"></canvas></div>
+
+    <div class="titre-section">📊 Bilan de la période</div>
     <div class="analysis-card">
-      <h3>📊 Bilan de la période</h3>
-      <p class="note">Utilise la période choisie dans l'onglet Stats.</p>
+      <p class="note">Utilise la période choisie ci-dessus (curseurs « Période analysée »).</p>
       <button class="btn btn-analysis" onclick="lancerAnalysePeriode()">✨ Analyser ma période</button>
       <div id="analysis-loader-stats" class="loader hidden">🧠 Analyse de la période…</div>
       <div id="analysis-box-stats" class="analysis-output hidden"></div>
     </div>
-
-    <p class="note" id="note-cle-ia"></p>
   </section>
 
 </main>
@@ -1138,7 +1208,6 @@
 <!-- ============ NAVIGATION : tout passe par le bouton flottant ============ -->
 <nav class="fab-zone" id="fab-zone" aria-label="Navigation principale">
   <div class="fab-actions">
-    <button class="fab-action" id="nav-ia" onclick="allerA('ia')"><span class="ic" aria-hidden="true">🤖</span> Bilan &amp; conseils</button>
     <button class="fab-action" id="nav-stats" onclick="allerA('stats')"><span class="ic" aria-hidden="true">📊</span> Statistiques</button>
     <button class="fab-action" id="nav-activite" onclick="allerA('activite')"><span class="ic" aria-hidden="true">👟</span> Activité</button>
     <button class="fab-action" id="nav-repas" onclick="allerA('repas')"><span class="ic" aria-hidden="true">🍽️</span> Repas du jour</button>
@@ -1286,6 +1355,27 @@
   </div>
 </div>
 
+<!-- Modal Mesures corporelles (poids + composition par partie du corps) -->
+<div id="mesures-modal" class="modal" role="dialog" aria-modal="true" aria-labelledby="titre-mesures">
+  <div class="modal-content">
+    <div class="modal-entete">
+      <h3 id="titre-mesures">📏 Mesures — <span id="mesures-date">aujourd'hui</span></h3>
+      <button class="close-modal" onclick="fermerModal('mesures-modal')" aria-label="Fermer">&times;</button>
+    </div>
+
+    <div class="input-group">
+      <label for="mes-poids">Poids total (kg)</label>
+      <input type="number" id="mes-poids" step="0.1" placeholder="70" inputmode="decimal">
+    </div>
+
+    <p class="note" style="margin:4px 0 14px;">Les mesures par partie du corps sont optionnelles : ne renseigne que ce que ta balance ou ton mètre ruban te donne. Laisse le reste vide.</p>
+
+    <div id="mesures-parties-container"></div>
+
+    <button class="btn btn-primary" style="margin-top:6px;" onclick="enregistrerMesures()">💾 Enregistrer</button>
+  </div>
+</div>
+
 <div id="settings-modal" class="modal" role="dialog" aria-modal="true" aria-labelledby="titre-settings">
   <div class="modal-content">
     <div class="modal-entete">
@@ -1294,24 +1384,7 @@
     </div>
 
     <div class="bloc-verre" style="padding:15px; margin-bottom:16px;">
-      <label style="display:block;font-weight:700;font-size:0.72rem;margin-bottom:10px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.8px;">
-        📅 Journée affichée — <span id="profil-date">aujourd'hui</span>
-      </label>
-      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
-        <div class="input-group" style="margin-bottom: 0;">
-          <label for="daily-weight">Poids (kg)</label>
-          <input type="number" id="daily-weight" step="0.1" placeholder="70" inputmode="decimal" onchange="sauvegarderParametresJour()">
-        </div>
-        <div class="input-group" style="margin-bottom: 0;">
-          <label for="daily-goal">Objectif</label>
-          <select id="daily-goal" onchange="sauvegarderParametresJour()">
-            <option value="maintien">Maintien</option>
-            <option value="seche">Sèche / Perte</option>
-            <option value="masse">Prise de masse</option>
-          </select>
-        </div>
-      </div>
-      <p class="note" style="margin:10px 0 0;">Le poids sert au calcul de la dépense et à la courbe de suivi. Sans saisie, le dernier poids connu est repris.</p>
+      <p class="note" style="margin:0;">Le poids et l'objectif ne se règlent plus ici : renseigne le poids une fois par semaine et choisis ton objectif dans l'onglet <strong>Activité</strong> — un changement s'applique à partir d'aujourd'hui, sans jamais modifier tes journées passées.</p>
     </div>
 
     <div class="input-group">
@@ -1536,6 +1609,22 @@ function kcalSeance(type, minutes, poids) {
 const SPORT_LABELS = { musculation: 'Musculation', course: 'Course', natation: 'Natation', cyclisme: 'Cyclisme', hiit: 'HIIT', foot: 'Football', marche_rapide: 'Marche rapide' };
 const SPORT_COLORS = { musculation: '#ff5252', course: '#2979ff', natation: '#00e5ff', cyclisme: '#00ff66', hiit: '#ffab40', foot: '#d500f9', marche_rapide: '#9e9e9e' };
 
+/* =====================================================================
+   MESURES CORPORELLES (hebdomadaires)
+   Un jeu de 5 segments correspond à ce que renvoient la plupart des
+   balances à impédancemétrie grand public (Withings, Renpho, Tanita...) :
+   c'est le découpage le plus reconnaissable, plutôt que d'inventer notre
+   propre décomposition. Chaque segment est optionnel : tout le monde n'a
+   pas une balance qui donne ce détail chaque semaine.
+   ===================================================================== */
+const PARTIES_CORPS = [
+  { id: 'bras_g', label: 'Bras gauche' },
+  { id: 'bras_d', label: 'Bras droit' },
+  { id: 'jambe_g', label: 'Jambe gauche' },
+  { id: 'jambe_d', label: 'Jambe droite' },
+  { id: 'tronc', label: 'Tronc' }
+];
+
 let currentDate = todayStr();
 let activeMealId = null;
 let html5QrCode = null;
@@ -1543,6 +1632,7 @@ let currentScannedFood = null;
 let detectedBufferGemini = [];
 
 let caloriesChartInstance = null, macrosChartInstance = null, stepsChartInstance = null, workoutChartInstance = null;
+let compoChartInstance = null, segmentsChartInstance = null;
 let poidsChartInstance = null;
 
 let userProfile = { height: 175, age: 25, gender: 'm', weight: 70 };
@@ -1621,7 +1711,7 @@ function saveData(jourModifie) {
 function getDay(dateStr) {
   if (!appData[dateStr]) {
     appData[dateStr] = {
-      weight: null, goal: 'maintien', steps: 0,
+      weight: null, goal: null, steps: 0,
       workouts: [],
       meals: { breakfast: [], lunch: [], snack: [], dinner: [] }
     };
@@ -1651,6 +1741,18 @@ function dernierPoidsConnu(avant) {
   return Number(userProfile.weight) || 70;
 }
 
+/* Même principe que le poids : l'objectif ne se ressaisit pas chaque jour,
+   il reste celui du dernier changement explicite. Changer l'objectif
+   aujourd'hui n'affecte donc jamais le calcul des journées passées — elles
+   gardent celui qui était actif au moment où elles ont eu lieu. */
+function dernierObjectifConnu(avant) {
+  const jours = Object.keys(appData).filter(d => d <= avant).sort().reverse();
+  for (const j of jours) {
+    if (appData[j] && appData[j].goal) return appData[j].goal;
+  }
+  return 'maintien';
+}
+
 function computeTargets(day, dateStr) {
   const weight = Number(day.weight) || dernierPoidsConnu(dateStr || todayStr());
   const height = Number(userProfile.height) || 175;
@@ -1673,7 +1775,11 @@ function computeTargets(day, dateStr) {
   }
   let tdee = bmr * 1.2 + stepsKcal + workoutKcal;
 
-  const adj = day.goal === 'seche' ? -0.20 : day.goal === 'masse' ? 0.15 : 0;
+  // L'objectif s'hérite du dernier changement explicite (comme le poids),
+  // il ne dépend jamais de la date affichée : changer l'objectif aujourd'hui
+  // ne touche jamais les journées déjà passées.
+  const objectif = day.goal || dernierObjectifConnu(dateStr || todayStr());
+  const adj = objectif === 'seche' ? -0.20 : objectif === 'masse' ? 0.15 : 0;
   /* -20 % d'une grosse depense peut passer sous le metabolisme de base :
      manger moins que ce que le corps consomme au repos n'est pas une seche,
      c'est une restriction. On plafonne le deficit au metabolisme de base. */
@@ -1682,7 +1788,7 @@ function computeTargets(day, dateStr) {
   const sousPlancher = target < plancher;
   if (sousPlancher) target = plancher;
 
-  const protein = Math.round(weight * (day.goal === 'seche' ? 2.2 : 1.8));
+  const protein = Math.round(weight * (objectif === 'seche' ? 2.2 : 1.8));
   // Les lipides ne descendent pas sous 0,8 g/kg : en dessous, c'est hormonal.
   const fat = Math.max(Math.round(weight * 0.8), Math.round((target * 0.25) / 9));
   const carbs = Math.max(0, Math.round((target - protein * 4 - fat * 9) / 4));
@@ -1692,6 +1798,7 @@ function computeTargets(day, dateStr) {
     bmr: plancher, tdee: Math.round(tdee),
     stepsKcal: Math.round(stepsKcal), poids: weight,
     poidsEstime: !(Number(day.weight) > 0),
+    goal: objectif,
     sousPlancher
   };
 }
@@ -1711,9 +1818,9 @@ function renderApp() {
   const day = getDay(currentDate);
   document.getElementById('date-display').textContent = formatDateDisplay(currentDate);
 
-  document.getElementById('daily-weight').value = day.weight ?? '';
-  document.getElementById('daily-goal').value = day.goal;
+  document.getElementById('objectif-select').value = dernierObjectifConnu(todayStr());
   document.getElementById('daily-steps').value = day.steps || '';
+  afficherResumeMesures();
   
   renderWorkoutsList(day);
   renderMeals(day);
@@ -1724,11 +1831,6 @@ function renderApp() {
 function majBoutonAujourdhui() {
   const b = document.getElementById('btn-aujourdhui');
   if (b) b.classList.toggle('hidden', currentDate === todayStr());
-  /* Poids et objectif vivent maintenant dans le profil, mais restent
-     rattaches a une journee : sans rappel de la date, on aurait modifie
-     le poids d'hier sans s'en rendre compte. */
-  const d = document.getElementById('profil-date');
-  if (d) d.textContent = currentDate === todayStr() ? "aujourd'hui" : formatDateDisplay(currentDate);
 }
 function revenirAujourdhui() {
   currentDate = todayStr();
@@ -1897,7 +1999,7 @@ function majDetailDepense(day, t) {
     ['Pas au-delà de 4 000', '+ ' + t.stepsKcal + ' kcal'],
     ['Séances de sport', '+ ' + t.workoutKcal + ' kcal'],
     ['Dépense totale estimée', t.tdee + ' kcal'],
-    ['Objectif (' + ({ seche: 'sèche −20 %', masse: 'masse +15 %', maintien: 'maintien' }[day.goal] || day.goal) + ')', t.target + ' kcal']
+    ['Objectif (' + ({ seche: 'sèche −20 %', masse: 'masse +15 %', maintien: 'maintien' }[t.goal] || t.goal) + ')', t.target + ' kcal']
   ];
   if (t.sousPlancher) lignes.push(['⚠️ Ramené au métabolisme de base', 'plancher']);
   el.innerHTML = '';
@@ -1943,12 +2045,124 @@ function updateLiquidFill(consumed, target) {
 
 function sauvegarderParametresJour() {
   const day = getDay(currentDate);
-  const w = document.getElementById('daily-weight').value;
-  day.weight = w === '' ? null : Number(w);
-  day.goal = document.getElementById('daily-goal').value;
   day.steps = Number(document.getElementById('daily-steps').value) || 0;
   saveData(currentDate);
   updateSummary(day);
+}
+
+/* L'objectif se fixe à partir d'AUJOURD'HUI, quelle que soit la date que tu
+   es en train de consulter ailleurs dans l'appli (currentDate). Les
+   journées déjà passées gardent l'objectif qui était actif au moment où
+   elles ont eu lieu — seules aujourd'hui et les journées futures changent. */
+function changerObjectif() {
+  const val = document.getElementById('objectif-select').value;
+  getDay(todayStr()).goal = val;
+  saveData(todayStr());
+  const day = getDay(currentDate);
+  updateSummary(day);
+  buildMasterArrays();
+  if (ecranActif === 'stats') mettreAJourStats();
+}
+
+/* =====================================================================
+   MESURES CORPORELLES
+   Stockées dans le profil (userProfile.mesures), et non journée par
+   journée : elles sont hebdomadaires, pas quotidiennes, et le profil se
+   synchronise déjà par compte — aucune table Supabase supplémentaire
+   n'est nécessaire. Le poids reste aussi copié sur la journée du jour
+   (day.weight) car tout le calcul des calories en dépend déjà.
+   ===================================================================== */
+function sommeMesures(m) {
+  let masse = 0, grasse = 0, musculaire = 0, renseignees = 0;
+  PARTIES_CORPS.forEach(p => {
+    const v = m && m.parties && m.parties[p.id];
+    if (!v) return;
+    if (Number(v.masse) > 0 || Number(v.grasse) > 0 || Number(v.musculaire) > 0) renseignees++;
+    masse += Number(v.masse) || 0;
+    grasse += Number(v.grasse) || 0;
+    musculaire += Number(v.musculaire) || 0;
+  });
+  return { masse, grasse, musculaire, renseignees };
+}
+
+function derniereMesure() {
+  const dates = Object.keys(userProfile.mesures || {}).sort();
+  if (!dates.length) return null;
+  const d = dates[dates.length - 1];
+  return { date: d, ...userProfile.mesures[d] };
+}
+
+function afficherResumeMesures() {
+  const n = document.getElementById('resume-mesures');
+  if (!n) return;
+  const derniere = derniereMesure();
+  if (!derniere) { n.textContent = 'Aucune mesure enregistrée pour l\'instant.'; return; }
+  const s = sommeMesures(derniere);
+  const dateAff = new Date(derniere.date + 'T12:00:00').toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' });
+  let texte = `Dernière mesure le ${dateAff}`;
+  if (derniere.poids) texte += ` · ${derniere.poids} kg`;
+  if (s.renseignees) texte += ` · masse grasse ${Math.round(s.grasse * 10) / 10} kg, masse musculaire ${Math.round(s.musculaire * 10) / 10} kg (cumul des parties renseignées)`;
+  n.textContent = texte;
+}
+
+function ouvrirMesuresModal() {
+  document.getElementById('mesures-date').textContent = formatDateDisplay(currentDate);
+  const jour = getDay(currentDate);
+  document.getElementById('mes-poids').value = jour.weight ?? '';
+
+  const existante = (userProfile.mesures || {})[currentDate];
+  const conteneur = document.getElementById('mesures-parties-container');
+  conteneur.innerHTML = PARTIES_CORPS.map(p => {
+    const v = (existante && existante.parties && existante.parties[p.id]) || {};
+    return `
+      <div class="mesure-partie">
+        <label>${p.label}</label>
+        <div class="trio">
+          <div><label>Masse (kg)</label><input type="number" step="0.1" inputmode="decimal" id="mes-${p.id}-masse" value="${v.masse ?? ''}"></div>
+          <div><label>Masse grasse (kg)</label><input type="number" step="0.1" inputmode="decimal" id="mes-${p.id}-grasse" value="${v.grasse ?? ''}"></div>
+          <div><label>Masse musc. (kg)</label><input type="number" step="0.1" inputmode="decimal" id="mes-${p.id}-musculaire" value="${v.musculaire ?? ''}"></div>
+        </div>
+      </div>`;
+  }).join('');
+
+  ouvrirModal('mesures-modal');
+}
+
+function enregistrerMesures() {
+  const poidsSaisi = document.getElementById('mes-poids').value;
+  const parties = {};
+  PARTIES_CORPS.forEach(p => {
+    const masse = document.getElementById(`mes-${p.id}-masse`).value;
+    const grasse = document.getElementById(`mes-${p.id}-grasse`).value;
+    const musculaire = document.getElementById(`mes-${p.id}-musculaire`).value;
+    if (masse !== '' || grasse !== '' || musculaire !== '') {
+      parties[p.id] = {
+        masse: masse === '' ? null : Number(masse),
+        grasse: grasse === '' ? null : Number(grasse),
+        musculaire: musculaire === '' ? null : Number(musculaire)
+      };
+    }
+  });
+
+  if (!userProfile.mesures) userProfile.mesures = {};
+  userProfile.mesures[currentDate] = {
+    poids: poidsSaisi === '' ? null : Number(poidsSaisi),
+    parties
+  };
+
+  // Le poids continue aussi d'alimenter le calcul des calories du jour.
+  if (poidsSaisi !== '') {
+    const jour = getDay(currentDate);
+    jour.weight = Number(poidsSaisi);
+    saveData(currentDate);
+  }
+  saveData(); // bump + synchro du profil (où vivent les mesures)
+
+  afficherResumeMesures();
+  buildMasterArrays();
+  if (ecranActif === 'stats') mettreAJourStats();
+  updateSummary(getDay(currentDate));
+  fermerModal('mesures-modal');
 }
 
 function sauvegarderParametresGlobaux() {
@@ -2604,7 +2818,7 @@ async function lancerAnalyseJour() {
   }
 
   const prompt = `Tu es un coach nutrition & sport haut de gamme. Analyse cette journée et donne un clair, motivant et actionnable en français (max 180 mots, sans markdown).
-Objectif du jour: ${day.goal}. Poids: ${day.weight || userProfile.weight} kg. Pas: ${day.steps}. Sports: ${workoutsDesc}.
+Objectif: ${t.goal}. Poids: ${t.poids} kg. Pas: ${day.steps}. Sports: ${workoutsDesc}.
 Calories consommées: ${totals.kcal} / objectif ${t.target} kcal. Protéines ${totals.p}/${t.protein}g, Glucides ${totals.c}/${t.carbs}g, Lipides ${totals.f}/${t.fat}g.`;
   try {
     const res = await geminiGenerate([{ text: prompt }]);
@@ -2767,6 +2981,7 @@ function buildMasterArrays() {
   globalMasterProtein = []; globalMasterCarbs = []; globalMasterFat = [];
   globalMasterSteps = []; globalMasterWorkoutData = {};
   globalMasterWeight = []; globalMasterRempli = []; globalMasterSportMin = [];
+  globalMasterGrasse = []; globalMasterMuscle = [];
 
   Object.keys(SPORT_LABELS).forEach(sportKey => {
     globalMasterWorkoutData[sportKey] = [];
@@ -2794,6 +3009,11 @@ function buildMasterArrays() {
       const w = Number(d.weight);
       globalMasterWeight.push(Number.isFinite(w) && w > 0 ? w : null);
 
+      const mesure = (userProfile.mesures || {})[ds];
+      const s = mesure ? sommeMesures(mesure) : null;
+      globalMasterGrasse.push(s && s.renseignees ? s.grasse : null);
+      globalMasterMuscle.push(s && s.renseignees ? s.musculaire : null);
+
       if (d.workouts && Array.isArray(d.workouts)) {
         d.workouts.forEach(w2 => {
           if (w2.type) {
@@ -2814,6 +3034,8 @@ function buildMasterArrays() {
       globalMasterSteps.push(null);
       globalMasterRempli.push(false);
       globalMasterWeight.push(null);
+      globalMasterGrasse.push(null);
+      globalMasterMuscle.push(null);
     }
 
     globalMasterSportMin.push(minutesJour);
@@ -2827,6 +3049,7 @@ let globalMasterLabels = [], globalMasterConsumed = [], globalMasterTarget = [];
 let globalMasterProtein = [], globalMasterCarbs = [], globalMasterFat = [], globalMasterSteps = [];
 let globalMasterWorkoutData = {};
 let globalMasterWeight = [], globalMasterRempli = [], globalMasterSportMin = [];
+let globalMasterGrasse = [], globalMasterMuscle = [];
 
 /* =====================================================================
    MOYENNE GLISSANTE SUR LE POIDS
@@ -3091,7 +3314,7 @@ function renderCharts(s, e) {
         && window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches);
   const couleurTexte = (styles.getPropertyValue('--text-muted') || '#94a3b8').trim();
   const gridColor = clair ? 'rgba(14,20,32,0.10)' : 'rgba(255,255,255,0.06)';
-  const cPrimaire = (styles.getPropertyValue('--primary') || '#00ff66').trim();
+  const cPrimaire = (styles.getPropertyValue('--primary') || '#14b566').trim();
   const cAccent = (styles.getPropertyValue('--accent') || '#2979ff').trim();
   const cProt = (styles.getPropertyValue('--protein') || '#ff5252').trim();
   const cGluc = (styles.getPropertyValue('--carbs') || '#ffab40').trim();
@@ -3175,6 +3398,55 @@ function renderCharts(s, e) {
       })
     })
   });
+
+  /* --- COMPOSITION CORPORELLE : cumul des parties mesurées, dans le temps ---
+     spanGaps relie les mesures entre elles par-dessus les semaines sans
+     pesée détaillée : sans cela, une mesure par semaine donnerait un nuage
+     de points isolés plutôt qu'une tendance. */
+  if (compoChartInstance) compoChartInstance.destroy();
+  compoChartInstance = new Chart(document.getElementById('compoChart'), {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [
+        { label: 'Masse grasse', data: globalMasterGrasse.slice(s, e + 1), borderColor: cLip, backgroundColor: 'transparent', tension: 0.35, pointRadius: 3, pointHoverRadius: 5, borderWidth: 2.5, spanGaps: true },
+        { label: 'Masse musculaire', data: globalMasterMuscle.slice(s, e + 1), borderColor: cPrimaire, backgroundColor: 'transparent', tension: 0.35, pointRadius: 3, pointHoverRadius: 5, borderWidth: 2.5, spanGaps: true }
+      ]
+    },
+    options: Object.assign({}, baseOpts, {
+      scales: Object.assign({}, baseOpts.scales, {
+        y: Object.assign({}, baseOpts.scales.y, { beginAtZero: false })
+      })
+    })
+  });
+  majNoteCompo(s, e);
+
+  /* --- DERNIERE MESURE, PAR PARTIE : une photo, pas une tendance ---
+     Un empilement de 5 segments dans le temps serait illisible ; on montre
+     plutôt la dernière ventilation connue, comme le fait une balance
+     à impédancemétrie sur son propre écran. */
+  if (segmentsChartInstance) segmentsChartInstance.destroy();
+  const derniere = derniereMesure();
+  const segLabels = PARTIES_CORPS.map(p => p.label);
+  const segGrasse = PARTIES_CORPS.map(p => derniere && derniere.parties && derniere.parties[p.id] ? Number(derniere.parties[p.id].grasse) || 0 : 0);
+  const segMuscle = PARTIES_CORPS.map(p => derniere && derniere.parties && derniere.parties[p.id] ? Number(derniere.parties[p.id].musculaire) || 0 : 0);
+  segmentsChartInstance = new Chart(document.getElementById('segmentsChart'), {
+    type: 'bar',
+    data: { labels: segLabels, datasets: [
+      { label: 'Masse grasse', data: segGrasse, backgroundColor: cLip },
+      { label: 'Masse musculaire', data: segMuscle, backgroundColor: cPrimaire }
+    ] },
+    options: baseOpts
+  });
+}
+
+function majNoteCompo(s, e) {
+  const n = document.getElementById('note-compo');
+  if (!n) return;
+  const nb = globalMasterGrasse.slice(s, e + 1).filter(v => v != null).length;
+  n.textContent = nb
+    ? "Chaque point cumule les parties du corps renseignées ce jour-là : si tu ne mesures qu'un bras une semaine, le total de cette semaine-là ne reflète que ce bras."
+    : "Aucune mesure détaillée (masse grasse/musculaire) sur cette période. Ajoute-en une depuis l'onglet Activité.";
 }
 
 // --- EXPORT & IMPORT ---
@@ -3263,8 +3535,8 @@ function importerDonnees(event) {
    corriger un repas du soir il fallait passer devant tout le reste. Quatre
    ecrans, une barre basse, et chaque tache tient dans une hauteur d'ecran.
    ===================================================================== */
-const ECRANS = ['repas', 'activite', 'stats', 'ia'];
-const ECRAN_ICONE = { repas: '🍽️', activite: '👟', stats: '📊', ia: '🤖' };
+const ECRANS = ['repas', 'activite', 'stats'];
+const ECRAN_ICONE = { repas: '🍽️', activite: '👟', stats: '📊' };
 let ecranActif = 'repas';
 
 function allerA(nom) {
@@ -3288,7 +3560,7 @@ function allerA(nom) {
   document.body.classList.toggle('sur-stats', nom === 'stats');
   window.scrollTo({ top: 0, behavior: 'auto' });
   if (nom === 'stats') { prepareStats(); }
-  if (nom === 'ia') majNoteCleIA();
+  if (nom === 'repas') majNoteCleIA();
 }
 
 function majNoteCleIA() {
