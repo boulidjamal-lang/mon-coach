@@ -49,9 +49,10 @@
       --verre-brd-vive: rgba(255, 255, 255, 0.18);
       --verre-hi: rgba(255, 255, 255, 0.20);
       --verre-lo: rgba(0, 0, 0, 0.22);
-      --verre-flou: 22px;
-      --verre-flou-doux: 13px;
-      --verre-sat: 170%;
+      --verre-flou: 30px;
+      --verre-flou-doux: 18px;
+      --verre-sat: 190%;
+      --verre-sheen: linear-gradient(135deg, rgba(255,255,255,0.16) 0%, rgba(255,255,255,0.04) 30%, rgba(255,255,255,0) 55%);
       /* Les barres fixes se superposent au contenu qui defile : trop
          translucides, on lisait le texte du dessous a travers. */
       --barre: rgba(9, 11, 16, 0.94);
@@ -100,6 +101,7 @@
         --verre-brd-vive: rgba(14, 20, 32, 0.14);
         --verre-hi: rgba(255, 255, 255, 0.95);
         --verre-lo: rgba(14, 20, 32, 0.07);
+        --verre-sheen: linear-gradient(135deg, rgba(255,255,255,0.55) 0%, rgba(255,255,255,0.14) 30%, rgba(255,255,255,0) 55%);
         --ombre: 0 14px 30px rgba(20, 30, 55, 0.14);
         --ombre-haute: 0 24px 54px rgba(20, 30, 55, 0.20);
         --ambiance:
@@ -133,6 +135,7 @@
       --verre-brd-vive: rgba(14, 20, 32, 0.14);
       --verre-hi: rgba(255, 255, 255, 0.95);
       --verre-lo: rgba(14, 20, 32, 0.07);
+      --verre-sheen: linear-gradient(135deg, rgba(255,255,255,0.55) 0%, rgba(255,255,255,0.14) 30%, rgba(255,255,255,0) 55%);
       --ombre: 0 14px 30px rgba(20, 30, 55, 0.14);
       --ombre-haute: 0 24px 54px rgba(20, 30, 55, 0.20);
       --ambiance:
@@ -335,7 +338,7 @@
        ombre en bas) est ce qui donne l'epaisseur. Applique via une classe.
        ===================================================================== */
     .verre {
-      background: var(--verre);
+      background: var(--verre-sheen), var(--verre);
       -webkit-backdrop-filter: blur(var(--verre-flou)) saturate(var(--verre-sat));
       backdrop-filter: blur(var(--verre-flou)) saturate(var(--verre-sat));
       border: 1px solid var(--verre-brd);
@@ -350,7 +353,7 @@
     .app-bar {
       position: sticky; top: 0; z-index: 60;
       padding: calc(10px + env(safe-area-inset-top, 0px)) 16px 10px;
-      background: var(--barre);
+      background: var(--verre-sheen), var(--barre);
       -webkit-backdrop-filter: blur(var(--verre-flou)) saturate(var(--verre-sat));
       backdrop-filter: blur(var(--verre-flou)) saturate(var(--verre-sat));
       border-bottom: 1px solid var(--verre-brd);
@@ -370,7 +373,7 @@
     .btn-icone {
       min-width: 42px; height: 42px; padding: 0 12px;
       display: inline-flex; align-items: center; justify-content: center; gap: 6px;
-      background: var(--verre-fort);
+      background: var(--verre-sheen), var(--verre-fort);
       -webkit-backdrop-filter: blur(var(--verre-flou-doux)) saturate(var(--verre-sat));
       backdrop-filter: blur(var(--verre-flou-doux)) saturate(var(--verre-sat));
       border: 1px solid var(--verre-brd);
@@ -378,15 +381,17 @@
       color: var(--text);
       border-radius: 13px; font-weight: 600; cursor: pointer; font-size: 0.9rem;
       font-family: inherit;
-      transition: transform 0.2s cubic-bezier(0.16,1,0.3,1), border-color 0.2s, background 0.2s;
+      transition: transform 0.2s cubic-bezier(0.16,1,0.3,1), border-color 0.2s, background 0.2s, box-shadow 0.2s;
     }
-    .btn-icone:hover { border-color: var(--verre-brd-vive); transform: translateY(-1px); }
+    .btn-icone:hover { border-color: var(--verre-brd-vive); transform: translateY(-1px); box-shadow: var(--ombre), inset 0 1px 0 var(--verre-hi), inset 0 -1px 0 var(--verre-lo); }
     .btn-icone:active { transform: translateY(0) scale(0.97); }
+    /* Anneau vert discret : signale un compte connecté sans avoir a ouvrir la modale. */
+    .btn-icone.compte-actif { border-color: var(--primary); box-shadow: 0 0 0 2px var(--primary-glow), inset 0 1px 0 var(--verre-hi), inset 0 -1px 0 var(--verre-lo); }
 
     /* --- BARRE DE DATE --- */
     .date-nav {
       display: flex; justify-content: space-between; align-items: center;
-      background: var(--verre);
+      background: var(--verre-sheen), var(--verre);
       -webkit-backdrop-filter: blur(var(--verre-flou-doux)) saturate(var(--verre-sat));
       backdrop-filter: blur(var(--verre-flou-doux)) saturate(var(--verre-sat));
       border: 1px solid var(--verre-brd);
@@ -428,7 +433,7 @@
 
     /* --- CARTE RESUME --- */
     .summary-card {
-      background: var(--verre-fort);
+      background: var(--verre-sheen), var(--verre-fort);
       -webkit-backdrop-filter: blur(var(--verre-flou)) saturate(var(--verre-sat));
       backdrop-filter: blur(var(--verre-flou)) saturate(var(--verre-sat));
       border: 1px solid var(--verre-brd);
@@ -479,7 +484,7 @@
 
     /* --- CARTES --- */
     .daily-questionnaire, .fitness-card, .analysis-card, .meal-card, .bloc-verre {
-      background: var(--verre);
+      background: var(--verre-sheen), var(--verre);
       -webkit-backdrop-filter: blur(var(--verre-flou)) saturate(var(--verre-sat));
       backdrop-filter: blur(var(--verre-flou)) saturate(var(--verre-sat));
       border: 1px solid var(--verre-brd);
@@ -487,9 +492,9 @@
       padding: var(--densite-pad);
       margin-bottom: var(--densite-gap);
       box-shadow: var(--ombre), inset 0 1px 0 var(--verre-hi), inset 0 -1px 0 var(--verre-lo);
-      transition: border-color 0.3s, transform 0.3s cubic-bezier(0.16,1,0.3,1);
+      transition: border-color 0.3s, transform 0.3s cubic-bezier(0.16,1,0.3,1), box-shadow 0.3s;
     }
-    .daily-questionnaire:hover, .fitness-card:hover, .analysis-card:hover, .meal-card:hover { border-color: var(--verre-brd-vive); }
+    .daily-questionnaire:hover, .fitness-card:hover, .analysis-card:hover, .meal-card:hover { border-color: var(--verre-brd-vive); transform: translateY(-2px); box-shadow: var(--ombre-haute), inset 0 1px 0 var(--verre-hi), inset 0 -1px 0 var(--verre-lo); }
     .daily-questionnaire h3, .fitness-card h3, .analysis-card h3 {
       margin-top: 0; margin-bottom: 14px; font-size: 0.85rem; font-weight: 700;
       color: var(--text); letter-spacing: 0.8px; text-transform: uppercase;
@@ -967,6 +972,7 @@
       <button class="puce-sync hidden" id="puce-sync" data-etat="attente" onclick="synchroniser('manuel')" title="État de la synchronisation">
         <span class="pastille" aria-hidden="true"></span><span id="puce-sync-txt">—</span>
       </button>
+      <button class="btn-icone" id="btn-compte" onclick="ouvrirModal('compte-modal')" aria-label="Se connecter" title="Se connecter">👤</button>
       <button class="btn-icone" id="btn-theme" onclick="basculerTheme()" aria-label="Changer de thème" title="Thème">🌗</button>
       <button class="btn-icone" onclick="ouvrirModal('settings-modal')" aria-label="Profil et réglages" title="Profil">⚙️</button>
     </div>
@@ -1203,6 +1209,49 @@
 </div>
 
 <!-- Modal Paramètres Généraux -->
+<!-- Modal Compte (connexion) -->
+<div id="compte-modal" class="modal" role="dialog" aria-modal="true" aria-labelledby="titre-compte">
+  <div class="modal-content">
+    <div class="modal-entete">
+      <h3 id="titre-compte">👤 Mon compte</h3>
+      <button class="close-modal" onclick="fermerModal('compte-modal')" aria-label="Fermer">&times;</button>
+    </div>
+
+    <p class="note">Un compte permet à plusieurs personnes d'utiliser la même application, chacune avec ses propres repas, poids et statistiques — par exemple toi et ta femme, chacun sur son téléphone. Cela suppose d'avoir déjà renseigné un projet Supabase dans ⚙️ Réglages → Synchronisation : c'est ce projet qui stockera les comptes.</p>
+
+    <div id="compte-anonyme">
+      <div class="input-group">
+        <label for="compte-email-input">Adresse email</label>
+        <input type="email" id="compte-email-input" placeholder="toi@exemple.com" autocomplete="email">
+      </div>
+      <div class="input-group">
+        <label for="compte-mdp-input">Mot de passe</label>
+        <input type="password" id="compte-mdp-input" placeholder="6 caractères minimum" autocomplete="current-password">
+      </div>
+      <p class="note" id="note-compte"></p>
+      <div style="display:flex; gap:10px;">
+        <button class="btn btn-primary" style="flex:1;" onclick="connexionCompte()">Se connecter</button>
+        <button class="btn btn-secondaire" style="flex:1;" onclick="inscriptionCompte()">Créer un compte</button>
+      </div>
+      <p class="note" style="margin-top:12px;">La première personne crée son compte ici avec sa propre adresse ; l'autre fait pareil, sur son propre appareil, avec la sienne. Chacun ne verra que ses données une fois les policies de sécurité (SQL ci-dessous) mises à jour.</p>
+    </div>
+
+    <div id="compte-connecte" class="hidden">
+      <div class="bloc-verre" style="padding:15px; margin-bottom:16px;">
+        <label style="display:block;font-weight:700;font-size:0.72rem;margin-bottom:6px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.8px;">Connecté en tant que</label>
+        <p style="margin:0; font-weight:700;" id="compte-email"></p>
+      </div>
+      <button class="btn btn-secondaire" style="width:100%;" onclick="deconnexionCompte()">Se déconnecter</button>
+    </div>
+
+    <hr class="sep">
+    <p class="note">Vous partagez le même téléphone à tour de rôle plutôt que d'avoir chacun le vôtre ? Déconnecte-toi puis vide les données de l'appareil avant que l'autre personne se connecte, pour ne pas mélanger vos journées.</p>
+    <button class="btn btn-secondaire" style="width:100%;" onclick="viderDonneesAppareil()">🗑️ Vider les données de cet appareil</button>
+
+    <button class="btn btn-primary" style="margin-top:16px;" onclick="fermerModal('compte-modal')">Fermer</button>
+  </div>
+</div>
+
 <div id="settings-modal" class="modal" role="dialog" aria-modal="true" aria-labelledby="titre-settings">
   <div class="modal-content">
     <div class="modal-entete">
@@ -1267,7 +1316,7 @@
       <div class="input-group">
         <label for="supa-id">Identifiant de synchronisation</label>
         <input type="text" id="supa-id" placeholder="moi" autocomplete="off" onchange="enregistrerSupabase()">
-        <small style="color:var(--text-muted); display:block; margin-top:6px; font-size:0.75rem;">Le même sur tous tes appareils pour qu'ils partagent les mêmes données.</small>
+        <small style="color:var(--text-muted); display:block; margin-top:6px; font-size:0.75rem;">Le même sur tous tes appareils pour qu'ils partagent les mêmes données. Inutile si tu utilises un compte (👤 en haut) : il prend automatiquement le relais, et ce champ est alors désactivé.</small>
       </div>
       <div class="input-group">
         <label for="supa-table">Table des aliments</label>
@@ -1289,6 +1338,13 @@
         <summary style="cursor:pointer;font-size:0.75rem;color:var(--text-muted);font-weight:700;">SQL à exécuter une fois dans Supabase</summary>
         <div class="bloc-sql" id="bloc-sql"></div>
         <button class="btn btn-secondaire" style="margin-top:9px;" onclick="copierSql()">📋 Copier le SQL</button>
+      </details>
+
+      <details style="margin-top:10px;">
+        <summary style="cursor:pointer;font-size:0.75rem;color:var(--text-muted);font-weight:700;">🔒 Sécuriser l'accès une fois que vous êtes tous les deux connectés (👤)</summary>
+        <p class="note" style="margin:10px 0 0;">Par défaut, la table est ouverte à quiconque possède la clé publique du projet (c'est ce qui permet à l'appli de fonctionner même sans compte). Une fois que toi et ta femme avez chacun créé un compte, exécute ce SQL une fois : chaque compte ne pourra plus lire ou modifier que ses propres journées.</p>
+        <div class="bloc-sql" id="bloc-sql-rls"></div>
+        <button class="btn btn-secondaire" style="margin-top:9px;" onclick="copierSqlRls()">📋 Copier le SQL</button>
       </details>
     </div>
 
@@ -3181,15 +3237,27 @@ function majNoteCleIA() {
 function themeActuel() {
   try { return localStorage.getItem('elite_theme') || 'auto'; } catch (e) { return 'auto'; }
 }
+
+/* Le bouton du haut et le segment des réglages appellent tous les deux
+   appliquerTheme() — le bug n'était donc pas dans la logique, mais dans le
+   repeint : certains WebKit mobiles mettent en cache la couche composee de
+   chaque élément à `backdrop-filter` et ne la reconstruisent pas quand seule
+   une variable CSS change. Une simple lecture d'offsetHeight ne force que la
+   mise en page, pas la recomposition GPU de CES couches précises. Un aller-
+   retour d'opacité, lui, force chaque calque à se repeindre sans clignoter
+   (0.999 est visuellement indiscernable de 1). C'est pour ça que le thème
+   « prenait » depuis la feuille de réglages (dont l'ouverture/fermeture force
+   déjà un repaint global) mais pas depuis le bouton seul. */
+function forcerRepeintureVerre() {
+  const r = document.documentElement;
+  r.style.opacity = '0.999';
+  requestAnimationFrame(() => { r.style.opacity = ''; });
+}
+
 function appliquerTheme(t) {
   document.documentElement.setAttribute('data-theme', t);
   try { localStorage.setItem('elite_theme', t); } catch (e) {}
-
-  /* Certains navigateurs mobiles gardent en cache les couches passees au
-     backdrop-filter et ne les repeignent pas quand une variable CSS change :
-     le fond changeait, les cartes restaient dans l'ancien theme. On force
-     une reprise de mise en page. */
-  void document.body.offsetHeight;
+  forcerRepeintureVerre();
 
   const effectif = themeEffectif();
   const b = document.getElementById('btn-theme');
@@ -3326,15 +3394,128 @@ let syncTimer = null;
 let syncEnCours = false;
 let syncRedemander = false;
 
+/* =====================================================================
+   COMPTE (connexion) — permet à deux personnes d'utiliser la même appli,
+   chacune avec ses propres données, sur le même projet Supabase.
+   Sans compte : comportement inchangé, l'« identifiant » saisi à la main
+   dans Synchronisation continue de fonctionner (rétrocompatible).
+   Avec compte : l'identifiant de synchronisation devient automatiquement
+   celui du compte connecté (son UID), plus fiable qu'un texte libre que
+   les deux appareils doivent recopier à l'identique.
+   ===================================================================== */
+let sessionUtilisateur = null; // { id, email } une fois connecté, sinon null
+
 function confSupabase() {
   try {
     return {
       url: (localStorage.getItem(SUPA_URL_LS) || '').trim(),
       cle: (localStorage.getItem(SUPA_KEY_LS) || '').trim(),
-      id: (localStorage.getItem(SUPA_ID_LS) || 'moi').trim() || 'moi',
+      // Un compte connecté prend le pas sur l'identifiant libre : c'est lui
+      // qui isole vraiment les données une fois les policies RLS activées.
+      id: (sessionUtilisateur && sessionUtilisateur.id)
+        || (localStorage.getItem(SUPA_ID_LS) || 'moi').trim() || 'moi',
       table: (localStorage.getItem(SUPA_TABLE_LS) || 'aliments').trim() || 'aliments'
     };
   } catch (e) { return { url: '', cle: '', id: 'moi', table: 'aliments' }; }
+}
+
+/* Ecoute les changements de session (connexion, déconnexion, jeton
+   rafraîchi au retour d'un onglet) et relance une synchro avec le bon
+   identifiant à chaque bascule. */
+function initAuth() {
+  if (!supa || !supa.auth) return;
+  supa.auth.getSession().then(({ data }) => {
+    definirSessionUtilisateur(data && data.session ? data.session.user : null);
+  });
+  supa.auth.onAuthStateChange((_event, session) => {
+    definirSessionUtilisateur(session ? session.user : null);
+  });
+}
+
+function definirSessionUtilisateur(user) {
+  const etaitConnecte = !!sessionUtilisateur;
+  sessionUtilisateur = user ? { id: user.id, email: user.email } : null;
+  majUICompte();
+  // Le changement d'identifiant ne rejoue pas automatiquement les données
+  // déjà en mémoire : on relance juste une synchro vers/depuis le bon compte.
+  if (!!sessionUtilisateur !== etaitConnecte) synchroniser(sessionUtilisateur ? 'connexion' : 'deconnexion');
+}
+
+function majUICompte() {
+  const btn = document.getElementById('btn-compte');
+  const zoneAnonyme = document.getElementById('compte-anonyme');
+  const zoneConnecte = document.getElementById('compte-connecte');
+  const emailAffiche = document.getElementById('compte-email');
+  const champId = document.getElementById('supa-id');
+  if (btn) {
+    btn.textContent = sessionUtilisateur ? '👤' : '👤';
+    btn.classList.toggle('compte-actif', !!sessionUtilisateur);
+    btn.title = sessionUtilisateur ? `Connecté : ${sessionUtilisateur.email}` : 'Se connecter';
+  }
+  if (zoneAnonyme) zoneAnonyme.classList.toggle('hidden', !!sessionUtilisateur);
+  if (zoneConnecte) zoneConnecte.classList.toggle('hidden', !sessionUtilisateur);
+  if (emailAffiche) emailAffiche.textContent = sessionUtilisateur ? sessionUtilisateur.email : '';
+  // Le champ « identifiant libre » n'a plus d'effet une fois connecté :
+  // autant le désactiver pour ne pas laisser croire qu'il fait encore quelque chose.
+  if (champId) champId.disabled = !!sessionUtilisateur;
+}
+
+function messageAuth(e) {
+  const m = (e && e.message) || '';
+  if (/invalid login credentials/i.test(m)) return 'Adresse ou mot de passe incorrect.';
+  if (/user already registered/i.test(m)) return 'Un compte existe déjà avec cette adresse : connecte-toi plutôt.';
+  if (/password should be at least/i.test(m)) return 'Mot de passe trop court (6 caractères minimum).';
+  if (/email/i.test(m) && /invalid/i.test(m)) return 'Adresse email invalide.';
+  return m || "Une erreur est survenue, réessaie.";
+}
+
+async function connexionCompte() {
+  if (!supa) { alert("Renseigne d'abord l'URL et la clé du projet Supabase (section Synchronisation) : la connexion utilise le même projet."); return; }
+  const email = (document.getElementById('compte-email-input').value || '').trim();
+  const mdp = document.getElementById('compte-mdp-input').value || '';
+  const note = document.getElementById('note-compte');
+  if (!email || !mdp) { if (note) note.textContent = 'Renseigne une adresse et un mot de passe.'; return; }
+  if (note) note.textContent = 'Connexion en cours…';
+  try {
+    const { error } = await supa.auth.signInWithPassword({ email, password: mdp });
+    if (error) throw error;
+    if (note) note.textContent = '';
+    document.getElementById('compte-mdp-input').value = '';
+  } catch (e) { if (note) note.textContent = messageAuth(e); }
+}
+
+async function inscriptionCompte() {
+  if (!supa) { alert("Renseigne d'abord l'URL et la clé du projet Supabase (section Synchronisation) : la connexion utilise le même projet."); return; }
+  const email = (document.getElementById('compte-email-input').value || '').trim();
+  const mdp = document.getElementById('compte-mdp-input').value || '';
+  const note = document.getElementById('note-compte');
+  if (!email || !mdp) { if (note) note.textContent = 'Renseigne une adresse et un mot de passe.'; return; }
+  if (note) note.textContent = 'Création du compte…';
+  try {
+    const { data, error } = await supa.auth.signUp({ email, password: mdp });
+    if (error) throw error;
+    if (note) note.textContent = data.session
+      ? ''
+      : 'Compte créé : vérifie ta boîte mail pour confirmer ton adresse, puis connecte-toi.';
+  } catch (e) { if (note) note.textContent = messageAuth(e); }
+}
+
+async function deconnexionCompte() {
+  if (!supa) return;
+  try { await supa.auth.signOut(); } catch (e) {}
+}
+
+/* Utile quand deux personnes se relaient sur le même appareil : les données
+   déjà enregistrées localement ne changent pas toutes seules de propriétaire
+   au moment où on se déconnecte, donc on propose de les vider explicitement
+   pour ne pas mélanger deux journées de deux personnes différentes. */
+function viderDonneesAppareil() {
+  if (!confirm("Effacer toutes les données enregistrées sur CET appareil (repas, poids, activité) ? Ce qui est déjà envoyé sur Supabase sous ton compte n'est pas supprimé et sera re-téléchargé à la prochaine connexion.")) return;
+  try {
+    localStorage.removeItem(STORAGE_KEY);
+    localStorage.removeItem(PROFILE_KEY);
+  } catch (e) {}
+  location.reload();
 }
 
 function initSupabase() {
@@ -3370,7 +3551,7 @@ function enregistrerSupabase() {
   } catch (e) {}
   schemaAliments = null;
   cacheAliments.clear();
-  if (initSupabase()) { synchroniser('réglages'); compterAliments(); }
+  if (initSupabase()) { initAuth(); synchroniser('réglages'); compterAliments(); }
   else compterAliments();
 }
 
@@ -3857,6 +4038,45 @@ create policy "acces profil" on profil for all using (true) with check (true);
 -- La table des aliments n'est pas créée ici : l'application lit celle que
 -- tu as déjà. Prépare-la avec le SQL « Préparer la table des aliments ».`;
 
+/* Politiques de repli, ouvertes à quiconque possède la clé publique : c'est
+   ce qui permet à l'appli de fonctionner day one, sans compte. Une fois que
+   les deux personnes se sont inscrites (bouton 👤), ce second script les
+   remplace par des politiques qui vérifient réellement auth.uid() : chacun
+   ne voit plus que ses propres lignes, même avec la même clé publique. */
+const SQL_RLS = `-- À exécuter UNE FOIS que toi et l'autre personne avez chacun créé un
+-- compte (bouton 👤 → Créer un compte). Idempotent : relancer ne casse rien.
+-- Avant ça, la table est accessible à quiconque a la clé publique du projet ;
+-- après, chaque compte ne peut lire/écrire que les lignes où
+-- utilisateur = son propre auth.uid().
+
+drop policy if exists "acces journees" on journees;
+create policy "journees par compte" on journees
+  for all
+  using (utilisateur = auth.uid()::text)
+  with check (utilisateur = auth.uid()::text);
+
+drop policy if exists "acces profil" on profil;
+create policy "profil par compte" on profil
+  for all
+  using (utilisateur = auth.uid()::text)
+  with check (utilisateur = auth.uid()::text);
+
+-- Important : ces policies exigent d'être connecté (auth.uid() non nul).
+-- Si l'un de vous continue à utiliser l'identifiant libre sans jamais se
+-- connecter, ses lectures/écritures échoueront après ce script — dans ce
+-- cas, gardez plutôt les policies par défaut ("using (true)") tant que
+-- vous n'avez pas tous les deux un compte actif.`;
+
+function sqlRls() { return SQL_RLS; }
+
+function copierSqlRls() {
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(SQL_RLS).catch(() => window.prompt('Copie ce SQL :', SQL_RLS));
+  } else {
+    window.prompt('Copie ce SQL :', SQL_RLS);
+  }
+}
+
 /* Une colonne calculée par Postgres, pas par l'application : elle reste juste
    même si la table est modifiée ailleurs, et l'index trigramme rend la
    recherche instantanée sur plusieurs milliers de lignes. */
@@ -3959,7 +4179,8 @@ window.addEventListener('load', () => {
   document.getElementById('supa-table').value = cs.table;
   document.getElementById('bloc-sql').textContent = SQL_SUPABASE;
   document.getElementById('bloc-sql-accents').textContent = sqlAccents();
-  if (initSupabase()) { synchroniser('démarrage'); compterAliments(); }
+  document.getElementById('bloc-sql-rls').textContent = sqlRls();
+  if (initSupabase()) { initAuth(); synchroniser('démarrage'); compterAliments(); }
   else compterAliments();
 
   /* Le réseau revient : on rattrape aussitôt. Et au retour sur l'onglet, car
