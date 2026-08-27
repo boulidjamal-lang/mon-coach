@@ -648,7 +648,7 @@
     @keyframes fadeInModal { from { opacity: 0; } to { opacity: 1; } }
     .modal.show { display: flex; }
     .modal-content {
-      background: var(--verre-fort);
+      background: var(--verre-sheen), var(--verre-fort);
       -webkit-backdrop-filter: blur(var(--verre-flou)) saturate(var(--verre-sat));
       backdrop-filter: blur(var(--verre-flou)) saturate(var(--verre-sat));
       border: 1px solid var(--verre-brd);
@@ -969,7 +969,7 @@
   <div class="app-bar-inner">
     <h2><span class="eclair">🏋️</span> MON COACH</h2>
     <div class="header-buttons">
-      <button class="puce-sync hidden" id="puce-sync" data-etat="attente" onclick="synchroniser('manuel')" title="État de la synchronisation">
+      <button class="puce-sync hidden" id="puce-sync" data-etat="attente" onclick="ouvrirModal('sync-info-modal')" title="État de la synchronisation">
         <span class="pastille" aria-hidden="true"></span><span id="puce-sync-txt">—</span>
       </button>
       <button class="btn-icone" id="btn-compte" onclick="ouvrirModal('compte-modal')" aria-label="Se connecter" title="Se connecter">👤</button>
@@ -1209,6 +1209,32 @@
 </div>
 
 <!-- Modal Paramètres Généraux -->
+<!-- Modal État de synchronisation (ouverte depuis le bouton "à jour" / "☁️" de l'écran principal) -->
+<div id="sync-info-modal" class="modal" role="dialog" aria-modal="true" aria-labelledby="titre-sync-info">
+  <div class="modal-content">
+    <div class="modal-entete">
+      <h3 id="titre-sync-info">☁️ Synchronisation</h3>
+      <button class="close-modal" onclick="fermerModal('sync-info-modal')" aria-label="Fermer">&times;</button>
+    </div>
+
+    <div class="bloc-verre" style="padding:15px; margin-bottom:16px;">
+      <span class="puce-sync" id="popup-puce-sync" data-etat="attente" style="cursor:default;">
+        <span class="pastille" aria-hidden="true"></span><span id="popup-puce-sync-txt">—</span>
+      </span>
+      <p class="note" id="popup-note-sync" style="margin:10px 0 0;"></p>
+    </div>
+
+    <div class="bloc-verre" style="padding:15px; margin-bottom:16px;">
+      <label style="display:block;font-weight:700;font-size:0.72rem;margin-bottom:6px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.8px;">🥗 Base d'aliments (Ciqual)</label>
+      <p class="note" id="popup-note-base" style="margin:0;"></p>
+      <p class="note" id="popup-note-schema" style="margin:8px 0 0;"></p>
+    </div>
+
+    <button class="btn btn-primary" onclick="synchroniser('manuel')">🔄 Synchroniser maintenant</button>
+    <button class="btn btn-secondaire" style="margin-top:10px; width:100%;" onclick="fermerModal('sync-info-modal'); ouvrirModal('settings-modal');">⚙️ Réglages de synchronisation</button>
+  </div>
+</div>
+
 <!-- Modal Compte (connexion) -->
 <div id="compte-modal" class="modal" role="dialog" aria-modal="true" aria-labelledby="titre-compte">
   <div class="modal-content">
@@ -1318,15 +1344,9 @@
         <input type="text" id="supa-id" placeholder="moi" autocomplete="off" onchange="enregistrerSupabase()">
         <small style="color:var(--text-muted); display:block; margin-top:6px; font-size:0.75rem;">Le même sur tous tes appareils pour qu'ils partagent les mêmes données. Inutile si tu utilises un compte (👤 en haut) : il prend automatiquement le relais, et ce champ est alors désactivé.</small>
       </div>
-      <div class="input-group">
-        <label for="supa-table">Table des aliments</label>
-        <input type="text" id="supa-table" placeholder="aliments" autocomplete="off" onchange="enregistrerSupabase()">
-        <small style="color:var(--text-muted); display:block; margin-top:6px; font-size:0.75rem;">Si ta base existe déjà, mets son nom ici : l'application lira dedans sans rien modifier.</small>
-      </div>
 
       <p class="note" id="note-sync" style="margin:10px 0 0;"></p>
-      <p class="note" id="note-base" style="margin:4px 0 0;"></p>
-      <p class="note" id="note-schema" style="margin:4px 0 0;"></p>
+      <p class="note" style="margin:8px 0 0;">L'état détaillé de la synchronisation (base d'aliments, colonnes détectées) est visible dans le pop-up ☁️ « À jour » sur l'écran principal.</p>
       <details style="margin-top:10px;">
         <summary style="cursor:pointer;font-size:0.75rem;color:var(--text-muted);font-weight:700;">Préparer la table des aliments</summary>
         <p class="note" style="margin:10px 0 0;">À exécuter une fois. Ajoute le code-barres, la recherche sans accents, et l'index qui la rend instantanée. Aucune donnée existante n'est touchée.</p>
@@ -1474,6 +1494,10 @@ const GEMINI_MODEL = 'gemini-3.5-flash';
 const SUPA_URL_DEFAUT = 'https://nhbvmqubwbzrddndisfr.supabase.co';
 const SUPA_CLE_DEFAUT = 'sb_publishable_giF6iGxgrL9b3Ks9sAmtcw_qzONC3XE';
 const GEMINI_CLE_DEFAUT = 'AQ.Ab8RN6IjwTssERY62rHdwhQYuH_KolGyGinorJ1lErloVIKN6Q';
+// Table Ciqual fixe : elle ne change jamais d'un appareil à l'autre, ça n'a
+// donc pas sa place dans un champ de réglages que quelqu'un pourrait modifier
+// par erreur et perdre l'accès à toute la base d'aliments.
+const SUPA_TABLE_DEFAUT = 'ciqual_aliments';
 
 const MEALS = ['breakfast', 'lunch', 'snack', 'dinner'];
 const MEAL_LABELS = { breakfast: '🌅 Petit-déjeuner', lunch: '🍴 Déjeuner', snack: '🍪 Collation', dinner: '🍽️ Dîner' };
@@ -3424,7 +3448,6 @@ function depuisFeuille(mode) {
    toute la machinerie de fusion pour un cas qui n'arrive presque jamais.
    ===================================================================== */
 const SUPA_URL_LS = 'mc_supa_url', SUPA_KEY_LS = 'mc_supa_key', SUPA_ID_LS = 'mc_supa_id';
-const SUPA_TABLE_LS = 'mc_supa_table';
 let supa = null;
 let syncTimer = null;
 let syncEnCours = false;
@@ -3450,9 +3473,9 @@ function confSupabase() {
       // qui isole vraiment les données une fois les policies RLS activées.
       id: (sessionUtilisateur && sessionUtilisateur.id)
         || (localStorage.getItem(SUPA_ID_LS) || 'moi').trim() || 'moi',
-      table: (localStorage.getItem(SUPA_TABLE_LS) || 'aliments').trim() || 'aliments'
+      table: SUPA_TABLE_DEFAUT
     };
-  } catch (e) { return { url: SUPA_URL_DEFAUT, cle: SUPA_CLE_DEFAUT, id: 'moi', table: 'aliments' }; }
+  } catch (e) { return { url: SUPA_URL_DEFAUT, cle: SUPA_CLE_DEFAUT, id: 'moi', table: SUPA_TABLE_DEFAUT }; }
 }
 
 /* Ecoute les changements de session (connexion, déconnexion, jeton
@@ -3583,7 +3606,6 @@ function enregistrerSupabase() {
     localStorage.setItem(SUPA_URL_LS, document.getElementById('supa-url').value.trim());
     localStorage.setItem(SUPA_KEY_LS, document.getElementById('supa-key').value.trim());
     localStorage.setItem(SUPA_ID_LS, document.getElementById('supa-id').value.trim() || 'moi');
-    localStorage.setItem(SUPA_TABLE_LS, document.getElementById('supa-table').value.trim() || 'aliments');
   } catch (e) {}
   schemaAliments = null;
   cacheAliments.clear();
@@ -3592,13 +3614,23 @@ function enregistrerSupabase() {
 }
 
 function majEtatSync(etat, message) {
-  const p = document.getElementById('puce-sync');
-  const t = document.getElementById('puce-sync-txt');
   const libelles = { ok: 'À jour', sync: 'Envoi…', erreur: 'Erreur', attente: 'En attente', 'hors-ligne': 'Hors ligne' };
-  if (p) p.setAttribute('data-etat', etat);
-  if (t) t.textContent = libelles[etat] || etat;
-  const n = document.getElementById('note-sync');
-  if (n && message !== undefined) n.textContent = message;
+  // Le bouton de l'écran principal ET la puce dupliquée dans le pop-up
+  // partagent le même état visuel, pour ne jamais se contredire.
+  ['puce-sync', 'popup-puce-sync'].forEach(id => {
+    const p = document.getElementById(id);
+    if (p) p.setAttribute('data-etat', etat);
+  });
+  ['puce-sync-txt', 'popup-puce-sync-txt'].forEach(id => {
+    const t = document.getElementById(id);
+    if (t) t.textContent = libelles[etat] || etat;
+  });
+  if (message !== undefined) {
+    ['note-sync', 'popup-note-sync'].forEach(id => {
+      const n = document.getElementById(id);
+      if (n) n.textContent = message;
+    });
+  }
 }
 
 /* Chaque enregistrement local programme un envoi, mais on laisse retomber la
@@ -3991,7 +4023,7 @@ async function chercherAlimentsSupabase(q) {
     return {
       aliments: [],
       probleme: manquante
-        ? `La table « ${nomTable} » est introuvable. Corrige son nom dans ⚙️ Profil, ou exécute le SQL fourni.`
+        ? `La table « ${nomTable} » est introuvable dans ton projet Supabase. Exécute le SQL fourni dans ⚙️ Profil → Synchronisation.`
         : "Base d'aliments injoignable (" + m + ")."
     };
   }
@@ -4000,8 +4032,8 @@ async function chercherAlimentsSupabase(q) {
 /* Compte les entrées disponibles : c'est ce qui permet de dire « ta base est
    vide » plutôt que « aucun résultat », et de confirmer un import réussi. */
 async function compterAliments() {
-  const n = document.getElementById('note-base');
-  const d = document.getElementById('note-schema');
+  const n = document.getElementById('popup-note-base');
+  const d = document.getElementById('popup-note-schema');
   if (d) d.textContent = '';
   const nomTable = confSupabase().table;
   if (!supa) {
@@ -4022,14 +4054,14 @@ async function compterAliments() {
     if (nbAlimentsBase) await afficherSchemaDetecte();
   } catch (e) {
     nbAlimentsBase = null;
-    if (n) n.textContent = `Table « ${nomTable} » introuvable. Corrige son nom ci-dessus, ou exécute le SQL plus bas.`;
+    if (n) n.textContent = `Table « ${nomTable} » introuvable dans ton projet Supabase. Exécute le SQL fourni plus bas pour la préparer.`;
   }
 }
 
 /* On montre ce que l'application a compris de la table. Une colonne mal
    devinée fausserait toutes les valeurs en silence : autant la voir. */
 async function afficherSchemaDetecte() {
-  const d = document.getElementById('note-schema');
+  const d = document.getElementById('popup-note-schema');
   if (!d) return;
   try {
     const s = await detecterSchemaAliments(true);
@@ -4217,7 +4249,6 @@ window.addEventListener('load', () => {
   document.getElementById('supa-url').value = localStorage.getItem(SUPA_URL_LS) || '';
   document.getElementById('supa-key').value = localStorage.getItem(SUPA_KEY_LS) || '';
   document.getElementById('supa-id').value = cs.id;
-  document.getElementById('supa-table').value = cs.table;
   document.getElementById('bloc-sql').textContent = SQL_SUPABASE;
   document.getElementById('bloc-sql-accents').textContent = sqlAccents();
   document.getElementById('bloc-sql-rls').textContent = sqlRls();
