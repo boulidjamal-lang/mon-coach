@@ -4177,8 +4177,21 @@ async function chargerAdmin() {
 async function supprimerCompteAdmin(utilisateur) {
   if (!confirm("Supprimer DÉFINITIVEMENT toutes les journées et le profil de ce compte ? Cette action est irréversible.")) return;
   try {
-    await supa.from('journees').delete().eq('utilisateur', utilisateur);
-    await supa.from('profil').delete().eq('utilisateur', utilisateur);
+    // Supabase-js ne lève pas d'exception quand une policy RLS bloque une
+    // suppression : la requête « réussit » techniquement en ne supprimant
+    // rien. On vérifie donc chaque .error explicitement, puis on recompte
+    // après coup pour être sûr que les lignes ont vraiment disparu.
+    const rj = await supa.from('journees').delete().eq('utilisateur', utilisateur);
+    if (rj.error) throw new Error('journées : ' + rj.error.message);
+    const rp = await supa.from('profil').delete().eq('utilisateur', utilisateur);
+    if (rp.error) throw new Error('profil : ' + rp.error.message);
+
+    const verif = await supa.from('journees').select('jour', { count: 'exact', head: true }).eq('utilisateur', utilisateur);
+    if ((verif.count || 0) > 0) {
+      alert(`⚠️ ${verif.count} journée(s) sont encore présentes après la suppression : la policy de sécurité bloque probablement l'écriture pour l'administrateur. Vérifie que le tout dernier script SQL a bien été exécuté (avec le OR sur ton email dans la policy "journees par compte").`);
+    } else {
+      alert('Compte supprimé.');
+    }
     document.getElementById('admin-stats-zone').classList.add('hidden');
     chargerAdmin();
   } catch (e) {
