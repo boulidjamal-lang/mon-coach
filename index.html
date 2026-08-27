@@ -1348,6 +1348,15 @@
     </div>
 
     <hr class="sep">
+    <p class="note" style="margin:0 0 10px;">⚖️ <strong>Balance connectée</strong> — lie automatiquement les pesées de ta balance Withings au poids enregistré ici, sans ressaisie manuelle.</p>
+    <div id="withings-deconnecte-compte">
+      <button class="btn btn-secondaire" style="width:100%;" onclick="connexionWithings()">Connecter ma balance Withings</button>
+    </div>
+    <div id="withings-connecte-compte" class="hidden">
+      <button class="btn btn-secondaire" style="width:100%;" onclick="deconnexionWithings()">Déconnecter ma balance Withings</button>
+    </div>
+
+    <hr class="sep">
     <p class="note">Vous partagez le même téléphone à tour de rôle plutôt que d'avoir chacun le vôtre ? Déconnecte-toi puis vide les données de l'appareil avant que l'autre personne se connecte, pour ne pas mélanger vos journées (et vos clés Gemini respectives).</p>
     <button class="btn btn-secondaire" style="width:100%;" onclick="viderDonneesAppareil()">🗑️ Vider les données de cet appareil</button>
 
@@ -1366,6 +1375,14 @@
     <div class="input-group">
       <label for="mes-poids">Poids total (kg)</label>
       <input type="number" id="mes-poids" step="0.1" placeholder="70" inputmode="decimal">
+    </div>
+
+    <div id="withings-deconnecte">
+      <button class="btn btn-secondaire" style="margin:-6px 0 14px;" onclick="connexionWithings()">⚖️ Connecter ma balance Withings</button>
+    </div>
+    <div id="withings-connecte" class="hidden">
+      <button class="btn btn-secondaire" id="btn-import-withings" style="margin:-6px 0 6px;" onclick="importerPoidsWithings()">⚖️ Importer ma dernière pesée Withings</button>
+      <p class="note" id="note-import-withings" style="margin:0 0 14px;"></p>
     </div>
 
     <p class="note" style="margin:4px 0 14px;">Les mesures par partie du corps sont optionnelles : ne renseigne que ce que ta balance ou ton mètre ruban te donne. Laisse le reste vide.</p>
@@ -1580,6 +1597,26 @@ const GEMINI_CLE_DEFAUT = 'AQ.Ab8RN6IjwTssERY62rHdwhQYuH_KolGyGinorJ1lErloVIKN6Q
 // par erreur et perdre l'accès à toute la base d'aliments.
 const SUPA_TABLE_DEFAUT = 'ciqual_aliments';
 
+/* =====================================================================
+   BALANCE WITHINGS — récupération automatique du poids
+   Comme pour Gemini, la clé secrète est visible dans ce fichier : l'API
+   Withings répond aux appels directs depuis un navigateur (CORS ouvert),
+   donc pas besoin de serveur intermédiaire. Le compromis assumé est que
+   n'importe qui pourrait lire ce secret dans le code source — il ne sert
+   qu'à identifier CETTE application auprès de Withings, pas à accéder aux
+   données de qui que ce soit sans qu'il se connecte lui-même avec SON
+   propre compte Withings. Le jeton obtenu après connexion (access_token/
+   refresh_token), lui, est réellement personnel : il est stocké dans le
+   profil du compte connecté (comme la clé Gemini), donc jamais partagé
+   entre toi et ta femme si vous avez chacun votre compte.
+   ===================================================================== */
+const WITHINGS_CLIENT_ID = '3341d599f2c93e3b754d28ae6fbd69af0e259f1127d2c12c738991dccb012924';
+const WITHINGS_CLIENT_SECRET = '97f4fc7a92106d6e5369b8f5b1e0b5837cbccb84d31dd322c2e7450d652077ae';
+// Doit correspondre EXACTEMENT à l'URL enregistrée dans le tableau de bord
+// développeur Withings. À changer ici ET là-bas si l'appli déménage.
+const WITHINGS_REDIRECT_URI = 'https://boulidjamal-lang.github.io/mon-coach/';
+const WITHINGS_TOKEN_LS = 'mc_withings_token';
+
 const MEALS = ['breakfast', 'lunch', 'snack', 'dinner'];
 const MEAL_LABELS = { breakfast: '🌅 Petit-déjeuner', lunch: '🍴 Déjeuner', snack: '🍪 Collation', dinner: '🍽️ Dîner' };
 /* ---------------------------------------------------------------------
@@ -1686,6 +1723,7 @@ function loadData() {
   try { appData = JSON.parse(localStorage.getItem(STORAGE_KEY)) || {}; } catch (e) { appData = {}; }
   try { userProfile = Object.assign(userProfile, JSON.parse(localStorage.getItem(PROFILE_KEY)) || {}); } catch (e) {}
   appliquerGeminiKeyEffective();
+  majUIWithings();
 }
 /* localStorage.setItem lève QuotaExceededError quand l'espace est plein, et lève
    systématiquement en navigation privée Safari. Sans capture, l'exception
@@ -3518,6 +3556,7 @@ function importerDonnees(event) {
       Object.keys(appData).forEach(j => { appData[j].maj = maintenant; });
       if (data.userProfile) userProfile = Object.assign(userProfile, data.userProfile);
       appliquerGeminiKeyEffective();
+      majUIWithings();
       if (saveData()) { renderApp(); alert(`${nbJours} journée(s) importée(s).`); }
     } catch (err) {
       alert('Fichier illisible : ' + err.message);
@@ -3857,6 +3896,155 @@ function viderDonneesAppareil() {
   location.reload();
 }
 
+/* =====================================================================
+   BALANCE WITHINGS
+   Le jeton (access_token/refresh_token) est stocké dans userProfile.withings,
+   comme la clé Gemini : personnel au compte connecté, synchronisé sur tous
+   ses appareils, jamais partagé avec un autre compte sur le même projet
+   Supabase. Repli sur le stockage local si personne n'est connecté.
+   ===================================================================== */
+function tokenWithings() {
+  if (userProfile.withings) return userProfile.withings;
+  try { return JSON.parse(localStorage.getItem(WITHINGS_TOKEN_LS) || 'null'); } catch (e) { return null; }
+}
+
+function enregistrerTokenWithings(t) {
+  userProfile.withings = t;
+  try { localStorage.setItem(WITHINGS_TOKEN_LS, JSON.stringify(t)); } catch (e) {}
+  saveData();
+  majUIWithings();
+}
+
+function deconnexionWithings() {
+  userProfile.withings = null;
+  try { localStorage.removeItem(WITHINGS_TOKEN_LS); } catch (e) {}
+  saveData();
+  majUIWithings();
+}
+
+function majUIWithings() {
+  const t = tokenWithings();
+  const paires = [
+    ['withings-deconnecte', 'withings-connecte'],
+    ['withings-deconnecte-compte', 'withings-connecte-compte']
+  ];
+  paires.forEach(([offId, onId]) => {
+    const zoneOff = document.getElementById(offId);
+    const zoneOn = document.getElementById(onId);
+    if (zoneOff) zoneOff.classList.toggle('hidden', !!t);
+    if (zoneOn) zoneOn.classList.toggle('hidden', !t);
+  });
+}
+
+/* Étape 1 : redirige vers la page de connexion Withings. L'utilisateur revient
+   ensuite sur cette même URL avec un ?code=... dans l'adresse (voir plus bas,
+   au chargement de la page). */
+function connexionWithings() {
+  const params = new URLSearchParams({
+    response_type: 'code',
+    client_id: WITHINGS_CLIENT_ID,
+    state: 'moncoach',
+    scope: 'user.metrics',
+    redirect_uri: WITHINGS_REDIRECT_URI
+  });
+  window.location.href = 'https://account.withings.com/oauth2_user/authorize2?' + params.toString();
+}
+
+/* Étape 2 : appelée automatiquement au chargement si l'URL contient un code
+   (donc juste après le retour de Withings). Échange ce code contre les
+   jetons d'accès. */
+async function traiterRetourWithings() {
+  const params = new URLSearchParams(window.location.search);
+  const code = params.get('code');
+  if (!code) return;
+  // On retire le code de l'URL tout de suite : rechargée par erreur, la page
+  // ne doit pas retenter le même code (Withings le refuse une 2e fois).
+  window.history.replaceState({}, '', window.location.pathname);
+  try {
+    const resp = await fetch('https://wbsapi.withings.net/v2/oauth2', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams({
+        action: 'requesttoken', grant_type: 'authorization_code',
+        client_id: WITHINGS_CLIENT_ID, client_secret: WITHINGS_CLIENT_SECRET,
+        code, redirect_uri: WITHINGS_REDIRECT_URI
+      })
+    });
+    const data = await resp.json();
+    if (data.status !== 0) throw new Error('Withings a refusé la connexion (code ' + data.status + ').');
+    const b = data.body;
+    enregistrerTokenWithings({
+      access_token: b.access_token, refresh_token: b.refresh_token,
+      expire_le: Date.now() + (b.expires_in - 60) * 1000, userid: b.userid
+    });
+    alert('Balance Withings connectée !');
+  } catch (e) {
+    alert('Connexion à Withings impossible : ' + e.message);
+  }
+}
+
+/* Rafraîchit le jeton si besoin (durée de vie ~3h) et renvoie un access_token
+   valide, ou null si personne n'est connecté / la reconnexion a échoué. */
+async function withingsAccessTokenValide() {
+  let t = tokenWithings();
+  if (!t) return null;
+  if (Date.now() < t.expire_le) return t.access_token;
+  try {
+    const resp = await fetch('https://wbsapi.withings.net/v2/oauth2', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams({
+        action: 'requesttoken', grant_type: 'refresh_token',
+        client_id: WITHINGS_CLIENT_ID, client_secret: WITHINGS_CLIENT_SECRET,
+        refresh_token: t.refresh_token
+      })
+    });
+    const data = await resp.json();
+    if (data.status !== 0) throw new Error('jeton refusé');
+    const b = data.body;
+    t = { access_token: b.access_token, refresh_token: b.refresh_token, expire_le: Date.now() + (b.expires_in - 60) * 1000, userid: b.userid };
+    enregistrerTokenWithings(t);
+    return t.access_token;
+  } catch (e) {
+    // Le refresh_token peut lui aussi expirer (longue inactivité) : dans ce
+    // cas il faut se reconnecter, pas de session à réparer silencieusement.
+    return null;
+  }
+}
+
+/* Va chercher la dernière pesée sur Withings et pré-remplit le champ Poids
+   de la modale Mesures — la personne garde la main pour vérifier et
+   compléter les parties du corps avant d'enregistrer. */
+async function importerPoidsWithings() {
+  const bouton = document.getElementById('btn-import-withings');
+  const texteInitial = bouton ? bouton.textContent : '';
+  if (bouton) { bouton.disabled = true; bouton.textContent = '⏳ Récupération…'; }
+  try {
+    const token = await withingsAccessTokenValide();
+    if (!token) { alert("La connexion à Withings a expiré ou n'a pas été faite : reconnecte-toi dans ⚙️ Réglages."); return; }
+    const resp = await fetch('https://wbsapi.withings.net/measure?' + new URLSearchParams({
+      action: 'getmeas', meastypes: '1', category: 1
+    }), { headers: { Authorization: 'Bearer ' + token } });
+    const data = await resp.json();
+    if (data.status !== 0 || !data.body || !data.body.measuregrps || !data.body.measuregrps.length) {
+      alert("Aucune pesée trouvée sur ton compte Withings.");
+      return;
+    }
+    // Les groupes ne sont pas forcément triés : on prend le plus récent.
+    const dernier = data.body.measuregrps.reduce((a, b) => (b.date > a.date ? b : a));
+    const mesurePoids = dernier.measures.find(m => m.type === 1);
+    if (!mesurePoids) { alert("Pas de mesure de poids dans cette pesée."); return; }
+    const poids = mesurePoids.value * Math.pow(10, mesurePoids.unit);
+    document.getElementById('mes-poids').value = Math.round(poids * 10) / 10;
+    const note = document.getElementById('note-import-withings');
+    if (note) note.textContent = `Pesée du ${new Date(dernier.date * 1000).toLocaleDateString('fr-FR')} importée — vérifie puis enregistre.`;
+  } catch (e) {
+    alert('Erreur pendant la récupération : ' + e.message);
+  } finally {
+    if (bouton) { bouton.disabled = false; bouton.textContent = texteInitial; }
+  }
+}
+
 function initSupabase() {
   const c = confSupabase();
   supa = null;
@@ -3988,6 +4176,7 @@ async function synchroniser(raison) {
     if (rp.data && (Number(rp.data.maj) || 0) > majProfilLocal) {
       userProfile = Object.assign(userProfile, rp.data.donnees, { maj: Number(rp.data.maj) || 0 });
       appliquerGeminiKeyEffective();
+      majUIWithings();
       changementLocal = true;
     } else if (!rp.data || majProfilLocal > (Number(rp.data.maj) || 0)) {
       const { error: e3 } = await supa.from('profil')
@@ -4565,6 +4754,8 @@ window.addEventListener('load', () => {
 
   renderApp();
   majNoteCleIA();
+  majUIWithings();
+  traiterRetourWithings();
   let ecran = 'repas';
   try { ecran = localStorage.getItem('elite_ecran') || 'repas'; } catch (e) {}
   allerA(ecran);
