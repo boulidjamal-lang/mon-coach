@@ -5204,7 +5204,15 @@ window.addEventListener('load', () => {
   document.getElementById('bloc-sql').textContent = SQL_SUPABASE;
   document.getElementById('bloc-sql-accents').textContent = sqlAccents();
   document.getElementById('bloc-sql-rls').textContent = sqlRls();
-  if (initSupabase()) { initAuth(); synchroniser('démarrage'); compterAliments(); }
+  // Pas de synchroniser('démarrage') ici : la vérification de session est
+  // asynchrone, donc juste après initAuth() sessionUtilisateur est encore
+  // null pendant un court instant. Une synchro lancée pile à ce moment-là
+  // utilisait l'identifiant de repli ("moi") au lieu du compte réel — sur un
+  // appareil qui avait déjà des données locales, ça revenait à écrire dans
+  // le tout premier compartiment "moi", partagé, à CHAQUE ouverture de
+  // l'appli. initAuth() se charge lui-même de déclencher la bonne synchro
+  // (avec le vrai identifiant) une fois la session connue.
+  if (initSupabase()) { initAuth(); compterAliments(); }
   else {
     compterAliments();
     // Sans client Supabase (pas de réseau au tout premier lancement, le plus
