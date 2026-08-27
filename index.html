@@ -1245,7 +1245,7 @@
     </div>
 
     <hr class="sep">
-    <p class="note">Vous partagez le même téléphone à tour de rôle plutôt que d'avoir chacun le vôtre ? Déconnecte-toi puis vide les données de l'appareil avant que l'autre personne se connecte, pour ne pas mélanger vos journées.</p>
+    <p class="note">Vous partagez le même téléphone à tour de rôle plutôt que d'avoir chacun le vôtre ? Déconnecte-toi puis vide les données de l'appareil avant que l'autre personne se connecte, pour ne pas mélanger vos journées (et vos clés Gemini respectives).</p>
     <button class="btn btn-secondaire" style="width:100%;" onclick="viderDonneesAppareil()">🗑️ Vider les données de cet appareil</button>
 
     <button class="btn btn-primary" style="margin-top:16px;" onclick="fermerModal('compte-modal')">Fermer</button>
@@ -1303,14 +1303,14 @@
       <label style="display:block;font-weight:700;font-size:0.72rem;margin-bottom:6px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.8px;">
         ☁️ Synchronisation (facultative)
       </label>
-      <p class="note">Tout est enregistré sur cet appareil, y compris hors ligne. Si tu renseignes un projet Supabase, l'application y recopie tes journées dès qu'elle a du réseau, et les récupère sur tes autres appareils.</p>
+      <p class="note">Tout est enregistré sur cet appareil, y compris hors ligne. L'application est préconfigurée avec le projet Supabase par défaut : tu n'as rien à saisir ici pour que ça fonctionne. Ne remplis les champs ci-dessous que si tu veux utiliser un <em>autre</em> projet ; laisse-les vides pour revenir automatiquement au projet par défaut (y compris s'il est mis à jour plus tard).</p>
 
       <div class="input-group">
-        <label for="supa-url">URL du projet</label>
+        <label for="supa-url">URL du projet <small style="font-weight:400;color:var(--text-muted);">(optionnel — vide = projet par défaut)</small></label>
         <input type="text" id="supa-url" placeholder="https://xxxx.supabase.co" autocomplete="off" onchange="enregistrerSupabase()">
       </div>
       <div class="input-group">
-        <label for="supa-key">Clé publique (anon)</label>
+        <label for="supa-key">Clé publique (anon) <small style="font-weight:400;color:var(--text-muted);">(optionnel)</small></label>
         <input type="password" id="supa-key" placeholder="eyJhbGci…" autocomplete="off" onchange="enregistrerSupabase()">
       </div>
       <div class="input-group">
@@ -1353,7 +1353,7 @@
     <div class="input-group">
       <label for="gemini-key-input">🔑 Clé API Google Gemini</label>
       <input type="password" id="gemini-key-input" placeholder="AIzaSy…" onchange="sauvegarderParametresGlobaux()">
-      <small style="color:var(--text-muted); display: block; margin-top: 6px; font-size:0.75rem;">Obtenez une clé sur <strong>aistudio.google.com</strong>. Elle reste sur cet appareil.</small>
+      <small style="color:var(--text-muted); display: block; margin-top: 6px; font-size:0.75rem;">Liée à ton compte (👤), pas à cet appareil : si toi et ta femme avez chacun votre clé, chacun garde son propre quota de requêtes, sur n'importe quel appareil où vous vous connectez. Une clé par défaut est utilisée tant que ce champ est vide. Obtiens ta propre clé sur <strong>aistudio.google.com</strong>.</small>
     </div>
 
     <div class="input-group">
@@ -1460,6 +1460,21 @@ const PROFILE_KEY = 'elite_fitness_profile_v1';
 const GEMINI_KEY_LS = 'gemini_key_v43';
 const GEMINI_MODEL = 'gemini-3.5-flash';
 
+/* =====================================================================
+   VALEURS PAR DÉFAUT DE L'APPLICATION
+   Servent tant que rien n'est enregistré localement (localStorage vide).
+   Si tu modifies ces constantes dans une future mise à jour du code,
+   tout appareil qui n'a jamais rempli le champ correspondant dans les
+   réglages récupère automatiquement la nouvelle valeur au prochain
+   chargement — c'est ce qui permet de « toujours prendre la dernière
+   version disponible ». Un appareil qui a explicitement renseigné sa
+   propre valeur dans les réglages garde la sienne ; pour revenir au
+   défaut, il suffit de vider le champ concerné et d'enregistrer.
+   ===================================================================== */
+const SUPA_URL_DEFAUT = 'https://nhbvmqubwbzrddndisfr.supabase.co';
+const SUPA_CLE_DEFAUT = 'sb_publishable_giF6iGxgrL9b3Ks9sAmtcw_qzONC3XE';
+const GEMINI_CLE_DEFAUT = 'AQ.Ab8RN6IjwTssERY62rHdwhQYuH_KolGyGinorJ1lErloVIKN6Q';
+
 const MEALS = ['breakfast', 'lunch', 'snack', 'dinner'];
 const MEAL_LABELS = { breakfast: '🌅 Petit-déjeuner', lunch: '🍴 Déjeuner', snack: '🍪 Collation', dinner: '🍽️ Dîner' };
 /* ---------------------------------------------------------------------
@@ -1499,7 +1514,22 @@ let caloriesChartInstance = null, macrosChartInstance = null, stepsChartInstance
 let poidsChartInstance = null;
 
 let userProfile = { height: 175, age: 25, gender: 'm', weight: 70 };
-let geminiKey = localStorage.getItem(GEMINI_KEY_LS) || '';
+/* La clé Gemini est liée au COMPTE (via le profil synchronisé), pas à
+   l'appareil : chacun peut avoir la sienne, avec son propre quota, et la
+   retrouve automatiquement en se connectant depuis n'importe quel appareil.
+   Priorité : clé personnelle du compte connecté > ancienne clé enregistrée
+   localement sur cet appareil (rétrocompatibilité, mode sans compte) >
+   clé par défaut fournie avec l'application. */
+function appliquerGeminiKeyEffective() {
+  geminiKey = (userProfile.geminiKey || '').trim()
+    || localStorage.getItem(GEMINI_KEY_LS)
+    || GEMINI_CLE_DEFAUT;
+  const champ = document.getElementById('gemini-key-input');
+  if (champ) champ.value = userProfile.geminiKey || '';
+  majNoteCleIA();
+}
+
+let geminiKey = localStorage.getItem(GEMINI_KEY_LS) || GEMINI_CLE_DEFAUT;
 let appData = {};
 
 /* La base d'aliments vit désormais uniquement dans Supabase.
@@ -1533,6 +1563,7 @@ function formatDateDisplay(dateStr) {
 function loadData() {
   try { appData = JSON.parse(localStorage.getItem(STORAGE_KEY)) || {}; } catch (e) { appData = {}; }
   try { userProfile = Object.assign(userProfile, JSON.parse(localStorage.getItem(PROFILE_KEY)) || {}); } catch (e) {}
+  appliquerGeminiKeyEffective();
 }
 /* localStorage.setItem lève QuotaExceededError quand l'espace est plein, et lève
    systématiquement en navigation privée Safari. Sans capture, l'exception
@@ -1889,9 +1920,13 @@ function sauvegarderParametresJour() {
 }
 
 function sauvegarderParametresGlobaux() {
-  geminiKey = document.getElementById('gemini-key-input').value.trim();
-  localStorage.setItem(GEMINI_KEY_LS, geminiKey);
-  majNoteCleIA();
+  // Enregistrée dans le profil (synchronisé par compte) : chacun retrouve
+  // sa propre clé en se connectant, sur n'importe quel appareil. On garde
+  // aussi une copie locale pour le mode sans compte / hors ligne.
+  const saisie = document.getElementById('gemini-key-input').value.trim();
+  userProfile.geminiKey = saisie;
+  localStorage.setItem(GEMINI_KEY_LS, saisie);
+  appliquerGeminiKeyEffective();
   userProfile.gender = document.getElementById('base-gender').value;
   userProfile.age = Number(document.getElementById('base-age').value) || 25;
   userProfile.height = Number(document.getElementById('base-height').value) || 175;
@@ -3178,6 +3213,7 @@ function importerDonnees(event) {
       const maintenant = Date.now();
       Object.keys(appData).forEach(j => { appData[j].maj = maintenant; });
       if (data.userProfile) userProfile = Object.assign(userProfile, data.userProfile);
+      appliquerGeminiKeyEffective();
       if (saveData()) { renderApp(); alert(`${nbJours} journée(s) importée(s).`); }
     } catch (err) {
       alert('Fichier illisible : ' + err.message);
@@ -3408,15 +3444,15 @@ let sessionUtilisateur = null; // { id, email } une fois connecté, sinon null
 function confSupabase() {
   try {
     return {
-      url: (localStorage.getItem(SUPA_URL_LS) || '').trim(),
-      cle: (localStorage.getItem(SUPA_KEY_LS) || '').trim(),
+      url: (localStorage.getItem(SUPA_URL_LS) || '').trim() || SUPA_URL_DEFAUT,
+      cle: (localStorage.getItem(SUPA_KEY_LS) || '').trim() || SUPA_CLE_DEFAUT,
       // Un compte connecté prend le pas sur l'identifiant libre : c'est lui
       // qui isole vraiment les données une fois les policies RLS activées.
       id: (sessionUtilisateur && sessionUtilisateur.id)
         || (localStorage.getItem(SUPA_ID_LS) || 'moi').trim() || 'moi',
       table: (localStorage.getItem(SUPA_TABLE_LS) || 'aliments').trim() || 'aliments'
     };
-  } catch (e) { return { url: '', cle: '', id: 'moi', table: 'aliments' }; }
+  } catch (e) { return { url: SUPA_URL_DEFAUT, cle: SUPA_CLE_DEFAUT, id: 'moi', table: 'aliments' }; }
 }
 
 /* Ecoute les changements de session (connexion, déconnexion, jeton
@@ -3639,6 +3675,7 @@ async function synchroniser(raison) {
     const majProfilLocal = Number(userProfile.maj) || 0;
     if (rp.data && (Number(rp.data.maj) || 0) > majProfilLocal) {
       userProfile = Object.assign(userProfile, rp.data.donnees, { maj: Number(rp.data.maj) || 0 });
+      appliquerGeminiKeyEffective();
       changementLocal = true;
     } else if (!rp.data || majProfilLocal > (Number(rp.data.maj) || 0)) {
       const { error: e3 } = await supa.from('profil')
@@ -4167,14 +4204,18 @@ window.addEventListener('load', () => {
   try { densite = localStorage.getItem('elite_densite') || 'confort'; } catch (e) {}
   choisirDensite(densite);
 
-  document.getElementById('gemini-key-input').value = geminiKey;
+  // Champs volontairement vides quand aucune valeur n'a été enregistrée sur
+  // cet appareil : ça montre clairement qu'ils tournent sur les valeurs par
+  // défaut, plutôt que de laisser croire qu'une valeur a été saisie ici.
+  // (La clé Gemini est déjà remplie par appliquerGeminiKeyEffective(), appelée
+  // depuis loadData() ci-dessus — elle reflète le profil du compte connecté.)
   document.getElementById('base-gender').value = userProfile.gender;
   document.getElementById('base-age').value = userProfile.age;
   document.getElementById('base-height').value = userProfile.height;
 
   const cs = confSupabase();
-  document.getElementById('supa-url').value = cs.url;
-  document.getElementById('supa-key').value = cs.cle;
+  document.getElementById('supa-url').value = localStorage.getItem(SUPA_URL_LS) || '';
+  document.getElementById('supa-key').value = localStorage.getItem(SUPA_KEY_LS) || '';
   document.getElementById('supa-id').value = cs.id;
   document.getElementById('supa-table').value = cs.table;
   document.getElementById('bloc-sql').textContent = SQL_SUPABASE;
