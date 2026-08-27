@@ -10,7 +10,7 @@
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
   <meta http-equiv="Pragma" content="no-cache">
   <meta http-equiv="Expires" content="0">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Mon Coach — nutrition &amp; activité</title>
   <meta name="theme-color" content="#06070a" media="(prefers-color-scheme: dark)">
   <meta name="theme-color" content="#eaeef5" media="(prefers-color-scheme: light)">
@@ -175,7 +175,10 @@
 
     * { box-sizing: border-box; -webkit-font-smoothing: antialiased; }
 
-    html, body { min-height: 100%; }
+    /* Certains navigateurs (Safari iOS récent, notamment) ignorent
+       user-scalable=no par souci d'accessibilité : ce filet en plus bloque
+       le geste de pincement pour zoomer, sans empêcher le défilement normal. */
+    html, body { min-height: 100%; touch-action: pan-x pan-y; }
     body {
       font-family: 'Outfit', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
       background-color: var(--bg);
@@ -1032,6 +1035,7 @@
         <span class="pastille" aria-hidden="true"></span><span id="puce-sync-txt">—</span>
       </button>
       <button class="btn-icone" id="btn-compte" onclick="ouvrirModal('compte-modal')" aria-label="Se connecter" title="Se connecter">👤</button>
+      <button class="btn-icone hidden" id="btn-admin" onclick="ouvrirAdmin()" aria-label="Administration" title="Administration">👑</button>
       <button class="btn-icone" id="btn-theme" onclick="basculerTheme()" aria-label="Changer de thème" title="Thème">🌗</button>
       <button class="btn-icone" onclick="ouvrirModal('settings-modal')" aria-label="Profil et réglages" title="Profil">⚙️</button>
     </div>
@@ -1344,6 +1348,19 @@
 </div>
 
 <!-- Modal Compte (connexion) -->
+<!-- Modal Administration (visible uniquement pour le compte administrateur) -->
+<div id="admin-modal" class="modal" role="dialog" aria-modal="true" aria-labelledby="titre-admin">
+  <div class="modal-content" style="max-width:480px;">
+    <div class="modal-entete">
+      <h3 id="titre-admin">👑 Administration</h3>
+      <button class="close-modal" onclick="fermerModal('admin-modal')" aria-label="Fermer">&times;</button>
+    </div>
+    <p class="note" style="margin-top:-6px;">Tous les comptes utilisant ce projet Supabase. Les emails ne sont pas récupérables depuis l'appli — identifie les comptes par leurs données (poids, dernière activité).</p>
+    <div id="admin-liste"><p class="note">Chargement…</p></div>
+    <button class="btn btn-secondaire" style="margin-top:10px;" onclick="chargerAdmin()">🔄 Actualiser</button>
+  </div>
+</div>
+
 <div id="compte-modal" class="modal show" role="dialog" aria-modal="true" aria-labelledby="titre-compte">
   <div class="modal-content">
     <div class="modal-entete">
@@ -4042,6 +4059,8 @@ function majUICompte() {
   // Le champ « identifiant libre » n'a plus d'effet une fois connecté :
   // autant le désactiver pour ne pas laisser croire qu'il fait encore quelque chose.
   if (champId) champId.disabled = !!sessionUtilisateur;
+  const btnAdmin = document.getElementById('btn-admin');
+  if (btnAdmin) btnAdmin.classList.toggle('hidden', !(sessionUtilisateur && sessionUtilisateur.email === ADMIN_EMAIL));
 }
 
 function messageAuth(e) {
@@ -4100,6 +4119,62 @@ async function deconnexionCompte() {
 function oublierIdentifiants() {
   try { localStorage.removeItem(IDENTIFIANTS_LS); } catch (e) {}
   alert('Identifiants oubliés sur cet appareil.');
+}
+
+/* =====================================================================
+   ADMINISTRATION — visible et utilisable uniquement par ADMIN_EMAIL.
+   La vraie protection vient de la policy RLS ("acces journees"/"acces
+   profil" laissent passer auth.jwt()->>'email' = ADMIN_EMAIL) : ce contrôle
+   ici ne fait que masquer le bouton pour tout le monde d'autre, il ne
+   protège rien à lui seul.
+   ===================================================================== */
+function ouvrirAdmin() {
+  ouvrirModal('admin-modal');
+  chargerAdmin();
+}
+
+async function chargerAdmin() {
+  const conteneur = document.getElementById('admin-liste');
+  conteneur.innerHTML = '<p class="note">Chargement…</p>';
+  if (!supa) { conteneur.innerHTML = '<p class="note">Pas de connexion à Supabase.</p>'; return; }
+  try {
+    const [rp, rj] = await Promise.all([
+      supa.from('profil').select('utilisateur, donnees, maj'),
+      supa.from('journees').select('utilisateur')
+    ]);
+    if (rp.error) throw rp.error;
+    if (rj.error) throw rj.error;
+    const nbJourneesPar = {};
+    (rj.data || []).forEach(j => { nbJourneesPar[j.utilisateur] = (nbJourneesPar[j.utilisateur] || 0) + 1; });
+    const profils = rp.data || [];
+    if (!profils.length) { conteneur.innerHTML = '<p class="note">Aucun compte trouvé.</p>'; return; }
+    conteneur.innerHTML = profils.map(p => {
+      const d = p.donnees || {};
+      const nbJours = nbJourneesPar[p.utilisateur] || 0;
+      const dateMaj = p.maj ? new Date(Number(p.maj)).toLocaleDateString('fr-FR') : '—';
+      const estMoi = sessionUtilisateur && p.utilisateur === sessionUtilisateur.id;
+      const idAffiche = escapeHtml(String(p.utilisateur)).slice(0, 8);
+      return `
+        <div class="bloc-verre" style="padding:13px; margin-bottom:10px;">
+          <p style="margin:0 0 6px; font-weight:700;">${estMoi ? '👑 Toi' : '👤 Compte'} <span style="font-weight:400; color:var(--text-muted); font-size:0.72rem;">(${idAffiche}…)</span></p>
+          <p class="note" style="margin:0 0 10px;">${nbJours} journée(s) enregistrée(s)${d.age ? ' · ' + d.age + ' ans' : ''}${d.weight ? ' · ' + d.weight + ' kg' : ''} · dernière activité le ${dateMaj}</p>
+          ${estMoi ? '' : `<button class="btn btn-secondaire" style="width:100%;" onclick="supprimerCompteAdmin('${escapeHtml(String(p.utilisateur))}')">🗑️ Supprimer toutes ses données</button>`}
+        </div>`;
+    }).join('');
+  } catch (e) {
+    conteneur.innerHTML = '<p class="note">Erreur : ' + escapeHtml(e.message) + ' — as-tu bien exécuté le script SQL de sécurisation avec ton email admin ?</p>';
+  }
+}
+
+async function supprimerCompteAdmin(utilisateur) {
+  if (!confirm("Supprimer DÉFINITIVEMENT toutes les journées et le profil de ce compte ? Cette action est irréversible.")) return;
+  try {
+    await supa.from('journees').delete().eq('utilisateur', utilisateur);
+    await supa.from('profil').delete().eq('utilisateur', utilisateur);
+    chargerAdmin();
+  } catch (e) {
+    alert('Erreur pendant la suppression : ' + e.message);
+  }
 }
 
 /* Utile quand deux personnes se relaient sur le même appareil : les données
@@ -4825,23 +4900,28 @@ create policy "acces profil" on profil for all using (true) with check (true);
    les deux personnes se sont inscrites (bouton 👤), ce second script les
    remplace par des politiques qui vérifient réellement auth.uid() : chacun
    ne voit plus que ses propres lignes, même avec la même clé publique. */
+const ADMIN_EMAIL = 'jambou592@gmail.com';
+
 const SQL_RLS = `-- À exécuter UNE FOIS que toi et l'autre personne avez chacun créé un
 -- compte (bouton 👤 → Créer un compte). Idempotent : relancer ne casse rien.
 -- Avant ça, la table est accessible à quiconque a la clé publique du projet ;
 -- après, chaque compte ne peut lire/écrire que les lignes où
--- utilisateur = son propre auth.uid().
+-- utilisateur = son propre auth.uid() — sauf le compte administrateur
+-- (jambou592@gmail.com), qui voit et gère tout.
 
 drop policy if exists "acces journees" on journees;
+drop policy if exists "journees par compte" on journees;
 create policy "journees par compte" on journees
   for all
-  using (utilisateur = auth.uid()::text)
-  with check (utilisateur = auth.uid()::text);
+  using (utilisateur = auth.uid()::text or auth.jwt() ->> 'email' = 'jambou592@gmail.com')
+  with check (utilisateur = auth.uid()::text or auth.jwt() ->> 'email' = 'jambou592@gmail.com');
 
 drop policy if exists "acces profil" on profil;
+drop policy if exists "profil par compte" on profil;
 create policy "profil par compte" on profil
   for all
-  using (utilisateur = auth.uid()::text)
-  with check (utilisateur = auth.uid()::text);
+  using (utilisateur = auth.uid()::text or auth.jwt() ->> 'email' = 'jambou592@gmail.com')
+  with check (utilisateur = auth.uid()::text or auth.jwt() ->> 'email' = 'jambou592@gmail.com');
 
 -- Important : ces policies exigent d'être connecté (auth.uid() non nul).
 -- Si l'un de vous continue à utiliser l'identifiant libre sans jamais se
