@@ -1217,6 +1217,20 @@
 
     <div id="admin-stats-zone" class="hidden">
       <div class="titre-section">📊 Statistiques — <span id="admin-stats-nom"></span></div>
+
+      <div class="bloc-verre" style="padding:15px; margin-bottom:14px;">
+        <h3 style="margin-top:0;font-size:0.85rem;text-transform:uppercase;letter-spacing:0.8px;">🗓️ Période</h3>
+        <div class="plage">
+          <div class="plage-piste"><div class="plage-remplie" id="admin-plage-remplie"></div></div>
+          <input type="range" id="admin-slider-start" min="0" max="0" value="0" aria-label="Début de la période" oninput="filtrerStatsCompte()">
+          <input type="range" id="admin-slider-end" min="0" max="0" value="0" aria-label="Fin de la période" oninput="filtrerStatsCompte()">
+        </div>
+        <div class="plage-bornes">
+          <span><small>Du</small> <span id="admin-start-date-label">-</span></span>
+          <span><small>au</small> <span id="admin-end-date-label">-</span></span>
+        </div>
+      </div>
+
       <div class="fitness-card" id="admin-stats-resume"></div>
 
       <div class="titre-section">Calories consommées</div>
@@ -1430,6 +1444,27 @@
 </div>
 
 <!-- Modal Mesures corporelles (poids + composition par partie du corps) -->
+<!-- Modal Confirmation de suppression définitive (admin uniquement) -->
+<div id="confirm-suppression-modal" class="modal" role="dialog" aria-modal="true" aria-labelledby="titre-confirm-suppr">
+  <div class="modal-content">
+    <div class="modal-entete">
+      <h3 id="titre-confirm-suppr">⚠️ Suppression définitive</h3>
+      <button class="close-modal" onclick="fermerModal('confirm-suppression-modal')" aria-label="Fermer">&times;</button>
+    </div>
+    <p class="note" style="color:var(--danger); font-weight:700; margin-top:-4px;">Cette action est irréversible. Toutes les journées et le profil de <span id="confirm-suppr-email"></span> seront effacés pour toujours — impossible à annuler ou à rattacher ensuite.</p>
+    <div class="input-group">
+      <label for="confirm-suppr-saisie">Tape l'adresse email de ce compte pour confirmer</label>
+      <input type="email" id="confirm-suppr-saisie" autocomplete="off" placeholder="adresse@exemple.com">
+    </div>
+    <div class="input-group">
+      <label for="confirm-suppr-mdp">Ton mot de passe administrateur</label>
+      <input type="password" id="confirm-suppr-mdp" autocomplete="current-password">
+    </div>
+    <p class="note" id="confirm-suppr-note"></p>
+    <button class="btn btn-primary" id="confirm-suppr-bouton" onclick="validerSuppressionDefinitive()" disabled>Confirmer dans 30s…</button>
+  </div>
+</div>
+
 <div id="mesures-modal" class="modal" role="dialog" aria-modal="true" aria-labelledby="titre-mesures">
   <div class="modal-content">
     <div class="modal-entete">
@@ -4038,6 +4073,7 @@ function definirSessionUtilisateur(user) {
     // personne resterait coincée devant une modale qui refuse de se fermer.
     connexionObligatoire = false;
     fermerModal('compte-modal');
+    verifierStatutCompte();
   } else {
     // Déconnexion (ou aucune session au tout premier chargement) : l'appli
     // se reverrouille immédiatement, sans exception.
@@ -4047,6 +4083,26 @@ function definirSessionUtilisateur(user) {
   // Le changement d'identifiant ne rejoue pas automatiquement les données
   // déjà en mémoire : on relance juste une synchro vers/depuis le bon compte.
   if (!!sessionUtilisateur !== etaitConnecte) synchroniser(sessionUtilisateur ? 'connexion' : 'deconnexion');
+}
+
+/* Un compte suspendu ou marqué supprimé garde des identifiants valides côté
+   Supabase (on n'a pas la clé d'administration nécessaire pour vraiment les
+   invalider) — donc la connexion elle-même réussit toujours. C'est ici,
+   juste après, qu'on referme la porte : déconnexion immédiate avant que la
+   personne ait pu voir ou toucher quoi que ce soit. */
+async function verifierStatutCompte() {
+  if (!supa || !sessionUtilisateur) return;
+  try {
+    const { data, error } = await supa.rpc('mon_statut_compte');
+    if (error) return; // fonction pas encore installée (ancien script SQL) : on n'empêche rien
+    if (data === 'suspendu' || data === 'supprime') {
+      const message = data === 'suspendu'
+        ? 'Ce compte a été suspendu. Contacte l\'administrateur.'
+        : 'Ce compte a été supprimé. Contacte l\'administrateur.';
+      await supa.auth.signOut();
+      setTimeout(() => alert(message), 300);
+    }
+  } catch (e) {}
 }
 
 function majUICompte() {
@@ -4159,14 +4215,38 @@ async function chargerAdmin() {
       const idJs = escapeHtml(String(c.utilisateur)).replace(/'/g, "\\'");
       const identite = c.email ? escapeHtml(c.email) : `Sans compte (identifiant : ${idAffiche}…)`;
       const nomJs = (c.email || ('Compte ' + idAffiche)).replace(/'/g, "\\'");
+      const badge = c.statut === 'suspendu' ? ' <span style="color:var(--danger); font-weight:700; font-size:0.72rem;">· SUSPENDU</span>'
+        : c.statut === 'supprime' ? ' <span style="color:var(--danger); font-weight:700; font-size:0.72rem;">· SUPPRIMÉ (données conservées)</span>'
+        : '';
+
+      let boutons;
+      if (estMoi) {
+        boutons = `<button class="btn btn-secondaire" style="flex:1;" onclick="voirStatsCompte('${idJs}', '${nomJs}')">📊 Voir ses statistiques</button>`;
+      } else if (c.statut === 'supprime') {
+        boutons = `
+          <button class="btn btn-secondaire" style="flex:1;" onclick="voirStatsCompte('${idJs}', '${nomJs}')">📊 Statistiques</button>
+          <button class="btn btn-secondaire" style="flex:1;" onclick="ouvrirRattachement('${idJs}')">🔗 Rattacher</button>`;
+      } else if (c.statut === 'suspendu') {
+        boutons = `
+          <button class="btn btn-secondaire" style="flex:1;" onclick="voirStatsCompte('${idJs}', '${nomJs}')">📊 Statistiques</button>
+          <button class="btn btn-secondaire" style="flex:1;" onclick="definirBlocage('${idJs}', null)">▶️ Réactiver</button>`;
+      } else {
+        boutons = `
+          <button class="btn btn-secondaire" style="flex:1;" onclick="voirStatsCompte('${idJs}', '${nomJs}')">📊 Statistiques</button>
+          <button class="btn btn-secondaire" style="flex:1;" onclick="definirBlocage('${idJs}', 'suspendu')">⏸️ Suspendre</button>`;
+      }
+      const ligneBas = (estMoi || c.statut === 'supprime') ? '' : `
+          <div style="display:flex; gap:8px; margin-top:8px;">
+            <button class="btn btn-secondaire" style="flex:1;" onclick="definirBlocage('${idJs}', 'supprime')">🗑️ Supprimer (garder les données)</button>
+            <button class="btn btn-secondaire" style="flex:1;" onclick="demarrerConfirmationSuppression('${idJs}', '${nomJs}')">🗑️ Effacer définitivement</button>
+          </div>`;
+
       return `
         <div class="bloc-verre" style="padding:13px; margin-bottom:10px;">
-          <p style="margin:0 0 6px; font-weight:700;">${estMoi ? '👑 ' : '👤 '}${identite}</p>
+          <p style="margin:0 0 6px; font-weight:700;">${estMoi ? '👑 ' : '👤 '}${identite}${badge}</p>
           <p class="note" style="margin:0 0 10px;">${c.nb_journees || 0} journée(s) enregistrée(s)${c.age ? ' · ' + c.age + ' ans' : ''}${c.poids ? ' · ' + c.poids + ' kg' : ''} · dernière activité le ${dateMaj}</p>
-          <div style="display:flex; gap:8px;">
-            <button class="btn btn-secondaire" style="flex:1;" onclick="voirStatsCompte('${idJs}', '${nomJs}')">📊 Voir ses statistiques</button>
-            ${estMoi ? '' : `<button class="btn btn-secondaire" style="flex:1;" onclick="supprimerCompteAdmin('${idJs}')">🗑️ Supprimer</button>`}
-          </div>
+          <div style="display:flex; gap:8px;">${boutons}</div>
+          ${ligneBas}
         </div>`;
     }).join('');
   } catch (e) {
@@ -4174,8 +4254,48 @@ async function chargerAdmin() {
   }
 }
 
-async function supprimerCompteAdmin(utilisateur) {
-  if (!confirm("Supprimer DÉFINITIVEMENT toutes les journées et le profil de ce compte ? Cette action est irréversible.")) return;
+async function definirBlocage(utilisateur, type) {
+  const libelles = { suspendu: 'suspendre ce compte (il ne pourra plus se connecter jusqu\'à réactivation)', supprime: 'supprimer ce compte (les données restent, rattachables plus tard)', null: 'réactiver ce compte' };
+  if (!confirm('Confirmer : ' + (libelles[type === null ? 'null' : type] || 'modifier ce compte') + ' ?')) return;
+  try {
+    const { error } = await supa.rpc('admin_definir_blocage', { p_utilisateur: utilisateur, p_type: type });
+    if (error) throw error;
+    chargerAdmin();
+  } catch (e) {
+    alert('Erreur : ' + e.message + ' — as-tu exécuté le tout dernier script SQL (avec admin_definir_blocage) ?');
+  }
+}
+
+function ouvrirRattachement(ancien) {
+  const autres = Object.values(adminComptes).filter(c => c.utilisateur !== ancien && c.statut !== 'supprime');
+  if (!autres.length) { alert('Aucun autre compte disponible pour le rattachement.'); return; }
+  const liste = autres.map((c, i) => `${i + 1}. ${c.email || c.utilisateur.slice(0, 8)}`).join('\n');
+  const choix = prompt('Rattacher ces données à quel compte ? Tape le numéro :\n\n' + liste);
+  const index = parseInt(choix, 10) - 1;
+  if (isNaN(index) || !autres[index]) return;
+  rattacherDonnees(ancien, autres[index].utilisateur, autres[index].email || autres[index].utilisateur);
+}
+
+async function rattacherDonnees(ancien, nouveau, nomNouveau) {
+  if (!confirm(`Rattacher toutes les données à ${nomNouveau} ? Cette action est irréversible.`)) return;
+  try {
+    const { error } = await supa.rpc('admin_rattacher_donnees', { p_ancien: ancien, p_nouveau: nouveau });
+    if (error) throw error;
+    alert('Données rattachées.');
+    document.getElementById('admin-stats-zone').classList.add('hidden');
+    chargerAdmin();
+  } catch (e) {
+    alert('Erreur : ' + e.message);
+  }
+}
+
+/* Suppression définitive : on ne se contente plus d'un confirm() du
+   navigateur — cette action est irréversible, donc trois barrières avant
+   qu'elle ne s'exécute (voir demarrerConfirmationSuppression / 
+   validerSuppressionDefinitive juste après) : un délai de 30 secondes pour
+   dissuader un clic précipité, retaper l'email du compte visé pour être sûr
+   qu'on supprime le bon, et le mot de passe de l'administrateur lui-même. */
+async function executerSuppressionDefinitive(utilisateur) {
   try {
     // Supabase-js ne lève pas d'exception quand une policy RLS bloque une
     // suppression : la requête « réussit » techniquement en ne supprimant
@@ -4186,17 +4306,87 @@ async function supprimerCompteAdmin(utilisateur) {
     const rp = await supa.from('profil').delete().eq('utilisateur', utilisateur);
     if (rp.error) throw new Error('profil : ' + rp.error.message);
 
+    // Panneau de réinitialisation : sans lui, un appareil qui a encore
+    // l'ancienne copie en mémoire la repousserait vers Supabase à sa
+    // prochaine synchro — dans la seconde ou dans une semaine, peu importe.
+    // Ce marqueur force cet appareil à effacer sa propre copie tout seul,
+    // quel que soit le moment où il se reconnecte (voir synchroniser()).
+    const horodatage = Date.now();
+    const { error: e4 } = await supa.from('profil').upsert(
+      [{ utilisateur, donnees: { resetLe: horodatage }, maj: horodatage }],
+      { onConflict: 'utilisateur' }
+    );
+    if (e4) throw e4;
+
     const verif = await supa.from('journees').select('jour', { count: 'exact', head: true }).eq('utilisateur', utilisateur);
     if ((verif.count || 0) > 0) {
       alert(`⚠️ ${verif.count} journée(s) sont encore présentes après la suppression : la policy de sécurité bloque probablement l'écriture pour l'administrateur. Vérifie que le tout dernier script SQL a bien été exécuté (avec le OR sur ton email dans la policy "journees par compte").`);
     } else {
-      alert('Compte supprimé.');
+      alert("Compte supprimé. Même si l'appareil de cette personne a encore l'ancienne copie en mémoire, il l'effacera tout seul à sa prochaine connexion — plus besoin d'être synchronisé sur le timing.");
     }
     document.getElementById('admin-stats-zone').classList.add('hidden');
     chargerAdmin();
   } catch (e) {
     alert('Erreur pendant la suppression : ' + e.message);
   }
+}
+
+let confirmSuppressionCible = null; // { utilisateur, email }
+let confirmSuppressionTimer = null;
+
+function demarrerConfirmationSuppression(utilisateur, emailOuNom) {
+  const compte = adminComptes[utilisateur] || {};
+  confirmSuppressionCible = { utilisateur, email: compte.email || '' };
+  document.getElementById('confirm-suppr-email').textContent = compte.email || emailOuNom;
+  document.getElementById('confirm-suppr-saisie').value = '';
+  document.getElementById('confirm-suppr-mdp').value = '';
+  document.getElementById('confirm-suppr-note').textContent = compte.email ? '' : "Ce compte n'a pas d'email associé (identifiant libre) : tape-le tel qu'affiché ci-dessus à la place.";
+
+  const bouton = document.getElementById('confirm-suppr-bouton');
+  bouton.disabled = true;
+  clearInterval(confirmSuppressionTimer);
+  let restant = 30;
+  bouton.textContent = `Confirmer dans ${restant}s…`;
+  confirmSuppressionTimer = setInterval(() => {
+    restant--;
+    if (restant <= 0) {
+      clearInterval(confirmSuppressionTimer);
+      bouton.textContent = '🗑️ Confirmer la suppression définitive';
+      bouton.disabled = false;
+    } else {
+      bouton.textContent = `Confirmer dans ${restant}s…`;
+    }
+  }, 1000);
+
+  ouvrirModal('confirm-suppression-modal');
+}
+
+async function validerSuppressionDefinitive() {
+  if (!confirmSuppressionCible) return;
+  const note = document.getElementById('confirm-suppr-note');
+  const attendu = (confirmSuppressionCible.email || String(confirmSuppressionCible.utilisateur)).trim().toLowerCase();
+  const saisie = (document.getElementById('confirm-suppr-saisie').value || '').trim().toLowerCase();
+  if (saisie !== attendu) {
+    note.textContent = "L'adresse tapée ne correspond pas à celle du compte à supprimer.";
+    return;
+  }
+  const mdp = document.getElementById('confirm-suppr-mdp').value || '';
+  if (!mdp) { note.textContent = 'Renseigne ton mot de passe administrateur.'; return; }
+
+  note.textContent = 'Vérification du mot de passe…';
+  try {
+    // Pas d'endpoint Supabase dédié pour "juste vérifier" un mot de passe :
+    // se reconnecter avec son propre compte est le moyen sûr de le valider
+    // sans jamais avoir à stocker ou comparer le mot de passe nous-mêmes.
+    const { error } = await supa.auth.signInWithPassword({ email: sessionUtilisateur.email, password: mdp });
+    if (error) { note.textContent = 'Mot de passe incorrect.'; return; }
+  } catch (e) { note.textContent = 'Erreur de vérification : ' + e.message; return; }
+
+  const cible = confirmSuppressionCible.utilisateur;
+  confirmSuppressionCible = null;
+  clearInterval(confirmSuppressionTimer);
+  fermerModal('confirm-suppression-modal');
+  await executerSuppressionDefinitive(cible);
 }
 
 /* Variantes de dernierPoidsConnu/dernierObjectifConnu qui cherchent dans une
@@ -4234,6 +4424,7 @@ function targetsPourCompte(day, dateStr, jours, compte) {
 }
 
 let adminCaloriesChartInstance = null, adminPoidsChartInstance = null, adminPasChartInstance = null;
+let adminJoursActuels = [], adminCompteActuel = null;
 
 async function voirStatsCompte(utilisateur, nomAffiche) {
   const zone = document.getElementById('admin-stats-zone');
@@ -4245,69 +4436,109 @@ async function voirStatsCompte(utilisateur, nomAffiche) {
   try {
     const { data, error } = await supa.from('journees').select('jour, donnees').eq('utilisateur', utilisateur).order('jour');
     if (error) throw error;
-    const compte = adminComptes[utilisateur] || {};
-    const jours = (data || []).map(r => ({ jour: r.jour, day: Object.assign({ meals: {}, workouts: [] }, r.donnees || {}) }));
-    MEALS.forEach(m => jours.forEach(j => { if (!j.day.meals[m]) j.day.meals[m] = []; }));
+    adminCompteActuel = adminComptes[utilisateur] || {};
+    adminJoursActuels = (data || []).map(r => ({ jour: r.jour, day: Object.assign({ meals: {}, workouts: [] }, r.donnees || {}) }));
+    MEALS.forEach(m => adminJoursActuels.forEach(j => { if (!j.day.meals[m]) j.day.meals[m] = []; }));
 
-    const labels = jours.map(j => j.jour);
-    const cal = jours.map(j => sumMeals(j.day).kcal || null);
-    const cible = jours.map(j => targetsPourCompte(j.day, j.jour, jours, compte));
-    const prot = jours.map(j => sumMeals(j.day).p || null);
-    const poids = jours.map(j => Number(j.day.weight) || null);
-    const pas = jours.map(j => Number(j.day.steps) || null);
-    const totalMinutesSport = jours.reduce((s, j) => s + (j.day.workouts || []).reduce((a, w) => a + (Number(w.time) || 0), 0), 0);
-    const joursAvecRepas = cal.filter(v => v > 0).length;
-    const moyKcal = joursAvecRepas ? Math.round(cal.filter(v => v > 0).reduce((a, b) => a + b, 0) / joursAvecRepas) : 0;
-    const moyCible = joursAvecRepas ? Math.round(cible.filter((v, i) => cal[i] > 0).reduce((a, b) => a + b, 0) / joursAvecRepas) : 0;
-    const moyProt = joursAvecRepas ? Math.round(prot.filter(v => v > 0).reduce((a, b) => a + b, 0) / joursAvecRepas) : 0;
-    const dansObjectif = cal.filter((v, i) => v > 0 && Math.abs(v - cible[i]) <= cible[i] * 0.1).length;
-    const pctDansObjectif = joursAvecRepas ? Math.round((dansObjectif / joursAvecRepas) * 100) : 0;
+    if (!adminJoursActuels.length) {
+      resume.innerHTML = '<p class="note">Aucune journée enregistrée pour ce compte.</p>';
+      ['adminCaloriesChart', 'adminPoidsChart', 'adminPasChart'].forEach(id => {
+        const inst = { adminCaloriesChart: adminCaloriesChartInstance, adminPoidsChart: adminPoidsChartInstance, adminPasChart: adminPasChartInstance }[id];
+        if (inst) inst.destroy();
+      });
+      return;
+    }
 
-    resume.innerHTML = `
-      <p class="note" style="margin:0;">${jours.length} journée(s) enregistrée(s), dont ${joursAvecRepas} avec des repas saisis</p>
-      <p class="note" style="margin:6px 0 0;">Moyenne : ${moyKcal} kcal/jour consommées pour un objectif moyen de ${moyCible} kcal (${pctDansObjectif}% des jours à ±10%)</p>
-      <p class="note" style="margin:6px 0 0;">${moyProt} g de protéines/jour en moyenne · ${totalMinutesSport} min de sport au total</p>`;
-
-    const styles = getComputedStyle(document.documentElement);
-    const couleurTexte = (styles.getPropertyValue('--text-muted') || '#94a3b8').trim();
-    const gridColor = (document.documentElement.getAttribute('data-theme') === 'light') ? 'rgba(14,20,32,0.10)' : 'rgba(255,255,255,0.06)';
-    const cPrimaire = (styles.getPropertyValue('--primary') || '#14b566').trim();
-    const cAccent = (styles.getPropertyValue('--accent') || '#2979ff').trim();
-    const baseOpts = {
-      responsive: true, maintainAspectRatio: false,
-      plugins: { legend: { display: false } },
-      scales: {
-        x: { ticks: { color: couleurTexte, maxTicksLimit: 8 }, grid: { color: gridColor } },
-        y: { ticks: { color: couleurTexte }, grid: { color: gridColor } }
-      }
-    };
-
-    if (adminCaloriesChartInstance) adminCaloriesChartInstance.destroy();
-    adminCaloriesChartInstance = new Chart(document.getElementById('adminCaloriesChart'), {
-      type: 'line',
-      data: { labels, datasets: [
-        { label: 'Consommées', data: cal, borderColor: cPrimaire, backgroundColor: 'transparent', tension: 0.3, pointRadius: 2, spanGaps: true },
-        { label: 'Objectif', data: cible, borderColor: couleurTexte, borderDash: [5, 5], backgroundColor: 'transparent', tension: 0.1, pointRadius: 0 }
-      ] },
-      options: Object.assign({}, baseOpts, { plugins: { legend: { display: true, labels: { color: couleurTexte } } } })
-    });
-
-    if (adminPoidsChartInstance) adminPoidsChartInstance.destroy();
-    adminPoidsChartInstance = new Chart(document.getElementById('adminPoidsChart'), {
-      type: 'line',
-      data: { labels, datasets: [{ data: poids, borderColor: cAccent, backgroundColor: 'transparent', tension: 0.3, pointRadius: 2, spanGaps: true }] },
-      options: Object.assign({}, baseOpts, { scales: Object.assign({}, baseOpts.scales, { y: Object.assign({}, baseOpts.scales.y, { beginAtZero: false }) }) })
-    });
-
-    if (adminPasChartInstance) adminPasChartInstance.destroy();
-    adminPasChartInstance = new Chart(document.getElementById('adminPasChart'), {
-      type: 'bar',
-      data: { labels, datasets: [{ data: pas, backgroundColor: cAccent }] },
-      options: baseOpts
-    });
+    const dernier = adminJoursActuels.length - 1;
+    const sStart = document.getElementById('admin-slider-start');
+    const sEnd = document.getElementById('admin-slider-end');
+    sStart.max = dernier; sEnd.max = dernier;
+    sStart.value = 0; sEnd.value = dernier;
+    filtrerStatsCompte();
   } catch (e) {
     resume.innerHTML = '<p class="note">Erreur : ' + escapeHtml(e.message) + '</p>';
   }
+}
+
+/* Repositionne juste la piste visuelle du double-curseur — même principe que
+   celui de l'onglet Statistiques principal, mais sur une période propre à
+   ce compte plutôt que sur les 180 jours fixes de l'appareil courant. */
+function majPlageAdmin(debut, fin, total) {
+  const remplie = document.getElementById('admin-plage-remplie');
+  if (!remplie || total <= 0) return;
+  remplie.style.left = (debut / total * 100) + '%';
+  remplie.style.right = (100 - fin / total * 100) + '%';
+}
+
+function filtrerStatsCompte() {
+  if (!adminJoursActuels.length) return;
+  let debut = Number(document.getElementById('admin-slider-start').value);
+  let fin = Number(document.getElementById('admin-slider-end').value);
+  if (debut > fin) { [debut, fin] = [fin, debut]; }
+  majPlageAdmin(debut, fin, adminJoursActuels.length - 1);
+
+  const jours = adminJoursActuels.slice(debut, fin + 1);
+  const compte = adminCompteActuel || {};
+  document.getElementById('admin-start-date-label').textContent = jours[0] ? formatDateDisplay(jours[0].jour) : '-';
+  document.getElementById('admin-end-date-label').textContent = jours[jours.length - 1] ? formatDateDisplay(jours[jours.length - 1].jour) : '-';
+
+  const resume = document.getElementById('admin-stats-resume');
+  const labels = jours.map(j => j.jour);
+  const cal = jours.map(j => sumMeals(j.day).kcal || null);
+  const cible = jours.map(j => targetsPourCompte(j.day, j.jour, adminJoursActuels, compte));
+  const prot = jours.map(j => sumMeals(j.day).p || null);
+  const poids = jours.map(j => Number(j.day.weight) || null);
+  const pas = jours.map(j => Number(j.day.steps) || null);
+  const totalMinutesSport = jours.reduce((s, j) => s + (j.day.workouts || []).reduce((a, w) => a + (Number(w.time) || 0), 0), 0);
+  const joursAvecRepas = cal.filter(v => v > 0).length;
+  const moyKcal = joursAvecRepas ? Math.round(cal.filter(v => v > 0).reduce((a, b) => a + b, 0) / joursAvecRepas) : 0;
+  const moyCible = joursAvecRepas ? Math.round(cible.filter((v, i) => cal[i] > 0).reduce((a, b) => a + b, 0) / joursAvecRepas) : 0;
+  const moyProt = joursAvecRepas ? Math.round(prot.filter(v => v > 0).reduce((a, b) => a + b, 0) / joursAvecRepas) : 0;
+  const dansObjectif = cal.filter((v, i) => v > 0 && Math.abs(v - cible[i]) <= cible[i] * 0.1).length;
+  const pctDansObjectif = joursAvecRepas ? Math.round((dansObjectif / joursAvecRepas) * 100) : 0;
+
+  resume.innerHTML = `
+    <p class="note" style="margin:0;">${jours.length} journée(s) sur la période, dont ${joursAvecRepas} avec des repas saisis</p>
+    <p class="note" style="margin:6px 0 0;">Moyenne : ${moyKcal} kcal/jour consommées pour un objectif moyen de ${moyCible} kcal (${pctDansObjectif}% des jours à ±10%)</p>
+    <p class="note" style="margin:6px 0 0;">${moyProt} g de protéines/jour en moyenne · ${totalMinutesSport} min de sport au total</p>`;
+
+  const styles = getComputedStyle(document.documentElement);
+  const couleurTexte = (styles.getPropertyValue('--text-muted') || '#94a3b8').trim();
+  const gridColor = (document.documentElement.getAttribute('data-theme') === 'light') ? 'rgba(14,20,32,0.10)' : 'rgba(255,255,255,0.06)';
+  const cPrimaire = (styles.getPropertyValue('--primary') || '#14b566').trim();
+  const cAccent = (styles.getPropertyValue('--accent') || '#2979ff').trim();
+  const baseOpts = {
+    responsive: true, maintainAspectRatio: false,
+    plugins: { legend: { display: false } },
+    scales: {
+      x: { ticks: { color: couleurTexte, maxTicksLimit: 8 }, grid: { color: gridColor } },
+      y: { ticks: { color: couleurTexte }, grid: { color: gridColor } }
+    }
+  };
+
+  if (adminCaloriesChartInstance) adminCaloriesChartInstance.destroy();
+  adminCaloriesChartInstance = new Chart(document.getElementById('adminCaloriesChart'), {
+    type: 'line',
+    data: { labels, datasets: [
+      { label: 'Consommées', data: cal, borderColor: cPrimaire, backgroundColor: 'transparent', tension: 0.3, pointRadius: 2, spanGaps: true },
+      { label: 'Objectif', data: cible, borderColor: couleurTexte, borderDash: [5, 5], backgroundColor: 'transparent', tension: 0.1, pointRadius: 0 }
+    ] },
+    options: Object.assign({}, baseOpts, { plugins: { legend: { display: true, labels: { color: couleurTexte } } } })
+  });
+
+  if (adminPoidsChartInstance) adminPoidsChartInstance.destroy();
+  adminPoidsChartInstance = new Chart(document.getElementById('adminPoidsChart'), {
+    type: 'line',
+    data: { labels, datasets: [{ data: poids, borderColor: cAccent, backgroundColor: 'transparent', tension: 0.3, pointRadius: 2, spanGaps: true }] },
+    options: Object.assign({}, baseOpts, { scales: Object.assign({}, baseOpts.scales, { y: Object.assign({}, baseOpts.scales.y, { beginAtZero: false }) }) })
+  });
+
+  if (adminPasChartInstance) adminPasChartInstance.destroy();
+  adminPasChartInstance = new Chart(document.getElementById('adminPasChart'), {
+    type: 'bar',
+    data: { labels, datasets: [{ data: pas, backgroundColor: cAccent }] },
+    options: baseOpts
+  });
 }
 
 /* Utile quand deux personnes se relaient sur le même appareil : les données
@@ -4590,6 +4821,30 @@ async function synchroniser(raison) {
 
   const id = confSupabase().id;
   try {
+    // ---------- 0. Un reset a-t-il été demandé pour ce compte ? ----------
+    // Sans ça, un appareil qui a encore l'ancienne copie en mémoire la
+    // repousserait vers Supabase à sa prochaine synchro — dans la seconde ou
+    // dans une semaine, peu importe le délai après une suppression admin.
+    // Ce marqueur, lui, ne dépend d'aucun minutage : l'appareil l'obéit dès
+    // qu'il le voit, quel que soit le moment où il se reconnecte.
+    const rp = await supa.from('profil').select('donnees,maj').eq('utilisateur', id).maybeSingle();
+    if (rp.error) throw rp.error;
+    const resetLe = (rp.data && rp.data.donnees && Number(rp.data.donnees.resetLe)) || 0;
+    let derniereReset = 0;
+    try { derniereReset = Number(localStorage.getItem('mc_dernier_reset_' + id)) || 0; } catch (e) {}
+    if (resetLe && resetLe > derniereReset) {
+      appData = {};
+      userProfile = { height: 175, age: 25, gender: 'm', weight: 70 };
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(appData));
+        localStorage.setItem(PROFILE_KEY, JSON.stringify(userProfile));
+        localStorage.setItem('mc_dernier_reset_' + id, String(resetLe));
+      } catch (e) {}
+      invaliderHistorique();
+      renderApp();
+      if (ecranActif === 'stats') prepareStats();
+    }
+
     // ---------- 1. Ce que le serveur a de plus récent ----------
     const { data, error } = await supa
       .from('journees').select('jour,donnees,maj').eq('utilisateur', id);
@@ -4631,8 +4886,6 @@ async function synchroniser(raison) {
     }
 
     // ---------- 3. Le profil ----------
-    const rp = await supa.from('profil').select('donnees,maj').eq('utilisateur', id).maybeSingle();
-    if (rp.error) throw rp.error;
     const majProfilLocal = Number(userProfile.maj) || 0;
     if (rp.data && (Number(rp.data.maj) || 0) > majProfilLocal) {
       userProfile = Object.assign(userProfile, rp.data.donnees, { maj: Number(rp.data.maj) || 0 });
@@ -5051,19 +5304,54 @@ const SQL_RLS = `-- À exécuter UNE FOIS que toi et l'autre personne avez chacu
 -- utilisateur = son propre auth.uid() — sauf le compte administrateur
 -- (jambou592@gmail.com), qui voit et gère tout.
 
+-- Comptes suspendus/supprimés : une table à part que seul l'administrateur
+-- peut lire ou modifier. Un compte "supprimé" ici garde ses données dans
+-- Supabase (utilisateur, journees, profil ne sont jamais touchés) : c'est un
+-- blocage d'accès, pas un vrai effacement — la vraie suppression du compte
+-- lui-même (identifiants de connexion) demanderait une clé d'administration
+-- Supabase qu'on ne met jamais dans le code de l'appli, pour éviter que
+-- n'importe qui puisse supprimer n'importe quel compte.
+create table if not exists public.comptes_bloques (
+  utilisateur text primary key,
+  type text not null check (type in ('suspendu','supprime')),
+  bloque_le timestamptz not null default now()
+);
+alter table comptes_bloques enable row level security;
+drop policy if exists "admin gere blocages" on comptes_bloques;
+create policy "admin gere blocages" on comptes_bloques
+  for all
+  using (auth.jwt() ->> 'email' = 'jambou592@gmail.com')
+  with check (auth.jwt() ->> 'email' = 'jambou592@gmail.com');
+
+-- Utilisée à l'intérieur des policies ci-dessous : un compte bloqué perd
+-- l'accès à SES PROPRES lignes, même si utilisateur = auth.uid().
+create or replace function public.est_bloque(p_utilisateur text)
+returns boolean language sql security definer set search_path = public as $$
+  select exists(select 1 from comptes_bloques where utilisateur = p_utilisateur);
+$$;
+grant execute on function public.est_bloque(text) to authenticated;
+
+-- Utilisée par l'appli juste après la connexion, pour reconnaître SON PROPRE
+-- statut et se déconnecter immédiatement avec un message clair si bloqué.
+create or replace function public.mon_statut_compte()
+returns text language sql security definer set search_path = public as $$
+  select type from comptes_bloques where utilisateur = auth.uid()::text;
+$$;
+grant execute on function public.mon_statut_compte() to authenticated;
+
 drop policy if exists "acces journees" on journees;
 drop policy if exists "journees par compte" on journees;
 create policy "journees par compte" on journees
   for all
-  using (utilisateur = auth.uid()::text or auth.jwt() ->> 'email' = 'jambou592@gmail.com')
-  with check (utilisateur = auth.uid()::text or auth.jwt() ->> 'email' = 'jambou592@gmail.com');
+  using ((utilisateur = auth.uid()::text and not est_bloque(utilisateur)) or auth.jwt() ->> 'email' = 'jambou592@gmail.com')
+  with check ((utilisateur = auth.uid()::text and not est_bloque(utilisateur)) or auth.jwt() ->> 'email' = 'jambou592@gmail.com');
 
 drop policy if exists "acces profil" on profil;
 drop policy if exists "profil par compte" on profil;
 create policy "profil par compte" on profil
   for all
-  using (utilisateur = auth.uid()::text or auth.jwt() ->> 'email' = 'jambou592@gmail.com')
-  with check (utilisateur = auth.uid()::text or auth.jwt() ->> 'email' = 'jambou592@gmail.com');
+  using ((utilisateur = auth.uid()::text and not est_bloque(utilisateur)) or auth.jwt() ->> 'email' = 'jambou592@gmail.com')
+  with check ((utilisateur = auth.uid()::text and not est_bloque(utilisateur)) or auth.jwt() ->> 'email' = 'jambou592@gmail.com');
 
 -- Important : ces policies exigent d'être connecté (auth.uid() non nul).
 -- Si l'un de vous continue à utiliser l'identifiant libre sans jamais se
@@ -5080,7 +5368,7 @@ create policy "profil par compte" on profil
 create or replace function public.admin_liste_comptes()
 returns table (
   utilisateur text, email text, cree_le timestamptz, derniere_connexion timestamptz,
-  age int, taille numeric, poids numeric, genre text, nb_journees bigint, maj bigint
+  age int, taille numeric, poids numeric, genre text, nb_journees bigint, maj bigint, statut text
 )
 language plpgsql
 security definer
@@ -5101,13 +5389,66 @@ begin
       (p.donnees->>'weight')::numeric,
       (p.donnees->>'gender')::text,
       (select count(*) from journees j where j.utilisateur = p.utilisateur)::bigint,
-      p.maj::bigint
+      p.maj::bigint,
+      cb.type::text
     from profil p
-    left join auth.users u on u.id::text = p.utilisateur;
+    left join auth.users u on u.id::text = p.utilisateur
+    left join comptes_bloques cb on cb.utilisateur = p.utilisateur;
 end;
 $$;
 
-grant execute on function public.admin_liste_comptes() to authenticated;`;
+grant execute on function public.admin_liste_comptes() to authenticated;
+
+-- Suspendre / réactiver / marquer supprimé (garde les données). Passer
+-- p_type à NULL réactive le compte (retire tout blocage).
+create or replace function public.admin_definir_blocage(p_utilisateur text, p_type text)
+returns void
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  if coalesce(auth.jwt() ->> 'email', '') <> 'jambou592@gmail.com' then
+    raise exception 'Accès réservé à l''administrateur';
+  end if;
+  if p_type is null then
+    delete from comptes_bloques where utilisateur = p_utilisateur;
+  else
+    insert into comptes_bloques (utilisateur, type) values (p_utilisateur, p_type)
+      on conflict (utilisateur) do update set type = excluded.type, bloque_le = now();
+  end if;
+end;
+$$;
+grant execute on function public.admin_definir_blocage(text, text) to authenticated;
+
+-- Rattache les journées/profil d'un compte "supprimé" à un autre compte
+-- (le sien à nouveau après recréation, ou celui de quelqu'un d'autre).
+-- Fonctionne seulement si le compte cible n'a pas déjà ses propres données
+-- aux mêmes dates (sans quoi il faudrait choisir laquelle garder).
+create or replace function public.admin_rattacher_donnees(p_ancien text, p_nouveau text)
+returns void
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  if coalesce(auth.jwt() ->> 'email', '') <> 'jambou592@gmail.com' then
+    raise exception 'Accès réservé à l''administrateur';
+  end if;
+  begin
+    update journees set utilisateur = p_nouveau where utilisateur = p_ancien;
+  exception when unique_violation then
+    raise exception 'Le compte cible a déjà des journées enregistrées aux mêmes dates : rattachement impossible sans écraser des données.';
+  end;
+  if not exists (select 1 from profil where utilisateur = p_nouveau) then
+    update profil set utilisateur = p_nouveau where utilisateur = p_ancien;
+  else
+    delete from profil where utilisateur = p_ancien;
+  end if;
+  delete from comptes_bloques where utilisateur = p_ancien;
+end;
+$$;
+grant execute on function public.admin_rattacher_donnees(text, text) to authenticated;`;
 
 function sqlRls() { return SQL_RLS; }
 
