@@ -1383,6 +1383,7 @@
     <div id="withings-connecte" class="hidden">
       <button class="btn btn-secondaire" id="btn-import-withings" style="margin:-6px 0 6px;" onclick="importerPoidsWithings()">⚖️ Importer ma dernière pesée Withings</button>
       <p class="note" id="note-import-withings" style="margin:0 0 14px;"></p>
+      <p class="note" style="margin:-8px 0 14px;"><a href="#" onclick="event.preventDefault(); diagnostiquerWithings();" style="color:var(--accent);">🔍 Voir la réponse brute de l'API (diagnostic)</a></p>
     </div>
 
     <p class="note" style="margin:4px 0 14px;">Les mesures par partie du corps sont optionnelles : ne renseigne que ce que ta balance ou ton mètre ruban te donne. Laisse le reste vide.</p>
@@ -1561,6 +1562,7 @@
       <div class="input-group">
         <label for="barcode-name">Produit trouvé</label>
         <input type="text" id="barcode-name" readonly>
+        <p class="note" id="barcode-source" style="margin:6px 2px 0;"></p>
       </div>
       <div class="input-group">
         <label for="barcode-grams">Quantité (g ou ml)</label>
@@ -1568,6 +1570,11 @@
       </div>
       <button class="btn btn-primary" onclick="ajouterAlimentBarcode()">Ajouter au repas</button>
     </div>
+
+    <p class="note" style="margin:14px 2px 0;">
+      Rien ne correspond à ce code-barres ?
+      <a href="#" onclick="event.preventDefault(); saisieManuelleAvecCode();" style="color:var(--accent);">Saisir ce produit à la main</a>
+    </p>
   </div>
 </div>
 
@@ -2304,6 +2311,15 @@ function verifierOFFAuto() {
 // écraser l'affichage d'une frappe plus récente.
 let numeroRecherche = 0;
 
+/* Sur mobile, la liste se reconstruit à chaque lettre tapée : si un
+   bouton de suggestion apparaît pile sous le doigt qui s'apprête à taper
+   la lettre suivante, certains navigateurs déclenchent un clic fantôme
+   dessus. Sur ordinateur, la souris ne bouge pas pendant la frappe, donc
+   ça n'arrivait jamais là-bas. Aucune décision humaine (lire, choisir,
+   taper) ne prend moins de 300 ms : un clic plus rapide que ça après un
+   rendu est presque sûrement ce clic fantôme, pas une vraie sélection. */
+let dernierRenduSuggestions = 0;
+
 async function afficherRecherche(query, seulementHistorique) {
   const monNumero = ++numeroRecherche;
   const deja = chercherDansHistorique(query, seulementHistorique ? 25 : 40);
@@ -2357,6 +2373,7 @@ function afficherMessageSuggestions(texte) {
   d.textContent = texte;
   container.appendChild(d);
   container.style.display = 'block';
+  dernierRenduSuggestions = Date.now();
 }
 
 function afficherSuggestionsOFF(products, probleme) {
@@ -2419,9 +2436,14 @@ function afficherSuggestionsOFF(products, probleme) {
     container.appendChild(d);
   }
   container.style.display = 'block';
+  dernierRenduSuggestions = Date.now();
 }
 
 function selectionnerProduitOFF(prod) {
+  // Voir la note sur dernierRenduSuggestions plus haut : on ignore un clic
+  // trop rapproché du rendu, signe d'un clic fantôme plutôt que d'un choix
+  // volontaire.
+  if (Date.now() - dernierRenduSuggestions < 300) return;
   fillFromOFF(prod);
   cacherSuggestionsOFF();
 }
@@ -2702,30 +2724,90 @@ async function onScanSuccess(decodedText) {
 }
 
 async function chercherProduitOFFParCode(code) {
+  code = String(code).trim();
+  let trouve = null;
+
+  // 1) OpenFoodFacts en premier : la base la plus complète et la plus à jour.
   try {
     const r = await fetch(`https://world.openfoodfacts.org/api/v0/product/${code}.json`);
     const j = await r.json();
     if (j.status === 1) {
       const p = j.product; const n = p.nutriments || {};
-      currentScannedFood = {
+      trouve = {
         name: p.product_name || 'Produit ' + code,
-        code: String(code),
+        code,
         marque: (p.brands || '').split(',')[0].trim(),
         kcal100: Math.round(n['energy-kcal_100g'] || (n['energy_100g'] ? n['energy_100g'] / 4.184 : 0)),
         p100: Number(n['proteins_100g']) || 0,
         c100: Number(n['carbohydrates_100g']) || 0,
-        f100: Number(n['fat_100g']) || 0
+        f100: Number(n['fat_100g']) || 0,
+        source: 'OpenFoodFacts'
       };
-      document.getElementById('barcode-name').value = currentScannedFood.name
-        + (currentScannedFood.marque ? ' — ' + currentScannedFood.marque : '');
-      document.getElementById('barcode-grams').value = 100;
-      document.getElementById('barcode-result').classList.remove('hidden');
-    } else {
-      alert('Produit introuvable sur OpenFoodFacts.');
     }
-  } catch (e) { 
-    alert('Erreur de recherche produit.'); 
+  } catch (e) { /* réseau indisponible : on continue quand même vers ce qu'on a déjà */ }
+
+  // 2) Sinon, ce qu'on a déjà mangé avec ce code-barres (le plus rapide, hors ligne).
+  if (!trouve) {
+    const h = chercherHistoriqueParCode(code);
+    if (h) trouve = { name: h.nom, code, marque: '', kcal100: h.kcal100 || 0, p100: h.p100 || 0, c100: h.c100 || 0, f100: h.f100 || 0, source: 'ton historique' };
   }
+
+  // 3) Sinon, la base perso synchronisée (utile si scanné depuis un autre appareil).
+  if (!trouve) trouve = await chercherBaseParCode(code);
+
+  if (trouve) {
+    currentScannedFood = trouve;
+    document.getElementById('barcode-name').value = trouve.name + (trouve.marque ? ' — ' + trouve.marque : '');
+    document.getElementById('barcode-grams').value = 100;
+    const src = document.getElementById('barcode-source');
+    if (src) src.textContent = trouve.source ? `Trouvé dans : ${trouve.source}` : '';
+    document.getElementById('barcode-result').classList.remove('hidden');
+    return;
+  }
+
+  // 4) Vraiment rien nulle part : jamais de cul-de-sac, on propose la main.
+  if (confirm("Produit introuvable (OpenFoodFacts et tes aliments déjà enregistrés).\n\nSaisir ce produit à la main, avec ce code-barres ?")) {
+    saisieManuelleAvecCode(code);
+  }
+}
+
+/* Recherche locale par code-barres exact, dans ce qui a déjà été mangé —
+   fonctionne hors ligne, contrairement à OpenFoodFacts et à la base perso. */
+function chercherHistoriqueParCode(code) {
+  const c = String(code);
+  return historique().find(e => e.code === c) || null;
+}
+
+/* Recherche par code-barres dans la base perso synchronisée (ce que toi ou ta
+   femme avez déjà saisi manuellement ou scanné sur un autre appareil). */
+async function chercherBaseParCode(code) {
+  if (!supa) return null;
+  try {
+    const s = await detecterSchemaAliments();
+    if (!s || !s.codeBarre || !s.nom) return null;
+    const champs = [s.nom];
+    [s.kcal, s.prot, s.gluc, s.lip].forEach(c => { if (c) champs.push(c); });
+    const r = await supa.from(confSupabase().table).select(champs.join(',')).eq(s.codeBarre, String(code)).limit(1);
+    if (r.error || !r.data || !r.data.length) return null;
+    const row = r.data[0];
+    return {
+      name: row[s.nom] || ('Produit ' + code), code: String(code), marque: '',
+      kcal100: Math.round(nombreSouple(row[s.kcal])),
+      p100: nombreSouple(row[s.prot]), c100: nombreSouple(row[s.gluc]), f100: nombreSouple(row[s.lip]),
+      source: 'ta base perso'
+    };
+  } catch (e) { return null; }
+}
+
+/* Bascule vers la saisie 100% manuelle en gardant le code-barres déjà scanné,
+   pour ne jamais coincer quelqu'un devant un produit qu'aucune base ne connaît. */
+function saisieManuelleAvecCode(code) {
+  fermerModal('barcode-modal');
+  stopperScanner();
+  ouvrirManuel(activeMealId);
+  codeCourant = String(code || document.getElementById('manual-barcode-input').value.trim());
+  majCodeCourant();
+  document.getElementById('man-name').focus();
 }
 
 /* On capture l'instance en variable locale : si une autre est créée entre-temps,
@@ -4042,6 +4124,26 @@ async function importerPoidsWithings() {
     alert('Erreur pendant la récupération : ' + e.message);
   } finally {
     if (bouton) { bouton.disabled = false; bouton.textContent = texteInitial; }
+  }
+}
+
+/* Outil de diagnostic temporaire : renvoie tout ce que l'API accepte de
+   donner pour la dernière pesée (aucun filtre de meastypes), pour vérifier
+   à la source si un champ segmentaire (bras/jambes/tronc) apparaît quelque
+   part dans la réponse — au-delà de ce que les bibliothèques communautaires
+   documentent habituellement. */
+async function diagnostiquerWithings() {
+  const token = await withingsAccessTokenValide();
+  if (!token) { alert("Connecte-toi d'abord à Withings (bouton 👤 → Connecter ma balance)."); return; }
+  try {
+    const resp = await fetch('https://wbsapi.withings.net/measure?' + new URLSearchParams({
+      action: 'getmeas', category: 1
+    }), { headers: { Authorization: 'Bearer ' + token } });
+    const data = await resp.json();
+    const texte = JSON.stringify(data, null, 2);
+    window.prompt('Réponse brute de Withings (Ctrl+A puis Ctrl+C pour copier, colle-la dans la conversation) :', texte);
+  } catch (e) {
+    alert('Erreur : ' + e.message);
   }
 }
 
