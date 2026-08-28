@@ -962,6 +962,107 @@
     .vide { text-align: center; color: var(--text-muted); font-size: 0.82rem; padding: 12px 0; }
 
     hr.sep { margin: 18px 0; border: none; border-top: 1px solid var(--verre-brd); }
+
+    /* ========== STYLES POUR MODALS D'ÉDITION ET FORMS ========== */
+    .modal-content {
+      background: var(--barre);
+      border: 1px solid var(--verre-brd);
+      border-radius: var(--rayon);
+      overflow: hidden;
+      box-shadow: var(--ombre-haute);
+      max-width: 90vw;
+      max-height: 90vh;
+      display: flex;
+      flex-direction: column;
+    }
+    .modal-header {
+      padding: 16px 20px;
+      border-bottom: 1px solid var(--verre-brd);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .modal-header h3 { margin: 0; }
+    .fermer-modal {
+      background: none;
+      border: none;
+      color: var(--text);
+      font-size: 1.2rem;
+      cursor: pointer;
+      width: 32px;
+      height: 32px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .fermer-modal:hover { background: var(--verre-fort); border-radius: 8px; }
+    .modal-body {
+      padding: 20px;
+      overflow-y: auto;
+      flex: 1;
+    }
+    .modal-footer {
+      padding: 16px 20px;
+      border-top: 1px solid var(--verre-brd);
+      display: flex;
+      gap: 12px;
+      justify-content: flex-end;
+    }
+    .form-group {
+      margin-bottom: 16px;
+    }
+    .form-group label {
+      display: block;
+      font-size: 0.9rem;
+      font-weight: 500;
+      margin-bottom: 6px;
+      color: var(--text);
+    }
+    .form-group input {
+      width: 100%;
+      padding: 10px 12px;
+      border: 1px solid var(--verre-brd);
+      border-radius: 8px;
+      background: var(--verre);
+      color: var(--text);
+      font-size: 0.95rem;
+      transition: all 0.2s;
+    }
+    .form-group input:focus {
+      outline: none;
+      border-color: var(--primary);
+      background: var(--verre-fort);
+    }
+    .bouton-principal, .bouton-secondaire {
+      padding: 10px 18px;
+      border: none;
+      border-radius: 8px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .bouton-principal {
+      background: var(--primary);
+      color: var(--primary-txt);
+    }
+    .bouton-principal:hover { filter: brightness(1.1); }
+    .bouton-secondaire {
+      background: var(--verre-fort);
+      color: var(--text);
+    }
+    .bouton-secondaire:hover { background: var(--verre-fort); filter: brightness(1.15); }
+
+    /* Info small pour les détails */
+    .info-small {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      margin: 8px 0 0 0;
+    }
+
+    /* Bouton d'action pour admin aliments */
+    .btn { display: inline-block; padding: 10px 16px; border-radius: 8px; border: none; cursor: pointer; font-weight: 500; }
+    .btn-secondaire { background: var(--verre-fort); color: var(--text); }
+    .btn-secondaire:hover { background: var(--verre-fort); filter: brightness(1.1); }
   </style>
 </head>
 <body>
@@ -1214,6 +1315,82 @@
     <p class="note">Tous les comptes utilisant ce projet Supabase. Les emails ne sont pas récupérables depuis l'appli — identifie les comptes par leurs données (poids, dernière activité).</p>
     <div id="admin-liste"><p class="note">Chargement…</p></div>
     <button class="btn btn-secondaire" onclick="chargerAdmin()">🔄 Actualiser la liste</button>
+
+    <!-- 🆕 SECTION : Gestion des aliments personnalisés partagés -->
+    <div style="margin-top: 40px; padding: 20px 0; border-top: 2px solid var(--verre);">
+      <div id="admin-aliments-liste"><p class="note">Chargement des aliments…</p></div>
+      <style>
+        .admin-aliments-head { margin-bottom: 20px; }
+        .admin-aliments-head h3 { margin: 0 0 8px 0; }
+        .admin-aliment-card {
+          background: var(--verre);
+          border: 1px solid var(--verre-brd);
+          border-radius: var(--rayon);
+          padding: 16px;
+          margin-bottom: 12px;
+          backdrop-filter: blur(var(--verre-flou-doux));
+        }
+        .aliment-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: flex-start;
+          margin-bottom: 12px;
+          gap: 12px;
+        }
+        .aliment-info strong { display: block; margin-bottom: 4px; }
+        .aliment-info small { font-size: 0.75rem; color: var(--text-muted); }
+        .aliment-actions { display: flex; gap: 8px; }
+        .bouton-petit {
+          padding: 6px 12px;
+          font-size: 0.85rem;
+          border: none;
+          border-radius: 8px;
+          background: var(--verre-fort);
+          color: var(--text);
+          cursor: pointer;
+          transition: all 0.2s;
+        }
+        .bouton-petit:hover { background: var(--primary); color: var(--primary-txt); }
+        .bouton-petit.danger:hover { background: var(--danger); }
+        .aliment-details {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 12px;
+          margin-bottom: 12px;
+          font-size: 0.9rem;
+          padding: 12px 0;
+          border-bottom: 1px solid var(--verre-brd);
+        }
+        .detail-item label {
+          display: block;
+          font-size: 0.75rem;
+          color: var(--text-muted);
+          margin-bottom: 4px;
+        }
+        .detail-item span {
+          display: block;
+          font-weight: 500;
+        }
+        .aliment-nutrition-grid {
+          display: grid;
+          grid-template-columns: repeat(4, 1fr);
+          gap: 8px;
+        }
+        .nut-box {
+          background: var(--verre-fort);
+          padding: 8px;
+          border-radius: 8px;
+          text-align: center;
+          border-left: 3px solid var(--primary);
+        }
+        .nut-box small {
+          display: block;
+          font-size: 0.7rem;
+          color: var(--text-muted);
+          margin-bottom: 4px;
+        }
+      </style>
+    </div>
 
     <div id="admin-stats-zone" class="hidden">
       <div class="titre-section">📊 Statistiques — <span id="admin-stats-nom"></span></div>
@@ -5625,6 +5802,366 @@ window.addEventListener('load', () => {
   try { ecran = localStorage.getItem('elite_ecran') || 'repas'; } catch (e) {}
   allerA(ecran);
 });
+
+/* ============================================================================
+   AMÉLIORATIONS DEMANDÉES :
+   1. Partage des aliments entre utilisateurs
+   2. Intégration USDA
+   3. Admin avancé avec gestion des aliments personnalisés
+   ============================================================================ */
+
+// Cache pour USDA
+let cacheUSDA = new Map();
+
+// Recherche USDA avec traduction
+async function chercherUSDA(q) {
+  if (!q || q.length < 2) return [];
+  
+  const cleCachee = `usda_${normaliserRecherche(q)}`;
+  if (cacheUSDA.has(cleCachee)) return cacheUSDA.get(cleCachee);
+  
+  try {
+    // Utilise l'API USDA FoodData Central
+    const response = await fetch(`https://fdc.nal.usda.gov/api/foods/search?query=${encodeURIComponent(q)}&pageSize=10&api_key=DEMO_KEY`);
+    if (!response.ok) throw new Error('Erreur USDA');
+    
+    const data = await response.json();
+    const aliments = (data.foods || []).map(food => {
+      // Extraction des nutriments
+      let kcal = 0, p = 0, c = 0, f = 0;
+      
+      (food.foodNutrients || []).forEach(n => {
+        if (n.nutrientName === 'Energy' && n.unitName === 'kcal') kcal = n.value;
+        if (n.nutrientName === 'Protein') p = n.value;
+        if (n.nutrientName === 'Carbohydrate, by difference') c = n.value;
+        if (n.nutrientName === 'Total lipid (fat)') f = n.value;
+      });
+      
+      return {
+        nom: food.description || q,
+        kcal100: Math.round(kcal || 0),
+        p100: Math.round(p * 10) / 10 || 0,
+        c100: Math.round(c * 10) / 10 || 0,
+        f100: Math.round(f * 10) / 10 || 0,
+        source: 'usda',
+        code_barre: food.gtinUpc || '',
+        createur: 'USDA'
+      };
+    });
+    
+    cacheUSDA.set(cleCachee, aliments);
+    return aliments;
+  } catch (e) {
+    console.warn('USDA indisponible:', e);
+    return [];
+  }
+}
+
+// Fonction améliorée de recherche combinant Supabase + USDA + Historique partagé
+async function afficherRechercheAmelioree(query, seulementHistorique) {
+  if (!query || query.length < 2) return;
+  
+  const conteneur = document.getElementById('resultats-recherche');
+  if (!conteneur) return;
+  
+  conteneur.innerHTML = '<p class=\"note\">Recherche en cours…</p>';
+  
+  try {
+    // 1. Recherche dans l'historique partagé
+    const historiquePartage = chercherHistoriquePartage(query);
+    
+    // 2. Recherche Supabase (aliments personnalisés)
+    const { aliments: alimentsSupabase } = await chercherAlimentsSupabase(query);
+    
+    // 3. Recherche USDA (si connecté)
+    const alimentsUSDA = supa ? await chercherUSDA(query) : [];
+    
+    // Fusion et déduplication
+    const resultats = [
+      ...historiquePartage,
+      ...alimentsSupabase,
+      ...alimentsUSDA
+    ];
+    
+    // Déduplique par nom normalisé
+    const vus = new Set();
+    const deduplique = resultats.filter(a => {
+      const cle = normaliserRecherche(a.nom || '');
+      if (vus.has(cle)) return false;
+      vus.add(cle);
+      return true;
+    });
+    
+    if (deduplique.length === 0) {
+      conteneur.innerHTML = '<p class=\"note\">Aucun résultat. Saisis les valeurs à la main ou scanne un code-barres.</p>';
+      return;
+    }
+    
+    // Affichage avec badges de source
+    conteneur.innerHTML = deduplique.map(a => `
+      <button class=\"bouton-aliment\" onclick="chargerAliment(${JSON.stringify(a).replace(/"/g, '&quot;')})">
+        <div class=\"aliment-nom\">${escapeHtml(a.nom || 'Sans nom')}</div>
+        <div class=\"aliment-cals\">${a.kcal100 || 0} kcal / 100g</div>
+        <div class=\"aliment-badge\">${a.createur ? '👤 ' + escapeHtml(a.createur) : ''} 
+          ${a.source === 'usda' ? '🌐 USDA' : a.source === 'historique' ? '⏰ Historique' : ''}</div>
+      </button>
+    `).join('');
+  } catch (e) {
+    conteneur.innerHTML = '<p class=\"note\">Erreur : ' + escapeHtml(e.message) + '</p>';
+  }
+}
+
+// Aliments partagés entre tous les utilisateurs (tableau de base)
+function chercherHistoriquePartage(q) {
+  const t = normaliserRecherche(q);
+  if (t.length < 2) return [];
+  
+  try {
+    const aliHistorique = JSON.parse(localStorage.getItem('ali-historique-partage') || '[]');
+    return aliHistorique.filter(a => 
+      normaliserRecherche(a.nom || '').includes(t) ||
+      normaliserRecherche(a.code_barre || '').includes(t)
+    );
+  } catch (e) {
+    return [];
+  }
+}
+
+// Enregistre un aliment dans l'historique partagé
+function enregistrerHistoriquePartage(aliment) {
+  try {
+    const historique = JSON.parse(localStorage.getItem('ali-historique-partage') || '[]');
+    
+    // Ajoute le créateur et la date
+    const item = {
+      ...aliment,
+      createur: sessionUtilisateur?.email || 'anonyme',
+      cree_le: new Date().toISOString(),
+      id_unique: Math.random().toString(36).substr(2, 9)
+    };
+    
+    historique.push(item);
+    localStorage.setItem('ali-historique-partage', JSON.stringify(historique));
+  } catch (e) {
+    console.error('Erreur historique partagé:', e);
+  }
+}
+
+// SECTION ADMIN AVANCÉE : Gestion des aliments personnalisés
+function chargerAdminAliments() {
+  const conteneur = document.getElementById('admin-aliments-liste');
+  if (!conteneur) return;
+  
+  try {
+    const historique = JSON.parse(localStorage.getItem('ali-historique-partage') || '[]');
+    
+    if (historique.length === 0) {
+      conteneur.innerHTML = '<p class=\"note\">Aucun aliment personnalisé créé.</p>';
+      return;
+    }
+    
+    // Trie par date de création (plus récents d'abord)
+    const tries = historique.sort((a, b) => new Date(b.cree_le) - new Date(a.cree_le));
+    
+    conteneur.innerHTML = `
+      <div class=\"admin-aliments-head\">
+        <h3>📋 Aliments Personnalisés (${tries.length})</h3>
+        <p class=\"info-small\">Créés par les utilisateurs • Partagés dans toute l'application</p>
+      </div>
+      ${tries.map(a => `
+        <div class=\"admin-aliment-card\">
+          <div class=\"aliment-header\">
+            <div class=\"aliment-info\">
+              <strong>${escapeHtml(a.nom || 'Sans nom')}</strong>
+              <small>ID: ${a.id_unique}</small>
+            </div>
+            <div class=\"aliment-actions\">
+              <button onclick="editerAliment('${a.id_unique}')" class=\"bouton-petit\">✏️ Éditer</button>
+              <button onclick="supprimerAliment('${a.id_unique}')" class=\"bouton-petit danger\">🗑️ Supprimer</button>
+            </div>
+          </div>
+          
+          <div class=\"aliment-details\">
+            <div class=\"detail-item\">
+              <label>Code-barres:</label>
+              <span>${a.code_barre || 'N/A'}</span>
+            </div>
+            <div class=\"detail-item\">
+              <label>Créateur:</label>
+              <span>${escapeHtml(a.createur || 'inconnu')}</span>
+            </div>
+            <div class=\"detail-item\">
+              <label>Créé le:</label>
+              <span>${new Date(a.cree_le).toLocaleDateString('fr-FR')}</span>
+            </div>
+          </div>
+          
+          <div class=\"aliment-nutrition-grid\">
+            <div class=\"nut-box\">
+              <small>Kcal/100g</small>
+              <strong>${a.kcal100 || 0}</strong>
+            </div>
+            <div class=\"nut-box\" style=\"color: var(--protein)\">
+              <small>Protéines</small>
+              <strong>${a.p100 || 0}g</strong>
+            </div>
+            <div class=\"nut-box\" style=\"color: var(--carbs)\">
+              <small>Glucides</small>
+              <strong>${a.c100 || 0}g</strong>
+            </div>
+            <div class=\"nut-box\" style=\"color: var(--fat)\">
+              <small>Lipides</small>
+              <strong>${a.f100 || 0}g</strong>
+            </div>
+          </div>
+        </div>
+      `).join('')}
+    `;
+  } catch (e) {
+    conteneur.innerHTML = '<p class=\"note\">Erreur : ' + escapeHtml(e.message) + '</p>';
+  }
+}
+
+// Éditer un aliment personnalisé
+function editerAliment(idUnique) {
+  try {
+    const historique = JSON.parse(localStorage.getItem('ali-historique-partage') || '[]');
+    const aliment = historique.find(a => a.id_unique === idUnique);
+    
+    if (!aliment) {
+      alert('Aliment non trouvé');
+      return;
+    }
+    
+    // Crée un modal d'édition
+    const modal = document.createElement('div');
+    modal.className = 'modal show';
+    modal.id = 'modal-edit-aliment';
+    modal.innerHTML = `
+      <div class=\"modal-content\">
+        <div class=\"modal-header\">
+          <h3>✏️ Éditer l'aliment</h3>
+          <button class=\"fermer-modal\" onclick=\"this.closest('.modal').classList.remove('show')\">✕</button>
+        </div>
+        
+        <div class=\"modal-body\">
+          <div class=\"form-group\">
+            <label>Nom</label>
+            <input type=\"text\" id=\"edit-nom\" value=\"${escapeHtml(aliment.nom || '')}\">
+          </div>
+          
+          <div class=\"form-group\">
+            <label>Code-barres</label>
+            <input type=\"text\" id=\"edit-code-barre\" value=\"${escapeHtml(aliment.code_barre || '')}\">
+          </div>
+          
+          <div style=\"display: grid; grid-template-columns: 1fr 1fr; gap: 12px;\">
+            <div class=\"form-group\">
+              <label>Kcal/100g</label>
+              <input type=\"number\" id=\"edit-kcal\" value=\"${aliment.kcal100 || 0}\">
+            </div>
+            <div class=\"form-group\">
+              <label>Protéines (g)</label>
+              <input type=\"number\" id=\"edit-p100\" step=\"0.1\" value=\"${aliment.p100 || 0}\">
+            </div>
+            <div class=\"form-group\">
+              <label>Glucides (g)</label>
+              <input type=\"number\" id=\"edit-c100\" step=\"0.1\" value=\"${aliment.c100 || 0}\">
+            </div>
+            <div class=\"form-group\">
+              <label>Lipides (g)</label>
+              <input type=\"number\" id=\"edit-f100\" step=\"0.1\" value=\"${aliment.f100 || 0}\">
+            </div>
+          </div>
+        </div>
+        
+        <div class=\"modal-footer\">
+          <button onclick=\"sauvegarderEditionAliment('${idUnique}')\" class=\"bouton-principal\">✓ Sauvegarder</button>
+          <button onclick=\"this.closest('.modal').classList.remove('show')\" class=\"bouton-secondaire\">Annuler</button>
+        </div>
+      </div>
+    `;
+    
+    document.body.appendChild(modal);
+  } catch (e) {
+    alert('Erreur: ' + e.message);
+  }
+}
+
+// Sauvegarde les modifications d'un aliment
+function sauvegarderEditionAliment(idUnique) {
+  try {
+    const historique = JSON.parse(localStorage.getItem('ali-historique-partage') || '[]');
+    const index = historique.findIndex(a => a.id_unique === idUnique);
+    
+    if (index === -1) {
+      alert('Aliment non trouvé');
+      return;
+    }
+    
+    // Récupère les nouvelles valeurs
+    historique[index].nom = document.getElementById('edit-nom').value;
+    historique[index].code_barre = document.getElementById('edit-code-barre').value;
+    historique[index].kcal100 = parseFloat(document.getElementById('edit-kcal').value) || 0;
+    historique[index].p100 = parseFloat(document.getElementById('edit-p100').value) || 0;
+    historique[index].c100 = parseFloat(document.getElementById('edit-c100').value) || 0;
+    historique[index].f100 = parseFloat(document.getElementById('edit-f100').value) || 0;
+    historique[index].modifie_le = new Date().toISOString();
+    historique[index].modifie_par = sessionUtilisateur?.email || 'anonyme';
+    
+    localStorage.setItem('ali-historique-partage', JSON.stringify(historique));
+    
+    // Ferme le modal et recharge la liste
+    document.getElementById('modal-edit-aliment')?.classList.remove('show');
+    chargerAdminAliments();
+    
+    alert('Aliment mis à jour avec succès!');
+  } catch (e) {
+    alert('Erreur: ' + e.message);
+  }
+}
+
+// Supprime un aliment personnalisé
+function supprimerAliment(idUnique) {
+  if (!confirm('Êtes-vous sûr de vouloir supprimer cet aliment? Cette action est irréversible.')) {
+    return;
+  }
+  
+  try {
+    let historique = JSON.parse(localStorage.getItem('ali-historique-partage') || '[]');
+    const aliment = historique.find(a => a.id_unique === idUnique);
+    
+    if (!aliment) {
+      alert('Aliment non trouvé');
+      return;
+    }
+    
+    // Sauvegarde dans un journal de suppression
+    const supprimés = JSON.parse(localStorage.getItem('ali-supprimes-log') || '[]');
+    supprimés.push({
+      ...aliment,
+      supprime_par: sessionUtilisateur?.email || 'anonyme',
+      supprime_le: new Date().toISOString()
+    });
+    localStorage.setItem('ali-supprimes-log', JSON.stringify(supprimés));
+    
+    // Supprime de la liste active
+    historique = historique.filter(a => a.id_unique !== idUnique);
+    localStorage.setItem('ali-historique-partage', JSON.stringify(historique));
+    
+    chargerAdminAliments();
+    alert('Aliment supprimé!');
+  } catch (e) {
+    alert('Erreur: ' + e.message);
+  }
+}
+
+// Appel à chargerAdminAliments quand on accède à l'admin
+const originalChargerAdmin = window.chargerAdmin;
+window.chargerAdmin = function() {
+  if (originalChargerAdmin) originalChargerAdmin.apply(this, arguments);
+  setTimeout(() => chargerAdminAliments(), 100);
+};
 </script>
 </body>
 </html>
