@@ -606,8 +606,11 @@
       transition: opacity 0.25s ease, transform 0.25s ease;
     }
     body.couche-ouverte .fab-zone { opacity: 0; pointer-events: none; transform: translateY(14px) scale(0.9); }
-    /* Une feuille ouverte doit défiler seule : sans cela, le geste passe à
-       travers et c'est la page du dessous qui bouge. */
+    /* Une couche ouverte doit défiler seule : sans cela, le geste passe à
+       travers et c'est la page du dessous qui bouge. `touch-action: none`
+       bloque le geste partout, il faut donc le réautoriser explicitement
+       sur les conteneurs qui, eux, ont le droit de défiler (voir
+       .modal-content et .feuille-contenu plus bas). */
     body.couche-ouverte { overflow: hidden; touch-action: none; }
     .fab {
       width: 60px; height: 60px; border-radius: 21px; border: 1px solid var(--verre-brd);
@@ -672,6 +675,11 @@
       border: 1px solid var(--verre-brd);
       border-radius: 26px; padding: 22px; max-width: 520px; width: 100%;
       max-height: 88vh; overflow-y: auto;
+      /* Le geste tactile doit fonctionner ici malgré le touch-action:none
+         posé sur le body, et rester confiné à la modale. */
+      touch-action: pan-y;
+      overscroll-behavior: contain;
+      -webkit-overflow-scrolling: touch;
       box-shadow: var(--ombre-haute), inset 0 1px 0 var(--verre-hi), inset 0 -1px 0 var(--verre-lo);
       animation: modalIn 0.35s cubic-bezier(0.16, 1, 0.3, 1);
     }
@@ -741,9 +749,9 @@
     }
     .feuille-entete .feuille-titre { margin: 0; flex: 1; text-align: left; }
     .feuille-fermer {
-      flex: none; width: 32px; height: 32px; border-radius: 10px;
+      flex: none; width: 44px; height: 44px; border-radius: 12px;
       background: var(--verre-creux); border: 1px solid var(--verre-brd);
-      color: var(--text); font-size: 1.2rem; line-height: 1; cursor: pointer;
+      color: var(--text); font-size: 1.3rem; line-height: 1; cursor: pointer;
       display: flex; align-items: center; justify-content: center;
     }
     .feuille-fermer:hover { background: var(--verre-fort); }
@@ -798,8 +806,8 @@
     }
     .aliment-actions { display: flex; gap: 6px; flex: none; }
     .bouton-petit {
-      width: 34px; height: 34px; padding: 0; font-size: 0.95rem;
-      border: 1px solid var(--verre-brd); border-radius: 10px;
+      width: 44px; height: 44px; padding: 0; font-size: 1rem;
+      border: 1px solid var(--verre-brd); border-radius: 12px;
       background: var(--verre); color: var(--text); cursor: pointer;
       display: flex; align-items: center; justify-content: center;
       transition: background 0.2s, border-color 0.2s;
@@ -1070,106 +1078,12 @@
 
     hr.sep { margin: 18px 0; border: none; border-top: 1px solid var(--verre-brd); }
 
-    /* ========== STYLES POUR MODALS D'ÉDITION ET FORMS ========== */
-    .modal-content {
-      background: var(--barre);
-      border: 1px solid var(--verre-brd);
-      border-radius: var(--rayon);
-      overflow: hidden;
-      box-shadow: var(--ombre-haute);
-      max-width: 90vw;
-      max-height: 90vh;
-      display: flex;
-      flex-direction: column;
-    }
-    .modal-header {
-      padding: 16px 20px;
-      border-bottom: 1px solid var(--verre-brd);
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-    .modal-header h3 { margin: 0; }
-    .fermer-modal {
-      background: none;
-      border: none;
-      color: var(--text);
-      font-size: 1.2rem;
-      cursor: pointer;
-      width: 32px;
-      height: 32px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-    .fermer-modal:hover { background: var(--verre-fort); border-radius: 8px; }
-    .modal-body {
-      padding: 20px;
-      overflow-y: auto;
-      flex: 1;
-    }
-    .modal-footer {
-      padding: 16px 20px;
-      border-top: 1px solid var(--verre-brd);
-      display: flex;
-      gap: 12px;
-      justify-content: flex-end;
-    }
-    .form-group {
-      margin-bottom: 16px;
-    }
-    .form-group label {
-      display: block;
-      font-size: 0.9rem;
-      font-weight: 500;
-      margin-bottom: 6px;
-      color: var(--text);
-    }
-    .form-group input {
-      width: 100%;
-      padding: 10px 12px;
-      border: 1px solid var(--verre-brd);
-      border-radius: 8px;
-      background: var(--verre);
-      color: var(--text);
-      font-size: 0.95rem;
-      transition: all 0.2s;
-    }
-    .form-group input:focus {
-      outline: none;
-      border-color: var(--primary);
-      background: var(--verre-fort);
-    }
-    .bouton-principal, .bouton-secondaire {
-      padding: 10px 18px;
-      border: none;
-      border-radius: 8px;
-      font-weight: 500;
-      cursor: pointer;
-      transition: all 0.2s;
-    }
-    .bouton-principal {
-      background: var(--primary);
-      color: var(--primary-txt);
-    }
-    .bouton-principal:hover { filter: brightness(1.1); }
-    .bouton-secondaire {
-      background: var(--verre-fort);
-      color: var(--text);
-    }
-    .bouton-secondaire:hover { background: var(--verre-fort); filter: brightness(1.15); }
-
-    /* Info small pour les détails */
-    .info-small {
-      font-size: 0.8rem;
-      color: var(--text-muted);
-      margin: 8px 0 0 0;
-    }
-
-    /* Bouton d'action pour admin aliments */
-    .btn { display: inline-block; padding: 10px 16px; border-radius: 8px; border: none; cursor: pointer; font-weight: 500; }
-    .btn-secondaire { background: var(--verre-fort); color: var(--text); }
-    .btn-secondaire:hover { background: var(--verre-fort); filter: brightness(1.1); }
+    /* --- Modale d'édition d'aliment ---------------------------------
+       Ces classes complètent les styles existants. Elles ne redéfinissent
+       ni .modal-content, ni .btn, ni .btn-secondaire : une version
+       précédente le faisait et cassait le défilement de TOUTES les
+       modales de l'appli, ainsi que l'apparence de tous les boutons. */
+    .info-small { font-size: 0.8rem; color: var(--text-muted); margin: 8px 0 0; }
   </style>
 </head>
 <body>
