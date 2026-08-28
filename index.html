@@ -289,26 +289,59 @@
     }
 
     .splash-figure {
-      width: 128px; height: 133px; color: var(--primary); z-index: 1;
-      filter: drop-shadow(0 0 14px var(--primary-glow));
+      width: min(46vw, 148px); height: min(46vw, 148px);
+      color: var(--primary); z-index: 1;
+      filter: drop-shadow(0 6px 18px rgba(0, 0, 0, 0.5));
+      overflow: visible;
     }
     /* pathLength="1" normalise chaque tracé : un seul jeu de valeurs anime
        aussi bien un cercle qu'une courbe de Bézier. */
-    .splash-figure .t {
+    /* pathLength="1" normalise chaque tracé : le pinceau avance de 0 à 1,
+       quelle que soit la longueur réelle de la courbe. */
+    .splash-figure .trace {
       stroke-dasharray: 1;
       stroke-dashoffset: 1;
-      animation: tracer 0.55s cubic-bezier(0.65, 0, 0.35, 1) forwards;
+      animation: tracer 0.72s cubic-bezier(0.32, 0.72, 0.24, 1) forwards;
     }
     @keyframes tracer { to { stroke-dashoffset: 0; } }
-    /* L'ordre suit celui d'un dessin à la main : tête, épaules, bras, buste. */
-    .splash-figure .t1 { animation-delay: 0.10s; }
-    .splash-figure .t2 { animation-delay: 0.20s; }
-    .splash-figure .t3 { animation-delay: 0.28s; }
-    .splash-figure .t4 { animation-delay: 0.46s; }
-    .splash-figure .t5 { animation-delay: 0.36s; }
-    .splash-figure .t6 { animation-delay: 0.52s; }
-    .splash-figure .t7 { animation-delay: 0.50s; }
-    .splash-figure .t8 { animation-delay: 0.58s; }
+
+    /* Le geste : l'anneau d'abord, d'un seul mouvement, puis l'élan qui monte
+       à l'intérieur. Le poignet ne repasse jamais deux fois au même endroit. */
+    .splash-figure .g-anneau { animation-delay: 0.14s; animation-duration: 0.80s; }
+    .splash-figure .g-anneau-2 { animation-delay: 0.20s; animation-duration: 0.78s; }
+    .splash-figure .g-elan { animation-delay: 0.76s; animation-duration: 0.46s; }
+    .splash-figure .g-elan-2 { animation-delay: 0.80s; animation-duration: 0.44s; }
+
+    /* La pointe du pinceau : on la voit courir, puis elle se lève. */
+    .splash-figure .pointe { opacity: 0; animation: pointe 0.94s ease-out 0.14s forwards; }
+    .splash-figure .pointe-2 { opacity: 0; animation: pointe 0.60s ease-out 0.76s forwards; }
+    @keyframes pointe {
+      0% { opacity: 0; }
+      12% { opacity: 0.9; }
+      82% { opacity: 0.7; }
+      100% { opacity: 0; }
+    }
+
+    /* Le lavis de couleur ne se superpose pas exactement au trait : c'est ce
+       décalage d'impression qui fait la peinture, et pas le décalque. */
+    .splash-figure .lavis {
+      opacity: 0;
+      transform: translate(2.5px, -3px) scale(1.04);
+      transform-origin: 60px 60px;
+      transform-box: fill-box;
+      animation: lavis 1.05s ease-out 0.44s forwards;
+    }
+    @keyframes lavis {
+      from { opacity: 0; transform: translate(6px, -7px) scale(1.10); }
+      to { opacity: 1; transform: translate(2.5px, -3px) scale(1.03); }
+    }
+
+    /* Les gouttes projetées à la levée du pinceau. */
+    .splash-figure .goutte { opacity: 0; animation: goutte 0.5s cubic-bezier(0.2, 1.4, 0.4, 1) forwards; }
+    @keyframes goutte { from { opacity: 0; transform: scale(0.2); } to { opacity: 1; transform: scale(1); } }
+    .splash-figure .d1 { animation-delay: 1.02s; transform-origin: 101px 88px; }
+    .splash-figure .d2 { animation-delay: 1.10s; transform-origin: 107px 74px; }
+    .splash-figure .d3 { animation-delay: 1.16s; transform-origin: 88px 22px; }
 
     .splash-nom {
       margin-top: 26px; z-index: 1;
@@ -351,12 +384,15 @@
     }
 
     @media (prefers-reduced-motion: reduce) {
-      #splash-screen, .splash-grille, .splash-figure .t, .splash-nom,
+      #splash-screen, .splash-grille, .splash-figure .trace, .splash-figure .lavis,
+      .splash-figure .goutte, .splash-figure .pointe, .splash-figure .pointe-2, .splash-nom,
       .splash-hairline, .splash-tag, .splash-skip, .etat-bg::before { animation: none !important; }
       .splash-grille, .splash-nom, .splash-tag, .splash-skip { opacity: 1; transform: none; }
       .splash-nom { letter-spacing: 7px; }
       .splash-hairline { width: 168px; }
-      .splash-figure .t { stroke-dashoffset: 0; }
+      .splash-figure .trace { stroke-dashoffset: 0; }
+      .splash-figure .lavis, .splash-figure .goutte { opacity: 1; transform: none; }
+      .splash-figure .pointe, .splash-figure .pointe-2 { display: none; }
       * { transition-duration: 0.01ms !important; }
     }
 
@@ -1231,23 +1267,82 @@
 <div id="splash-screen">
   <div class="splash-grille" aria-hidden="true"></div>
 
-  <svg class="splash-figure" viewBox="0 0 100 104" fill="none" aria-hidden="true"
-       stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round">
-    <!-- Double biceps de face. Chaque trait porte pathLength="1" : la longueur
-         est normalisée, le tracé s'anime sans avoir à mesurer les courbes. -->
-    <circle class="t t1" cx="50" cy="19" r="7.4" pathLength="1"/>
-    <path class="t t2" d="M35 39 Q50 29 65 39" pathLength="1"/>
-    <path class="t t3" d="M35 39 Q24 37 19.5 28.5 Q21.5 17 30 13" pathLength="1"/>
-    <path class="t t3" d="M65 39 Q76 37 80.5 28.5 Q78.5 17 70 13" pathLength="1"/>
-    <path class="t t4" d="M26.5 12 L33.5 12" pathLength="1"/>
-    <path class="t t4" d="M66.5 12 L73.5 12" pathLength="1"/>
-    <path class="t t5" d="M35 40 Q32.5 52 39.5 63.5 L40.5 73" pathLength="1"/>
-    <path class="t t5" d="M65 40 Q67.5 52 60.5 63.5 L59.5 73" pathLength="1"/>
-    <path class="t t6" d="M39.5 48.5 Q50 54 60.5 48.5" pathLength="1"/>
-    <path class="t t6" d="M50 55.5 L50 64.5" pathLength="1"/>
-    <path class="t t7" d="M40.5 73 L59.5 73" pathLength="1"/>
-    <path class="t t8" d="M43.5 73.5 Q40 82 41.5 88.5 Q43 95 42.5 101" pathLength="1"/>
-    <path class="t t8" d="M56.5 73.5 Q60 82 58.5 88.5 Q57 95 57.5 101" pathLength="1"/>
+  <svg class="splash-figure" viewBox="0 0 120 120" fill="none" aria-hidden="true">
+    <defs>
+      <!-- Le bord du trait est mangé par le grain du papier et les poils du
+           pinceau : c'est ce bruit déplacé qui distingue une peinture d'un
+           tracé vectoriel. -->
+      <filter id="pinceau" x="-25%" y="-25%" width="150%" height="150%">
+        <feTurbulence type="fractalNoise" baseFrequency="0.035 0.055" numOctaves="3" seed="7" result="grain"/>
+        <feDisplacementMap in="SourceGraphic" in2="grain" scale="4.6" xChannelSelector="R" yChannelSelector="G" result="brut"/>
+        <feGaussianBlur in="brut" stdDeviation="0.35"/>
+      </filter>
+      <!-- Le lavis : même bruit, bien plus lâche, comme la couleur qui fuit
+           dans la fibre du papier. -->
+      <filter id="lavis-f" x="-40%" y="-40%" width="180%" height="180%">
+        <feTurbulence type="fractalNoise" baseFrequency="0.014" numOctaves="4" seed="3" result="grain"/>
+        <feDisplacementMap in="SourceGraphic" in2="grain" scale="17" xChannelSelector="R" yChannelSelector="G" result="brut"/>
+        <feGaussianBlur in="brut" stdDeviation="3.2"/>
+      </filter>
+      <filter id="pinceau-fin" x="-30%" y="-30%" width="160%" height="160%">
+        <feTurbulence type="fractalNoise" baseFrequency="0.06" numOctaves="2" seed="11" result="grain"/>
+        <feDisplacementMap in="SourceGraphic" in2="grain" scale="3" xChannelSelector="R" yChannelSelector="G"/>
+      </filter>
+      <!-- La charge d'encre s'épuise du talon vers la pointe. -->
+      <linearGradient id="encre" x1="0" y1="1" x2="1" y2="0">
+        <stop offset="0" stop-color="var(--primary)" stop-opacity="1"/>
+        <stop offset="0.62" stop-color="var(--primary)" stop-opacity="0.95"/>
+        <stop offset="1" stop-color="var(--primary)" stop-opacity="0.62"/>
+      </linearGradient>
+      <radialGradient id="tache" cx="0.42" cy="0.38" r="0.68">
+        <stop offset="0" stop-color="var(--primary)" stop-opacity="0.42"/>
+        <stop offset="0.55" stop-color="var(--primary)" stop-opacity="0.20"/>
+        <stop offset="1" stop-color="var(--accent)" stop-opacity="0.04"/>
+      </radialGradient>
+      <path id="spine-anneau" d="M88 26 C70 12 44 14 30 32 C14 52 16 84 38 98 C60 112 88 104 98 82"/>
+      <path id="spine-elan" d="M40 70 C49 74 53 71 59 62 C65 53 71 41 83 35"/>
+    </defs>
+
+    <!-- 1. Le lavis, posé sous le trait et volontairement décalé -->
+    <g class="lavis" filter="url(#lavis-f)">
+      <ellipse cx="58" cy="60" rx="39" ry="37" fill="url(#tache)"/>
+    </g>
+
+    <!-- 2. L'anneau : un seul geste, du haut vers la droite en passant par le bas.
+            Deux passes superposées — une large qui donne la chair du trait, une
+            fine qui rattrape le bord — c'est ainsi qu'un trait gagne son épaisseur
+            variable sans jamais être régulier. -->
+    <g filter="url(#pinceau)" stroke-linecap="round" fill="none">
+      <path class="trace g-anneau" d="M88 26 C70 12 44 14 30 32 C14 52 16 84 38 98 C60 112 88 104 98 82" pathLength="1" stroke="url(#encre)" stroke-width="11.5"/>
+      <path class="trace g-anneau-2" d="M88 26 C70 12 44 14 30 32 C14 52 16 84 38 98 C60 112 88 104 98 82" pathLength="1" stroke="var(--primary)" stroke-width="5.5" stroke-opacity="0.55"/>
+    </g>
+
+    <!-- 3. L'élan intérieur, tracé après, plus vif et plus sec -->
+    <g filter="url(#pinceau)" stroke-linecap="round" fill="none">
+      <path class="trace g-elan" d="M40 70 C49 74 53 71 59 62 C65 53 71 41 83 35" pathLength="1" stroke="url(#encre)" stroke-width="9"/>
+      <path class="trace g-elan-2" d="M40 70 C49 74 53 71 59 62 C65 53 71 41 83 35" pathLength="1" stroke="#ffffff" stroke-width="2.4" stroke-opacity="0.22"/>
+    </g>
+
+    <!-- 4. Les gouttes projetées quand le pinceau se lève -->
+    <g filter="url(#pinceau-fin)" fill="var(--primary)">
+      <circle class="goutte d1" cx="101" cy="88" r="3.1" fill-opacity="0.85"/>
+      <circle class="goutte d2" cx="107" cy="74" r="1.6" fill-opacity="0.6"/>
+      <circle class="goutte d3" cx="88" cy="22" r="2.1" fill-opacity="0.7"/>
+    </g>
+
+    <!-- 5. La pointe du pinceau, qui court le long du geste puis se lève -->
+    <circle class="pointe" r="4.6" fill="#ffffff" fill-opacity="0.9">
+      <animateMotion begin="0.14s" dur="0.80s" fill="freeze" keyPoints="0;1" keyTimes="0;1"
+                     calcMode="spline" keySplines="0.32 0.72 0.24 1">
+        <mpath href="#spine-anneau"/>
+      </animateMotion>
+    </circle>
+    <circle class="pointe-2" r="3.6" fill="#ffffff" fill-opacity="0.9">
+      <animateMotion begin="0.76s" dur="0.46s" fill="freeze" keyPoints="0;1" keyTimes="0;1"
+                     calcMode="spline" keySplines="0.32 0.72 0.24 1">
+        <mpath href="#spine-elan"/>
+      </animateMotion>
+    </circle>
   </svg>
 
   <div class="splash-nom">MON COACH</div>
@@ -1281,7 +1376,7 @@
     var dejaVu = false;
     try { dejaVu = sessionStorage.getItem('elite_splash') === '1'; sessionStorage.setItem('elite_splash', '1'); } catch (e) {}
     if (dejaVu) { splash.style.animation = 'none'; hideSplash(); }
-    else { setTimeout(hideSplash, 1700); }
+    else { setTimeout(hideSplash, 2150); }
     splash.addEventListener('click', hideSplash);
   })();
 </script>
