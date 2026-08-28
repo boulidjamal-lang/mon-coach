@@ -10,7 +10,34 @@
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
   <meta http-equiv="Pragma" content="no-cache">
   <meta http-equiv="Expires" content="0">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <!-- Le zoom est neutralisé ici, dans le <head>, avant que quoi que ce soit
+       de l'appli ne soit chargé : la meta ci-dessus pour les navigateurs qui
+       l'honorent, ces trois écouteurs pour Safari iOS qui l'ignore. Aucune
+       dépendance : ce bloc s'exécute au parsing du document. -->
+  <script>
+    (function () {
+      var stop = function (e) { if (e.cancelable) e.preventDefault(); };
+      ['gesturestart', 'gesturechange', 'gestureend'].forEach(function (t) {
+        document.addEventListener(t, stop, { passive: false });
+      });
+      document.addEventListener('touchmove', function (e) {
+        if (e.touches && e.touches.length > 1) stop(e);
+      }, { passive: false });
+      // Double-tap = zoom sur iOS. On ne neutralise QUE le vrai double-tap :
+      // deux appuis rapprochés au même endroit et sur la même cible. Sinon,
+      // taper vite sur deux éléments différents perdrait le second appui.
+      var dernier = 0, dx = 0, dy = 0, dcible = null;
+      document.addEventListener('touchend', function (e) {
+        var t = e.changedTouches && e.changedTouches[0];
+        var now = Date.now();
+        var x = t ? t.clientX : 0, y = t ? t.clientY : 0;
+        if (now - dernier < 320 && e.target === dcible &&
+            Math.abs(x - dx) < 30 && Math.abs(y - dy) < 30) stop(e);
+        dernier = now; dx = x; dy = y; dcible = e.target;
+      }, { passive: false });
+    })();
+  </script>
   <title>Mon Coach — nutrition &amp; activité</title>
   <meta name="theme-color" content="#06070a" media="(prefers-color-scheme: dark)">
   <meta name="theme-color" content="#eaeef5" media="(prefers-color-scheme: light)">
@@ -60,7 +87,23 @@
       --verre-flou: 30px;
       --verre-flou-doux: 18px;
       --verre-sat: 190%;
-      --verre-sheen: linear-gradient(135deg, rgba(255,255,255,0.16) 0%, rgba(255,255,255,0.04) 30%, rgba(255,255,255,0) 55%);
+      /* Position du reflet spéculaire, pilotée par l'inclinaison du téléphone
+         (voir le script en bas de page). C'est ce déplacement continu qui fait
+         la différence entre « du flou » et du verre. */
+      --lx: 22%;
+      --ly: 6%;
+      --verre-sheen:
+        radial-gradient(120% 95% at var(--lx) var(--ly), rgba(255,255,255,0.20), rgba(255,255,255,0.05) 34%, rgba(255,255,255,0) 60%),
+        linear-gradient(158deg, rgba(255,255,255,0.10) 0%, rgba(255,255,255,0.02) 34%, rgba(255,255,255,0) 58%);
+      /* Le bord de la lentille : lumière concentrée en haut, rendue en bas,
+         éteinte sur les flancs — la signature d'une épaisseur de verre. */
+      --lentille-ep: 7px;
+      --lentille-rim:
+        inset 0 1.5px 0.5px -0.5px rgba(255,255,255,0.72),
+        inset 1.5px 0 1.5px -1px rgba(255,255,255,0.26),
+        inset -1.5px 0 1.5px -1px rgba(255,255,255,0.26),
+        inset 0 -2px 2px -1px rgba(255,255,255,0.30),
+        inset 0 0 0 0.5px rgba(255,255,255,0.08);
       /* Reflet plus marqué, réservé aux boutons "verre coloré" : un vrai
          highlight qui glisse en haut à gauche, comme la matière du Liquid
          Glass d'Apple — pas juste une teinte, un vrai reflet de lumière. */
@@ -78,10 +121,10 @@
          sans avoir besoin de taches de couleur en arrière-plan. */
       --ambiance: none;
 
-      --densite-pad: 20px;
-      --densite-gap: 16px;
+      --densite-pad: clamp(15px, 4.6vw, 22px);
+      --densite-gap: clamp(11px, 3.6vw, 18px);
       --densite-nom: 0.92rem;
-      --rayon: 20px;
+      --rayon: clamp(16px, 4.8vw, 22px);
     }
 
     /* ---- MODE CLAIR : jetons recalibres, pas simplement inverses ---- */
@@ -112,7 +155,15 @@
         --verre-brd-vive: rgba(14, 20, 32, 0.14);
         --verre-hi: rgba(255, 255, 255, 0.95);
         --verre-lo: rgba(14, 20, 32, 0.07);
-        --verre-sheen: linear-gradient(135deg, rgba(255,255,255,0.55) 0%, rgba(255,255,255,0.14) 30%, rgba(255,255,255,0) 55%);
+        --verre-sheen:
+          radial-gradient(120% 95% at var(--lx) var(--ly), rgba(255,255,255,0.62), rgba(255,255,255,0.18) 34%, rgba(255,255,255,0) 60%),
+          linear-gradient(158deg, rgba(255,255,255,0.34) 0%, rgba(255,255,255,0.06) 34%, rgba(255,255,255,0) 58%);
+        --lentille-rim:
+          inset 0 1.5px 0.5px -0.5px rgba(255,255,255,0.95),
+          inset 1.5px 0 1.5px -1px rgba(255,255,255,0.6),
+          inset -1.5px 0 1.5px -1px rgba(255,255,255,0.6),
+          inset 0 -2px 2px -1px rgba(255,255,255,0.75),
+          inset 0 0 0 0.5px rgba(14,20,32,0.07);
         --verre-sheen-vive:
           radial-gradient(120% 180% at 12% -20%, rgba(255,255,255,0.85), transparent 42%),
           linear-gradient(160deg, rgba(255,255,255,0.5) 0%, rgba(255,255,255,0.08) 45%, rgba(255,255,255,0) 65%);
@@ -156,8 +207,8 @@
 
     /* ---- DENSITE : « compact » resserre les cartes sans rien supprimer ---- */
     :root[data-densite="compact"] {
-      --densite-pad: 13px;
-      --densite-gap: 10px;
+      --densite-pad: clamp(11px, 3.2vw, 15px);
+      --densite-gap: clamp(8px, 2.4vw, 12px);
       --densite-nom: 0.86rem;
       --rayon: 16px;
     }
@@ -178,6 +229,14 @@
     /* Certains navigateurs (Safari iOS récent, notamment) ignorent
        user-scalable=no par souci d'accessibilité : ce filet en plus bloque
        le geste de pincement pour zoomer, sans empêcher le défilement normal. */
+    /* Tout le dessin est en rem : cette seule ligne recalibre typographie,
+       espacements et hauteurs sur la largeur réelle de l'écran — ~14.6px sur
+       un iPhone SE, ~17.5px sur un Max ou un grand Android. */
+    html {
+      font-size: clamp(14.5px, 4.05vw, 17.5px);
+      -webkit-text-size-adjust: 100%;
+      text-size-adjust: 100%;
+    }
     html, body { min-height: 100%; touch-action: pan-x pan-y; }
     body {
       font-family: 'Outfit', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
@@ -552,8 +611,8 @@
     :root[data-densite="compact"] .food-macros { display: none; }
     :root[data-densite="compact"] .food-item { padding: 6px 0; }
     /* Le tap révèle les macros masquées : autant que ça se voie et se sente. */
-    :root[data-densite="compact"] .food-info { cursor: pointer; border-radius: 8px; transition: background 0.15s; }
-    :root[data-densite="compact"] .food-info:active { background: var(--verre-creux); }
+    .food-info { cursor: pointer; border-radius: 8px; transition: background 0.15s; }
+    .food-info:active { background: var(--verre-creux); }
     .tag-p { color: var(--protein); font-weight: 700; }
     .tag-c { color: var(--carbs); font-weight: 700; }
     .tag-f { color: var(--fat); font-weight: 700; }
@@ -674,7 +733,7 @@
       backdrop-filter: blur(var(--verre-flou)) saturate(var(--verre-sat));
       border: 1px solid var(--verre-brd);
       border-radius: 26px; padding: 22px; max-width: 520px; width: 100%;
-      max-height: 88vh; overflow-y: auto;
+      max-height: min(88dvh, 88vh); overflow-y: auto;
       /* Le geste tactile doit fonctionner ici malgré le touch-action:none
          posé sur le body, et rester confiné à la modale. */
       touch-action: pan-y;
@@ -706,8 +765,11 @@
     }
     :root[data-theme="light"] .feuille { background: rgba(180, 195, 220, 0.42); }
     .feuille.show { display: flex; }
+    /* Ouverte depuis la feuille « Aliments partagés » (z-index 1100), cette
+       modale doit se poser par-dessus, pas derrière. */
+    #modal-edit-aliment { z-index: 1200; }
     .feuille-contenu {
-      width: 100%; max-width: 560px; max-height: 85vh;
+      width: 100%; max-width: 560px; max-height: min(85dvh, 85vh);
       background: var(--verre-fort);
       -webkit-backdrop-filter: blur(var(--verre-flou)) saturate(var(--verre-sat));
       backdrop-filter: blur(var(--verre-flou)) saturate(var(--verre-sat));
@@ -840,7 +902,7 @@
     /* --- FORMULAIRES --- */
     .input-group { margin-bottom: 15px; }
     .input-group label { display: block; font-weight: 700; font-size: 0.72rem; margin-bottom: 6px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.8px; }
-    .input-group input, .input-group select {
+    .input-group input, .input-group select, .input-group textarea {
       width: 100%; padding: 12px 15px; min-height: 44px;
       background: var(--verre-creux);
       border: 1px solid var(--verre-brd); color: var(--text);
@@ -852,7 +914,7 @@
       background-image: linear-gradient(45deg, transparent 50%, currentColor 50%), linear-gradient(135deg, currentColor 50%, transparent 50%);
       background-position: calc(100% - 19px) 50%, calc(100% - 13px) 50%;
       background-size: 6px 6px, 6px 6px; background-repeat: no-repeat; padding-right: 34px; }
-    .input-group input:focus, .input-group select:focus { border-color: var(--primary); box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 22%, transparent); }
+    .input-group input:focus, .input-group select:focus, .input-group textarea:focus { border-color: var(--primary); box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 22%, transparent); }
     :focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
 
     /* --- MESURES PAR PARTIE DU CORPS --- */
@@ -1084,6 +1146,83 @@
        précédente le faisait et cassait le défilement de TOUTES les
        modales de l'appli, ainsi que l'apparence de tous les boutons. */
     .info-small { font-size: 0.8rem; color: var(--text-muted); margin: 8px 0 0; }
+
+    /* =====================================================================
+       LIQUID GLASS — LA LENTILLE
+       Une surface en verre ne fait pas que flouter : sur son épaisseur, la
+       lumière se courbe. On rend ça avec un anneau de bord qui refloute et
+       éclaircit l'arrière-plan déjà flouté par la surface, plus un liseré
+       directionnel. Le reflet spéculaire, lui, suit l'inclinaison du
+       téléphone via --lx / --ly.
+       ===================================================================== */
+    .verre, .app-bar, .summary-card, .btn, .btn-icone, .fab, .fab-action,
+    .feuille-action, .meal-card, .bloc-verre, .fitness-card, .analysis-card,
+    .daily-questionnaire, .modal-content, .feuille-contenu {
+      isolation: isolate;
+    }
+    .verre::before, .app-bar::before, .summary-card::before, .btn::before,
+    .btn-icone::before, .fab::before, .fab-action::before, .feuille-action::before,
+    .meal-card::before, .bloc-verre::before, .fitness-card::before,
+    .analysis-card::before, .daily-questionnaire::before,
+    .modal-content::before, .feuille-contenu::before {
+      content: '';
+      position: absolute; inset: 0; z-index: 0;
+      border-radius: inherit;
+      border: var(--lentille-ep) solid transparent;
+      box-sizing: border-box;
+      pointer-events: none;
+      -webkit-backdrop-filter: blur(5px) brightness(1.14) saturate(170%);
+      backdrop-filter: blur(5px) brightness(1.14) saturate(170%);
+      box-shadow: var(--lentille-rim);
+      /* L'anneau seul : on découpe le centre, sinon on floute deux fois toute
+         la surface et le texte du dessous devient une purée. */
+      -webkit-mask-image: linear-gradient(#000, #000), linear-gradient(#000, #000);
+      -webkit-mask-clip: content-box, border-box;
+      -webkit-mask-composite: xor;
+      mask-image: linear-gradient(#000, #000), linear-gradient(#000, #000);
+      mask-clip: content-box, border-box;
+      mask-composite: exclude;
+    }
+    /* Sans mask-composite, l'anneau couvrirait toute la carte : on n'en garde
+       alors que le liseré, qui est déjà l'essentiel de l'effet. */
+    @supports not ((mask-composite: exclude) or (-webkit-mask-composite: xor)) {
+      .verre::before, .app-bar::before, .summary-card::before, .btn::before,
+      .btn-icone::before, .fab::before, .fab-action::before, .feuille-action::before,
+      .meal-card::before, .bloc-verre::before, .fitness-card::before,
+      .analysis-card::before, .daily-questionnaire::before,
+      .modal-content::before, .feuille-contenu::before {
+        -webkit-backdrop-filter: none; backdrop-filter: none; border-color: transparent;
+      }
+    }
+    /* Les éléments encore statiques ont besoin d'un repère pour l'anneau ;
+       ceux qui sont déjà sticky / fixed / relative gardent le leur. */
+    .btn, .btn-icone, .fab, .fab-action, .feuille-action, .meal-card, .bloc-verre,
+    .fitness-card, .analysis-card, .daily-questionnaire, .modal-content,
+    .feuille-contenu, .verre { position: relative; }
+    /* Le contenu passe devant l'anneau. */
+    .meal-card > *, .bloc-verre > *, .fitness-card > *, .analysis-card > *,
+    .daily-questionnaire > *, .modal-content > *, .feuille-contenu > *,
+    .btn > *, .fab-action > *, .feuille-action > * { position: relative; z-index: 1; }
+
+    /* Anneau plus fin sur les petites cibles : sur 46 px de haut, 7 px de bord
+       mangeraient la moitié de la pastille. */
+    .btn, .btn-icone, .fab-action, .feuille-action, .puce-sync { --lentille-ep: 4px; }
+    .fab { --lentille-ep: 5px; }
+    .summary-card, .modal-content, .feuille-contenu { --lentille-ep: 9px; }
+
+    /* Le verre s'enfonce quand on le presse : la lentille se rétracte. */
+    .btn:active, .btn-icone:active, .fab-action:active, .feuille-action:active { --lentille-ep: 2.5px; }
+
+    html.sans-verre .verre::before, html.sans-verre .app-bar::before,
+    html.sans-verre .summary-card::before, html.sans-verre .btn::before,
+    html.sans-verre .btn-icone::before, html.sans-verre .fab::before,
+    html.sans-verre .fab-action::before, html.sans-verre .feuille-action::before,
+    html.sans-verre .meal-card::before, html.sans-verre .bloc-verre::before,
+    html.sans-verre .fitness-card::before, html.sans-verre .analysis-card::before,
+    html.sans-verre .daily-questionnaire::before,
+    html.sans-verre .modal-content::before, html.sans-verre .feuille-contenu::before {
+      display: none;
+    }
   </style>
 </head>
 <body>
@@ -1419,12 +1558,17 @@
 </div>
 
 <!-- Saisie manuelle : historique personnel + base d'aliments hébergée -->
-<!-- Pop-up macros (mode compact uniquement) -->
+<!-- Pop-up aliment : le poids est le seul champ modifiable -->
 <div id="macros-popup-modal" class="modal" role="dialog" aria-modal="true" aria-labelledby="titre-macros-popup">
   <div class="modal-content" style="max-width:320px;">
     <div class="modal-entete">
       <h3 id="titre-macros-popup" style="font-size:1rem;">🥗 <span id="macros-popup-nom"></span></h3>
       <button class="close-modal" onclick="fermerModal('macros-popup-modal')" aria-label="Fermer">&times;</button>
+    </div>
+    <div class="input-group" style="margin-bottom:14px;">
+      <label for="macros-popup-poids">Poids (g)</label>
+      <input type="number" id="macros-popup-poids" inputmode="numeric" min="1" max="5000" step="1"
+             oninput="recalculerApercuPoids()">
     </div>
     <div style="display:flex; flex-direction:column; gap:11px;">
       <div style="display:flex; justify-content:space-between; align-items:center;">
@@ -1444,6 +1588,7 @@
         <strong id="macros-popup-f"></strong>
       </div>
     </div>
+    <button class="btn btn-primary" style="margin-top:16px;" onclick="validerPoidsAliment()">Enregistrer le poids</button>
   </div>
 </div>
 
@@ -1867,6 +2012,14 @@
       <button class="close-modal" onclick="fermerModal('ai-modal')" aria-label="Fermer">&times;</button>
     </div>
 
+    <div class="input-group">
+      <label for="ai-description">Descriptif (facultatif, mais ça aide beaucoup)</label>
+      <textarea id="ai-description" rows="2" placeholder="ex : poulet basquaise maison, riz basmati, un filet d'huile d'olive"
+                style="width:100%; resize:vertical; font-family:inherit;"></textarea>
+      <small style="color:var(--text-muted); display:block; margin-top:6px; font-size:0.75rem;">
+        Précise ce qui n'est pas visible sur la photo : recette, cuisson, marque, matière grasse ajoutée.
+      </small>
+    </div>
     <input type="file" id="ai-file-input" accept="image/*" capture="environment" onchange="analyserPhotoGemini(event)">
     <span class="puce-ia"></span>
     <img id="preview-image" class="hidden" alt="Aperçu du plat photographié">
@@ -2294,14 +2447,66 @@ function supprimerSport(index) {
    nom : pas besoin d'un pop-up en plus. En mode compact, elles sont
    masquées pour gagner de la place — le tap sur l'aliment les révèle
    ponctuellement, sans avoir à repasser en confort pour un simple coup d'œil. */
-function voirMacrosCompact(el) {
-  if (document.documentElement.getAttribute('data-densite') !== 'compact') return;
-  document.getElementById('macros-popup-nom').textContent = el.dataset.nom;
-  document.getElementById('macros-popup-kcal').textContent = el.dataset.kcal + ' kcal';
-  document.getElementById('macros-popup-p').textContent = el.dataset.p + ' g';
-  document.getElementById('macros-popup-c').textContent = el.dataset.c + ' g';
-  document.getElementById('macros-popup-f').textContent = el.dataset.f + ' g';
+/* Toucher un aliment du jour ouvre sa fiche. On n'y change qu'une chose : le
+   poids. Les macros se recalculent au prorata et restent en lecture seule —
+   elles viennent de la base, pas de l'utilisateur. */
+let poidsEdition = null; // { mealId, index, base: valeurs pour 1 g }
+
+function ouvrirPoidsAliment(el) {
+  const mealId = el.dataset.meal;
+  const index = Number(el.dataset.index);
+  const day = getDay(currentDate);
+  const item = day.meals[mealId] && day.meals[mealId][index];
+  if (!item) return;
+
+  const g = Number(item.grams) > 0 ? Number(item.grams) : 100;
+  poidsEdition = {
+    mealId, index,
+    base: {
+      kcal: (Number(item.kcal) || 0) / g, p: (Number(item.p) || 0) / g,
+      c: (Number(item.c) || 0) / g, f: (Number(item.f) || 0) / g
+    }
+  };
+  document.getElementById('macros-popup-nom').textContent = item.name || 'Aliment';
+  document.getElementById('macros-popup-poids').value = Math.round(g);
+  recalculerApercuPoids();
   ouvrirModal('macros-popup-modal');
+}
+
+function poidsSaisi() {
+  const n = Number(document.getElementById('macros-popup-poids').value);
+  if (!isFinite(n) || n <= 0) return null;
+  return Math.min(n, 5000);
+}
+
+function recalculerApercuPoids() {
+  if (!poidsEdition) return;
+  const g = poidsSaisi();
+  const b = poidsEdition.base;
+  const v = k => (g === null ? '—' : Math.round(b[k] * g));
+  document.getElementById('macros-popup-kcal').textContent = g === null ? '—' : v('kcal') + ' kcal';
+  document.getElementById('macros-popup-p').textContent = g === null ? '—' : v('p') + ' g';
+  document.getElementById('macros-popup-c').textContent = g === null ? '—' : v('c') + ' g';
+  document.getElementById('macros-popup-f').textContent = g === null ? '—' : v('f') + ' g';
+}
+
+function validerPoidsAliment() {
+  if (!poidsEdition) { fermerModal('macros-popup-modal'); return; }
+  const g = poidsSaisi();
+  if (g === null) { document.getElementById('macros-popup-poids').focus(); return; }
+
+  const day = getDay(currentDate);
+  const item = day.meals[poidsEdition.mealId] && day.meals[poidsEdition.mealId][poidsEdition.index];
+  if (item) {
+    const b = poidsEdition.base;
+    item.grams = g;
+    item.kcal = b.kcal * g; item.p = b.p * g; item.c = b.c * g; item.f = b.f * g;
+    saveData(currentDate);
+    invaliderHistorique();
+    renderMeals(day); updateSummary(day);
+  }
+  poidsEdition = null;
+  fermerModal('macros-popup-modal');
 }
 
 function renderMeals(day) {
@@ -2310,7 +2515,8 @@ function renderMeals(day) {
     const items = day.meals[mealId];
     const rows = items.length ? items.map((it, i) => `
       <li class="food-item">
-        <div class="food-info" onclick="voirMacrosCompact(this)"
+        <div class="food-info" onclick="ouvrirPoidsAliment(this)"
+             data-meal="${mealId}" data-index="${i}" data-grams="${it.grams}"
              data-nom="${escapeHtml(it.name)}" data-kcal="${Math.round(it.kcal)}"
              data-p="${Math.round(it.p)}" data-c="${Math.round(it.c)}" data-f="${Math.round(it.f)}">
           <span class="food-name">${escapeHtml(it.name)}</span>
@@ -2651,6 +2857,8 @@ function ouvrirPhoto(mealId) {
   document.getElementById('ai-results-container').classList.add('hidden');
   document.getElementById('error-display').classList.add('hidden');
   document.getElementById('ai-loader').classList.add('hidden');
+  const desc = document.getElementById('ai-description');
+  if (desc) desc.value = '';
   ouvrirModal('ai-modal');
 }
 function ouvrirBarcode(mealId) {
@@ -3240,7 +3448,11 @@ function analyserPhotoGemini(event) {
     document.getElementById('ai-loader').classList.remove('hidden');
     try {
       const base64 = dataUrl.split(',')[1];
-      const prompt = "Analyse cette photo de repas. Renvoie UNIQUEMENT un tableau JSON (sans texte autour) des aliments visibles. Pour chaque aliment: {\"name\": string en français, \"grams\": number (portion estimée en g), \"kcal100\": number (kcal pour 100g), \"p100\": number, \"c100\": number, \"f100\": number}.";
+      const desc = (document.getElementById('ai-description')?.value || '').trim();
+      const contexte = desc
+        ? "L'utilisateur precise : \"" + desc.replace(/"/g, "'") + "\". Tiens compte de ce descriptif en priorite sur ta seule lecture de l'image (recette, cuisson, marque, matieres grasses ajoutees). "
+        : "";
+      const prompt = contexte + "Analyse cette photo de repas. Renvoie UNIQUEMENT un tableau JSON (sans texte autour) des aliments visibles. Pour chaque aliment: {\"name\": string en français, \"grams\": number (portion estimée en g), \"kcal100\": number (kcal pour 100g), \"p100\": number, \"c100\": number, \"f100\": number}.";
       const res = await geminiGenerate([
         { text: prompt },
         { inline_data: { mime_type: file.type || 'image/jpeg', data: base64 } }
@@ -5841,6 +6053,8 @@ window.addEventListener('click', (e) => {
 /* Echap fermait... rien du tout : sur ordinateur il fallait viser la croix. */
 window.addEventListener('keydown', (e) => {
   if (e.key !== 'Escape') return;
+  const editAliment = document.getElementById('modal-edit-aliment');
+  if (editAliment && editAliment.classList.contains('show')) { fermerModal('modal-edit-aliment'); return; }
   if (document.querySelector('.feuille.show')) { fermerFeuilleRepas(); return; }
   if (document.querySelector('.modal.show')) { fermerToutesModales(); return; }
   if (fabOuvert) { fermerFab(); return; }
@@ -6519,6 +6733,42 @@ function fermerFeuilles() {
   majCoucheOuverte();
 }
 
+</script>
+<script>
+/* Le reflet spéculaire suit l'inclinaison de l'appareil. Sans capteur (ou
+   permission refusée), il suit le pointeur ; sans pointeur non plus, il reste
+   à sa position au repos. Écriture throttlée par requestAnimationFrame : une
+   seule variable CSS change, tout le verre se met à jour d'un coup. */
+(function () {
+  if (window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  var cible = { x: 22, y: 6 }, actuel = { x: 22, y: 6 }, boucle = null;
+  function poser(x, y) {
+    cible.x = Math.max(-15, Math.min(115, x));
+    cible.y = Math.max(-30, Math.min(70, y));
+    if (!boucle) boucle = requestAnimationFrame(glisser);
+  }
+  function glisser() {
+    // Interpolation : le reflet a une inertie, il ne saute pas.
+    actuel.x += (cible.x - actuel.x) * 0.12;
+    actuel.y += (cible.y - actuel.y) * 0.12;
+    var s = document.documentElement.style;
+    s.setProperty('--lx', actuel.x.toFixed(1) + '%');
+    s.setProperty('--ly', actuel.y.toFixed(1) + '%');
+    if (Math.abs(cible.x - actuel.x) > 0.15 || Math.abs(cible.y - actuel.y) > 0.15) {
+      boucle = requestAnimationFrame(glisser);
+    } else { boucle = null; }
+  }
+  var capteur = false;
+  window.addEventListener('deviceorientation', function (e) {
+    if (e.gamma === null && e.beta === null) return;
+    capteur = true;
+    poser(50 - (e.gamma || 0) * 1.1, 20 - (e.beta || 0) * 0.5);
+  }, { passive: true });
+  window.addEventListener('pointermove', function (e) {
+    if (capteur || e.pointerType === 'touch') return;
+    poser((e.clientX / innerWidth) * 100, (e.clientY / innerHeight) * 60 - 10);
+  }, { passive: true });
+})();
 </script>
 </body>
 </html>
