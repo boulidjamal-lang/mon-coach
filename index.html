@@ -1592,6 +1592,13 @@
     <div id="admin-stats-zone" class="hidden">
       <div class="titre-section">📊 Statistiques — <span id="admin-stats-nom"></span></div>
 
+      <!-- Fiche du compte : les mêmes informations que la feuille affichait,
+           conservées ici pour les avoir sous les yeux en lisant les courbes. -->
+      <div class="bloc-verre" style="padding:15px; margin-bottom:14px;">
+        <h3 style="margin-top:0;font-size:0.85rem;text-transform:uppercase;letter-spacing:0.8px;">👤 Compte</h3>
+        <div id="admin-stats-fiche" class="stats-grille"></div>
+      </div>
+
       <div class="bloc-verre" style="padding:15px; margin-bottom:14px;">
         <h3 style="margin-top:0;font-size:0.85rem;text-transform:uppercase;letter-spacing:0.8px;">🗓️ Période</h3>
         <div class="plage">
@@ -1615,6 +1622,12 @@
 
       <div class="titre-section">Pas quotidiens</div>
       <div class="chart-container"><canvas id="adminPasChart"></canvas></div>
+
+      <div class="titre-section">Répartition des macros</div>
+      <div class="chart-container"><canvas id="adminMacrosChart"></canvas></div>
+
+      <div class="titre-section">Minutes de sport</div>
+      <div class="chart-container"><canvas id="adminSportChart"></canvas></div>
     </div>
   </section>
 
@@ -5014,11 +5027,46 @@ function targetsPourCompte(day, dateStr, jours, compte) {
 let adminCaloriesChartInstance = null, adminPoidsChartInstance = null, adminPasChartInstance = null;
 let adminJoursActuels = [], adminCompteActuel = null;
 
+/* Fiche d'identite du compte selectionne. Construction par DOM : email,
+   genre et statut viennent de la base, ils ne passent pas par innerHTML. */
+function remplirFicheCompteAdmin(user) {
+  const cible = document.getElementById('admin-stats-fiche');
+  if (!cible) return;
+  cible.innerHTML = '';
+
+  const statut = user.statut === 'suspendu' ? '⏸️ Suspendu'
+    : user.statut === 'supprime' ? '🗑️ Supprimé (données conservées)'
+    : '✅ Actif';
+  const dateFr = v => v ? new Date(v).toLocaleDateString('fr-FR') : '—';
+
+  [
+    ['Email', user.email || '—'],
+    ['Genre', user.genre || '—'],
+    ['Âge', user.age ? user.age + ' ans' : '—'],
+    ['Taille', user.taille ? user.taille + ' cm' : '—'],
+    ['Poids', user.poids ? user.poids + ' kg' : '—'],
+    ['Journées', String(user.nb_journees || 0)],
+    ['Inscrit le', dateFr(user.cree_le)],
+    ['Dernière connexion', dateFr(user.derniere_connexion)],
+    ['Statut', statut]
+  ].forEach(([label, valeur]) => {
+    const bloc = document.createElement('div');
+    const l = document.createElement('small'); l.textContent = label;
+    const v = document.createElement('div');
+    v.className = 'stats-valeur';
+    v.textContent = valeur;
+    bloc.appendChild(l); bloc.appendChild(v);
+    cible.appendChild(bloc);
+  });
+}
+let adminMacrosChartInstance = null, adminSportChartInstance = null;
+
 async function voirStatsCompte(utilisateur, nomAffiche) {
   const zone = document.getElementById('admin-stats-zone');
   const resume = document.getElementById('admin-stats-resume');
   zone.classList.remove('hidden');
   document.getElementById('admin-stats-nom').textContent = nomAffiche;
+  remplirFicheCompteAdmin(adminComptes[utilisateur] || {});
   resume.innerHTML = '<p class="note">Chargement…</p>';
   zone.scrollIntoView({ behavior: 'smooth', block: 'start' });
   try {
@@ -5030,10 +5078,10 @@ async function voirStatsCompte(utilisateur, nomAffiche) {
 
     if (!adminJoursActuels.length) {
       resume.innerHTML = '<p class="note">Aucune journée enregistrée pour ce compte.</p>';
-      ['adminCaloriesChart', 'adminPoidsChart', 'adminPasChart'].forEach(id => {
-        const inst = { adminCaloriesChart: adminCaloriesChartInstance, adminPoidsChart: adminPoidsChartInstance, adminPasChart: adminPasChartInstance }[id];
-        if (inst) inst.destroy();
-      });
+      [adminCaloriesChartInstance, adminPoidsChartInstance, adminPasChartInstance,
+       adminMacrosChartInstance, adminSportChartInstance].forEach(i => { if (i) i.destroy(); });
+      adminCaloriesChartInstance = adminPoidsChartInstance = adminPasChartInstance = null;
+      adminMacrosChartInstance = adminSportChartInstance = null;
       return;
     }
 
@@ -5125,6 +5173,41 @@ function filtrerStatsCompte() {
   adminPasChartInstance = new Chart(document.getElementById('adminPasChart'), {
     type: 'bar',
     data: { labels, datasets: [{ data: pas, backgroundColor: cAccent }] },
+    options: baseOpts
+  });
+
+  /* Macros empilees : on lit d'un coup l'equilibre du regime, ce que trois
+     courbes separees ne montrent pas aussi bien. */
+  const cGluc = (styles.getPropertyValue('--carbs') || '#f59e0b').trim();
+  const cLip  = (styles.getPropertyValue('--fat')   || '#ef4444').trim();
+  const cProt = (styles.getPropertyValue('--protein') || cPrimaire).trim();
+  const gluc = jours.map(j => sumMeals(j.day).c || null);
+  const lip  = jours.map(j => sumMeals(j.day).f || null);
+
+  if (adminMacrosChartInstance) adminMacrosChartInstance.destroy();
+  adminMacrosChartInstance = new Chart(document.getElementById('adminMacrosChart'), {
+    type: 'bar',
+    data: { labels, datasets: [
+      { label: 'Protéines', data: prot, backgroundColor: cProt },
+      { label: 'Glucides',  data: gluc, backgroundColor: cGluc },
+      { label: 'Lipides',   data: lip,  backgroundColor: cLip }
+    ] },
+    options: Object.assign({}, baseOpts, {
+      plugins: { legend: { display: true, labels: { color: couleurTexte } } },
+      scales: {
+        x: Object.assign({ stacked: true }, baseOpts.scales.x),
+        y: Object.assign({ stacked: true }, baseOpts.scales.y)
+      }
+    })
+  });
+
+  const sportParJour = jours.map(j =>
+    (j.day.workouts || []).reduce((a, w) => a + (Number(w.time) || 0), 0) || null);
+
+  if (adminSportChartInstance) adminSportChartInstance.destroy();
+  adminSportChartInstance = new Chart(document.getElementById('adminSportChart'), {
+    type: 'bar',
+    data: { labels, datasets: [{ data: sportParJour, backgroundColor: cPrimaire }] },
     options: baseOpts
   });
 }
@@ -6550,44 +6633,21 @@ function afficherActionsUtilisateur() {
   if (stats) stats.style.display = 'none';
 }
 
+/* Ouvre les vraies statistiques du compte : trois graphiques (calories,
+   poids, pas) et un selecteur de periode. Cette machinerie existait deja
+   dans l'appli — voirStatsCompte() — mais plus rien ne l'appelait depuis
+   que la liste d'utilisateurs a ete remplacee par un select. Une grille
+   de texte l'avait remplacee ici, bien plus pauvre. */
 function afficherStatsUtilisateur() {
   const user = adminComptes[adminUserCourant];
   if (!user) return;
 
-  const contenu = document.getElementById('admin-user-stats-content');
-  const actions = document.getElementById('admin-user-actions');
-  const stats = document.getElementById('admin-user-stats');
-  if (!contenu || !actions || !stats) return;
+  const nom = user.email || ('Compte ' + String(adminUserCourant).slice(0, 8));
 
-  const etat = user.statut === 'suspendu' ? '⏸️ Suspendu'
-    : user.statut === 'supprime' ? '🗑️ Supprimé (données conservées)'
-    : '✅ Actif';
-
-  // Construction par DOM : aucune donnée utilisateur n'est interprétée en HTML.
-  contenu.innerHTML = '';
-  const grille = document.createElement('div');
-  grille.className = 'stats-grille';
-  [
-    ['Email', user.email || '—'],
-    ['Âge', user.age ? user.age + ' ans' : '—'],
-    ['Poids', user.poids ? user.poids + ' kg' : '—'],
-    ['Taille', user.taille ? user.taille + ' cm' : '—'],
-    ['Journées', String(user.nb_journees || 0)],
-    ['Dernière activité', user.maj ? new Date(Number(user.maj)).toLocaleDateString('fr-FR') : '—'],
-    ['Inscrit le', user.cree_le ? new Date(user.cree_le).toLocaleDateString('fr-FR') : '—'],
-    ['Statut', etat]
-  ].forEach(([label, valeur]) => {
-    const bloc = document.createElement('div');
-    const l = document.createElement('small'); l.textContent = label;
-    const v = document.createElement('div'); v.textContent = valeur;
-    v.className = 'stats-valeur';
-    bloc.appendChild(l); bloc.appendChild(v);
-    grille.appendChild(bloc);
-  });
-  contenu.appendChild(grille);
-
-  actions.style.display = 'none';
-  stats.style.display = 'block';
+  // Les graphiques vivent dans l'ecran admin, pas dans la feuille :
+  // un canvas n'a pas de taille utile dans un conteneur qui se replie.
+  fermerFeuilles();
+  voirStatsCompte(adminUserCourant, nom);
 }
 
 /* --- Actions sur un compte ------------------------------------------ */
