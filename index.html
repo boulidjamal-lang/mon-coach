@@ -855,6 +855,59 @@
     .feuille-fermer:hover { background: var(--verre-fort); }
 
     /* --- ADMINISTRATION --- */
+    /* --- Premiere connexion (bilan initial) --- */
+    .onb-progres {
+      height: 4px; background: var(--verre-brd); border-radius: 99px;
+      overflow: hidden; margin-bottom: 18px;
+    }
+    .onb-barre {
+      height: 100%; width: 25%; background: var(--primary);
+      border-radius: 99px; transition: width 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .onb-etape h3 { margin: 0 0 6px; font-size: 1.08rem; font-weight: 800; }
+    .onb-aide {
+      display: block; margin-top: 6px;
+      font-size: 0.7rem; color: var(--text-muted); line-height: 1.4;
+    }
+    .onb-choix { display: grid; grid-template-columns: 1fr 1fr; gap: 9px; }
+    .onb-choix.onb-vertical { grid-template-columns: 1fr; }
+    .onb-option {
+      display: block; width: 100%; text-align: left;
+      padding: 13px 15px; min-height: var(--cible-tactile, 48px);
+      background: var(--verre-creux); border: 1.5px solid var(--verre-brd);
+      border-radius: 14px; color: inherit; font-family: inherit;
+      font-weight: 700; font-size: 0.88rem; cursor: pointer;
+      transition: border-color 0.2s, background 0.2s;
+    }
+    .onb-choix:not(.onb-vertical) .onb-option { text-align: center; }
+    .onb-option:hover { background: var(--verre-fort); }
+    .onb-option.choisi { border-color: var(--primary); background: var(--verre-fort); }
+    .onb-option strong { display: block; font-size: 0.88rem; }
+    .onb-option small {
+      display: block; font-weight: 500; font-size: 0.72rem;
+      color: var(--text-muted); margin-top: 2px;
+    }
+    .onb-resultat {
+      text-align: center; padding: 18px 0 14px; margin-bottom: 14px;
+      background: var(--verre-creux); border: 1px solid var(--verre-brd);
+      border-radius: 18px;
+    }
+    .onb-cible {
+      font-size: 2.3rem; font-weight: 800; letter-spacing: -1.5px;
+      color: var(--primary); line-height: 1;
+    }
+    .onb-cible-lbl {
+      font-size: 0.66rem; text-transform: uppercase; letter-spacing: 1px;
+      color: var(--text-muted); font-weight: 700; margin-top: 5px;
+    }
+    .onb-ligne {
+      display: flex; justify-content: space-between; gap: 12px;
+      padding: 8px 0; border-bottom: 1px solid var(--verre-brd);
+      font-size: 0.82rem;
+    }
+    .onb-ligne:last-child { border-bottom: none; }
+    .onb-ligne span:last-child { font-weight: 700; white-space: nowrap; }
+
     /* --- Vue d'ensemble admin --- */
     .admin-apercu {
       display: grid; grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -1908,6 +1961,113 @@
   </div>
 </div>
 
+<!-- ============ MODALE : premiere connexion (bilan initial) ============ -->
+<div class="modal" id="modal-bienvenue" role="dialog" aria-modal="true" aria-labelledby="titre-bienvenue">
+  <div class="modal-content">
+    <div class="onb-progres"><div class="onb-barre" id="onb-barre"></div></div>
+
+    <!-- Etape 1 : identite -->
+    <div class="onb-etape" data-etape="1">
+      <h3 id="titre-bienvenue">&#128075; Bienvenue sur Mon Coach</h3>
+      <p class="note">Quelques questions pour calculer tes besoins caloriques. Tout reste modifiable ensuite.</p>
+
+      <div class="input-group">
+        <label>Sexe</label>
+        <div class="onb-choix" id="onb-genre">
+          <button type="button" class="onb-option" data-valeur="m">Homme</button>
+          <button type="button" class="onb-option" data-valeur="f">Femme</button>
+        </div>
+        <small class="onb-aide">Le métabolisme de base se calcule différemment.</small>
+      </div>
+
+      <div class="edit-macros">
+        <div class="input-group">
+          <label for="onb-age">Âge</label>
+          <input type="number" id="onb-age" inputmode="numeric" min="14" max="100" placeholder="ans">
+        </div>
+        <div class="input-group">
+          <label for="onb-taille">Taille</label>
+          <input type="number" id="onb-taille" inputmode="numeric" min="120" max="230" placeholder="cm">
+        </div>
+      </div>
+
+      <div class="input-group">
+        <label for="onb-poids">Poids actuel</label>
+        <input type="number" id="onb-poids" inputmode="decimal" min="30" max="300" step="0.1" placeholder="kg">
+      </div>
+
+      <p class="note" id="onb-erreur-1" style="color:var(--danger);"></p>
+      <button class="btn btn-primary" type="button" onclick="onbSuivant(2)">Continuer</button>
+    </div>
+
+    <!-- Etape 2 : activite -->
+    <div class="onb-etape hidden" data-etape="2">
+      <h3>&#128694; Ton quotidien</h3>
+      <p class="note">Une estimation de départ, utilisée seulement les jours où tu ne saisis pas tes pas. Dès que tu les renseignes, ce sont eux qui comptent.</p>
+
+      <div class="onb-choix onb-vertical" id="onb-activite">
+        <button type="button" class="onb-option" data-valeur="3000">
+          <strong>Sédentaire</strong><small>Bureau, peu de déplacements</small>
+        </button>
+        <button type="button" class="onb-option" data-valeur="6000">
+          <strong>Légèrement actif</strong><small>Quelques marches dans la journée</small>
+        </button>
+        <button type="button" class="onb-option" data-valeur="10000">
+          <strong>Actif</strong><small>Beaucoup debout ou en déplacement</small>
+        </button>
+        <button type="button" class="onb-option" data-valeur="14000">
+          <strong>Très actif</strong><small>Métier physique</small>
+        </button>
+      </div>
+
+      <p class="note" id="onb-erreur-2" style="color:var(--danger);"></p>
+      <div style="display:flex; gap:10px;">
+        <button class="btn btn-secondaire" type="button" style="flex:1;" onclick="onbAller(1)">Retour</button>
+        <button class="btn btn-primary" type="button" style="flex:1;" onclick="onbSuivant(3)">Continuer</button>
+      </div>
+    </div>
+
+    <!-- Etape 3 : objectif -->
+    <div class="onb-etape hidden" data-etape="3">
+      <h3>&#127919; Ton objectif</h3>
+      <p class="note">Modifiable à tout moment depuis l'onglet Activité. Le changer ne réécrit jamais tes journées passées.</p>
+
+      <div class="onb-choix onb-vertical" id="onb-objectif">
+        <button type="button" class="onb-option" data-valeur="seche">
+          <strong>Perdre du poids</strong><small>Environ 20 % sous tes besoins</small>
+        </button>
+        <button type="button" class="onb-option" data-valeur="maintien">
+          <strong>Maintenir</strong><small>À l'équilibre</small>
+        </button>
+        <button type="button" class="onb-option" data-valeur="masse">
+          <strong>Prendre du muscle</strong><small>Environ 15 % au-dessus</small>
+        </button>
+      </div>
+
+      <p class="note" id="onb-erreur-3" style="color:var(--danger);"></p>
+      <div style="display:flex; gap:10px;">
+        <button class="btn btn-secondaire" type="button" style="flex:1;" onclick="onbAller(2)">Retour</button>
+        <button class="btn btn-primary" type="button" style="flex:1;" onclick="onbSuivant(4)">Voir mon objectif</button>
+      </div>
+    </div>
+
+    <!-- Etape 4 : recapitulatif -->
+    <div class="onb-etape hidden" data-etape="4">
+      <h3>&#9989; C'est prêt</h3>
+      <div class="onb-resultat">
+        <div class="onb-cible" id="onb-cible">&mdash;</div>
+        <div class="onb-cible-lbl">kcal par jour</div>
+      </div>
+      <div id="onb-detail"></div>
+      <p class="note">Ce chiffre s'ajuste chaque jour selon tes pas et tes séances. Il n'est pas figé.</p>
+      <div style="display:flex; gap:10px;">
+        <button class="btn btn-secondaire" type="button" style="flex:1;" onclick="onbAller(3)">Retour</button>
+        <button class="btn btn-primary" type="button" style="flex:1;" onclick="onbTerminer()">Commencer</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- ============ FEUILLE : rattacher les donnees a un autre compte ============ -->
 <div class="feuille" id="feuille-rattachement" role="dialog" aria-modal="true" aria-labelledby="titre-rattachement">
   <div class="feuille-contenu">
@@ -2574,7 +2734,14 @@ function computeTargets(day, dateStr) {
      200 kcal, de quoi annuler un déficit de sèche. On ne compte que le surplus,
      et on le pondère par la masse comme pour les séances. */
   const PAS_DEJA_COMPTES = 4000;
-  const pasEnPlus = Math.max(0, (Number(day.steps) || 0) - PAS_DEJA_COMPTES);
+  /* Les jours sans saisie de pas, on retombe sur l'estimation donnee au
+     premier lancement plutot que sur zero : sinon quelqu'un d'actif voit
+     un objectif de sedentaire tant qu'il n'a rien renseigne. Des qu'un
+     chiffre reel existe, c'est lui qui prime — jamais les deux. */
+  const pasDuJour = Number(day.steps) > 0
+    ? Number(day.steps)
+    : (Number(userProfile.pasHabituels) || 0);
+  const pasEnPlus = Math.max(0, pasDuJour - PAS_DEJA_COMPTES);
   // 0,03 kcal par pas a 70 kg, NET du repos (0,04 etait la depense brute).
   const stepsKcal = pasEnPlus * 0.03 * (weight / 70);
 
@@ -3076,8 +3243,13 @@ function ouvrirModal(id) {
     || el.querySelector('.close-modal');
   if (premier) setTimeout(() => premier.focus(), 60);
 }
+/* bilanForce : le questionnaire d'accueil ne se ferme ni par Escape, ni
+   par un clic a cote. Le laisser esquiver donnerait un objectif calcule
+   sur les valeurs par defaut, sans que la personne le sache. */
+let bilanForce = false;
 function fermerModal(id) {
   if (id === 'compte-modal' && connexionObligatoire) return;
+  if (id === 'modal-bienvenue' && bilanForce) return;
   const el = document.getElementById(id);
   if (el) el.classList.remove('show');
   majCoucheOuverte();
@@ -3089,6 +3261,7 @@ function majCoucheOuverte() {
 function fermerToutesModales() {
   document.querySelectorAll('.modal.show').forEach(m => {
     if (m.id === 'compte-modal' && connexionObligatoire) return;
+    if (m.id === 'modal-bienvenue' && bilanForce) return;
     if (m.id === 'barcode-modal') stopperScanner();
     m.classList.remove('show');
   });
@@ -5126,7 +5299,14 @@ function targetsPourCompte(day, dateStr, jours, compte) {
   const age = Number(compte.age) || 25;
   const bmr = 10 * weight + 6.25 * height - 5 * age + (compte.genre === 'f' ? -161 : 5);
   const PAS_DEJA_COMPTES = 4000;
-  const pasEnPlus = Math.max(0, (Number(day.steps) || 0) - PAS_DEJA_COMPTES);
+  /* Les jours sans saisie de pas, on retombe sur l'estimation donnee au
+     premier lancement plutot que sur zero : sinon quelqu'un d'actif voit
+     un objectif de sedentaire tant qu'il n'a rien renseigne. Des qu'un
+     chiffre reel existe, c'est lui qui prime — jamais les deux. */
+  const pasDuJour = Number(day.steps) > 0
+    ? Number(day.steps)
+    : (Number(userProfile.pasHabituels) || 0);
+  const pasEnPlus = Math.max(0, pasDuJour - PAS_DEJA_COMPTES);
   const stepsKcal = pasEnPlus * 0.03 * (weight / 70);
   let workoutKcal = 0;
   (day.workouts || []).forEach(w => { workoutKcal += kcalSeance(w.type, w.time, weight); });
@@ -5138,6 +5318,181 @@ function targetsPourCompte(day, dateStr, jours, compte) {
 }
 
 let adminCaloriesChartInstance = null, adminPoidsChartInstance = null, adminPasChartInstance = null;
+/* =====================================================================
+   PREMIÈRE CONNEXION — bilan initial
+   =====================================================================
+   Sans ces informations, computeTargets() part sur ses valeurs par défaut
+   (175 cm, 25 ans, homme, 70 kg) : l'objectif calorique affiché est alors
+   celui de personne. On les demande une fois, à la création du compte.
+
+   Le marqueur `onboarding` vit dans userProfile, donc il est synchronisé
+   avec le compte : quelqu'un qui se reconnecte depuis un autre téléphone
+   ne repasse pas par ce questionnaire.
+   ===================================================================== */
+
+let onbEtape = 1;
+const onbReponses = { gender: null, pasHabituels: null, goal: null };
+
+/* Le questionnaire ne s'ouvre qu'une fois le profil distant récupéré :
+   sinon un utilisateur existant sur un nouvel appareil le verrait passer
+   avant l'arrivée de ses propres données. */
+function verifierBilanInitial() {
+  if (!sessionUtilisateur) return;
+  if (userProfile && userProfile.onboarding) return;
+  if (document.getElementById('modal-bienvenue').classList.contains('show')) return;
+  ouvrirBilanInitial();
+}
+
+function ouvrirBilanInitial() {
+  onbEtape = 1;
+  onbReponses.gender = null;
+  onbReponses.pasHabituels = null;
+  onbReponses.goal = null;
+
+  // Pré-remplissage : si un profil partiel existe déjà, autant ne pas
+  // faire retaper ce qu'on sait.
+  const mettre = (id, v) => { const el = document.getElementById(id); if (el) el.value = v || ''; };
+  mettre('onb-age', userProfile.age && userProfile.age !== 25 ? userProfile.age : '');
+  mettre('onb-taille', userProfile.height && userProfile.height !== 175 ? userProfile.height : '');
+  mettre('onb-poids', dernierPoidsConnu(todayStr()) !== 70 ? dernierPoidsConnu(todayStr()) : '');
+
+  document.querySelectorAll('.onb-option').forEach(b => b.classList.remove('choisi'));
+  onbAller(1);
+  bilanForce = true;
+  ouvrirModal('modal-bienvenue');
+}
+
+function onbAller(n) {
+  onbEtape = n;
+  document.querySelectorAll('.onb-etape').forEach(e => {
+    e.classList.toggle('hidden', Number(e.dataset.etape) !== n);
+  });
+  const barre = document.getElementById('onb-barre');
+  if (barre) barre.style.width = (n * 25) + '%';
+  const modale = document.querySelector('#modal-bienvenue .modal-content');
+  if (modale) modale.scrollTop = 0;
+}
+
+function onbSuivant(cible) {
+  const dire = (n, msg) => {
+    const el = document.getElementById('onb-erreur-' + n);
+    if (el) el.textContent = msg || '';
+  };
+
+  if (cible === 2) {
+    const age = Number(document.getElementById('onb-age').value);
+    const taille = Number(document.getElementById('onb-taille').value);
+    const poids = Number(document.getElementById('onb-poids').value);
+
+    if (!onbReponses.gender) { dire(1, 'Choisis une réponse pour le sexe.'); return; }
+    if (!(age >= 14 && age <= 100)) { dire(1, 'Renseigne un âge entre 14 et 100 ans.'); return; }
+    if (!(taille >= 120 && taille <= 230)) { dire(1, 'Renseigne une taille entre 120 et 230 cm.'); return; }
+    if (!(poids >= 30 && poids <= 300)) { dire(1, 'Renseigne un poids entre 30 et 300 kg.'); return; }
+    dire(1, '');
+  }
+
+  if (cible === 3) {
+    if (!onbReponses.pasHabituels) { dire(2, 'Choisis ton niveau d\'activité.'); return; }
+    dire(2, '');
+  }
+
+  if (cible === 4) {
+    if (!onbReponses.goal) { dire(3, 'Choisis un objectif.'); return; }
+    dire(3, '');
+    onbCalculerApercu();
+  }
+
+  onbAller(cible);
+}
+
+/* Aperçu du résultat, calculé avec la vraie fonction de l'appli plutôt
+   qu'une formule dupliquée : ce que la personne voit ici est exactement
+   ce qu'elle verra demain sur son écran principal. */
+function onbCalculerApercu() {
+  const age = Number(document.getElementById('onb-age').value);
+  const taille = Number(document.getElementById('onb-taille').value);
+  const poids = Number(document.getElementById('onb-poids').value);
+
+  const sauvegarde = { height: userProfile.height, age: userProfile.age, gender: userProfile.gender };
+  userProfile.height = taille;
+  userProfile.age = age;
+  userProfile.gender = onbReponses.gender;
+
+  const t = computeTargets(
+    { weight: poids, steps: onbReponses.pasHabituels, workouts: [], goal: onbReponses.goal },
+    todayStr()
+  );
+
+  Object.assign(userProfile, sauvegarde);   // on ne modifie rien tant que ce n'est pas validé
+
+  document.getElementById('onb-cible').textContent = t.target;
+
+  const detail = document.getElementById('onb-detail');
+  detail.innerHTML = '';
+  [
+    ['Métabolisme de base', t.bmr + ' kcal'],
+    ['Dépense estimée', t.tdee + ' kcal'],
+    ['Protéines', t.protein + ' g'],
+    ['Glucides', t.carbs + ' g'],
+    ['Lipides', t.fat + ' g']
+  ].forEach(([g, d]) => {
+    const l = document.createElement('div');
+    l.className = 'onb-ligne';
+    const a = document.createElement('span'); a.textContent = g;
+    const b = document.createElement('span'); b.textContent = d;
+    l.appendChild(a); l.appendChild(b);
+    detail.appendChild(l);
+  });
+}
+
+async function onbTerminer() {
+  const age = Number(document.getElementById('onb-age').value);
+  const taille = Number(document.getElementById('onb-taille').value);
+  const poids = Number(document.getElementById('onb-poids').value);
+
+  userProfile.gender = onbReponses.gender;
+  userProfile.age = age;
+  userProfile.height = taille;
+  userProfile.pasHabituels = onbReponses.pasHabituels;
+  userProfile.onboarding = new Date().toISOString();
+  userProfile.maj = Date.now();
+
+  // Poids et objectif vivent dans la journée, pas dans le profil : c'est
+  // ce qui permet à l'historique de rester intact quand ils changent.
+  const jour = getDay(todayStr());
+  jour.weight = poids;
+  jour.goal = onbReponses.goal;
+
+  try { localStorage.setItem(PROFILE_KEY, JSON.stringify(userProfile)); } catch (e) {}
+  saveData(todayStr());
+
+  bilanForce = false;
+  fermerModal('modal-bienvenue');
+  invaliderHistorique();
+  renderApp();
+  planifierSync();
+}
+
+/* Les boutons de choix sont branchés une fois pour toutes au chargement. */
+function brancherChoixOnboarding() {
+  const groupes = [
+    ['onb-genre', v => { onbReponses.gender = v; }],
+    ['onb-activite', v => { onbReponses.pasHabituels = Number(v); }],
+    ['onb-objectif', v => { onbReponses.goal = v; }]
+  ];
+  groupes.forEach(([id, appliquer]) => {
+    const groupe = document.getElementById(id);
+    if (!groupe) return;
+    groupe.querySelectorAll('.onb-option').forEach(bouton => {
+      bouton.addEventListener('click', () => {
+        groupe.querySelectorAll('.onb-option').forEach(b => b.classList.remove('choisi'));
+        bouton.classList.add('choisi');
+        appliquer(bouton.dataset.valeur);
+      });
+    });
+  });
+}
+
 /* =====================================================================
    ADMINISTRATION — recherche, filtre et vue d'ensemble
    ===================================================================== */
@@ -6017,6 +6372,10 @@ async function synchroniser(raison) {
     // Les aliments en attente repartent avec la même occasion réseau.
     viderFileAliments();
 
+    // Le profil distant est arrivé : on sait maintenant si ce compte a
+    // déjà rempli son bilan initial.
+    verifierBilanInitial();
+
     const recus = (data || []).length;
     const enAttente = fileAliments().length;
     majEtatSync('ok', `À jour · ${aPousser.length} journée(s) envoyée(s), ${recus} sur le serveur.`
@@ -6674,6 +7033,7 @@ function avg(arr) { return arr.length ? arr.reduce((a, b) => a + b, 0) / arr.len
 window.addEventListener('click', (e) => {
   if (e.target.classList && e.target.classList.contains('modal')) {
     if (e.target.id === 'compte-modal' && connexionObligatoire) return;
+    if (e.target.id === 'modal-bienvenue' && bilanForce) return;
     if (e.target.id === 'barcode-modal') stopperScanner();
     e.target.classList.remove('show');
     majCoucheOuverte();
@@ -6771,6 +7131,7 @@ window.addEventListener('load', () => {
   if (lim) document.getElementById('ia-limite').value = lim;
   majAffichageIA();
 
+  brancherChoixOnboarding();
   renderApp();
   majNoteCleIA();
   majUIWithings();
