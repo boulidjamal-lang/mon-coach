@@ -10,14 +10,14 @@
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
   <meta http-equiv="Pragma" content="no-cache">
   <meta http-equiv="Expires" content="0">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <title>Mon Coach — nutrition &amp; activité</title>
   <meta name="theme-color" content="#06070a" media="(prefers-color-scheme: dark)">
   <meta name="theme-color" content="#eaeef5" media="(prefers-color-scheme: light)">
   <meta name="apple-mobile-web-app-title" content="Mon Coach">
   
   <!-- Importation d'une police haut de gamme (Outfit) -->
-  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&amp;display=swap" rel="stylesheet">
   
   <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -606,6 +606,9 @@
       transition: opacity 0.25s ease, transform 0.25s ease;
     }
     body.couche-ouverte .fab-zone { opacity: 0; pointer-events: none; transform: translateY(14px) scale(0.9); }
+    /* Une feuille ouverte doit défiler seule : sans cela, le geste passe à
+       travers et c'est la page du dessous qui bouge. */
+    body.couche-ouverte { overflow: hidden; touch-action: none; }
     .fab {
       width: 60px; height: 60px; border-radius: 21px; border: 1px solid var(--verre-brd);
       background: var(--primary); color: var(--primary-txt);
@@ -696,7 +699,7 @@
     :root[data-theme="light"] .feuille { background: rgba(180, 195, 220, 0.42); }
     .feuille.show { display: flex; }
     .feuille-contenu {
-      width: 100%; max-width: 560px;
+      width: 100%; max-width: 560px; max-height: 85vh;
       background: var(--verre-fort);
       -webkit-backdrop-filter: blur(var(--verre-flou)) saturate(var(--verre-sat));
       backdrop-filter: blur(var(--verre-flou)) saturate(var(--verre-sat));
@@ -705,6 +708,13 @@
       box-shadow: var(--ombre-haute), inset 0 1px 0 var(--verre-hi);
       padding: 10px 16px calc(20px + env(safe-area-inset-bottom, 0px));
       animation: feuilleIn 0.34s cubic-bezier(0.16, 1, 0.3, 1);
+      overflow-y: auto;
+      overflow-x: hidden;
+      -webkit-overflow-scrolling: touch;
+      /* Le geste reste dans la feuille : arrivé en bout de liste, il ne
+         se propage pas à la page du dessous. */
+      overscroll-behavior: contain;
+      touch-action: pan-y;
     }
     @keyframes feuilleIn { from { transform: translateY(100%); } to { transform: none; } }
     .feuille-poignee { width: 40px; height: 4px; border-radius: 99px; background: var(--verre-brd-vive); margin: 0 auto 14px; }
@@ -721,6 +731,103 @@
     .feuille-action:active { transform: scale(0.985); }
     .feuille-action .ic { font-size: 1.25rem; }
     .feuille-action .sous { display: block; font-weight: 500; font-size: 0.73rem; color: var(--text-muted); margin-top: 2px; }
+    .feuille-action.danger { border-color: color-mix(in srgb, var(--danger) 40%, transparent); }
+    .feuille-action.danger:hover { background: color-mix(in srgb, var(--danger) 14%, transparent); }
+
+    /* En-tête de feuille : titre à gauche, croix à droite. */
+    .feuille-entete {
+      display: flex; align-items: center; justify-content: space-between;
+      gap: 10px; margin-bottom: 14px;
+    }
+    .feuille-entete .feuille-titre { margin: 0; flex: 1; text-align: left; }
+    .feuille-fermer {
+      flex: none; width: 32px; height: 32px; border-radius: 10px;
+      background: var(--verre-creux); border: 1px solid var(--verre-brd);
+      color: var(--text); font-size: 1.2rem; line-height: 1; cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .feuille-fermer:hover { background: var(--verre-fort); }
+
+    /* --- ADMINISTRATION --- */
+    .admin-select-ligne { display: flex; gap: 8px; align-items: stretch; }
+    .admin-select-ligne select { flex: 1; min-width: 0; }
+    .admin-select-ligne .btn { flex: none; width: 46px; padding: 0; font-size: 1rem; }
+    .admin-separateur {
+      margin-top: 22px; padding-top: 20px;
+      border-top: 1px solid var(--verre-brd);
+    }
+    .admin-separateur .note { margin: 8px 0 0; }
+
+    .stats-grille {
+      display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px;
+    }
+    .stats-grille small {
+      display: block; font-size: 0.66rem; text-transform: uppercase;
+      letter-spacing: 0.7px; color: var(--text-muted); margin-bottom: 3px;
+    }
+    .stats-grille .stats-valeur {
+      font-weight: 700; font-size: 0.88rem; word-break: break-word;
+    }
+
+    .aliments-filtres {
+      display: grid; gap: 8px; margin-bottom: 14px;
+      padding: 12px; background: var(--verre-creux);
+      border: 1px solid var(--verre-brd); border-radius: 14px;
+    }
+    .aliments-filtres input {
+      width: 100%; padding: 9px 12px; min-height: 40px;
+      background: var(--verre); border: 1px solid var(--verre-brd);
+      color: var(--text); border-radius: 10px;
+      font-size: 0.88rem; font-family: inherit; outline: none;
+    }
+    .aliments-filtres input:focus { border-color: var(--primary); }
+
+    .admin-aliment-card {
+      background: var(--verre-creux); border: 1px solid var(--verre-brd);
+      border-radius: 16px; padding: 13px; margin-bottom: 10px;
+    }
+    .aliment-header {
+      display: flex; justify-content: space-between; align-items: flex-start;
+      gap: 10px; margin-bottom: 10px;
+    }
+    .aliment-info { min-width: 0; flex: 1; }
+    .aliment-info strong { display: block; font-size: 0.9rem; word-break: break-word; }
+    .aliment-info small {
+      display: block; font-size: 0.7rem; color: var(--text-muted);
+      margin-top: 3px; word-break: break-word;
+    }
+    .aliment-actions { display: flex; gap: 6px; flex: none; }
+    .bouton-petit {
+      width: 34px; height: 34px; padding: 0; font-size: 0.95rem;
+      border: 1px solid var(--verre-brd); border-radius: 10px;
+      background: var(--verre); color: var(--text); cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      transition: background 0.2s, border-color 0.2s;
+    }
+    .bouton-petit:hover { background: var(--verre-fort); }
+    .bouton-petit.danger:hover { border-color: var(--danger); }
+
+    .aliment-nutrition-grid {
+      display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px;
+    }
+    .nut-box {
+      background: var(--verre); border-radius: 9px; padding: 7px 4px;
+      text-align: center; border-left: 3px solid currentColor;
+    }
+    .nut-box small {
+      display: block; font-size: 0.62rem; color: var(--text-muted); margin-bottom: 2px;
+    }
+    .nut-box strong { font-size: 0.82rem; }
+
+    .edit-macros { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+
+    /* Badge de provenance dans les suggestions de recherche. */
+    .off-suggestion .off-origine {
+      display: inline-block; margin-left: 6px; font-size: 0.62rem;
+      padding: 1px 6px; border-radius: 99px; font-weight: 700;
+      background: var(--verre-fort); color: var(--text-muted);
+      vertical-align: middle;
+    }
 
     /* --- FORMULAIRES --- */
     .input-group { margin-bottom: 15px; }
@@ -1314,100 +1421,22 @@
     <h2 class="titre-ecran"><span class="ic" aria-hidden="true">👑</span> Administration</h2>
     <p class="note">Tous les comptes utilisant ce projet Supabase.</p>
     
-    <!-- 🆕 SELECT UTILISATEURS -->
-    <div style="display: flex; gap: 12px; margin-bottom: 20px; align-items: flex-start;">
-      <div style="flex: 1;">
-        <label style="display: block; font-size: 0.9rem; font-weight: 500; margin-bottom: 6px;">Sélectionnez un utilisateur:</label>
-        <select id="admin-user-select" onchange="afficherFeuillUtilisateur()" style="width: 100%; padding: 10px 12px; border: 1px solid var(--verre-brd); border-radius: 8px; background: var(--verre); color: var(--text); font-size: 0.95rem;">
-          <option value="">-- Choisir un utilisateur --</option>
+    <div class="input-group">
+      <label for="admin-user-select">Choisir un compte</label>
+      <div class="admin-select-ligne">
+        <select id="admin-user-select" onchange="afficherFeuillUtilisateur()">
+          <option value="">&mdash; Sélectionner &mdash;</option>
         </select>
+        <button class="btn btn-secondaire" type="button" onclick="chargerAdmin()" title="Actualiser la liste" aria-label="Actualiser">&#128260;</button>
       </div>
-      <button class="btn btn-secondaire" onclick="chargerAdmin()" style="margin-top: 28px;">🔄 Actualiser</button>
     </div>
-    
-    <!-- Ancien élément cache pour compatibilité -->
-    <div id="admin-liste" style="display: none;"></div>
+    <p class="note" id="admin-etat">Chargement des comptes&hellip;</p>
 
-    <!-- 🆕 BOUTON ALIMENTS PERSONNALISÉS -->
-    <div style="margin-top: 20px; padding-top: 20px; border-top: 2px solid var(--verre);">
-      <button class="btn btn-primary" onclick="afficherFeuillAlimentsPersonalises()" style="width: 100%; padding: 12px;">
-        🍽️ Aliments Personnalisés
+    <div class="admin-separateur">
+      <button class="btn btn-primary" type="button" onclick="afficherFeuillAlimentsPersonalises()">
+        &#127869; Aliments partagés
       </button>
-    </div>
-    
-    <!-- Ancien élément cache pour compatibilité -->
-    <div id="admin-aliments-liste" style="display: none;"></div>
-      <style>
-        .admin-aliments-head { margin-bottom: 20px; }
-        .admin-aliments-head h3 { margin: 0 0 8px 0; }
-        .admin-aliment-card {
-          background: var(--verre);
-          border: 1px solid var(--verre-brd);
-          border-radius: var(--rayon);
-          padding: 16px;
-          margin-bottom: 12px;
-          backdrop-filter: blur(var(--verre-flou-doux));
-        }
-        .aliment-header {
-          display: flex;
-          justify-content: space-between;
-          align-items: flex-start;
-          margin-bottom: 12px;
-          gap: 12px;
-        }
-        .aliment-info strong { display: block; margin-bottom: 4px; }
-        .aliment-info small { font-size: 0.75rem; color: var(--text-muted); }
-        .aliment-actions { display: flex; gap: 8px; }
-        .bouton-petit {
-          padding: 6px 12px;
-          font-size: 0.85rem;
-          border: none;
-          border-radius: 8px;
-          background: var(--verre-fort);
-          color: var(--text);
-          cursor: pointer;
-          transition: all 0.2s;
-        }
-        .bouton-petit:hover { background: var(--primary); color: var(--primary-txt); }
-        .bouton-petit.danger:hover { background: var(--danger); }
-        .aliment-details {
-          display: grid;
-          grid-template-columns: 1fr 1fr;
-          gap: 12px;
-          margin-bottom: 12px;
-          font-size: 0.9rem;
-          padding: 12px 0;
-          border-bottom: 1px solid var(--verre-brd);
-        }
-        .detail-item label {
-          display: block;
-          font-size: 0.75rem;
-          color: var(--text-muted);
-          margin-bottom: 4px;
-        }
-        .detail-item span {
-          display: block;
-          font-weight: 500;
-        }
-        .aliment-nutrition-grid {
-          display: grid;
-          grid-template-columns: repeat(4, 1fr);
-          gap: 8px;
-        }
-        .nut-box {
-          background: var(--verre-fort);
-          padding: 8px;
-          border-radius: 8px;
-          text-align: center;
-          border-left: 3px solid var(--primary);
-        }
-        .nut-box small {
-          display: block;
-          font-size: 0.7rem;
-          color: var(--text-muted);
-          margin-bottom: 4px;
-        }
-      </style>
+      <p class="note">Tous les aliments créés par les utilisateurs, visibles dans la recherche de chacun.</p>
     </div>
 
     <div id="admin-stats-zone" class="hidden">
@@ -1552,70 +1581,107 @@
   </div>
 </div>
 
-<!-- 🆕 FEUILLE UTILISATEUR ADMIN -->
+<!-- ============ FEUILLE : compte utilisateur (admin) ============ -->
 <div class="feuille" id="feuille-admin-user" role="dialog" aria-modal="true" aria-labelledby="feuille-admin-user-titre">
   <div class="feuille-contenu">
     <div class="feuille-poignee"></div>
-    <div class="feuille-titre" id="feuille-admin-user-titre">Utilisateur: <span id="admin-user-email">---</span></div>
-    
+    <div class="feuille-entete">
+      <div class="feuille-titre" id="feuille-admin-user-titre">
+        <span id="admin-user-email">&mdash;</span>
+      </div>
+      <button class="feuille-fermer" type="button" onclick="fermerFeuilles()" aria-label="Fermer">&times;</button>
+    </div>
+
     <div id="admin-user-actions">
-      <!-- Boutons principales -->
-      <button class="feuille-action" onclick="afficherStatsUtilisateur()">
-        <span class="ic" aria-hidden="true">📊</span>
-        <span>Statistiques<span class="sous">Voir les données détaillées</span></span>
+      <button class="feuille-action" type="button" onclick="afficherStatsUtilisateur()">
+        <span class="ic" aria-hidden="true">&#128202;</span>
+        <span>Statistiques<span class="sous">Poids, journées, dernière activité</span></span>
       </button>
-      <button class="feuille-action" onclick="suspendreUtilisateur()">
-        <span class="ic" aria-hidden="true">⏸️</span>
-        <span>Suspendre<span class="sous">Désactiver le compte</span></span>
+      <button class="feuille-action" type="button" onclick="afficherAlimentsUtilisateur()">
+        <span class="ic" aria-hidden="true">&#127869;</span>
+        <span>Aliments créés<span class="sous">Voir et gérer ses aliments</span></span>
       </button>
-      <button class="feuille-action" onclick="supprimerUtilisateur()">
-        <span class="ic" aria-hidden="true">🗑️</span>
-        <span>Supprimer<span class="sous">Garder les données</span></span>
+      <button class="feuille-action" type="button" onclick="suspendreUtilisateur()" data-destructif>
+        <span class="ic" aria-hidden="true">&#9208;</span>
+        <span>Suspendre / réactiver<span class="sous">Bloque ou rétablit la connexion</span></span>
       </button>
-      <button class="feuille-action" onclick="effacerUtilisateur()">
-        <span class="ic" aria-hidden="true">🗑️</span>
-        <span>Effacer définitivement<span class="sous">Supprimer toutes les données</span></span>
+      <button class="feuille-action" type="button" onclick="supprimerUtilisateur()" data-destructif>
+        <span class="ic" aria-hidden="true">&#128465;</span>
+        <span>Supprimer le compte<span class="sous">Les données sont conservées</span></span>
       </button>
-      <button class="feuille-action" onclick="afficherAlimentsUtilisateur()">
-        <span class="ic" aria-hidden="true">🍽️</span>
-        <span>Aliments créés<span class="sous">Voir et gérer les aliments</span></span>
+      <button class="feuille-action danger" type="button" onclick="effacerUtilisateur()" data-destructif>
+        <span class="ic" aria-hidden="true">&#9888;</span>
+        <span>Effacer définitivement<span class="sous">Irréversible : compte et données</span></span>
       </button>
     </div>
-    
-    <!-- Statistiques (cachées par défaut) -->
-    <div id="admin-user-stats" style="display: none;">
-      <button class="feuille-action" onclick="afficherActionsUtilisateur()" style="margin-bottom: 16px;">
-        <span class="ic" aria-hidden="true">◀️</span>
+
+    <div id="admin-user-stats" style="display:none;">
+      <button class="feuille-action" type="button" onclick="afficherActionsUtilisateur()" style="margin-bottom:14px;">
+        <span class="ic" aria-hidden="true">&#9664;</span>
         <span>Retour aux actions</span>
       </button>
-      <div id="admin-user-stats-content" style="padding: 12px 0;"></div>
+      <div id="admin-user-stats-content"></div>
     </div>
   </div>
 </div>
 
-<!-- 🆕 FEUILLE ALIMENTS PERSONNALISÉS -->
+<!-- ============ FEUILLE : aliments partagés (admin) ============ -->
 <div class="feuille" id="feuille-admin-aliments" role="dialog" aria-modal="true" aria-labelledby="feuille-admin-aliments-titre">
   <div class="feuille-contenu">
     <div class="feuille-poignee"></div>
-    <div class="feuille-titre" id="feuille-admin-aliments-titre">Aliments Personnalisés</div>
-    
-    <!-- Filtres -->
-    <div style="padding: 12px; background: var(--verre); border-radius: 12px; margin-bottom: 16px;">
-      <input type="text" id="aliments-filter-nom" placeholder="🔍 Filtrer par nom..." 
-        style="width: 100%; padding: 8px 12px; border: 1px solid var(--verre-brd); border-radius: 8px; background: var(--bg); color: var(--text); margin-bottom: 8px; font-size: 0.9rem;" 
-        oninput="filtrerAlimentsAdmin()">
-      <input type="text" id="aliments-filter-createur" placeholder="👤 Filtrer par créateur..." 
-        style="width: 100%; padding: 8px 12px; border: 1px solid var(--verre-brd); border-radius: 8px; background: var(--bg); color: var(--text); margin-bottom: 8px; font-size: 0.9rem;" 
-        oninput="filtrerAlimentsAdmin()">
-      <input type="date" id="aliments-filter-date" 
-        style="width: 100%; padding: 8px 12px; border: 1px solid var(--verre-brd); border-radius: 8px; background: var(--bg); color: var(--text); font-size: 0.9rem;" 
-        oninput="filtrerAlimentsAdmin()">
+    <div class="feuille-entete">
+      <div class="feuille-titre" id="feuille-admin-aliments-titre">Aliments partagés</div>
+      <button class="feuille-fermer" type="button" onclick="fermerFeuilles()" aria-label="Fermer">&times;</button>
     </div>
-    
-    <!-- Liste des aliments -->
-    <div id="admin-aliments-feuille-liste" style="max-height: 500px; overflow-y: auto;">
-      <p class="note">Chargement des aliments...</p>
+
+    <div class="aliments-filtres">
+      <input type="text" id="aliments-filter-nom" placeholder="&#128269; Nom de l'aliment" oninput="filtrerAlimentsAdmin()" autocomplete="off">
+      <input type="text" id="aliments-filter-createur" placeholder="&#128100; Email du créateur" oninput="filtrerAlimentsAdmin()" autocomplete="off">
+      <input type="date" id="aliments-filter-date" onchange="filtrerAlimentsAdmin()">
     </div>
+
+    <div id="admin-aliments-feuille-liste"></div>
+  </div>
+</div>
+
+<!-- ============ MODALE : édition d'un aliment ============ -->
+<div class="modal" id="modal-edit-aliment" role="dialog" aria-modal="true" aria-labelledby="titre-edit-aliment">
+  <div class="modal-content">
+    <div class="modal-entete">
+      <h3 id="titre-edit-aliment">&#9999;&#65039; Modifier l'aliment</h3>
+      <button class="close-modal" type="button" onclick="fermerModal('modal-edit-aliment')" aria-label="Fermer">&times;</button>
+    </div>
+
+    <div class="input-group">
+      <label for="edit-nom">Nom</label>
+      <input type="text" id="edit-nom" autocomplete="off">
+    </div>
+    <div class="input-group">
+      <label for="edit-code-barre">Code-barres</label>
+      <input type="text" id="edit-code-barre" inputmode="numeric" autocomplete="off">
+    </div>
+
+    <div class="edit-macros">
+      <div class="input-group">
+        <label for="edit-kcal">Kcal / 100 g</label>
+        <input type="number" id="edit-kcal" min="0" max="2000" step="1">
+      </div>
+      <div class="input-group">
+        <label for="edit-p100">Protéines (g)</label>
+        <input type="number" id="edit-p100" min="0" max="200" step="0.1">
+      </div>
+      <div class="input-group">
+        <label for="edit-c100">Glucides (g)</label>
+        <input type="number" id="edit-c100" min="0" max="200" step="0.1">
+      </div>
+      <div class="input-group">
+        <label for="edit-f100">Lipides (g)</label>
+        <input type="number" id="edit-f100" min="0" max="200" step="0.1">
+      </div>
+    </div>
+
+    <p class="note">La modification s'applique pour tous les utilisateurs.</p>
+    <button class="btn btn-primary" type="button" onclick="sauvegarderEditionAliment()">Enregistrer</button>
   </div>
 </div>
 
@@ -1759,7 +1825,7 @@
 <div id="settings-modal" class="modal" role="dialog" aria-modal="true" aria-labelledby="titre-settings">
   <div class="modal-content">
     <div class="modal-entete">
-      <h3 id="titre-settings">⚙️ Profil & réglages</h3>
+      <h3 id="titre-settings">⚙️ Profil &amp; réglages</h3>
       <button class="close-modal" onclick="fermerModal('settings-modal')" aria-label="Fermer">&times;</button>
     </div>
 
@@ -1902,7 +1968,7 @@
   </div>
 </div>
 
-<!-- Modal Code-Barres Caméra & Manuel -->
+<!-- Modal Code-Barres Camera et Manuel -->
 <div id="barcode-modal" class="modal" role="dialog" aria-modal="true" aria-labelledby="titre-barcode">
   <div class="modal-content">
     <div class="modal-entete">
@@ -1968,19 +2034,28 @@ const SUPA_TABLE_DEFAUT = 'ciqual_aliments';
 
 /* =====================================================================
    BALANCE WITHINGS — récupération automatique du poids
-   Comme pour Gemini, la clé secrète est visible dans ce fichier : l'API
-   Withings répond aux appels directs depuis un navigateur (CORS ouvert),
-   donc pas besoin de serveur intermédiaire. Le compromis assumé est que
-   n'importe qui pourrait lire ce secret dans le code source — il ne sert
-   qu'à identifier CETTE application auprès de Withings, pas à accéder aux
-   données de qui que ce soit sans qu'il se connecte lui-même avec SON
-   propre compte Withings. Le jeton obtenu après connexion (access_token/
-   refresh_token), lui, est réellement personnel : il est stocké dans le
-   profil du compte connecté (comme la clé Gemini), donc jamais partagé
-   entre toi et ta femme si vous avez chacun votre compte.
+
+   ⚠️ SÉCURITÉ — le client_secret ne doit PAS être ici.
+   Contrairement à une clé « anon » Supabase (publique par conception),
+   un client_secret OAuth authentifie l'application elle-même. Publié sur
+   GitHub Pages, il permet à n'importe qui de se faire passer pour Mon
+   Coach dans un flux d'autorisation. Withings peut révoquer l'app.
+
+   L'échange de jeton doit passer par un serveur. Le plus simple ici :
+   une Edge Function Supabase (voir WITHINGS_edge_function.md), qui garde
+   le secret côté serveur et n'expose qu'un point d'entrée.
+
+   En attendant ce déploiement, WITHINGS_PROXY vaut null et la connexion
+   Withings est désactivée : mieux vaut une fonction inactive qu'un
+   secret publié. Renseigner l'URL de l'Edge Function pour la réactiver.
+
+   Le jeton obtenu après connexion (access_token / refresh_token) est,
+   lui, réellement personnel : il reste dans le profil du compte connecté
+   et n'est jamais partagé entre deux comptes.
    ===================================================================== */
 const WITHINGS_CLIENT_ID = '3341d599f2c93e3b754d28ae6fbd69af0e259f1127d2c12c738991dccb012924';
-const WITHINGS_CLIENT_SECRET = '97f4fc7a92106d6e5369b8f5b1e0b5837cbccb84d31dd322c2e7450d652077ae';
+// URL de l'Edge Function qui détient le secret. null = Withings désactivé.
+const WITHINGS_PROXY = null;   // ex : 'https://xxxx.supabase.co/functions/v1/withings'
 // Doit correspondre EXACTEMENT à l'URL enregistrée dans le tableau de bord
 // développeur Withings. À changer ici ET là-bas si l'appli déménage.
 const WITHINGS_REDIRECT_URI = 'https://boulidjamal-lang.github.io/mon-coach/';
@@ -2594,7 +2669,7 @@ function sauvegarderParametresGlobaux() {
   // aussi une copie locale pour le mode sans compte / hors ligne.
   const saisie = document.getElementById('gemini-key-input').value.trim();
   userProfile.geminiKey = saisie;
-  localStorage.setItem(GEMINI_KEY_LS, saisie);
+  ecrireLocal(GEMINI_KEY_LS, saisie);
   appliquerGeminiKeyEffective();
   userProfile.gender = document.getElementById('base-gender').value;
   userProfile.age = Number(document.getElementById('base-age').value) || 25;
@@ -2762,6 +2837,8 @@ function afficherSuggestionsOFF(products, probleme) {
     // (avec ma quantité), mes aliments enregistrés, puis la table CIQUAL.
     const section = p.source === 'historique' ? 'Déjà mangé'
       : p.source === 'perso' ? 'Mes aliments'
+      : p.source === 'partage' ? 'Créés par les utilisateurs'
+      : p.source === 'usda' ? 'Base USDA'
       : "Base d'aliments";
     if (section !== sectionPosee) {
       sectionPosee = section;
@@ -2791,6 +2868,8 @@ function afficherSuggestionsOFF(products, probleme) {
       if (p.grammes) meta += ' · ' + p.grammes + ' g la dernière fois';
       if (p.fois > 1) meta += ' · ' + p.fois + '×';
     }
+    // Confidentialité : on indique la provenance, jamais l'identité.
+    if (p.source === 'partage') meta += p.est_mien ? ' · mon aliment' : ' · créé par un autre utilisateur';
     if (p.code) meta += ' · ⌗' + p.code;
     bas.textContent = meta;
     el.appendChild(bas);
@@ -4059,18 +4138,9 @@ function allerA(nom) {
   window.scrollTo({ top: 0, behavior: 'auto' });
   if (nom === 'stats') { prepareStats(); }
   if (nom === 'repas') majNoteCleIA();
-  if (nom === 'admin') {
-    chargerAdmin();
-    // 🆕 Charger la section des aliments personnalisés
-    setTimeout(() => {
-      if (typeof chargerAdminAliments === 'function') {
-        chargerAdminAliments();
-        console.log('[allerA] chargerAdminAliments() appelée');
-      } else {
-        console.error('[allerA] chargerAdminAliments n\'existe pas !');
-      }
-    }, 200);
-  }
+  // Les aliments ne sont chargés qu'à l'ouverture de leur feuille :
+  // inutile d'interroger Supabase tant que personne ne les regarde.
+  if (nom === 'admin') chargerAdmin();
 }
 
 function majNoteCleIA() {
@@ -4212,12 +4282,10 @@ function ouvrirFeuilleRepas(mealId) {
   const b = f.querySelector('.feuille-action');
   if (b) setTimeout(() => b.focus(), 60);
 }
-function fermerFeuilleRepas() {
-  // Ferme TOUTES les feuilles (repas, admin-user, admin-aliments)
-  const feuilles = document.querySelectorAll('.feuille.show');
-  feuilles.forEach(f => f.classList.remove('show'));
-  majCoucheOuverte();
-}
+/* Un seul point de fermeture pour toutes les feuilles (repas, admin
+   utilisateur, admin aliments). fermerFeuilles() est défini plus bas ;
+   les déclarations de fonction étant remontées, l'appel est sûr. */
+function fermerFeuilleRepas() { fermerFeuilles(); }
 function depuisFeuille(mode) {
   const mealId = repasFeuille || repasDuMoment();
   fermerFeuilleRepas();
@@ -4473,75 +4541,50 @@ let adminComptes = {}; // utilisateur -> ligne renvoyée par admin_liste_comptes
 
 async function chargerAdmin() {
   const select = document.getElementById('admin-user-select');
-  const conteneur = document.getElementById('admin-liste');
-  
-  if (!supa) { 
-    conteneur.innerHTML = '<p class="note">Pas de connexion à Supabase.</p>'; 
-    return; 
-  }
+  const etat = document.getElementById('admin-etat');
+  if (!select) return;
+
+  const dire = t => { if (etat) etat.textContent = t; };
+
+  if (!supa) { dire('Pas de connexion à Supabase.'); return; }
+  dire('Chargement des comptes\u2026');
+
   try {
     const { data, error } = await supa.rpc('admin_liste_comptes');
     if (error) throw error;
+
     const comptes = data || [];
     adminComptes = {};
     comptes.forEach(c => { adminComptes[c.utilisateur] = c; });
-    
-    // 🆕 Remplir le select dropdown
-    select.innerHTML = '<option value="">-- Choisir un utilisateur --</option>';
-    comptes.forEach(c => {
-      const identite = c.email ? escapeHtml(c.email) : `Compte ${escapeHtml(String(c.utilisateur)).slice(0, 8)}`;
-      const option = document.createElement('option');
-      option.value = c.utilisateur;
-      option.textContent = identite;
-      select.appendChild(option);
-    });
-    
-    if (!comptes.length) { conteneur.innerHTML = '<p class="note">Aucun compte trouvé.</p>'; return; }
-    
-    // Garder l'affichage ancien pour compatibilité (caché)
-    conteneur.innerHTML = comptes.map(c => {
-      const estMoi = sessionUtilisateur && c.utilisateur === sessionUtilisateur.id;
-      const dateMaj = c.maj ? new Date(Number(c.maj)).toLocaleDateString('fr-FR') : '—';
-      const idAffiche = escapeHtml(String(c.utilisateur)).slice(0, 8);
-      const idJs = escapeHtml(String(c.utilisateur)).replace(/'/g, "\\'");
-      const identite = c.email ? escapeHtml(c.email) : `Sans compte (identifiant : ${idAffiche}…)`;
-      const nomJs = (c.email || ('Compte ' + idAffiche)).replace(/'/g, "\\'");
-      const badge = c.statut === 'suspendu' ? ' <span style="color:var(--danger); font-weight:700; font-size:0.72rem;">· SUSPENDU</span>'
-        : c.statut === 'supprime' ? ' <span style="color:var(--danger); font-weight:700; font-size:0.72rem;">· SUPPRIMÉ (données conservées)</span>'
-        : '';
 
-      let boutons;
-      if (estMoi) {
-        boutons = `<button class="btn btn-secondaire" style="flex:1;" onclick="voirStatsCompte('${idJs}', '${nomJs}')">📊 Voir ses statistiques</button>`;
-      } else if (c.statut === 'supprime') {
-        boutons = `
-          <button class="btn btn-secondaire" style="flex:1;" onclick="voirStatsCompte('${idJs}', '${nomJs}')">📊 Statistiques</button>
-          <button class="btn btn-secondaire" style="flex:1;" onclick="ouvrirRattachement('${idJs}')">🔗 Rattacher</button>`;
-      } else if (c.statut === 'suspendu') {
-        boutons = `
-          <button class="btn btn-secondaire" style="flex:1;" onclick="voirStatsCompte('${idJs}', '${nomJs}')">📊 Statistiques</button>
-          <button class="btn btn-secondaire" style="flex:1;" onclick="definirBlocage('${idJs}', null)">▶️ Réactiver</button>`;
-      } else {
-        boutons = `
-          <button class="btn btn-secondaire" style="flex:1;" onclick="voirStatsCompte('${idJs}', '${nomJs}')">📊 Statistiques</button>
-          <button class="btn btn-secondaire" style="flex:1;" onclick="definirBlocage('${idJs}', 'suspendu')">⏸️ Suspendre</button>`;
-      }
-      const ligneBas = (estMoi || c.statut === 'supprime') ? '' : `
-          <div style="display:flex; gap:8px; margin-top:8px;">
-            <button class="btn btn-secondaire" style="flex:1;" onclick="definirBlocage('${idJs}', 'supprime')">🗑️ Supprimer (garder les données)</button>
-            <button class="btn btn-secondaire" style="flex:1;" onclick="demarrerConfirmationSuppression('${idJs}', '${nomJs}')">🗑️ Effacer définitivement</button>
-          </div>`;
+    // Reconstruction par DOM : un email est une donnée utilisateur, il ne
+    // passe jamais par innerHTML.
+    select.innerHTML = '';
+    const vide = document.createElement('option');
+    vide.value = '';
+    vide.textContent = '\u2014 S\u00e9lectionner \u2014';
+    select.appendChild(vide);
 
-      return `
-        <div class="bloc-verre" style="padding:13px; margin-bottom:10px;">
-          <p style="margin:0 0 6px; font-weight:700;">${estMoi ? '👑 ' : '👤 '}${identite}${badge}</p>
-          <p class="note" style="margin:0 0 10px;">${c.nb_journees || 0} journée(s) enregistrée(s)${c.age ? ' · ' + c.age + ' ans' : ''}${c.poids ? ' · ' + c.poids + ' kg' : ''} · dernière activité le ${dateMaj}</p>
-          <div style="display:flex; gap:8px;">${boutons}</div>
-          ${ligneBas}
-        </div>`;
-    }).join('');
+    comptes
+      .slice()
+      .sort((a, b) => Number(b.maj || 0) - Number(a.maj || 0))
+      .forEach(c => {
+        const o = document.createElement('option');
+        o.value = c.utilisateur;
+        const nom = c.email || ('Compte ' + String(c.utilisateur).slice(0, 8));
+        const marque = c.statut === 'suspendu' ? ' \u23f8'
+          : c.statut === 'supprime' ? ' \ud83d\uddd1'
+          : (sessionUtilisateur && c.utilisateur === sessionUtilisateur.id) ? ' \ud83d\udc51' : '';
+        o.textContent = nom + marque;
+        select.appendChild(o);
+      });
+
+    dire(comptes.length
+      ? comptes.length + ' compte(s). \u23f8 suspendu \u00b7 \ud83d\uddd1 supprim\u00e9 \u00b7 \ud83d\udc51 toi.'
+      : 'Aucun compte trouv\u00e9.');
   } catch (e) {
-    conteneur.innerHTML = '<p class="note">Erreur : ' + escapeHtml(e.message) + ' — as-tu bien exécuté le script SQL de sécurisation (mis à jour) avec ton email admin ?</p>';
+    dire('Erreur : ' + e.message
+      + ' \u2014 le script SQL de s\u00e9curisation a-t-il bien \u00e9t\u00e9 ex\u00e9cut\u00e9 avec ton email admin ?');
   }
 }
 
@@ -4889,6 +4932,13 @@ function majUIWithings() {
    ensuite sur cette même URL avec un ?code=... dans l'adresse (voir plus bas,
    au chargement de la page). */
 function connexionWithings() {
+  /* Sans proxy, le retour ne pourra pas être échangé contre un jeton :
+     autant le dire ici plutôt que de renvoyer l'utilisateur chez Withings
+     pour rien. */
+  if (!WITHINGS_PROXY) {
+    alert("La connexion Withings est momentanément indisponible : elle attend le déploiement de l'Edge Function côté serveur.");
+    return;
+  }
   const params = new URLSearchParams({
     response_type: 'code',
     client_id: WITHINGS_CLIENT_ID,
@@ -4909,13 +4959,17 @@ async function traiterRetourWithings() {
   // On retire le code de l'URL tout de suite : rechargée par erreur, la page
   // ne doit pas retenter le même code (Withings le refuse une 2e fois).
   window.history.replaceState({}, '', window.location.pathname);
+  if (!WITHINGS_PROXY) {
+    alert("La connexion Withings est desactivee : elle attend le deploiement de l'Edge Function (voir WITHINGS_edge_function.md).");
+    return;
+  }
   try {
-    const resp = await fetch('https://wbsapi.withings.net/v2/oauth2', {
+    // Le secret reste cote serveur : on n'envoie que le code d'autorisation.
+    const resp = await fetch(WITHINGS_PROXY, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: new URLSearchParams({
-        action: 'requesttoken', grant_type: 'authorization_code',
-        client_id: WITHINGS_CLIENT_ID, client_secret: WITHINGS_CLIENT_SECRET,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        action: 'authorization_code',
         code, redirect_uri: WITHINGS_REDIRECT_URI
       })
     });
@@ -4938,13 +4992,13 @@ async function withingsAccessTokenValide() {
   let t = tokenWithings();
   if (!t) return null;
   if (Date.now() < t.expire_le) return t.access_token;
+  if (!WITHINGS_PROXY) return null;
   try {
-    const resp = await fetch('https://wbsapi.withings.net/v2/oauth2', {
+    const resp = await fetch(WITHINGS_PROXY, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: new URLSearchParams({
-        action: 'requesttoken', grant_type: 'refresh_token',
-        client_id: WITHINGS_CLIENT_ID, client_secret: WITHINGS_CLIENT_SECRET,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        action: 'refresh_token',
         refresh_token: t.refresh_token
       })
     });
@@ -5337,18 +5391,21 @@ function enregistrerAlimentDansBase(item) {
   if (file.some(f => normaliserRecherche(f.nom) === cle)) return;
   file.push(fiche);
   ecrireFileAliments(file);
-  
-  // 🆕 Ajouter aussi à l'historique partagé pour que ça s'affiche en admin
-  enregistrerHistoriquePartage({
-    nom: fiche.nom || item.nom,
-    kcal100: fiche.kcal100 || item.kcal100 || 0,
-    p100: fiche.p100 || item.p100 || 0,
-    c100: fiche.c100 || item.c100 || 0,
-    f100: fiche.f100 || item.f100 || 0,
-    code_barre: fiche.code || item.code || '',
-    source: supa ? 'supabase' : 'historique'
+
+  /* Le même aliment rejoint la table partagée, visible par tous les
+     comptes. `fiche` est déjà ramenée à 100 g par ficheDepuisItem(),
+     seuls les noms de champs diffèrent. L'appel n'est pas attendu :
+     un échec réseau ne doit pas retarder la saisie du repas. */
+  enregistrerAlimentPartage({
+    nom: fiche.nom,
+    kcal100: fiche.kcal,
+    p100: fiche.prot,
+    c100: fiche.gluc,
+    f100: fiche.lip,
+    code_barre: fiche.code,
+    source: 'manuel'
   });
-  
+
   viderFileAliments();
 }
 
@@ -5817,6 +5874,37 @@ function copierSql() {
   }
 }
 
+/* Identifiant sans collision : randomUUID est disponible partout en
+   contexte sécurisé (https), avec un repli pour les cas restants. */
+function identifiantUnique() {
+  if (typeof crypto !== 'undefined' && crypto.randomUUID) return crypto.randomUUID();
+  if (typeof crypto !== 'undefined' && crypto.getRandomValues) {
+    const t = new Uint8Array(16);
+    crypto.getRandomValues(t);
+    return Array.from(t, o => o.toString(16).padStart(2, '0')).join('');
+  }
+  return Date.now().toString(36) + Math.random().toString(36).slice(2, 11);
+}
+
+/* Écriture localStorage protégée : quand le quota est atteint, setItem
+   lève une exception. Sans ce garde-fou, la sauvegarde échouait en
+   silence et l'utilisateur croyait ses données enregistrées. */
+let quotaSignale = false;
+function ecrireLocal(cle, valeur) {
+  try {
+    localStorage.setItem(cle, valeur);
+    return true;
+  } catch (e) {
+    const quota = e && (e.name === 'QuotaExceededError' || e.code === 22 || e.code === 1014);
+    if (quota && !quotaSignale) {
+      quotaSignale = true;
+      alert("Le stockage de cet appareil est plein : les dernières données n'ont pas pu être enregistrées localement. Elles restent synchronisées si tu es connecté.");
+    }
+    console.warn('[Stockage] écriture impossible sur', cle, ':', e.message);
+    return false;
+  }
+}
+
 function escapeHtml(str) {
   return String(str).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 }
@@ -5929,602 +6017,594 @@ window.addEventListener('load', () => {
   allerA(ecran);
 });
 
-/* ============================================================================
-   AMÉLIORATIONS DEMANDÉES :
-   1. Partage des aliments entre utilisateurs
-   2. Intégration USDA
-   3. Admin avancé avec gestion des aliments personnalisés
-   ============================================================================ */
+/* =====================================================================
+   ALIMENTS PARTAGÉS — 100 % SUPABASE
+   =====================================================================
+   Tout passe par la table `aliments_partages` (voir le fichier SQL).
+   Aucune écriture dans localStorage : les aliments doivent être visibles
+   par tous les utilisateurs, sur tous les appareils.
 
-// Cache pour USDA
-let cacheUSDA = new Map();
+   Le seul stockage local est un cache mémoire (perdu au rechargement),
+   qui évite de refaire la même requête à chaque frappe au clavier.
+   ===================================================================== */
 
-// Recherche USDA avec traduction
-async function chercherUSDA(q) {
-  if (!q || q.length < 2) return [];
-  
-  const cleCachee = `usda_${normaliserRecherche(q)}`;
-  if (cacheUSDA.has(cleCachee)) return cacheUSDA.get(cleCachee);
-  
+const CACHE_TTL_MS = 60000;                 // 60 s
+const cachePartages = new Map();            // requête -> { t, data }
+const cacheUSDA = new Map();                // requête -> résultats USDA
+
+function cacheLire(cle) {
+  const e = cachePartages.get(cle);
+  if (!e) return null;
+  if (Date.now() - e.t > CACHE_TTL_MS) { cachePartages.delete(cle); return null; }
+  return e.data;
+}
+function cacheEcrire(cle, data) {
+  cachePartages.set(cle, { t: Date.now(), data });
+  // Le cache ne doit pas grandir indéfiniment sur une longue session.
+  if (cachePartages.size > 100) cachePartages.delete(cachePartages.keys().next().value);
+}
+function cacheVider() { cachePartages.clear(); }
+
+/* --- Lecture : recherche partagée ---------------------------------- */
+async function chercherAlimentsPartages(q) {
+  if (!supa || !q || q.trim().length < 2) return [];
+  const cle = 'q:' + normaliserRecherche(q);
+  const enCache = cacheLire(cle);
+  if (enCache) return enCache;
+
   try {
-    // Utilise l'API USDA FoodData Central
-    const response = await fetch(`https://fdc.nal.usda.gov/api/foods/search?query=${encodeURIComponent(q)}&pageSize=10&api_key=DEMO_KEY`);
-    if (!response.ok) throw new Error('Erreur USDA');
-    
-    const data = await response.json();
+    const { data, error } = await supa.rpc('chercher_aliments', { p_query: q.trim(), p_limite: 20 });
+    if (error) throw error;
+    const resultats = (data || []).map(a => ({
+      nom: a.nom,
+      kcal100: Number(a.kcal100) || 0,
+      p100: Number(a.p100) || 0,
+      c100: Number(a.c100) || 0,
+      f100: Number(a.f100) || 0,
+      code_barre: a.code_barre || '',
+      source: 'partage',
+      // La fonction SQL ne renvoie plus d'email : seulement de qui vient
+      // l'aliment, sans dire qui. L'identité reste au panneau admin.
+      est_mien: !!a.est_mien,
+      cree_le: a.cree_le,
+      id: a.id
+    }));
+    cacheEcrire(cle, resultats);
+    return resultats;
+  } catch (e) {
+    console.warn('[Aliments] recherche partagée indisponible :', e.message);
+    return [];
+  }
+}
+
+/* --- Écriture : création d'un aliment partagé ----------------------- */
+async function enregistrerAlimentPartage(aliment) {
+  if (!supa) { console.warn('[Aliments] pas de connexion Supabase, création ignorée'); return null; }
+  if (!sessionUtilisateur) { console.warn('[Aliments] création réservée aux comptes connectés'); return null; }
+  const nom = String(aliment && aliment.nom || '').trim();
+  if (!nom) return null;
+
+  try {
+    const { data, error } = await supa
+      .from('aliments_partages')
+      .insert({
+        nom,
+        kcal100: Number(aliment.kcal100) || 0,
+        p100: Number(aliment.p100) || 0,
+        c100: Number(aliment.c100) || 0,
+        f100: Number(aliment.f100) || 0,
+        code_barre: String(aliment.code_barre || ''),
+        source: aliment.source || 'manuel',
+        createur_id: sessionUtilisateur.id,
+        createur: sessionUtilisateur.email
+      })
+      .select()
+      .single();
+
+    // 23505 = violation d'unicité : cet utilisateur a déjà créé cet aliment.
+    // Ce n'est pas une erreur pour lui, on ne l'embête pas avec.
+    if (error && error.code === '23505') return null;
+    if (error) throw error;
+
+    cacheVider();
+    return data;
+  } catch (e) {
+    console.warn('[Aliments] création impossible :', e.message);
+    return null;
+  }
+}
+
+/* --- USDA : base publique américaine -------------------------------
+   Endpoint officiel : https://api.nal.usda.gov/fdc/v1/foods/search
+   DEMO_KEY est très fortement limitée : demander une clé gratuite sur
+   https://fdc.nal.usda.gov/api-key-signup.html et la coller ci-dessous. */
+const USDA_API_KEY = 'DEMO_KEY';
+const USDA_BASE = 'https://api.nal.usda.gov/fdc/v1/foods/search';
+
+async function chercherUSDA(q) {
+  if (!q || q.trim().length < 2) return [];
+  const cle = normaliserRecherche(q);
+  if (cacheUSDA.has(cle)) return cacheUSDA.get(cle);
+
+  try {
+    const url = USDA_BASE
+      + '?query=' + encodeURIComponent(q.trim())
+      + '&pageSize=8'
+      + '&api_key=' + encodeURIComponent(USDA_API_KEY);
+
+    const ctrl = new AbortController();
+    const minuteur = setTimeout(() => ctrl.abort(), 6000);   // pas de recherche qui traîne
+    const rep = await fetch(url, { signal: ctrl.signal });
+    clearTimeout(minuteur);
+
+    if (rep.status === 429) { console.warn('[USDA] quota dépassé'); cacheUSDA.set(cle, []); return []; }
+    if (!rep.ok) throw new Error('HTTP ' + rep.status);
+
+    const data = await rep.json();
     const aliments = (data.foods || []).map(food => {
-      // Extraction des nutriments
       let kcal = 0, p = 0, c = 0, f = 0;
-      
       (food.foodNutrients || []).forEach(n => {
-        if (n.nutrientName === 'Energy' && n.unitName === 'kcal') kcal = n.value;
-        if (n.nutrientName === 'Protein') p = n.value;
-        if (n.nutrientName === 'Carbohydrate, by difference') c = n.value;
-        if (n.nutrientName === 'Total lipid (fat)') f = n.value;
+        const nom = n.nutrientName || '';
+        if (nom === 'Energy' && n.unitName === 'KCAL') kcal = n.value;
+        else if (nom === 'Protein') p = n.value;
+        else if (nom === 'Carbohydrate, by difference') c = n.value;
+        else if (nom === 'Total lipid (fat)') f = n.value;
       });
-      
       return {
         nom: food.description || q,
         kcal100: Math.round(kcal || 0),
-        p100: Math.round(p * 10) / 10 || 0,
-        c100: Math.round(c * 10) / 10 || 0,
-        f100: Math.round(f * 10) / 10 || 0,
-        source: 'usda',
+        p100: Math.round((p || 0) * 10) / 10,
+        c100: Math.round((c || 0) * 10) / 10,
+        f100: Math.round((f || 0) * 10) / 10,
         code_barre: food.gtinUpc || '',
-        createur: 'USDA'
+        source: 'usda',
+        createur: ''
       };
-    });
-    
-    cacheUSDA.set(cleCachee, aliments);
+    }).filter(a => a.kcal100 > 0);     // une fiche sans calories n'aide personne
+
+    cacheUSDA.set(cle, aliments);
     return aliments;
   } catch (e) {
-    console.warn('USDA indisponible:', e);
+    if (e.name !== 'AbortError') console.warn('[USDA] indisponible :', e.message);
     return [];
   }
 }
 
-// Fonction améliorée de recherche combinant Supabase + USDA + Historique partagé
-async function afficherRechercheAmelioree(query, seulementHistorique) {
-  if (!query || query.length < 2) return;
-  
-  const conteneur = document.getElementById('resultats-recherche');
-  if (!conteneur) return;
-  
-  conteneur.innerHTML = '<p class=\"note\">Recherche en cours…</p>';
-  
-  try {
-    // 1. Recherche dans l'historique partagé
-    const historiquePartage = chercherHistoriquePartage(query);
-    
-    // 2. Recherche Supabase (aliments personnalisés)
-    const { aliments: alimentsSupabase } = await chercherAlimentsSupabase(query);
-    
-    // 3. Recherche USDA (si connecté)
-    const alimentsUSDA = supa ? await chercherUSDA(query) : [];
-    
-    // Fusion et déduplication
-    const resultats = [
-      ...historiquePartage,
-      ...alimentsSupabase,
-      ...alimentsUSDA
-    ];
-    
-    // Déduplique par nom normalisé
-    const vus = new Set();
-    const deduplique = resultats.filter(a => {
-      const cle = normaliserRecherche(a.nom || '');
-      if (vus.has(cle)) return false;
-      vus.add(cle);
-      return true;
-    });
-    
-    if (deduplique.length === 0) {
-      conteneur.innerHTML = '<p class=\"note\">Aucun résultat. Saisis les valeurs à la main ou scanne un code-barres.</p>';
-      return;
+/* =====================================================================
+   BRANCHEMENT DANS LA RECHERCHE EXISTANTE
+   =====================================================================
+   La recherche de l'appli passe par afficherSuggestionsOFF(), qui
+   construit ses éléments avec createElement/textContent — aucune
+   injection HTML possible. On réutilise ce chemin plutôt que d'en créer
+   un second : les aliments partagés et USDA arrivent simplement comme
+   deux sources supplémentaires, au format attendu par la fonction.
+   ===================================================================== */
+
+// Convertit un aliment partagé/USDA au format des suggestions existantes.
+function versFormatSuggestion(a) {
+  return {
+    name: a.nom,
+    source: a.source === 'usda' ? 'usda' : 'partage',
+    est_mien: !!a.est_mien,
+    code: a.code_barre || '',
+    nutriments: {
+      'energy-kcal_100g': a.kcal100,
+      'proteins_100g': a.p100,
+      'carbohydrates_100g': a.c100,
+      'fat_100g': a.f100
     }
-    
-    // Affichage avec badges de source
-    conteneur.innerHTML = deduplique.map(a => `
-      <button class=\"bouton-aliment\" onclick="chargerAliment(${JSON.stringify(a).replace(/"/g, '&quot;')})">
-        <div class=\"aliment-nom\">${escapeHtml(a.nom || 'Sans nom')}</div>
-        <div class=\"aliment-cals\">${a.kcal100 || 0} kcal / 100g</div>
-        <div class=\"aliment-badge\">${a.createur ? '👤 ' + escapeHtml(a.createur) : ''} 
-          ${a.source === 'usda' ? '🌐 USDA' : a.source === 'historique' ? '⏰ Historique' : ''}</div>
-      </button>
-    `).join('');
-  } catch (e) {
-    conteneur.innerHTML = '<p class=\"note\">Erreur : ' + escapeHtml(e.message) + '</p>';
-  }
+  };
 }
 
-// Aliments partagés entre tous les utilisateurs (tableau de base)
-function chercherHistoriquePartage(q) {
-  const t = normaliserRecherche(q);
-  if (t.length < 2) return [];
-  
-  try {
-    const aliHistorique = JSON.parse(localStorage.getItem('ali-historique-partage') || '[]');
-    return aliHistorique.filter(a => 
-      normaliserRecherche(a.nom || '').includes(t) ||
-      normaliserRecherche(a.code_barre || '').includes(t)
-    );
-  } catch (e) {
-    return [];
-  }
-}
+/* On enrichit afficherRecherche() au lieu de la remplacer : le code
+   d'origine (historique local + base CIQUAL) continue de fonctionner
+   exactement comme avant, et les deux nouvelles sources s'y ajoutent. */
+const afficherRechercheOrigine = afficherRecherche;
 
-// Enregistre un aliment dans l'historique partagé
-function enregistrerHistoriquePartage(aliment) {
-  try {
-    const historique = JSON.parse(localStorage.getItem('ali-historique-partage') || '[]');
-    
-    // Ajoute le créateur et la date
-    const item = {
-      ...aliment,
-      createur: sessionUtilisateur?.email || 'anonyme',
-      cree_le: new Date().toISOString(),
-      id_unique: Math.random().toString(36).substr(2, 9)
-    };
-    
-    historique.push(item);
-    localStorage.setItem('ali-historique-partage', JSON.stringify(historique));
-  } catch (e) {
-    console.error('Erreur historique partagé:', e);
-  }
-}
+afficherRecherche = async function (query, seulementHistorique) {
+  const monNumero = ++numeroRecherche;
 
-// SECTION ADMIN AVANCÉE : Gestion des aliments personnalisés
-function chargerAdminAliments() {
-  const conteneur = document.getElementById('admin-aliments-liste');
-  if (!conteneur) {
-    console.warn('[Admin Aliments] Conteneur non trouvé');
+  // Le comportement « historique seul » (champ vide, au focus) est inchangé.
+  if (seulementHistorique) return afficherRechercheOrigine(query, seulementHistorique);
+
+  const deja = chercherDansHistorique(query, 40);
+  const dejaNoms = new Set(deja.map(p => normaliserRecherche(p.name)));
+  if (deja.length) afficherSuggestionsOFF(deja);
+
+  // Les trois sources en parallèle : la plus lente ne bloque pas les autres.
+  const [reponseBase, partages, usda] = await Promise.all([
+    chercherAlimentsSupabase(query),
+    chercherAlimentsPartages(query),
+    chercherUSDA(query)
+  ]);
+  if (monNumero !== numeroRecherche) return;   // une frappe plus récente a pris le relais
+
+  const vus = new Set(dejaNoms);
+  const ajouter = (liste, out) => {
+    liste.forEach(item => {
+      const n = normaliserRecherche(item.name);
+      if (vus.has(n)) return;
+      vus.add(n);
+      out.push(item);
+    });
+  };
+
+  const suite = [];
+  ajouter(partages.map(versFormatSuggestion), suite);          // aliments des utilisateurs d'abord
+  ajouter(reponseBase.aliments || [], suite);                  // puis la base CIQUAL
+  ajouter(usda.map(versFormatSuggestion), suite);              // USDA en dernier recours
+
+  if (deja.length || suite.length) {
+    afficherSuggestionsOFF(deja.concat(suite), suite.length ? '' : reponseBase.probleme);
     return;
   }
-  
-  try {
-    const historique = JSON.parse(localStorage.getItem('ali-historique-partage') || '[]');
-    console.log('[Admin Aliments] Aliments trouvés:', historique.length);
-    
-    if (historique.length === 0) {
-      conteneur.innerHTML = '<p class=\"note\">ℹ️ Aucun aliment personnalisé créé pour le moment. Les aliments que vous créez s\'afficheront ici.</p>';
-      return;
-    }
-    
-    // Trie par date de création (plus récents d'abord)
-    const tries = historique.sort((a, b) => new Date(b.cree_le) - new Date(a.cree_le));
-    
-    conteneur.innerHTML = `
-      <div class=\"admin-aliments-head\">
-        <h3>📋 Aliments Personnalisés (${tries.length})</h3>
-        <p class=\"info-small\">Créés par les utilisateurs • Partagés dans toute l'application</p>
-      </div>
-      ${tries.map(a => `
-        <div class=\"admin-aliment-card\">
-          <div class=\"aliment-header\">
-            <div class=\"aliment-info\">
-              <strong>${escapeHtml(a.nom || 'Sans nom')}</strong>
-              <small>ID: ${a.id_unique}</small>
-            </div>
-            <div class=\"aliment-actions\">
-              <button onclick="editerAliment('${a.id_unique}')" class=\"bouton-petit\">✏️ Éditer</button>
-              <button onclick="supprimerAliment('${a.id_unique}')" class=\"bouton-petit danger\">🗑️ Supprimer</button>
-            </div>
-          </div>
-          
-          <div class=\"aliment-details\">
-            <div class=\"detail-item\">
-              <label>Code-barres:</label>
-              <span>${a.code_barre || 'N/A'}</span>
-            </div>
-            <div class=\"detail-item\">
-              <label>Créateur:</label>
-              <span>${escapeHtml(a.createur || 'inconnu')}</span>
-            </div>
-            <div class=\"detail-item\">
-              <label>Créé le:</label>
-              <span>${new Date(a.cree_le).toLocaleDateString('fr-FR')}</span>
-            </div>
-          </div>
-          
-          <div class=\"aliment-nutrition-grid\">
-            <div class=\"nut-box\">
-              <small>Kcal/100g</small>
-              <strong>${a.kcal100 || 0}</strong>
-            </div>
-            <div class=\"nut-box\" style=\"color: var(--protein)\">
-              <small>Protéines</small>
-              <strong>${a.p100 || 0}g</strong>
-            </div>
-            <div class=\"nut-box\" style=\"color: var(--carbs)\">
-              <small>Glucides</small>
-              <strong>${a.c100 || 0}g</strong>
-            </div>
-            <div class=\"nut-box\" style=\"color: var(--fat)\">
-              <small>Lipides</small>
-              <strong>${a.f100 || 0}g</strong>
-            </div>
-          </div>
-        </div>
-      `).join('')}
-    `;
-  } catch (e) {
-    conteneur.innerHTML = '<p class=\"note\">Erreur : ' + escapeHtml(e.message) + '</p>';
-  }
+  afficherMessageSuggestions(reponseBase.probleme
+    || "Aucun aliment trouvé. Saisis les valeurs à la main ci-dessous.");
+};
+
+/* =====================================================================
+   ADMINISTRATION — utilisateurs
+   ===================================================================== */
+
+let adminUserCourant = null;
+let adminAlimentsCharges = [];      // dernier lot affiché dans la feuille
+
+function ouvrirFeuille(id) {
+  const f = document.getElementById(id);
+  if (!f) { console.error('[Feuille] introuvable :', id); return false; }
+  f.classList.add('show');
+  majCoucheOuverte();
+  return true;
 }
 
-// Éditer un aliment personnalisé
-function editerAliment(idUnique) {
-  try {
-    const historique = JSON.parse(localStorage.getItem('ali-historique-partage') || '[]');
-    const aliment = historique.find(a => a.id_unique === idUnique);
-    
-    if (!aliment) {
-      alert('Aliment non trouvé');
-      return;
-    }
-    
-    // Crée un modal d'édition
-    const modal = document.createElement('div');
-    modal.className = 'modal show';
-    modal.id = 'modal-edit-aliment';
-    modal.innerHTML = `
-      <div class=\"modal-content\">
-        <div class=\"modal-header\">
-          <h3>✏️ Éditer l'aliment</h3>
-          <button class=\"fermer-modal\" onclick=\"this.closest('.modal').classList.remove('show')\">✕</button>
-        </div>
-        
-        <div class=\"modal-body\">
-          <div class=\"form-group\">
-            <label>Nom</label>
-            <input type=\"text\" id=\"edit-nom\" value=\"${escapeHtml(aliment.nom || '')}\">
-          </div>
-          
-          <div class=\"form-group\">
-            <label>Code-barres</label>
-            <input type=\"text\" id=\"edit-code-barre\" value=\"${escapeHtml(aliment.code_barre || '')}\">
-          </div>
-          
-          <div style=\"display: grid; grid-template-columns: 1fr 1fr; gap: 12px;\">
-            <div class=\"form-group\">
-              <label>Kcal/100g</label>
-              <input type=\"number\" id=\"edit-kcal\" value=\"${aliment.kcal100 || 0}\">
-            </div>
-            <div class=\"form-group\">
-              <label>Protéines (g)</label>
-              <input type=\"number\" id=\"edit-p100\" step=\"0.1\" value=\"${aliment.p100 || 0}\">
-            </div>
-            <div class=\"form-group\">
-              <label>Glucides (g)</label>
-              <input type=\"number\" id=\"edit-c100\" step=\"0.1\" value=\"${aliment.c100 || 0}\">
-            </div>
-            <div class=\"form-group\">
-              <label>Lipides (g)</label>
-              <input type=\"number\" id=\"edit-f100\" step=\"0.1\" value=\"${aliment.f100 || 0}\">
-            </div>
-          </div>
-        </div>
-        
-        <div class=\"modal-footer\">
-          <button onclick=\"sauvegarderEditionAliment('${idUnique}')\" class=\"bouton-principal\">✓ Sauvegarder</button>
-          <button onclick=\"this.closest('.modal').classList.remove('show')\" class=\"bouton-secondaire\">Annuler</button>
-        </div>
-      </div>
-    `;
-    
-    document.body.appendChild(modal);
-  } catch (e) {
-    alert('Erreur: ' + e.message);
-  }
-}
-
-// Sauvegarde les modifications d'un aliment
-function sauvegarderEditionAliment(idUnique) {
-  try {
-    const historique = JSON.parse(localStorage.getItem('ali-historique-partage') || '[]');
-    const index = historique.findIndex(a => a.id_unique === idUnique);
-    
-    if (index === -1) {
-      alert('Aliment non trouvé');
-      return;
-    }
-    
-    // Récupère les nouvelles valeurs
-    historique[index].nom = document.getElementById('edit-nom').value;
-    historique[index].code_barre = document.getElementById('edit-code-barre').value;
-    historique[index].kcal100 = parseFloat(document.getElementById('edit-kcal').value) || 0;
-    historique[index].p100 = parseFloat(document.getElementById('edit-p100').value) || 0;
-    historique[index].c100 = parseFloat(document.getElementById('edit-c100').value) || 0;
-    historique[index].f100 = parseFloat(document.getElementById('edit-f100').value) || 0;
-    historique[index].modifie_le = new Date().toISOString();
-    historique[index].modifie_par = sessionUtilisateur?.email || 'anonyme';
-    
-    localStorage.setItem('ali-historique-partage', JSON.stringify(historique));
-    
-    // Ferme le modal et recharge la liste
-    document.getElementById('modal-edit-aliment')?.classList.remove('show');
-    chargerAdminAliments();
-    
-    alert('Aliment mis à jour avec succès!');
-  } catch (e) {
-    alert('Erreur: ' + e.message);
-  }
-}
-
-// Supprime un aliment personnalisé
-function supprimerAliment(idUnique) {
-  if (!confirm('Êtes-vous sûr de vouloir supprimer cet aliment? Cette action est irréversible.')) {
-    return;
-  }
-  
-  try {
-    let historique = JSON.parse(localStorage.getItem('ali-historique-partage') || '[]');
-    const aliment = historique.find(a => a.id_unique === idUnique);
-    
-    if (!aliment) {
-      alert('Aliment non trouvé');
-      return;
-    }
-    
-    // Sauvegarde dans un journal de suppression
-    const supprimés = JSON.parse(localStorage.getItem('ali-supprimes-log') || '[]');
-    supprimés.push({
-      ...aliment,
-      supprime_par: sessionUtilisateur?.email || 'anonyme',
-      supprime_le: new Date().toISOString()
-    });
-    localStorage.setItem('ali-supprimes-log', JSON.stringify(supprimés));
-    
-    // Supprime de la liste active
-    historique = historique.filter(a => a.id_unique !== idUnique);
-    localStorage.setItem('ali-historique-partage', JSON.stringify(historique));
-    
-    chargerAdminAliments();
-    alert('Aliment supprimé!');
-  } catch (e) {
-    alert('Erreur: ' + e.message);
-  }
-}
-
-/* ============================================================================
-   🆕 NOUVELLES FONCTIONS ADMIN V3
-   - Gestion des feuilles flottantes utilisateurs
-   - Filtrage des aliments
-   - Affichage statistiques utilisateur
-   ============================================================================ */
-
-// 1️⃣ FEUILLE UTILISATEUR - Afficher la feuille avec actions
 function afficherFeuillUtilisateur() {
   const select = document.getElementById('admin-user-select');
-  const userId = select.value;
-  
-  if (!userId) return;
-  
-  const user = adminComptes[userId];
-  if (!user) {
-    alert('Utilisateur non trouvé');
+  if (!select || !select.value) return;
+
+  const user = adminComptes[select.value];
+  if (!user) { alert('Utilisateur introuvable — actualise la liste.'); return; }
+
+  adminUserCourant = select.value;
+
+  const titre = document.getElementById('admin-user-email');
+  const actions = document.getElementById('admin-user-actions');
+  const stats = document.getElementById('admin-user-stats');
+  if (!titre || !actions || !stats) {
+    console.error('[Admin] feuille utilisateur incomplète');
     return;
   }
-  
-  // Mettre à jour le titre
-  document.getElementById('feuille-admin-user-titre').textContent = 'Utilisateur: ' + (user.email || userId);
-  document.getElementById('admin-user-email').textContent = user.email || userId;
-  
-  // Afficher les actions, cacher les stats
-  document.getElementById('admin-user-actions').style.display = 'block';
-  document.getElementById('admin-user-stats').style.display = 'none';
-  
-  // Stocker l'utilisateur courant
-  window.adminUserCourant = userId;
-  
-  // Ouvrir la feuille
-  const feuille = document.getElementById('feuille-admin-user');
-  feuille.classList.add('show');
-  majCoucheOuverte();
+
+  titre.textContent = user.email || ('Compte ' + String(user.utilisateur).slice(0, 8));
+  actions.style.display = 'block';
+  stats.style.display = 'none';
+
+  // Les actions destructrices n'ont pas de sens sur son propre compte.
+  const estMoi = sessionUtilisateur && user.utilisateur === sessionUtilisateur.id;
+  actions.querySelectorAll('[data-destructif]').forEach(b => {
+    b.style.display = estMoi ? 'none' : '';
+  });
+
+  ouvrirFeuille('feuille-admin-user');
 }
 
 function afficherActionsUtilisateur() {
-  document.getElementById('admin-user-actions').style.display = 'block';
-  document.getElementById('admin-user-stats').style.display = 'none';
+  const actions = document.getElementById('admin-user-actions');
+  const stats = document.getElementById('admin-user-stats');
+  if (actions) actions.style.display = 'block';
+  if (stats) stats.style.display = 'none';
 }
 
-// 2️⃣ AFFICHER LES STATISTIQUES DE L'UTILISATEUR
 function afficherStatsUtilisateur() {
-  const userId = window.adminUserCourant;
-  const user = adminComptes[userId];
-  
+  const user = adminComptes[adminUserCourant];
   if (!user) return;
-  
-  const statsHtml = `
-    <div style="padding: 12px 0; border-bottom: 1px solid var(--verre-brd); margin-bottom: 12px;">
-      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; font-size: 0.9rem;">
-        <div>
-          <small style="color: var(--text-muted);">Email</small>
-          <div style="font-weight: 500;">${escapeHtml(user.email || 'N/A')}</div>
-        </div>
-        <div>
-          <small style="color: var(--text-muted);">Âge</small>
-          <div style="font-weight: 500;">${user.age || 'N/A'} ans</div>
-        </div>
-        <div>
-          <small style="color: var(--text-muted);">Poids actuel</small>
-          <div style="font-weight: 500;">${user.poids || 'N/A'} kg</div>
-        </div>
-        <div>
-          <small style="color: var(--text-muted);">Journées enregistrées</small>
-          <div style="font-weight: 500;">${user.nb_journees || 0}</div>
-        </div>
-        <div>
-          <small style="color: var(--text-muted);">Dernière activité</small>
-          <div style="font-weight: 500;">${user.maj ? new Date(Number(user.maj)).toLocaleDateString('fr-FR') : 'N/A'}</div>
-        </div>
-        <div>
-          <small style="color: var(--text-muted);">Statut</small>
-          <div style="font-weight: 500; color: ${user.statut === 'suspendu' ? 'var(--danger)' : 'var(--text)'};">
-            ${user.statut === 'suspendu' ? '⏸️ SUSPENDU' : user.statut === 'supprime' ? '🗑️ SUPPRIMÉ' : '✅ Actif'}
-          </div>
-        </div>
-      </div>
-    </div>
-  `;
-  
-  document.getElementById('admin-user-stats-content').innerHTML = statsHtml;
-  document.getElementById('admin-user-actions').style.display = 'none';
-  document.getElementById('admin-user-stats').style.display = 'block';
-}
 
-// 3️⃣ AFFICHER LES ALIMENTS DE L'UTILISATEUR
-function afficherAlimentsUtilisateur() {
-  const userId = window.adminUserCourant;
-  const user = adminComptes[userId];
-  
-  if (!user) return;
-  
-  const email = user.email;
-  const historique = JSON.parse(localStorage.getItem('ali-historique-partage') || '[]');
-  
-  // Filtrer les aliments de cet utilisateur
-  const alimentsUser = historique.filter(a => a.createur === email);
-  
-  // Afficher dans la feuille aliments
-  afficherFeuillAlimentsFiltrée(alimentsUser, email);
-}
+  const contenu = document.getElementById('admin-user-stats-content');
+  const actions = document.getElementById('admin-user-actions');
+  const stats = document.getElementById('admin-user-stats');
+  if (!contenu || !actions || !stats) return;
 
-function afficherFeuillAlimentsFiltrée(aliments, email) {
-  const feuille = document.getElementById('feuille-admin-aliments');
-  document.getElementById('feuille-admin-aliments-titre').textContent = `Aliments de ${email || 'utilisateur'}`;
-  
-  remplirListeAlimentsAdmin(aliments);
-  
-  feuille.classList.add('show');
-  majCoucheOuverte();
-}
+  const etat = user.statut === 'suspendu' ? '⏸️ Suspendu'
+    : user.statut === 'supprime' ? '🗑️ Supprimé (données conservées)'
+    : '✅ Actif';
 
-// 4️⃣ REMPLIR LA LISTE DES ALIMENTS AVEC FILTRES
-function remplirListeAlimentsAdmin(aliments) {
-  const conteneur = document.getElementById('admin-aliments-feuille-liste');
-  
-  if (!aliments || aliments.length === 0) {
-    conteneur.innerHTML = '<p class="note">Aucun aliment trouvé.</p>';
-    return;
-  }
-  
-  conteneur.innerHTML = aliments.map(a => `
-    <div class="admin-aliment-card">
-      <div class="aliment-header">
-        <div class="aliment-info">
-          <strong>${escapeHtml(a.nom || 'Sans nom')}</strong>
-          <small>ID: ${a.id_unique}</small>
-        </div>
-        <div class="aliment-actions">
-          <button class="bouton-petit" onclick="editerAliment('${a.id_unique}')">✏️</button>
-          <button class="bouton-petit danger" onclick="supprimerAliment('${a.id_unique}')">🗑️</button>
-        </div>
-      </div>
-      
-      <div class="aliment-details">
-        <div class="detail-item">
-          <label>Code-barres:</label>
-          <span>${a.code_barre || 'N/A'}</span>
-        </div>
-        <div class="detail-item">
-          <label>Créateur:</label>
-          <span>${escapeHtml(a.createur || 'inconnu')}</span>
-        </div>
-        <div class="detail-item">
-          <label>Créé le:</label>
-          <span>${new Date(a.cree_le).toLocaleDateString('fr-FR')}</span>
-        </div>
-      </div>
-      
-      <div class="aliment-nutrition-grid">
-        <div class="nut-box">
-          <small>Kcal/100g</small>
-          <strong>${a.kcal100 || 0}</strong>
-        </div>
-        <div class="nut-box" style="color: var(--protein)">
-          <small>Protéines</small>
-          <strong>${a.p100 || 0}g</strong>
-        </div>
-        <div class="nut-box" style="color: var(--carbs)">
-          <small>Glucides</small>
-          <strong>${a.c100 || 0}g</strong>
-        </div>
-        <div class="nut-box" style="color: var(--fat)">
-          <small>Lipides</small>
-          <strong>${a.f100 || 0}g</strong>
-        </div>
-      </div>
-    </div>
-  `).join('');
-}
-
-// 5️⃣ FILTRER LES ALIMENTS
-function filtrerAlimentsAdmin() {
-  const historique = JSON.parse(localStorage.getItem('ali-historique-partage') || '[]');
-  const nomFilter = document.getElementById('aliments-filter-nom').value.toLowerCase();
-  const creatFilter = document.getElementById('aliments-filter-createur').value.toLowerCase();
-  const dateFilter = document.getElementById('aliments-filter-date').value;
-  
-  let filtered = historique.filter(a => {
-    const nomOk = !nomFilter || (a.nom || '').toLowerCase().includes(nomFilter);
-    const creatOk = !creatFilter || (a.createur || '').toLowerCase().includes(creatFilter);
-    const dateOk = !dateFilter || new Date(a.cree_le).toISOString().split('T')[0] === dateFilter;
-    return nomOk && creatOk && dateOk;
+  // Construction par DOM : aucune donnée utilisateur n'est interprétée en HTML.
+  contenu.innerHTML = '';
+  const grille = document.createElement('div');
+  grille.className = 'stats-grille';
+  [
+    ['Email', user.email || '—'],
+    ['Âge', user.age ? user.age + ' ans' : '—'],
+    ['Poids', user.poids ? user.poids + ' kg' : '—'],
+    ['Taille', user.taille ? user.taille + ' cm' : '—'],
+    ['Journées', String(user.nb_journees || 0)],
+    ['Dernière activité', user.maj ? new Date(Number(user.maj)).toLocaleDateString('fr-FR') : '—'],
+    ['Inscrit le', user.cree_le ? new Date(user.cree_le).toLocaleDateString('fr-FR') : '—'],
+    ['Statut', etat]
+  ].forEach(([label, valeur]) => {
+    const bloc = document.createElement('div');
+    const l = document.createElement('small'); l.textContent = label;
+    const v = document.createElement('div'); v.textContent = valeur;
+    v.className = 'stats-valeur';
+    bloc.appendChild(l); bloc.appendChild(v);
+    grille.appendChild(bloc);
   });
-  
-  remplirListeAlimentsAdmin(filtered);
+  contenu.appendChild(grille);
+
+  actions.style.display = 'none';
+  stats.style.display = 'block';
 }
 
-// 6️⃣ ACTIONS UTILISATEUR (Suspendre, Supprimer, Effacer)
-function suspendreUtilisateur() {
-  const userId = window.adminUserCourant;
-  if (!userId) return;
-  
-  if (!confirm('Suspendre ce compte ?')) return;
-  definirBlocage(userId, 'suspendu');
-  document.getElementById('feuille-admin-user').classList.remove('show');
-  majCoucheOuverte();
-  setTimeout(() => chargerAdmin(), 500);
+/* --- Actions sur un compte ------------------------------------------ */
+async function suspendreUtilisateur() {
+  if (!adminUserCourant) return;
+  const u = adminComptes[adminUserCourant];
+  const cible = u && u.statut === 'suspendu' ? null : 'suspendu';
+  fermerFeuilles();
+  await definirBlocage(adminUserCourant, cible);
+  await chargerAdmin();
 }
 
-function supprimerUtilisateur() {
-  const userId = window.adminUserCourant;
-  if (!userId) return;
-  
-  if (!confirm('Supprimer ce compte (garder les données) ?')) return;
-  definirBlocage(userId, 'supprime');
-  document.getElementById('feuille-admin-user').classList.remove('show');
-  majCoucheOuverte();
-  setTimeout(() => chargerAdmin(), 500);
+async function supprimerUtilisateur() {
+  if (!adminUserCourant) return;
+  fermerFeuilles();
+  await definirBlocage(adminUserCourant, 'supprime');
+  await chargerAdmin();
 }
 
 function effacerUtilisateur() {
-  const userId = window.adminUserCourant;
-  if (!userId) return;
-  
-  if (!confirm('Effacer définitivement ce compte et TOUTES ses données ?')) return;
-  demarrerConfirmationSuppression(userId, 'Utilisateur');
-  document.getElementById('feuille-admin-user').classList.remove('show');
+  if (!adminUserCourant) return;
+  const u = adminComptes[adminUserCourant];
+  const nom = (u && u.email) || ('Compte ' + String(adminUserCourant).slice(0, 8));
+  fermerFeuilles();
+  demarrerConfirmationSuppression(adminUserCourant, nom);
+}
+
+/* =====================================================================
+   ADMINISTRATION — aliments partagés
+   ===================================================================== */
+
+async function afficherFeuillAlimentsPersonalises() {
+  ['aliments-filter-nom', 'aliments-filter-createur', 'aliments-filter-date']
+    .forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
+
+  const titre = document.getElementById('feuille-admin-aliments-titre');
+  if (titre) titre.textContent = 'Aliments partagés';
+
+  ouvrirFeuille('feuille-admin-aliments');
+  await chargerAlimentsAdmin();
+}
+
+async function afficherAlimentsUtilisateur() {
+  const user = adminComptes[adminUserCourant];
+  if (!user) return;
+
+  fermerFeuilles();
+  ['aliments-filter-nom', 'aliments-filter-date']
+    .forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
+  const champCreateur = document.getElementById('aliments-filter-createur');
+  if (champCreateur) champCreateur.value = user.email || '';
+
+  const titre = document.getElementById('feuille-admin-aliments-titre');
+  if (titre) titre.textContent = 'Aliments de ' + (user.email || 'ce compte');
+
+  ouvrirFeuille('feuille-admin-aliments');
+  await chargerAlimentsAdmin();
+}
+
+/* Chargement depuis Supabase, filtres appliqués côté serveur : quand la
+   table contiendra des milliers de lignes, on ne rapatrie pas tout. */
+async function chargerAlimentsAdmin() {
+  const conteneur = document.getElementById('admin-aliments-feuille-liste');
+  if (!conteneur) return;
+
+  const lire = id => { const el = document.getElementById(id); return el && el.value.trim() ? el.value.trim() : null; };
+
+  conteneur.innerHTML = '';
+  const attente = document.createElement('p');
+  attente.className = 'note';
+  attente.textContent = 'Chargement…';
+  conteneur.appendChild(attente);
+
+  if (!supa) { attente.textContent = 'Pas de connexion à Supabase.'; return; }
+
+  try {
+    const { data, error } = await supa.rpc('admin_aliments', {
+      p_createur: lire('aliments-filter-createur'),
+      p_nom: lire('aliments-filter-nom'),
+      p_date: lire('aliments-filter-date'),
+      p_offset: 0,
+      p_limite: 100
+    });
+    if (error) throw error;
+    adminAlimentsCharges = data || [];
+    rendreAlimentsAdmin(adminAlimentsCharges);
+  } catch (e) {
+    conteneur.innerHTML = '';
+    const p = document.createElement('p');
+    p.className = 'note';
+    p.textContent = 'Erreur : ' + e.message;
+    conteneur.appendChild(p);
+  }
+}
+
+/* Rendu par DOM uniquement. Nom, code-barres et email de créateur sont
+   des données saisies par des utilisateurs : elles ne doivent jamais
+   traverser innerHTML. */
+function rendreAlimentsAdmin(aliments) {
+  const conteneur = document.getElementById('admin-aliments-feuille-liste');
+  if (!conteneur) return;
+  conteneur.innerHTML = '';
+
+  if (!aliments || !aliments.length) {
+    const p = document.createElement('p');
+    p.className = 'note';
+    p.textContent = 'Aucun aliment ne correspond.';
+    conteneur.appendChild(p);
+    return;
+  }
+
+  const compteur = document.createElement('p');
+  compteur.className = 'note';
+  compteur.textContent = aliments.length + ' aliment(s)'
+    + (aliments.length >= 100 ? ' — affine les filtres pour en voir davantage' : '');
+  conteneur.appendChild(compteur);
+
+  aliments.forEach(a => {
+    const carte = document.createElement('div');
+    carte.className = 'admin-aliment-card';
+
+    // En-tête : nom + actions
+    const tete = document.createElement('div');
+    tete.className = 'aliment-header';
+
+    const info = document.createElement('div');
+    info.className = 'aliment-info';
+    const nom = document.createElement('strong');
+    nom.textContent = a.nom || 'Sans nom';
+    const meta = document.createElement('small');
+    meta.textContent = (a.createur || 'inconnu')
+      + ' · ' + (a.cree_le ? new Date(a.cree_le).toLocaleDateString('fr-FR') : '—')
+      + (a.code_barre ? ' · ' + a.code_barre : '');
+    info.appendChild(nom); info.appendChild(meta);
+
+    const actions = document.createElement('div');
+    actions.className = 'aliment-actions';
+    const btnEdit = document.createElement('button');
+    btnEdit.className = 'bouton-petit';
+    btnEdit.type = 'button';
+    btnEdit.textContent = '✏️';
+    btnEdit.title = 'Modifier';
+    btnEdit.addEventListener('click', () => editerAliment(a));   // l'objet, pas une chaîne dans un onclick
+    const btnSup = document.createElement('button');
+    btnSup.className = 'bouton-petit danger';
+    btnSup.type = 'button';
+    btnSup.textContent = '🗑️';
+    btnSup.title = 'Supprimer';
+    btnSup.addEventListener('click', () => supprimerAlimentPartage(a));
+    actions.appendChild(btnEdit); actions.appendChild(btnSup);
+
+    tete.appendChild(info); tete.appendChild(actions);
+    carte.appendChild(tete);
+
+    // Valeurs nutritionnelles
+    const grille = document.createElement('div');
+    grille.className = 'aliment-nutrition-grid';
+    [
+      ['Kcal', a.kcal100, ''],
+      ['Prot.', a.p100, 'var(--protein)'],
+      ['Gluc.', a.c100, 'var(--carbs)'],
+      ['Lip.', a.f100, 'var(--fat)']
+    ].forEach(([label, valeur, couleur]) => {
+      const box = document.createElement('div');
+      box.className = 'nut-box';
+      if (couleur) box.style.color = couleur;
+      const l = document.createElement('small'); l.textContent = label;
+      const v = document.createElement('strong'); v.textContent = String(Number(valeur) || 0);
+      box.appendChild(l); box.appendChild(v);
+      grille.appendChild(box);
+    });
+    carte.appendChild(grille);
+
+    conteneur.appendChild(carte);
+  });
+}
+
+/* Filtres : on interroge Supabase, avec une temporisation pour ne pas
+   envoyer une requête à chaque touche frappée. */
+let minuteurFiltreAliments = null;
+function filtrerAlimentsAdmin() {
+  clearTimeout(minuteurFiltreAliments);
+  minuteurFiltreAliments = setTimeout(chargerAlimentsAdmin, 300);
+}
+
+/* --- Édition d'un aliment ------------------------------------------- */
+function editerAliment(aliment) {
+  const modal = document.getElementById('modal-edit-aliment');
+  if (!modal) return;
+
+  modal.dataset.alimentId = aliment.id;
+  const champ = (id, v) => { const el = document.getElementById(id); if (el) el.value = v; };
+  champ('edit-nom', aliment.nom || '');
+  champ('edit-code-barre', aliment.code_barre || '');
+  champ('edit-kcal', Number(aliment.kcal100) || 0);
+  champ('edit-p100', Number(aliment.p100) || 0);
+  champ('edit-c100', Number(aliment.c100) || 0);
+  champ('edit-f100', Number(aliment.f100) || 0);
+
+  modal.classList.add('show');
   majCoucheOuverte();
 }
 
-// 7️⃣ BOUTON ALIMENTS PERSONNALISÉS EN ADMIN (Version feuille)
-function afficherFeuillAlimentsPersonalises() {
-  const historique = JSON.parse(localStorage.getItem('ali-historique-partage') || '[]');
-  
-  // Réinitialiser les filtres
-  document.getElementById('aliments-filter-nom').value = '';
-  document.getElementById('aliments-filter-createur').value = '';
-  document.getElementById('aliments-filter-date').value = '';
-  
-  remplirListeAlimentsAdmin(historique);
-  
-  const feuille = document.getElementById('feuille-admin-aliments');
-  document.getElementById('feuille-admin-aliments-titre').textContent = 'Aliments Personnalisés';
-  feuille.classList.add('show');
+async function sauvegarderEditionAliment() {
+  const modal = document.getElementById('modal-edit-aliment');
+  if (!modal || !supa) return;
+  const id = modal.dataset.alimentId;
+  if (!id) return;
+
+  const val = id2 => { const el = document.getElementById(id2); return el ? el.value : ''; };
+  const nom = val('edit-nom').trim();
+  if (!nom) { alert('Le nom ne peut pas être vide.'); return; }
+
+  const nombre = (id2, max) => {
+    const n = Number(val(id2));
+    if (!isFinite(n) || n < 0) return 0;
+    return Math.min(n, max);
+  };
+
+  try {
+    const { error } = await supa
+      .from('aliments_partages')
+      .update({
+        nom,
+        code_barre: val('edit-code-barre').trim(),
+        kcal100: nombre('edit-kcal', 2000),
+        p100: nombre('edit-p100', 200),
+        c100: nombre('edit-c100', 200),
+        f100: nombre('edit-f100', 200),
+        modifie_par: sessionUtilisateur ? sessionUtilisateur.email : 'inconnu',
+        modifie_le: new Date().toISOString()
+      })
+      .eq('id', id);
+    if (error) throw error;
+
+    cacheVider();
+    modal.classList.remove('show');
+    majCoucheOuverte();
+    await chargerAlimentsAdmin();
+  } catch (e) {
+    alert('Modification impossible : ' + e.message);
+  }
+}
+
+/* Suppression douce : la ligne reste en base, traçable. */
+async function supprimerAlimentPartage(aliment) {
+  if (!supa) return;
+  if (!confirm('Supprimer « ' + (aliment.nom || 'cet aliment') + ' » ?\n\nIl disparaîtra de la recherche pour tous les utilisateurs.')) return;
+
+  try {
+    const { error } = await supa
+      .from('aliments_partages')
+      .update({
+        supprime: true,
+        supprime_par: sessionUtilisateur ? sessionUtilisateur.email : 'inconnu',
+        supprime_le: new Date().toISOString()
+      })
+      .eq('id', aliment.id);
+    if (error) throw error;
+
+    cacheVider();
+    await chargerAlimentsAdmin();       // la feuille ouverte se met bien à jour
+  } catch (e) {
+    alert('Suppression impossible : ' + e.message);
+  }
+}
+
+/* --- Fermeture de toutes les feuilles ------------------------------- */
+function fermerFeuilles() {
+  document.querySelectorAll('.feuille.show').forEach(f => f.classList.remove('show'));
   majCoucheOuverte();
 }
+
 </script>
 </body>
 </html>
