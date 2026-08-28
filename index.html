@@ -1318,6 +1318,10 @@
 
     <!-- 🆕 SECTION : Gestion des aliments personnalisés partagés -->
     <div style="margin-top: 40px; padding: 20px 0; border-top: 2px solid var(--verre);">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+        <h3 style="margin: 0;">Aliments Personnalisés</h3>
+        <button class="btn btn-secondaire" onclick="chargerAdminAliments()" style="font-size: 0.85rem;">🔄 Recharger</button>
+      </div>
       <div id="admin-aliments-liste"><p class="note">Chargement des aliments…</p></div>
       <style>
         .admin-aliments-head { margin-bottom: 20px; }
@@ -3974,7 +3978,18 @@ function allerA(nom) {
   window.scrollTo({ top: 0, behavior: 'auto' });
   if (nom === 'stats') { prepareStats(); }
   if (nom === 'repas') majNoteCleIA();
-  if (nom === 'admin') chargerAdmin();
+  if (nom === 'admin') {
+    chargerAdmin();
+    // 🆕 Charger la section des aliments personnalisés
+    setTimeout(() => {
+      if (typeof chargerAdminAliments === 'function') {
+        chargerAdminAliments();
+        console.log('[allerA] chargerAdminAliments() appelée');
+      } else {
+        console.error('[allerA] chargerAdminAliments n\'existe pas !');
+      }
+    }, 200);
+  }
 }
 
 function majNoteCleIA() {
@@ -5223,6 +5238,18 @@ function enregistrerAlimentDansBase(item) {
   if (file.some(f => normaliserRecherche(f.nom) === cle)) return;
   file.push(fiche);
   ecrireFileAliments(file);
+  
+  // 🆕 Ajouter aussi à l'historique partagé pour que ça s'affiche en admin
+  enregistrerHistoriquePartage({
+    nom: fiche.nom || item.nom,
+    kcal100: fiche.kcal100 || item.kcal100 || 0,
+    p100: fiche.p100 || item.p100 || 0,
+    c100: fiche.c100 || item.c100 || 0,
+    f100: fiche.f100 || item.f100 || 0,
+    code_barre: fiche.code || item.code || '',
+    source: supa ? 'supabase' : 'historique'
+  });
+  
   viderFileAliments();
 }
 
@@ -5950,13 +5977,17 @@ function enregistrerHistoriquePartage(aliment) {
 // SECTION ADMIN AVANCÉE : Gestion des aliments personnalisés
 function chargerAdminAliments() {
   const conteneur = document.getElementById('admin-aliments-liste');
-  if (!conteneur) return;
+  if (!conteneur) {
+    console.warn('[Admin Aliments] Conteneur non trouvé');
+    return;
+  }
   
   try {
     const historique = JSON.parse(localStorage.getItem('ali-historique-partage') || '[]');
+    console.log('[Admin Aliments] Aliments trouvés:', historique.length);
     
     if (historique.length === 0) {
-      conteneur.innerHTML = '<p class=\"note\">Aucun aliment personnalisé créé.</p>';
+      conteneur.innerHTML = '<p class=\"note\">ℹ️ Aucun aliment personnalisé créé pour le moment. Les aliments que vous créez s\'afficheront ici.</p>';
       return;
     }
     
@@ -6155,13 +6186,6 @@ function supprimerAliment(idUnique) {
     alert('Erreur: ' + e.message);
   }
 }
-
-// Appel à chargerAdminAliments quand on accède à l'admin
-const originalChargerAdmin = window.chargerAdmin;
-window.chargerAdmin = function() {
-  if (originalChargerAdmin) originalChargerAdmin.apply(this, arguments);
-  setTimeout(() => chargerAdminAliments(), 100);
-};
 </script>
 </body>
 </html>
