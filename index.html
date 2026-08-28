@@ -855,7 +855,58 @@
     .feuille-fermer:hover { background: var(--verre-fort); }
 
     /* --- ADMINISTRATION --- */
+    /* --- Vue d'ensemble admin --- */
+    .admin-apercu {
+      display: grid; grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 7px; margin-bottom: 16px;
+    }
+    .apercu-case {
+      display: flex; flex-direction: column; align-items: center; gap: 3px;
+      padding: 11px 4px; min-height: 62px;
+      background: var(--verre-creux); border: 1px solid var(--verre-brd);
+      border-radius: 14px; color: inherit; font-family: inherit;
+      cursor: pointer; transition: border-color 0.2s, background 0.2s;
+    }
+    .apercu-case:hover { background: var(--verre-fort); }
+    .apercu-case.actif { border-color: var(--primary); background: var(--verre-fort); }
+    .apercu-nb { font-size: 1.15rem; font-weight: 800; letter-spacing: -0.5px; }
+    .apercu-lbl {
+      font-size: 0.58rem; text-transform: uppercase; letter-spacing: 0.6px;
+      color: var(--text-muted); font-weight: 700; text-align: center; line-height: 1.2;
+    }
+    @media (max-width: 360px) {
+      .admin-apercu { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    }
+
+    /* --- Choix d'un compte dans une feuille (remplace prompt()) --- */
+    .compte-option {
+      display: block; width: 100%; text-align: left;
+      padding: 12px 14px; min-height: 48px; margin-bottom: 8px;
+      background: var(--verre-creux); border: 1px solid var(--verre-brd);
+      border-radius: 13px; color: inherit; font-family: inherit; cursor: pointer;
+    }
+    .compte-option:hover { background: var(--verre-fort); }
+    .compte-option strong { display: block; font-size: 0.86rem; word-break: break-word; }
+    .compte-option small { display: block; font-size: 0.7rem; color: var(--text-muted); margin-top: 2px; }
+
+    /* --- Journal --- */
+    .journal-entree {
+      padding: 11px 0; border-bottom: 1px solid var(--verre-brd);
+    }
+    .journal-entree:last-child { border-bottom: none; }
+    .journal-tete { display: flex; justify-content: space-between; gap: 10px; align-items: baseline; }
+    .journal-action { font-weight: 700; font-size: 0.85rem; }
+    .journal-date { font-size: 0.68rem; color: var(--text-muted); white-space: nowrap; }
+    .journal-detail { font-size: 0.74rem; color: var(--text-muted); margin-top: 3px; word-break: break-word; }
+
     .admin-select-ligne { display: flex; gap: 8px; align-items: stretch; }
+    .admin-select-ligne input[type="search"] {
+      flex: 1; min-width: 0;
+      padding: 12px 15px; min-height: 44px;
+      background: var(--verre-creux); border: 1px solid var(--verre-brd);
+      color: var(--text); border-radius: 14px;
+      font-size: max(16px, 0.92rem); font-family: inherit; outline: none;
+    }
     .admin-select-ligne select { flex: 1; min-width: 0; }
     .admin-select-ligne .btn { flex: none; width: 46px; padding: 0; font-size: 1rem; }
     .admin-separateur {
@@ -1569,18 +1620,51 @@
   <!-- ================= ÉCRAN ADMIN (visible uniquement pour ADMIN_EMAIL) ================= -->
   <section id="ecran-admin" class="ecran" role="region" aria-label="Administration">
     <h2 class="titre-ecran"><span class="ic" aria-hidden="true">👑</span> Administration</h2>
-    <p class="note">Tous les comptes utilisant ce projet Supabase.</p>
-    
+
+    <!-- Vue d'ensemble : repondre aux questions courantes sans avoir a
+         ouvrir les comptes un par un. Les chiffres sont calcules en base. -->
+    <div class="admin-apercu" id="admin-apercu">
+      <button class="apercu-case" type="button" data-filtre="tous" onclick="filtrerParStatut('tous')">
+        <span class="apercu-nb" id="apercu-total">&mdash;</span>
+        <span class="apercu-lbl">Comptes</span>
+      </button>
+      <button class="apercu-case" type="button" data-filtre="actif" onclick="filtrerParStatut('actif')">
+        <span class="apercu-nb" id="apercu-actifs">&mdash;</span>
+        <span class="apercu-lbl">Actifs</span>
+      </button>
+      <button class="apercu-case" type="button" data-filtre="suspendu" onclick="filtrerParStatut('suspendu')">
+        <span class="apercu-nb" id="apercu-suspendus">&mdash;</span>
+        <span class="apercu-lbl">Suspendus</span>
+      </button>
+      <button class="apercu-case" type="button" data-filtre="inactif" onclick="filtrerParStatut('inactif')">
+        <span class="apercu-nb" id="apercu-inactifs">&mdash;</span>
+        <span class="apercu-lbl">Inactifs 30j</span>
+      </button>
+    </div>
+
     <div class="input-group">
-      <label for="admin-user-select">Choisir un compte</label>
+      <label for="admin-recherche">Rechercher un compte</label>
       <div class="admin-select-ligne">
-        <select id="admin-user-select" onchange="afficherFeuillUtilisateur()">
-          <option value="">&mdash; Sélectionner &mdash;</option>
-        </select>
-        <button class="btn btn-secondaire" type="button" onclick="chargerAdmin()" title="Actualiser la liste" aria-label="Actualiser">&#128260;</button>
+        <input type="search" id="admin-recherche" placeholder="&#128269; Email&hellip;" autocomplete="off"
+               oninput="rafraichirListeComptes()">
+        <button class="btn btn-secondaire" type="button" onclick="chargerAdmin()" title="Actualiser" aria-label="Actualiser">&#128260;</button>
       </div>
     </div>
+
+    <div class="input-group">
+      <label for="admin-user-select">Comptes correspondants</label>
+      <select id="admin-user-select" size="1" onchange="afficherFeuillUtilisateur()">
+        <option value="">&mdash; S&eacute;lectionner &mdash;</option>
+      </select>
+    </div>
     <p class="note" id="admin-etat">Chargement des comptes&hellip;</p>
+
+    <div class="admin-separateur">
+      <button class="btn btn-secondaire" type="button" onclick="ouvrirJournalAdmin()">
+        &#128220; Journal des actions
+      </button>
+      <p class="note">Historique des suspensions, suppressions et rattachements.</p>
+    </div>
 
     <div class="admin-separateur">
       <button class="btn btn-primary" type="button" onclick="afficherFeuillAlimentsPersonalises()">
@@ -1773,6 +1857,14 @@
         <span class="ic" aria-hidden="true">&#127869;</span>
         <span>Aliments créés<span class="sous">Voir et gérer ses aliments</span></span>
       </button>
+      <button class="feuille-action" type="button" onclick="ouvrirJournalAdmin(adminUserCourant)">
+        <span class="ic" aria-hidden="true">&#128220;</span>
+        <span>Historique<span class="sous">Actions passées sur ce compte</span></span>
+      </button>
+      <button class="feuille-action" type="button" onclick="ouvrirRattachementFeuille()" data-destructif>
+        <span class="ic" aria-hidden="true">&#8644;</span>
+        <span>Rattacher les données<span class="sous">Transférer vers un autre compte</span></span>
+      </button>
       <button class="feuille-action" type="button" onclick="suspendreUtilisateur()" data-destructif>
         <span class="ic" aria-hidden="true">&#9208;</span>
         <span>Suspendre / réactiver<span class="sous">Bloque ou rétablit la connexion</span></span>
@@ -1813,6 +1905,50 @@
     </div>
 
     <div id="admin-aliments-feuille-liste"></div>
+  </div>
+</div>
+
+<!-- ============ FEUILLE : rattacher les donnees a un autre compte ============ -->
+<div class="feuille" id="feuille-rattachement" role="dialog" aria-modal="true" aria-labelledby="titre-rattachement">
+  <div class="feuille-contenu">
+    <div class="feuille-poignee"></div>
+    <div class="feuille-entete">
+      <div class="feuille-titre" id="titre-rattachement">Rattacher les donn&eacute;es</div>
+      <button class="feuille-fermer" type="button" onclick="fermerFeuilles()" aria-label="Fermer">&times;</button>
+    </div>
+    <p class="note">Toutes les journ&eacute;es de <strong id="rattachement-source">&mdash;</strong> seront transf&eacute;r&eacute;es au compte choisi. Action irr&eacute;versible.</p>
+    <div id="rattachement-liste"></div>
+  </div>
+</div>
+
+<!-- ============ FEUILLE : journal des actions ============ -->
+<div class="feuille" id="feuille-journal" role="dialog" aria-modal="true" aria-labelledby="titre-journal">
+  <div class="feuille-contenu">
+    <div class="feuille-poignee"></div>
+    <div class="feuille-entete">
+      <div class="feuille-titre" id="titre-journal">Journal des actions</div>
+      <button class="feuille-fermer" type="button" onclick="fermerFeuilles()" aria-label="Fermer">&times;</button>
+    </div>
+    <div id="journal-liste"></div>
+  </div>
+</div>
+
+<!-- ============ MODALE : motif d'une action ============ -->
+<div class="modal" id="modal-motif" role="dialog" aria-modal="true" aria-labelledby="titre-motif">
+  <div class="modal-content">
+    <div class="modal-entete">
+      <h3 id="titre-motif">Motif</h3>
+      <button class="close-modal" type="button" onclick="annulerMotif()" aria-label="Fermer">&times;</button>
+    </div>
+    <p class="note" id="motif-question">&mdash;</p>
+    <div class="input-group">
+      <label for="motif-saisie">Motif <small style="font-weight:400;color:var(--text-muted);">(facultatif, conserv&eacute; au journal)</small></label>
+      <input type="text" id="motif-saisie" placeholder="ex : demande de l'utilisateur" autocomplete="off">
+    </div>
+    <div style="display:flex; gap:10px;">
+      <button class="btn btn-secondaire" type="button" style="flex:1;" onclick="annulerMotif()">Annuler</button>
+      <button class="btn btn-primary" type="button" style="flex:1;" onclick="validerMotif()">Confirmer</button>
+    </div>
   </div>
 </div>
 
@@ -4824,40 +4960,21 @@ async function chargerAdmin() {
     adminComptes = {};
     comptes.forEach(c => { adminComptes[c.utilisateur] = c; });
 
-    // Reconstruction par DOM : un email est une donnée utilisateur, il ne
-    // passe jamais par innerHTML.
-    select.innerHTML = '';
-    const vide = document.createElement('option');
-    vide.value = '';
-    vide.textContent = '\u2014 S\u00e9lectionner \u2014';
-    select.appendChild(vide);
-
-    comptes
-      .slice()
-      .sort((a, b) => Number(b.maj || 0) - Number(a.maj || 0))
-      .forEach(c => {
-        const o = document.createElement('option');
-        o.value = c.utilisateur;
-        const nom = c.email || ('Compte ' + String(c.utilisateur).slice(0, 8));
-        const marque = c.statut === 'suspendu' ? ' \u23f8'
-          : c.statut === 'supprime' ? ' \ud83d\uddd1'
-          : (sessionUtilisateur && c.utilisateur === sessionUtilisateur.id) ? ' \ud83d\udc51' : '';
-        o.textContent = nom + marque;
-        select.appendChild(o);
-      });
-
-    dire(comptes.length
-      ? comptes.length + ' compte(s). \u23f8 suspendu \u00b7 \ud83d\uddd1 supprim\u00e9 \u00b7 \ud83d\udc51 toi.'
-      : 'Aucun compte trouv\u00e9.');
+    rafraichirListeComptes();
+    chargerApercuAdmin();
   } catch (e) {
     dire('Erreur : ' + e.message
       + ' \u2014 le script SQL de s\u00e9curisation a-t-il bien \u00e9t\u00e9 ex\u00e9cut\u00e9 avec ton email admin ?');
   }
 }
 
-async function definirBlocage(utilisateur, type) {
-  const libelles = { suspendu: 'suspendre ce compte (il ne pourra plus se connecter jusqu\'à réactivation)', supprime: 'supprimer ce compte (les données restent, rattachables plus tard)', null: 'réactiver ce compte' };
-  if (!confirm('Confirmer : ' + (libelles[type === null ? 'null' : type] || 'modifier ce compte') + ' ?')) return;
+/* dejaConfirme : l'appelant a deja demande confirmation via la modale de
+   motif. Sans ce parametre, l'utilisateur validait deux fois de suite. */
+async function definirBlocage(utilisateur, type, dejaConfirme) {
+  if (!dejaConfirme) {
+    const libelles = { suspendu: 'suspendre ce compte (il ne pourra plus se connecter jusqu\'à réactivation)', supprime: 'supprimer ce compte (les données restent, rattachables plus tard)', null: 'réactiver ce compte' };
+    if (!confirm('Confirmer : ' + (libelles[type === null ? 'null' : type] || 'modifier ce compte') + ' ?')) return;
+  }
   try {
     const { error } = await supa.rpc('admin_definir_blocage', { p_utilisateur: utilisateur, p_type: type });
     if (error) throw error;
@@ -4867,15 +4984,8 @@ async function definirBlocage(utilisateur, type) {
   }
 }
 
-function ouvrirRattachement(ancien) {
-  const autres = Object.values(adminComptes).filter(c => c.utilisateur !== ancien && c.statut !== 'supprime');
-  if (!autres.length) { alert('Aucun autre compte disponible pour le rattachement.'); return; }
-  const liste = autres.map((c, i) => `${i + 1}. ${c.email || c.utilisateur.slice(0, 8)}`).join('\n');
-  const choix = prompt('Rattacher ces données à quel compte ? Tape le numéro :\n\n' + liste);
-  const index = parseInt(choix, 10) - 1;
-  if (isNaN(index) || !autres[index]) return;
-  rattacherDonnees(ancien, autres[index].utilisateur, autres[index].email || autres[index].utilisateur);
-}
+/* ouvrirRattachement() utilisait prompt() : remplacee par
+   ouvrirRattachementFeuille(), qui presente les comptes dans une feuille. */
 
 async function rattacherDonnees(ancien, nouveau, nomNouveau) {
   if (!confirm(`Rattacher toutes les données à ${nomNouveau} ? Cette action est irréversible.`)) return;
@@ -4925,6 +5035,9 @@ async function executerSuppressionDefinitive(utilisateur) {
     } else {
       alert("Compte supprimé. Même si l'appareil de cette personne a encore l'ancienne copie en mémoire, il l'effacera tout seul à sa prochaine connexion — plus besoin d'être synchronisé sur le timing.");
     }
+    await consignerAction('effacer', utilisateur,
+      (adminComptes[utilisateur] && adminComptes[utilisateur].email) || String(utilisateur).slice(0, 8),
+      null, null);
     document.getElementById('admin-stats-zone').classList.add('hidden');
     chargerAdmin();
   } catch (e) {
@@ -5025,6 +5138,317 @@ function targetsPourCompte(day, dateStr, jours, compte) {
 }
 
 let adminCaloriesChartInstance = null, adminPoidsChartInstance = null, adminPasChartInstance = null;
+/* =====================================================================
+   ADMINISTRATION — recherche, filtre et vue d'ensemble
+   ===================================================================== */
+
+let filtreStatutAdmin = 'tous';
+
+/* Un compte est « inactif » si sa derniere synchro remonte a plus de
+   30 jours. maj est un timestamp en millisecondes. */
+const INACTIF_MS = 30 * 24 * 60 * 60 * 1000;
+function estInactif(c) {
+  if (c.statut) return false;                 // suspendu ou supprime : autre categorie
+  if (!c.maj) return true;                    // jamais synchronise
+  return (Date.now() - Number(c.maj)) > INACTIF_MS;
+}
+
+function filtrerParStatut(statut) {
+  filtreStatutAdmin = statut;
+  document.querySelectorAll('.apercu-case').forEach(b => {
+    b.classList.toggle('actif', b.dataset.filtre === statut);
+  });
+  rafraichirListeComptes();
+}
+
+/* Remplit le select a partir de adminComptes, en appliquant la recherche
+   et le filtre courants. Separe du chargement reseau : taper dans le
+   champ ne redemande rien a Supabase. */
+function rafraichirListeComptes() {
+  const select = document.getElementById('admin-user-select');
+  const etat = document.getElementById('admin-etat');
+  const champ = document.getElementById('admin-recherche');
+  if (!select) return;
+
+  const q = champ ? champ.value.trim().toLowerCase() : '';
+  const tous = Object.values(adminComptes);
+
+  const retenus = tous.filter(c => {
+    if (filtreStatutAdmin === 'actif'     && c.statut) return false;
+    if (filtreStatutAdmin === 'suspendu'  && c.statut !== 'suspendu') return false;
+    if (filtreStatutAdmin === 'inactif'   && !estInactif(c)) return false;
+    // Les comptes supprimes sortent de la vue par defaut : ils encombrent
+    // sans jamais etre ce qu'on cherche.
+    if (filtreStatutAdmin === 'tous' && c.statut === 'supprime' && !q) return false;
+    if (!q) return true;
+    const nom = (c.email || String(c.utilisateur)).toLowerCase();
+    return nom.includes(q);
+  });
+
+  select.innerHTML = '';
+  const vide = document.createElement('option');
+  vide.value = '';
+  vide.textContent = retenus.length ? '\u2014 S\u00e9lectionner \u2014' : '\u2014 Aucun r\u00e9sultat \u2014';
+  select.appendChild(vide);
+
+  retenus
+    .sort((a, b) => Number(b.maj || 0) - Number(a.maj || 0))
+    .forEach(c => {
+      const o = document.createElement('option');
+      o.value = c.utilisateur;
+      const nom = c.email || ('Compte ' + String(c.utilisateur).slice(0, 8));
+      const marque = c.statut === 'suspendu' ? ' \u23f8'
+        : c.statut === 'supprime' ? ' \ud83d\uddd1'
+        : estInactif(c) ? ' \ud83d\udca4'
+        : (sessionUtilisateur && c.utilisateur === sessionUtilisateur.id) ? ' \ud83d\udc51' : '';
+      o.textContent = nom + marque;
+      select.appendChild(o);
+    });
+
+  if (etat) {
+    etat.textContent = tous.length
+      ? retenus.length + ' compte(s) affich\u00e9(s) sur ' + tous.length
+        + '. \u23f8 suspendu \u00b7 \ud83d\udca4 inactif \u00b7 \ud83d\uddd1 supprim\u00e9 \u00b7 \ud83d\udc51 toi.'
+      : 'Aucun compte trouv\u00e9.';
+  }
+}
+
+async function chargerApercuAdmin() {
+  const mettre = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
+  if (!supa) return;
+  try {
+    const { data, error } = await supa.rpc('admin_apercu');
+    if (error) throw error;
+    const a = (data && data[0]) || {};
+    mettre('apercu-total', a.total ?? '\u2014');
+    mettre('apercu-actifs', a.actifs ?? '\u2014');
+    mettre('apercu-suspendus', a.suspendus ?? '\u2014');
+    mettre('apercu-inactifs', a.inactifs30 ?? '\u2014');
+  } catch (e) {
+    // Le script SQL du journal n'a peut-etre pas encore ete execute :
+    // on se rabat sur un comptage local plutot que de laisser des tirets.
+    console.warn('[Admin] apercu indisponible :', e.message);
+    const tous = Object.values(adminComptes);
+    mettre('apercu-total', tous.length);
+    mettre('apercu-actifs', tous.filter(c => !c.statut).length);
+    mettre('apercu-suspendus', tous.filter(c => c.statut === 'suspendu').length);
+    mettre('apercu-inactifs', tous.filter(estInactif).length);
+  }
+}
+
+/* =====================================================================
+   ADMINISTRATION — journal des actions
+   ===================================================================== */
+
+/* Consigne une action. N'echoue jamais bruyamment : si le journal est
+   indisponible, l'action elle-meme a deja eu lieu et bloquer l'interface
+   n'aiderait personne. */
+async function consignerAction(action, cibleId, cibleLibelle, motif, detail) {
+  if (!supa) return;
+  try {
+    const { error } = await supa.rpc('admin_consigner', {
+      p_action: action,
+      p_cible_id: cibleId || null,
+      p_cible_libelle: cibleLibelle || null,
+      p_motif: motif || null,
+      p_detail: detail || null
+    });
+    if (error) throw error;
+  } catch (e) {
+    console.warn('[Journal] non consigne :', e.message);
+  }
+}
+
+async function ouvrirJournalAdmin(cibleId) {
+  const liste = document.getElementById('journal-liste');
+  const titre = document.getElementById('titre-journal');
+  if (!liste) return;
+
+  if (titre) {
+    const c = cibleId ? adminComptes[cibleId] : null;
+    titre.textContent = c ? 'Journal \u2014 ' + (c.email || 'ce compte') : 'Journal des actions';
+  }
+
+  liste.innerHTML = '';
+  const attente = document.createElement('p');
+  attente.className = 'note';
+  attente.textContent = 'Chargement\u2026';
+  liste.appendChild(attente);
+  ouvrirFeuille('feuille-journal');
+
+  try {
+    const { data, error } = await supa.rpc('admin_journal_lire', {
+      p_cible: cibleId || null,
+      p_limite: 100
+    });
+    if (error) throw error;
+    rendreJournal(data || []);
+  } catch (e) {
+    liste.innerHTML = '';
+    const p = document.createElement('p');
+    p.className = 'note';
+    p.textContent = 'Journal indisponible : ' + e.message
+      + ' \u2014 le script SQL du journal a-t-il ete execute ?';
+    liste.appendChild(p);
+  }
+}
+
+const LIBELLES_ACTION = {
+  suspendre: '\u23f8 Compte suspendu',
+  reactiver: '\u25b6 Compte r\u00e9activ\u00e9',
+  supprimer: '\ud83d\uddd1 Compte supprim\u00e9',
+  effacer: '\u26a0 Compte effac\u00e9 d\u00e9finitivement',
+  rattacher: '\u21c4 Donn\u00e9es rattach\u00e9es',
+  aliment_supprime: '\ud83c\udf7d Aliment supprim\u00e9',
+  aliment_modifie: '\u270f Aliment modifi\u00e9'
+};
+
+/* Construction par DOM : motifs et emails viennent de la base. */
+function rendreJournal(entrees) {
+  const liste = document.getElementById('journal-liste');
+  liste.innerHTML = '';
+
+  if (!entrees.length) {
+    const p = document.createElement('p');
+    p.className = 'note';
+    p.textContent = 'Aucune action enregistr\u00e9e pour le moment.';
+    liste.appendChild(p);
+    return;
+  }
+
+  entrees.forEach(e => {
+    const bloc = document.createElement('div');
+    bloc.className = 'journal-entree';
+
+    const tete = document.createElement('div');
+    tete.className = 'journal-tete';
+    const act = document.createElement('span');
+    act.className = 'journal-action';
+    act.textContent = LIBELLES_ACTION[e.action] || e.action;
+    const date = document.createElement('span');
+    date.className = 'journal-date';
+    date.textContent = new Date(e.fait_le).toLocaleString('fr-FR', {
+      day: '2-digit', month: '2-digit', year: '2-digit', hour: '2-digit', minute: '2-digit'
+    });
+    tete.appendChild(act); tete.appendChild(date);
+    bloc.appendChild(tete);
+
+    const detail = document.createElement('div');
+    detail.className = 'journal-detail';
+    let txt = e.cible_libelle || '';
+    if (e.motif) txt += (txt ? ' \u00b7 ' : '') + '\u00ab ' + e.motif + ' \u00bb';
+    detail.textContent = txt || '\u2014';
+    bloc.appendChild(detail);
+
+    liste.appendChild(bloc);
+  });
+}
+
+/* =====================================================================
+   ADMINISTRATION — demande de motif (remplace prompt())
+   ===================================================================== */
+
+let motifResolve = null;
+
+/* Retourne une promesse : null si annule, sinon le motif saisi
+   (chaine vide acceptee, le motif reste facultatif). */
+function demanderMotif(question) {
+  const modal = document.getElementById('modal-motif');
+  const q = document.getElementById('motif-question');
+  const saisie = document.getElementById('motif-saisie');
+  if (!modal) return Promise.resolve('');
+
+  if (q) q.textContent = question;
+  if (saisie) saisie.value = '';
+  modal.classList.add('show');
+  majCoucheOuverte();
+  if (saisie) setTimeout(() => saisie.focus(), 120);
+
+  return new Promise(res => { motifResolve = res; });
+}
+
+function validerMotif() {
+  const saisie = document.getElementById('motif-saisie');
+  const valeur = saisie ? saisie.value.trim() : '';
+  fermerModal('modal-motif');
+  if (motifResolve) { motifResolve(valeur); motifResolve = null; }
+}
+
+function annulerMotif() {
+  fermerModal('modal-motif');
+  if (motifResolve) { motifResolve(null); motifResolve = null; }
+}
+
+/* =====================================================================
+   ADMINISTRATION — rattachement des donnees (remplace prompt())
+   ===================================================================== */
+
+let rattachementSource = null;
+
+function ouvrirRattachementFeuille() {
+  if (!adminUserCourant) return;
+  const source = adminComptes[adminUserCourant];
+  if (!source) return;
+
+  const autres = Object.values(adminComptes)
+    .filter(c => c.utilisateur !== adminUserCourant && c.statut !== 'supprime');
+
+  if (!autres.length) {
+    alert('Aucun autre compte disponible pour le rattachement.');
+    return;
+  }
+
+  rattachementSource = adminUserCourant;
+  fermerFeuilles();
+
+  const nomSource = document.getElementById('rattachement-source');
+  if (nomSource) nomSource.textContent = source.email || ('Compte ' + String(adminUserCourant).slice(0, 8));
+
+  const liste = document.getElementById('rattachement-liste');
+  liste.innerHTML = '';
+  autres
+    .sort((a, b) => Number(b.maj || 0) - Number(a.maj || 0))
+    .forEach(c => {
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'compte-option';
+      const nom = document.createElement('strong');
+      nom.textContent = c.email || ('Compte ' + String(c.utilisateur).slice(0, 8));
+      const meta = document.createElement('small');
+      meta.textContent = (c.nb_journees || 0) + ' journ\u00e9e(s)'
+        + (c.statut === 'suspendu' ? ' \u00b7 suspendu' : '');
+      b.appendChild(nom); b.appendChild(meta);
+      b.addEventListener('click', () => lancerRattachement(c));
+      liste.appendChild(b);
+    });
+
+  ouvrirFeuille('feuille-rattachement');
+}
+
+async function lancerRattachement(cible) {
+  const source = adminComptes[rattachementSource];
+  const nomSource = (source && source.email) || 'ce compte';
+  const nomCible = cible.email || ('Compte ' + String(cible.utilisateur).slice(0, 8));
+
+  fermerFeuilles();
+  const motif = await demanderMotif(
+    'Transf\u00e9rer toutes les journ\u00e9es de ' + nomSource + ' vers ' + nomCible + ' ? Action irr\u00e9versible.');
+  if (motif === null) return;
+
+  try {
+    const { error } = await supa.rpc('admin_rattacher_donnees', {
+      p_ancien: rattachementSource,
+      p_nouveau: cible.utilisateur
+    });
+    if (error) throw error;
+    await consignerAction('rattacher', rattachementSource, nomSource + ' \u2192 ' + nomCible, motif, null);
+    alert('Donn\u00e9es rattach\u00e9es \u00e0 ' + nomCible + '.');
+    await chargerAdmin();
+  } catch (e) {
+    alert('Rattachement impossible : ' + e.message);
+  }
+}
+
 let adminJoursActuels = [], adminCompteActuel = null;
 
 /* Fiche d'identite du compte selectionne. Construction par DOM : email,
@@ -6653,17 +7077,35 @@ function afficherStatsUtilisateur() {
 /* --- Actions sur un compte ------------------------------------------ */
 async function suspendreUtilisateur() {
   if (!adminUserCourant) return;
-  const u = adminComptes[adminUserCourant];
-  const cible = u && u.statut === 'suspendu' ? null : 'suspendu';
+  const id = adminUserCourant;
+  const u = adminComptes[id] || {};
+  const nom = u.email || ('Compte ' + String(id).slice(0, 8));
+  const reactive = u.statut === 'suspendu';
+
   fermerFeuilles();
-  await definirBlocage(adminUserCourant, cible);
+  const motif = await demanderMotif(reactive
+    ? 'Réactiver le compte ' + nom + ' ?'
+    : 'Suspendre ' + nom + ' ? Il ne pourra plus se connecter, ses données sont conservées.');
+  if (motif === null) return;
+
+  await definirBlocage(id, reactive ? null : 'suspendu', true);
+  await consignerAction(reactive ? 'reactiver' : 'suspendre', id, nom, motif, null);
   await chargerAdmin();
 }
 
 async function supprimerUtilisateur() {
   if (!adminUserCourant) return;
+  const id = adminUserCourant;
+  const u = adminComptes[id] || {};
+  const nom = u.email || ('Compte ' + String(id).slice(0, 8));
+
   fermerFeuilles();
-  await definirBlocage(adminUserCourant, 'supprime');
+  const motif = await demanderMotif(
+    'Supprimer ' + nom + ' ? Le compte est désactivé mais ses données restent en base (réversible).');
+  if (motif === null) return;
+
+  await definirBlocage(id, 'supprime', true);
+  await consignerAction('supprimer', id, nom, motif, null);
   await chargerAdmin();
 }
 
@@ -6909,6 +7351,8 @@ async function supprimerAlimentPartage(aliment) {
     if (error) throw error;
 
     cacheVider();
+    await consignerAction('aliment_supprime', aliment.id, aliment.nom || '', null,
+      { createur: aliment.createur || null });
     await chargerAlimentsAdmin();       // la feuille ouverte se met bien à jour
   } catch (e) {
     alert('Suppression impossible : ' + e.message);
