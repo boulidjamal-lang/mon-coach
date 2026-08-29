@@ -2869,6 +2869,19 @@
   </div>
 </div>
 
+<!-- ================= SÉANCE — Aperçu d'un programme avant de le démarrer ================= -->
+<div id="apercu-programme-modal" class="modal" role="dialog" aria-modal="true" aria-labelledby="titre-apercu-programme">
+  <div class="modal-content" style="max-width:520px;">
+    <div class="modal-entete">
+      <h3 id="titre-apercu-programme">📋 Programme</h3>
+      <button class="close-modal" onclick="fermerModal('apercu-programme-modal')" aria-label="Fermer">&times;</button>
+    </div>
+    <p class="note" id="apercu-programme-sous-titre" style="margin:-8px 0 14px;"></p>
+    <div id="apercu-programme-container"></div>
+    <button class="btn btn-primary" style="margin-top:10px;" id="apercu-programme-btn-demarrer">▶️ Début entraînement</button>
+  </div>
+</div>
+
 <!-- ================= SÉANCE — Création / édition d'un programme ================= -->
 <div id="programme-modal" class="modal" role="dialog" aria-modal="true" aria-labelledby="titre-programme-modal">
   <div class="modal-content" style="max-width:560px;">
@@ -8612,7 +8625,7 @@ function renderListeProgrammes() {
         <div class="programme-meta">${meta}</div>
       </div>
       <div class="programme-actions">
-        <button class="btn btn-primary" style="width:auto; flex:1;" onclick="demarrerSeance('${p.id}')">▶️ Démarrer</button>
+        <button class="btn btn-primary" style="width:auto; flex:1;" onclick="apercuProgramme('${p.id}')">▶️ Démarrer</button>
         <button class="btn-icone" onclick="ouvrirEditionProgramme('${p.id}')" title="Modifier" aria-label="Modifier">✏️</button>
         <button class="btn-icone" onclick="dupliquerProgramme('${p.id}')" title="Dupliquer" aria-label="Dupliquer">📄</button>
         <button class="btn-delete" onclick="supprimerProgramme('${p.id}')" aria-label="Supprimer le programme">&times;</button>
@@ -9345,6 +9358,40 @@ function validerExercicePerso() {
   sauvegarderExosPerso();
   fermerModal('exercice-perso-modal');
   rendrePickerExercices();
+}
+
+/* Aperçu d'un programme avant de le démarrer : la liste de ses exercices
+   avec vignette (photo si connue, sinon schéma corps) et groupe musculaire,
+   plutôt que de se lancer à l'aveugle — comme le fait Strong avant son
+   propre bouton "Début entraînement". Le bouton "▶️ Démarrer" des cartes
+   programme ouvre désormais cet aperçu ; demarrerSeance() reste la fonction
+   qui démarre vraiment la séance, appelée depuis le bouton de cette modale. */
+function apercuProgramme(programmeId) {
+  const programme = musculationProgrammes.find(p => p.id === programmeId);
+  if (!programme) return;
+  document.getElementById('titre-apercu-programme').textContent = '📋 ' + programme.nom;
+  const derniere = dernierePerfProgramme(programme.id);
+  document.getElementById('apercu-programme-sous-titre').textContent =
+    derniere ? 'Dernière fois : ' + formatDateDisplay(derniere.date) : 'Jamais effectué sous ce nom.';
+  document.getElementById('apercu-programme-container').innerHTML = programme.exercices.map(pe => {
+    const exo = trouverExercice(pe.exerciceId);
+    if (!exo) return '';
+    const derniereExo = dernierePerfExercice(pe.exerciceId);
+    const nbSeries = Math.max(1, Number(pe.series) || (derniereExo ? derniereExo.series.length : 3));
+    return `<div class="exo-ligne" style="cursor:default;">
+      <span class="exo-ligne-vignette" aria-hidden="true">${medaillonExercice(exo)}</span>
+      <span style="flex:1; min-width:0;">
+        <span class="exo-ligne-nom">${nbSeries} × ${escapeHtml(libelleExercice(exo))}</span>
+        <span class="exo-ligne-meta">${escapeHtml(GROUPES_MUSCULAIRES[exo.groupe] || '')}${badgeTechnique(pe.technique)}</span>
+      </span>
+      <button type="button" class="btn-icone" style="flex:none;" onclick="afficherFicheExerciceBiblio('${exo.id}')" aria-label="Détails de l'exercice">❓</button>
+    </div>`;
+  }).join('');
+  document.getElementById('apercu-programme-btn-demarrer').onclick = () => {
+    fermerModal('apercu-programme-modal');
+    demarrerSeance(programmeId);
+  };
+  ouvrirModal('apercu-programme-modal');
 }
 
 /* =====================================================================
