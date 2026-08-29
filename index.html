@@ -4756,9 +4756,13 @@ function buildMasterArrays() {
       globalMasterWeight.push(Number.isFinite(w) && w > 0 ? w : null);
 
       const mesure = (userProfile.mesures || {})[ds];
+      // Withings ne donne le muscle et l'os qu'en kg, jamais en % : convertis
+      // ici par rapport au poids DU MÊME JOUR, pour que tout se lise sur un
+      // seul axe (%) au lieu de deux axes kg/% qui prêtaient à confusion.
+      const poidsRef = (mesure && mesure.poids) || (Number.isFinite(w) && w > 0 ? w : null);
       globalMasterGrasse.push(mesure && mesure.grassePct != null ? mesure.grassePct : null);
-      globalMasterMuscle.push(mesure && mesure.muscleKg != null ? mesure.muscleKg : null);
-      globalMasterOs.push(mesure && mesure.osKg != null ? mesure.osKg : null);
+      globalMasterMuscle.push(mesure && mesure.muscleKg != null && poidsRef ? mesure.muscleKg / poidsRef * 100 : null);
+      globalMasterOs.push(mesure && mesure.osKg != null && poidsRef ? mesure.osKg / poidsRef * 100 : null);
       globalMasterEau.push(mesure && mesure.eauPct != null ? mesure.eauPct : null);
 
       if (d.workouts && Array.isArray(d.workouts)) {
@@ -5270,30 +5274,25 @@ function renderCharts(s, e) {
   });
 
   /* --- COMPOSITION CORPORELLE : masse grasse, muscle, os, hydratation,
-     corps entier, dans le temps --- deux unités différentes, donc deux axes
-     (gauche = %, pour grasse/hydratation ; droite = kg, pour muscle/os).
+     corps entier, dans le temps --- tout en %, un seul axe : muscle et os
+     n'existent qu'en kg côté Withings, convertis plus haut (buildMasterArrays)
+     par rapport au poids du jour pour rester comparables aux deux autres.
      spanGaps relie les mesures entre elles par-dessus les semaines sans
      pesée détaillée : sans cela, une mesure par semaine donnerait un nuage
      de points isolés plutôt qu'une tendance. */
   if (compoChartInstance) compoChartInstance.destroy();
-  const baseCompo = optionsGraphiqueBase(p, { avecLegende: true, beginAtZero: false });
   compoChartInstance = new Chart(document.getElementById('compoChart'), {
     type: 'line',
     data: {
       labels,
       datasets: [
-        { label: 'Masse grasse (%)', data: globalMasterGrasse.slice(s, e + 1), borderColor: cLip, backgroundColor: 'transparent', tension: 0.35, pointRadius: 3, pointHoverRadius: 5, borderWidth: 2.5, spanGaps: true, yAxisID: 'y' },
-        { label: 'Muscle (kg)', data: globalMasterMuscle.slice(s, e + 1), borderColor: cPrimaire, backgroundColor: 'transparent', tension: 0.35, pointRadius: 3, pointHoverRadius: 5, borderWidth: 2.5, spanGaps: true, yAxisID: 'y1' },
-        { label: 'Os (kg)', data: globalMasterOs.slice(s, e + 1), borderColor: cGluc, backgroundColor: 'transparent', tension: 0.35, pointRadius: 3, pointHoverRadius: 5, borderWidth: 2.5, spanGaps: true, yAxisID: 'y1' },
-        { label: 'Hydratation (%)', data: globalMasterEau.slice(s, e + 1), borderColor: cAccent, backgroundColor: 'transparent', tension: 0.35, pointRadius: 3, pointHoverRadius: 5, borderWidth: 2.5, spanGaps: true, yAxisID: 'y' }
+        { label: 'Masse grasse (%)', data: globalMasterGrasse.slice(s, e + 1), borderColor: cLip, backgroundColor: 'transparent', tension: 0.35, pointRadius: 3, pointHoverRadius: 5, borderWidth: 2.5, spanGaps: true },
+        { label: 'Muscle (%)', data: globalMasterMuscle.slice(s, e + 1), borderColor: cPrimaire, backgroundColor: 'transparent', tension: 0.35, pointRadius: 3, pointHoverRadius: 5, borderWidth: 2.5, spanGaps: true },
+        { label: 'Os (%)', data: globalMasterOs.slice(s, e + 1), borderColor: cGluc, backgroundColor: 'transparent', tension: 0.35, pointRadius: 3, pointHoverRadius: 5, borderWidth: 2.5, spanGaps: true },
+        { label: 'Hydratation (%)', data: globalMasterEau.slice(s, e + 1), borderColor: cAccent, backgroundColor: 'transparent', tension: 0.35, pointRadius: 3, pointHoverRadius: 5, borderWidth: 2.5, spanGaps: true }
       ]
     },
-    options: Object.assign({}, baseCompo, {
-      scales: Object.assign({}, baseCompo.scales, {
-        y: Object.assign({ position: 'left' }, baseCompo.scales.y),
-        y1: Object.assign({ position: 'right' }, baseCompo.scales.y, { grid: { drawOnChartArea: false } })
-      })
-    })
+    options: optionsGraphiqueBase(p, { avecLegende: true, beginAtZero: false })
   });
   majNoteCompo(s, e);
 }
@@ -5303,7 +5302,7 @@ function majNoteCompo(s, e) {
   if (!n) return;
   const nb = globalMasterGrasse.slice(s, e + 1).filter(v => v != null).length;
   n.textContent = nb
-    ? "Composition globale (corps entier) mesurée par ta balance ou saisie à la main — axe gauche : masse grasse et hydratation (%), axe droit : muscle et os (kg)."
+    ? "Composition globale (corps entier) mesurée par ta balance ou saisie à la main, tout en % du poids (muscle et os, donnés en kg par Withings, sont convertis par rapport au poids du jour)."
     : "Aucune composition corporelle enregistrée sur cette période. Ajoute-en une depuis l'onglet Activité (ou importe ta pesée Withings).";
 }
 
