@@ -841,6 +841,9 @@
     /* Ouverte depuis la feuille « Aliments partagés » (z-index 1100), cette
        modale doit se poser par-dessus, pas derrière. */
     #modal-edit-aliment { z-index: 1200; }
+    /* Ouverte depuis #compte-modal (z-index 1000 par défaut), doit se poser
+       par-dessus, pas derrière. */
+    #modal-creer-compte { z-index: 1100; }
     .feuille-contenu {
       width: 100%; max-width: 560px; max-height: min(85dvh, 85vh);
       background: var(--verre-fort);
@@ -1958,6 +1961,10 @@
         <span class="apercu-nb" id="apercu-inactifs">&mdash;</span>
         <span class="apercu-lbl">Inactifs 30j</span>
       </button>
+      <button class="apercu-case" type="button" data-filtre="supprime" onclick="filtrerParStatut('supprime')">
+        <span class="apercu-nb" id="apercu-supprimes">&mdash;</span>
+        <span class="apercu-lbl">Supprim&eacute;s</span>
+      </button>
     </div>
 
     <div class="input-group">
@@ -2418,6 +2425,21 @@
   </div>
 </div>
 
+<!-- ============ MODALE : confirmation de création de compte ============ -->
+<div class="modal" id="modal-creer-compte" role="dialog" aria-modal="true" aria-labelledby="titre-creer-compte">
+  <div class="modal-content">
+    <div class="modal-entete">
+      <h3 id="titre-creer-compte">Utilisateur inconnu</h3>
+      <button class="close-modal" type="button" onclick="annulerCreationCompte()" aria-label="Fermer">&times;</button>
+    </div>
+    <p class="note" id="creer-compte-texte">&mdash;</p>
+    <div style="display:flex; gap:10px;">
+      <button class="btn btn-secondaire" type="button" style="flex:1;" onclick="annulerCreationCompte()">Annuler</button>
+      <button class="btn btn-primary" type="button" style="flex:1;" onclick="validerCreationCompte()">Créer le compte</button>
+    </div>
+  </div>
+</div>
+
 <!-- ============ MODALE : édition d'un aliment ============ -->
 <div class="modal" id="modal-edit-aliment" role="dialog" aria-modal="true" aria-labelledby="titre-edit-aliment">
   <div class="modal-content">
@@ -2505,10 +2527,9 @@
       </label>
       <p class="note" id="note-compte"></p>
       <div style="display:flex; gap:10px;">
-        <button class="btn btn-primary" style="flex:1;" onclick="connexionCompte()">Se connecter</button>
-        <button class="btn btn-secondaire" style="flex:1;" onclick="inscriptionCompte()">Créer un compte</button>
+        <button class="btn btn-primary" style="flex:1;" onclick="connexionOuCreerCompte()">Se connecter</button>
       </div>
-      <p class="note" style="margin-top:12px;">La première personne crée son compte ici avec sa propre adresse ; l'autre fait pareil, sur son propre appareil, avec la sienne.</p>
+      <p class="note" style="margin-top:12px;">Première visite ? Indique l'adresse et le mot de passe de ton choix : le compte se crée automatiquement. Les fois suivantes, les mêmes identifiants te reconnectent. Un compte par personne, pour que chacun ait ses propres repas, poids et statistiques.</p>
     </div>
 
     <div id="compte-connecte" class="hidden">
@@ -2550,8 +2571,8 @@
     </div>
     <p class="note" style="color:var(--danger); font-weight:700; margin-top:-4px;">Cette action est irréversible. Toutes les journées et le profil de <span id="confirm-suppr-email"></span> seront effacés pour toujours — impossible à annuler ou à rattacher ensuite.</p>
     <div class="input-group">
-      <label for="confirm-suppr-saisie">Tape l'adresse email de ce compte pour confirmer</label>
-      <input type="email" id="confirm-suppr-saisie" autocomplete="off" placeholder="adresse@exemple.com">
+      <label for="confirm-suppr-saisie">Tape l'identifiant affiché ci-dessus pour confirmer</label>
+      <input type="text" id="confirm-suppr-saisie" autocomplete="off" placeholder="adresse@exemple.com">
     </div>
     <div class="input-group">
       <label for="confirm-suppr-mdp">Ton mot de passe administrateur</label>
@@ -2632,10 +2653,6 @@
         </div>
         <button class="btn btn-secondaire" style="width:auto; flex:none; white-space:nowrap;" onclick="ouvrirInstallation()">Installer</button>
       </div>
-    </div>
-
-    <div class="bloc-verre" style="padding:15px; margin-bottom:16px;">
-      <p class="note" style="margin:0;">Le poids et l'objectif ne se règlent plus ici : renseigne le poids une fois par semaine et choisis ton objectif dans l'onglet <strong>Activité</strong> — un changement s'applique à partir d'aujourd'hui, sans jamais modifier tes journées passées.</p>
     </div>
 
     <div class="input-group">
@@ -3089,19 +3106,24 @@ let userProfile = { height: 175, age: 25, gender: 'm', weight: 70 };
 /* La clé Gemini est liée au COMPTE (via le profil synchronisé), pas à
    l'appareil : chacun peut avoir la sienne, avec son propre quota, et la
    retrouve automatiquement en se connectant depuis n'importe quel appareil.
-   Priorité : clé personnelle du compte connecté > ancienne clé enregistrée
-   localement sur cet appareil (rétrocompatibilité, mode sans compte) >
-   clé par défaut fournie avec l'application. */
+   Priorité : clé personnelle du compte connecté > clé par défaut fournie
+   avec l'application (actuellement vide). Le repli sur une clé enregistrée
+   localement sur l'appareil (mode sans compte) a été retiré : la connexion
+   étant désormais obligatoire, il ne servait plus qu'à contourner
+   silencieusement une clé volontairement retirée d'un compte depuis
+   Administration — un appareil ayant déjà eu une clé tapée dans ⚙️ Profil
+   continuait sinon à l'utiliser pour n'importe quel compte connecté dessus. */
 function appliquerGeminiKeyEffective() {
-  geminiKey = (userProfile.geminiKey || '').trim()
-    || localStorage.getItem(GEMINI_KEY_LS)
-    || GEMINI_CLE_DEFAUT;
+  geminiKey = (userProfile.geminiKey || '').trim() || GEMINI_CLE_DEFAUT;
   const champ = document.getElementById('gemini-key-input');
   if (champ) champ.value = userProfile.geminiKey || '';
+  // Purge une éventuelle clé laissée par cet appareil avant ce correctif :
+  // sans ça elle resterait inerte mais présente dans le navigateur.
+  try { localStorage.removeItem(GEMINI_KEY_LS); } catch (e) {}
   majNoteCleIA();
 }
 
-let geminiKey = localStorage.getItem(GEMINI_KEY_LS) || GEMINI_CLE_DEFAUT;
+let geminiKey = GEMINI_CLE_DEFAUT;
 let appData = {};
 
 /* La base d'aliments vit désormais uniquement dans Supabase.
@@ -3688,12 +3710,13 @@ function enregistrerMesures() {
 }
 
 function sauvegarderParametresGlobaux() {
-  // Enregistrée dans le profil (synchronisé par compte) : chacun retrouve
-  // sa propre clé en se connectant, sur n'importe quel appareil. On garde
-  // aussi une copie locale pour le mode sans compte / hors ligne.
+  // Enregistrée uniquement dans le profil (synchronisé par compte) : chacun
+  // retrouve sa propre clé en se connectant, sur n'importe quel appareil.
+  // Plus de copie locale à l'appareil (voir appliquerGeminiKeyEffective) :
+  // elle survivait à une déconnexion et s'appliquait à tout compte utilisé
+  // ensuite sur ce même appareil, même sans clé qui lui soit propre.
   const saisie = document.getElementById('gemini-key-input').value.trim();
   userProfile.geminiKey = saisie;
-  ecrireLocal(GEMINI_KEY_LS, saisie);
   appliquerGeminiKeyEffective();
   userProfile.gender = document.getElementById('base-gender').value;
   userProfile.age = Number(document.getElementById('base-age').value) || 25;
@@ -5866,19 +5889,78 @@ async function connexionCompte() {
   } catch (e) { if (note) note.textContent = messageAuth(e); }
 }
 
-async function inscriptionCompte() {
+/* Bouton unique "Se connecter" de la modale de compte : tente une connexion
+   normale, et si l'adresse/mot de passe ne correspond à aucun compte
+   existant, propose de créer le compte plutôt que de se contenter d'une
+   erreur — l'ancien bouton séparé "Créer un compte" passait inaperçu, la
+   plupart des gens cliquant par réflexe sur le bouton vert même pour un
+   tout premier compte. */
+async function connexionOuCreerCompte() {
   if (!supa) { alert("Renseigne d'abord l'URL et la clé du projet Supabase (section Synchronisation) : la connexion utilise le même projet."); return; }
   const email = (document.getElementById('compte-email-input').value || '').trim();
   const mdp = document.getElementById('compte-mdp-input').value || '';
+  const seSouvenir = document.getElementById('compte-souvenir').checked;
   const note = document.getElementById('note-compte');
   if (!email || !mdp) { if (note) note.textContent = 'Renseigne une adresse et un mot de passe.'; return; }
+
+  const memoriser = () => {
+    try {
+      if (seSouvenir) localStorage.setItem(IDENTIFIANTS_LS, JSON.stringify({ email, mdp }));
+      else localStorage.removeItem(IDENTIFIANTS_LS);
+    } catch (e) {}
+  };
+
+  if (note) note.textContent = 'Connexion en cours…';
+  try {
+    const { error } = await supa.auth.signInWithPassword({ email, password: mdp });
+    if (!error) {
+      if (note) note.textContent = '';
+      memoriser();
+      document.getElementById('compte-mdp-input').value = '';
+      return;
+    }
+    // Supabase renvoie volontairement la même erreur générique ("Invalid
+    // login credentials") que l'adresse soit inconnue OU que le mot de
+    // passe soit faux, pour ne pas révéler quelles adresses ont un compte.
+    // On ne peut donc distinguer les deux cas qu'en tentant signUp() ensuite.
+    if (!/invalid login credentials/i.test(error.message || '')) throw error;
+  } catch (e) { if (note) note.textContent = messageAuth(e); return; }
+
+  if (!(await demanderCreationCompte(email))) {
+    if (note) note.textContent = 'Adresse ou mot de passe incorrect.';
+    return;
+  }
+
   if (note) note.textContent = 'Création du compte…';
   try {
-    const { data, error } = await supa.auth.signUp({ email, password: mdp });
+    const { data, error } = await supa.auth.signUp({
+      email, password: mdp,
+      // Sans ceci, le lien de confirmation envoyé par email renvoie vers
+      // l'URL "Site URL" configurée côté tableau de bord Supabase, qui ne
+      // pointe pas forcément vers cette appli — d'où un lien qui "ne renvoie
+      // à rien". Il faut aussi que cette URL soit dans la liste blanche
+      // "Redirect URLs" du projet Supabase (Authentication → URL
+      // Configuration), sinon Supabase l'ignore et retombe sur Site URL.
+      options: { emailRedirectTo: window.location.origin + window.location.pathname }
+    });
     if (error) throw error;
-    if (note) note.textContent = data.session
-      ? ''
-      : 'Compte créé : vérifie ta boîte mail pour confirmer ton adresse, puis connecte-toi.';
+    // data.user.identities est vide quand l'adresse a déjà un compte
+    // confirmé : signUp() ne le signale pas par une erreur explicite (même
+    // logique anti-énumération que signInWithPassword ci-dessus), c'est le
+    // seul moyen fiable de détecter ce cas après coup.
+    if (data.user && data.user.identities && data.user.identities.length === 0) {
+      if (note) note.textContent = 'Un compte existe déjà avec cette adresse : le mot de passe saisi est incorrect.';
+      return;
+    }
+    if (data.session) {
+      // Confirmation par email désactivée côté Supabase : le compte est
+      // actif immédiatement, la session est déjà valide.
+      if (note) note.textContent = '';
+      memoriser();
+      document.getElementById('compte-mdp-input').value = '';
+    } else {
+      if (note) note.textContent = 'Compte créé : vérifie ta boîte mail pour confirmer ton adresse, puis reviens te connecter avec ce même mot de passe.';
+    }
   } catch (e) { if (note) note.textContent = messageAuth(e); }
 }
 
@@ -5980,52 +6062,35 @@ async function rattacherDonnees(ancien, nouveau, nomNouveau) {
 
 /* Suppression définitive : on ne se contente plus d'un confirm() du
    navigateur — cette action est irréversible, donc trois barrières avant
-   qu'elle ne s'exécute (voir demarrerConfirmationSuppression / 
+   qu'elle ne s'exécute (voir demarrerConfirmationSuppression /
    validerSuppressionDefinitive juste après) : un délai de 30 secondes pour
    dissuader un clic précipité, retaper l'email du compte visé pour être sûr
-   qu'on supprime le bon, et le mot de passe de l'administrateur lui-même. */
+   qu'on supprime le bon, et le mot de passe de l'administrateur lui-même.
+
+   L'effacement lui-même passe par admin_effacer_definitivement() (RPC
+   SECURITY DEFINER) plutôt que par des .delete() table par table depuis le
+   client : ceux-ci dépendaient d'une policy RLS avec le bon OR sur l'email
+   admin, qui pouvait échouer en silence (0 ligne supprimée, sans erreur) si
+   elle n'était pas exactement à jour — d'où l'impression que le bouton ne
+   faisait rien. La fonction SQL contourne les policies RLS et supprime en
+   plus le compte d'authentification lui-même (auth.users), ce que le
+   client ne peut de toute façon pas faire sans exposer une clé
+   d'administration Supabase dans le code — donc "Supprimer" (plus haut,
+   réversible) restait jusqu'ici la seule suppression qui marchait
+   vraiment ; "Effacer définitivement" ne faisait qu'essayer. */
 async function executerSuppressionDefinitive(utilisateur) {
   try {
-    // Supabase-js ne lève pas d'exception quand une policy RLS bloque une
-    // suppression : la requête « réussit » techniquement en ne supprimant
-    // rien. On vérifie donc chaque .error explicitement, puis on recompte
-    // après coup pour être sûr que les lignes ont vraiment disparu.
-    const rj = await supa.from('journees').delete().eq('utilisateur', utilisateur);
-    if (rj.error) throw new Error('journées : ' + rj.error.message);
-    const rp = await supa.from('profil').delete().eq('utilisateur', utilisateur);
-    if (rp.error) throw new Error('profil : ' + rp.error.message);
-    const rpm = await supa.from('programmes_musculation').delete().eq('utilisateur', utilisateur);
-    if (rpm.error) throw new Error('programmes de musculation : ' + rpm.error.message);
-    const rsm = await supa.from('seances_musculation').delete().eq('utilisateur', utilisateur);
-    if (rsm.error) throw new Error('séances de musculation : ' + rsm.error.message);
-    const rem = await supa.from('exercices_perso_musculation').delete().eq('utilisateur', utilisateur);
-    if (rem.error) throw new Error('exercices personnalisés : ' + rem.error.message);
+    const { error } = await supa.rpc('admin_effacer_definitivement', { p_utilisateur: utilisateur });
+    if (error) throw error;
 
-    // Panneau de réinitialisation : sans lui, un appareil qui a encore
-    // l'ancienne copie en mémoire la repousserait vers Supabase à sa
-    // prochaine synchro — dans la seconde ou dans une semaine, peu importe.
-    // Ce marqueur force cet appareil à effacer sa propre copie tout seul,
-    // quel que soit le moment où il se reconnecte (voir synchroniser()).
-    const horodatage = Date.now();
-    const { error: e4 } = await supa.from('profil').upsert(
-      [{ utilisateur, donnees: { resetLe: horodatage }, maj: horodatage }],
-      { onConflict: 'utilisateur' }
-    );
-    if (e4) throw e4;
-
-    const verif = await supa.from('journees').select('jour', { count: 'exact', head: true }).eq('utilisateur', utilisateur);
-    if ((verif.count || 0) > 0) {
-      alert(`⚠️ ${verif.count} journée(s) sont encore présentes après la suppression : la policy de sécurité bloque probablement l'écriture pour l'administrateur. Vérifie que le tout dernier script SQL a bien été exécuté (avec le OR sur ton email dans la policy "journees par compte").`);
-    } else {
-      alert("Compte supprimé. Même si l'appareil de cette personne a encore l'ancienne copie en mémoire, il l'effacera tout seul à sa prochaine connexion — plus besoin d'être synchronisé sur le timing.");
-    }
+    alert("Compte effacé : ses données ET son compte de connexion ont été supprimés. Il ne peut plus se reconnecter avec ses anciens identifiants. Même si l'appareil de cette personne a encore l'ancienne copie en mémoire, la prochaine synchronisation n'y changera rien : il n'y a plus de compte pour la recevoir.");
     await consignerAction('effacer', utilisateur,
       (adminComptes[utilisateur] && adminComptes[utilisateur].email) || String(utilisateur).slice(0, 8),
       null, null);
     document.getElementById('admin-stats-zone').classList.add('hidden');
     chargerAdmin();
   } catch (e) {
-    alert('Erreur pendant la suppression : ' + e.message);
+    alert('Erreur pendant la suppression : ' + e.message + ' — as-tu exécuté le tout dernier script SQL (avec admin_effacer_definitivement) ?');
   }
 }
 
@@ -6035,7 +6100,12 @@ let confirmSuppressionTimer = null;
 function demarrerConfirmationSuppression(utilisateur, emailOuNom) {
   const compte = adminComptes[utilisateur] || {};
   confirmSuppressionCible = { utilisateur, email: compte.email || '' };
-  document.getElementById('confirm-suppr-email').textContent = compte.email || emailOuNom;
+  // Doit être EXACTEMENT ce que validerSuppressionDefinitive() compare
+  // ensuite (email, ou sinon l'identifiant complet) : afficher à la place
+  // le nom décoratif tronqué ("Compte bfed1931", venu de emailOuNom)
+  // rendait la confirmation impossible à taper correctement pour un compte
+  // sans email.
+  document.getElementById('confirm-suppr-email').textContent = compte.email || String(utilisateur);
   document.getElementById('confirm-suppr-saisie').value = '';
   document.getElementById('confirm-suppr-mdp').value = '';
   document.getElementById('confirm-suppr-note').textContent = compte.email ? '' : "Ce compte n'a pas d'email associé (identifiant libre) : tape-le tel qu'affiché ci-dessus à la place.";
@@ -6343,8 +6413,11 @@ function rafraichirListeComptes() {
     if (filtreStatutAdmin === 'actif'     && c.statut) return false;
     if (filtreStatutAdmin === 'suspendu'  && c.statut !== 'suspendu') return false;
     if (filtreStatutAdmin === 'inactif'   && !estInactif(c)) return false;
-    // Les comptes supprimes sortent de la vue par defaut : ils encombrent
-    // sans jamais etre ce qu'on cherche.
+    if (filtreStatutAdmin === 'supprime'  && c.statut !== 'supprime') return false;
+    // Les comptes supprimes sortent de la vue "Tous" par defaut : ils
+    // encombrent sans jamais etre ce qu'on cherche — mais restent
+    // accessibles via la recherche ou la case "Supprimés" ci-dessus, sans
+    // quoi il devenait impossible de les retrouver pour les réactiver.
     if (filtreStatutAdmin === 'tous' && c.statut === 'supprime' && !q) return false;
     if (!q) return true;
     const nom = (c.email || String(c.utilisateur)).toLowerCase();
@@ -6390,6 +6463,7 @@ async function chargerApercuAdmin() {
     mettre('apercu-actifs', a.actifs ?? '\u2014');
     mettre('apercu-suspendus', a.suspendus ?? '\u2014');
     mettre('apercu-inactifs', a.inactifs30 ?? '\u2014');
+    mettre('apercu-supprimes', a.supprimes ?? '\u2014');
   } catch (e) {
     // Le script SQL du journal n'a peut-etre pas encore ete execute :
     // on se rabat sur un comptage local plutot que de laisser des tirets.
@@ -6399,6 +6473,7 @@ async function chargerApercuAdmin() {
     mettre('apercu-actifs', tous.filter(c => !c.statut).length);
     mettre('apercu-suspendus', tous.filter(c => c.statut === 'suspendu').length);
     mettre('apercu-inactifs', tous.filter(estInactif).length);
+    mettre('apercu-supprimes', tous.filter(c => c.statut === 'supprime').length);
   }
 }
 
@@ -6543,6 +6618,35 @@ function validerMotif() {
 function annulerMotif() {
   fermerModal('modal-motif');
   if (motifResolve) { motifResolve(null); motifResolve = null; }
+}
+
+/* =====================================================================
+   COMPTE — confirmation de création (remplace confirm())
+   Le confirm() natif affiche systématiquement l'origine du site
+   ("boulidjamal-lang.github.io indique"), impossible à retirer ou
+   personnaliser (protection anti-phishing intégrée au navigateur). Cette
+   fenêtre "maison", à l'apparence de l'appli, n'a pas cette limite.
+   ===================================================================== */
+let creerCompteResolve = null;
+
+function demanderCreationCompte(email) {
+  const modal = document.getElementById('modal-creer-compte');
+  const texte = document.getElementById('creer-compte-texte');
+  if (!modal) return Promise.resolve(false);
+  if (texte) texte.innerHTML = `Aucun compte n'est associé à <strong>${escapeHtml(email)}</strong>.<br><br>Souhaitez-vous créer un compte avec cette adresse et ce mot de passe ?`;
+  modal.classList.add('show');
+  majCoucheOuverte();
+  return new Promise(res => { creerCompteResolve = res; });
+}
+
+function validerCreationCompte() {
+  fermerModal('modal-creer-compte');
+  if (creerCompteResolve) { creerCompteResolve(true); creerCompteResolve = null; }
+}
+
+function annulerCreationCompte() {
+  fermerModal('modal-creer-compte');
+  if (creerCompteResolve) { creerCompteResolve(false); creerCompteResolve = null; }
 }
 
 /* =====================================================================
@@ -7756,40 +7860,54 @@ returns text language sql security definer set search_path = public as $$
 $$;
 grant execute on function public.mon_statut_compte() to authenticated;
 
+-- Un jeton de connexion déjà émis avant un "Effacer définitivement" reste
+-- valable jusqu'à son expiration naturelle (Supabase ne peut pas révoquer
+-- un jeton déjà distribué) : sans cette vérification, un appareil resté
+-- connecté pouvait continuer à écrire — recréant en douce un compte que
+-- l'admin venait pourtant d'effacer (un "compte fantôme", sans email car
+-- déjà absent de auth.users). Utilisée dans les policies ci-dessous, elle
+-- confirme que le compte existe encore réellement avant d'autoriser quoi
+-- que ce soit.
+create or replace function public.mon_compte_existe()
+returns boolean language sql security definer set search_path = public as $$
+  select exists(select 1 from auth.users where id = auth.uid());
+$$;
+grant execute on function public.mon_compte_existe() to authenticated;
+
 drop policy if exists "acces journees" on journees;
 drop policy if exists "journees par compte" on journees;
 create policy "journees par compte" on journees
   for all
-  using ((utilisateur = auth.uid()::text and not est_bloque(utilisateur)) or auth.jwt() ->> 'email' = 'jambou592@gmail.com')
-  with check ((utilisateur = auth.uid()::text and not est_bloque(utilisateur)) or auth.jwt() ->> 'email' = 'jambou592@gmail.com');
+  using ((utilisateur = auth.uid()::text and not est_bloque(utilisateur) and mon_compte_existe()) or auth.jwt() ->> 'email' = 'jambou592@gmail.com')
+  with check ((utilisateur = auth.uid()::text and not est_bloque(utilisateur) and mon_compte_existe()) or auth.jwt() ->> 'email' = 'jambou592@gmail.com');
 
 drop policy if exists "acces profil" on profil;
 drop policy if exists "profil par compte" on profil;
 create policy "profil par compte" on profil
   for all
-  using ((utilisateur = auth.uid()::text and not est_bloque(utilisateur)) or auth.jwt() ->> 'email' = 'jambou592@gmail.com')
-  with check ((utilisateur = auth.uid()::text and not est_bloque(utilisateur)) or auth.jwt() ->> 'email' = 'jambou592@gmail.com');
+  using ((utilisateur = auth.uid()::text and not est_bloque(utilisateur) and mon_compte_existe()) or auth.jwt() ->> 'email' = 'jambou592@gmail.com')
+  with check ((utilisateur = auth.uid()::text and not est_bloque(utilisateur) and mon_compte_existe()) or auth.jwt() ->> 'email' = 'jambou592@gmail.com');
 
 drop policy if exists "acces programmes_musculation" on programmes_musculation;
 drop policy if exists "programmes_musculation par compte" on programmes_musculation;
 create policy "programmes_musculation par compte" on programmes_musculation
   for all
-  using ((utilisateur = auth.uid()::text and not est_bloque(utilisateur)) or auth.jwt() ->> 'email' = 'jambou592@gmail.com')
-  with check ((utilisateur = auth.uid()::text and not est_bloque(utilisateur)) or auth.jwt() ->> 'email' = 'jambou592@gmail.com');
+  using ((utilisateur = auth.uid()::text and not est_bloque(utilisateur) and mon_compte_existe()) or auth.jwt() ->> 'email' = 'jambou592@gmail.com')
+  with check ((utilisateur = auth.uid()::text and not est_bloque(utilisateur) and mon_compte_existe()) or auth.jwt() ->> 'email' = 'jambou592@gmail.com');
 
 drop policy if exists "acces seances_musculation" on seances_musculation;
 drop policy if exists "seances_musculation par compte" on seances_musculation;
 create policy "seances_musculation par compte" on seances_musculation
   for all
-  using ((utilisateur = auth.uid()::text and not est_bloque(utilisateur)) or auth.jwt() ->> 'email' = 'jambou592@gmail.com')
-  with check ((utilisateur = auth.uid()::text and not est_bloque(utilisateur)) or auth.jwt() ->> 'email' = 'jambou592@gmail.com');
+  using ((utilisateur = auth.uid()::text and not est_bloque(utilisateur) and mon_compte_existe()) or auth.jwt() ->> 'email' = 'jambou592@gmail.com')
+  with check ((utilisateur = auth.uid()::text and not est_bloque(utilisateur) and mon_compte_existe()) or auth.jwt() ->> 'email' = 'jambou592@gmail.com');
 
 drop policy if exists "acces exercices_perso_musculation" on exercices_perso_musculation;
 drop policy if exists "exercices_perso_musculation par compte" on exercices_perso_musculation;
 create policy "exercices_perso_musculation par compte" on exercices_perso_musculation
   for all
-  using ((utilisateur = auth.uid()::text and not est_bloque(utilisateur)) or auth.jwt() ->> 'email' = 'jambou592@gmail.com')
-  with check ((utilisateur = auth.uid()::text and not est_bloque(utilisateur)) or auth.jwt() ->> 'email' = 'jambou592@gmail.com');
+  using ((utilisateur = auth.uid()::text and not est_bloque(utilisateur) and mon_compte_existe()) or auth.jwt() ->> 'email' = 'jambou592@gmail.com')
+  with check ((utilisateur = auth.uid()::text and not est_bloque(utilisateur) and mon_compte_existe()) or auth.jwt() ->> 'email' = 'jambou592@gmail.com');
 
 -- Important : ces policies exigent d'être connecté (auth.uid() non nul).
 -- Si l'un de vous continue à utiliser l'identifiant libre sans jamais se
@@ -7938,7 +8056,37 @@ begin
   end if;
 end;
 $$;
-grant execute on function public.admin_definir_cle_gemini(text, text) to authenticated;`;
+grant execute on function public.admin_definir_cle_gemini(text, text) to authenticated;
+
+-- Efface VRAIMENT un compte : ses données ET son compte d'authentification
+-- (auth.users), contrairement à "Supprimer" (admin_definir_blocage), qui ne
+-- fait que bloquer l'accès en gardant tout. Après ceci, la personne ne peut
+-- plus se reconnecter avec ses anciens identifiants, et l'adresse redevient
+-- libre pour un nouveau compte. SECURITY DEFINER : contourne les policies
+-- RLS plutôt que d'en dépendre (le bouton "Effacer définitivement" échouait
+-- silencieusement si la policy admin n'était pas exactement à jour côté
+-- client), et permet de toucher à auth.users sans jamais exposer de clé
+-- d'administration Supabase dans le code de l'application.
+create or replace function public.admin_effacer_definitivement(p_utilisateur text)
+returns void
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  if coalesce(auth.jwt() ->> 'email', '') <> 'jambou592@gmail.com' then
+    raise exception 'Accès réservé à l''administrateur';
+  end if;
+  delete from journees where utilisateur = p_utilisateur;
+  delete from programmes_musculation where utilisateur = p_utilisateur;
+  delete from seances_musculation where utilisateur = p_utilisateur;
+  delete from exercices_perso_musculation where utilisateur = p_utilisateur;
+  delete from profil where utilisateur = p_utilisateur;
+  delete from comptes_bloques where utilisateur = p_utilisateur;
+  delete from auth.users where id::text = p_utilisateur;
+end;
+$$;
+grant execute on function public.admin_effacer_definitivement(text) to authenticated;`;
 
 function sqlRls() { return SQL_RLS; }
 
@@ -9881,6 +10029,10 @@ function fermerBackdropSiCible(target) {
     if (target.id === 'modal-bienvenue' && bilanForce) return false;
     if (target.id === 'barcode-modal') stopperScanner();
     if (target.id === 'fiche-exercice-modal') arreterAnimationFiche();
+    // Sans ça, un clic sur le fond laisse la promesse de
+    // demanderCreationCompte() sans réponse pour toujours : le bouton "Se
+    // connecter" resterait bloqué sur "Connexion en cours…".
+    if (target.id === 'modal-creer-compte' && creerCompteResolve) { creerCompteResolve(false); creerCompteResolve = null; }
     target.classList.remove('show');
     majCoucheOuverte();
     return true;
@@ -9928,6 +10080,7 @@ window.addEventListener('keydown', (e) => {
     if (dessus.id === 'modal-bienvenue' && bilanForce) return;
     if (dessus.id === 'barcode-modal') stopperScanner();
     if (dessus.id === 'fiche-exercice-modal') arreterAnimationFiche();
+    if (dessus.id === 'modal-creer-compte' && creerCompteResolve) { creerCompteResolve(false); creerCompteResolve = null; }
     dessus.classList.remove('show');
     majCoucheOuverte();
     return;
