@@ -58,7 +58,11 @@
   <!-- Importation d'une police haut de gamme (Outfit) -->
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&amp;display=swap" rel="stylesheet">
   
-  <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
+  <!-- Version figée (2.3.8) : sans numéro de version, unpkg sert toujours la
+       toute dernière — une future mise à jour de la bibliothèque pourrait
+       casser le scanner du jour au lendemain, sans aucun changement de
+       notre côté. -->
+  <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js" type="text/javascript"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <!-- Synchronisation facultative : l'application fonctionne entièrement sans. -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
