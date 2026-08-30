@@ -2202,6 +2202,12 @@
     </div>
 
     <div id="admin-user-actions">
+      <div class="input-group" style="margin-bottom:14px;">
+        <label for="admin-user-gemini-key">&#128273; Cl&eacute; API Gemini de ce compte</label>
+        <input type="password" id="admin-user-gemini-key" placeholder="AIzaSy&hellip;" autocomplete="off">
+        <button class="btn btn-primary" type="button" style="margin-top:8px;width:100%;" onclick="definirCleGeminiUtilisateur()">Enregistrer la cl&eacute;</button>
+        <p class="note" style="margin-top:6px;">Enregistr&eacute;e uniquement dans Supabase, jamais dans le code. Laisser vide puis enregistrer retire la cl&eacute; du compte.</p>
+      </div>
       <button class="feuille-action" type="button" onclick="afficherStatsUtilisateur()">
         <span class="ic" aria-hidden="true">&#128202;</span>
         <span>Statistiques<span class="sous">Poids, journées, dernière activité</span></span>
@@ -5916,6 +5922,25 @@ async function definirBlocage(utilisateur, type, dejaConfirme) {
   }
 }
 
+/* Affecte la cle Gemini saisie au compte adminUserCourant. Le champ est
+   toujours vide a l'ouverture de la feuille (admin_liste_comptes() ne
+   renvoie pas les cles existantes, par prudence) : on ecrase donc la cle
+   actuelle par la saisie, meme vide (ce qui revient a la retirer). */
+async function definirCleGeminiUtilisateur() {
+  if (!adminUserCourant) return;
+  const champ = document.getElementById('admin-user-gemini-key');
+  if (!champ) return;
+  const cle = champ.value.trim();
+  try {
+    const { error } = await supa.rpc('admin_definir_cle_gemini', { p_utilisateur: adminUserCourant, p_cle: cle });
+    if (error) throw error;
+    champ.value = '';
+    alert(cle ? 'Clé enregistrée pour ce compte.' : 'Clé retirée de ce compte.');
+  } catch (e) {
+    alert('Erreur : ' + e.message + ' — as-tu exécuté le tout dernier script SQL (avec admin_definir_cle_gemini) ?');
+  }
+}
+
 /* ouvrirRattachement() utilisait prompt() : remplacee par
    ouvrirRattachementFeuille(), qui presente les comptes dans une feuille. */
 
@@ -7861,7 +7886,32 @@ begin
   delete from comptes_bloques where utilisateur = p_ancien;
 end;
 $$;
-grant execute on function public.admin_rattacher_donnees(text, text) to authenticated;`;
+grant execute on function public.admin_rattacher_donnees(text, text) to authenticated;
+
+-- Affecte (ou retire, avec une chaîne vide) une clé API Gemini au compte
+-- p_utilisateur : elle est écrite dans son profil (donnees.geminiKey), donc
+-- utilisée uniquement par ce compte, exactement comme s'il l'avait saisie
+-- lui-même dans ⚙️ Profil. Rien n'est jamais écrit dans le code de
+-- l'application : la clé ne transite que par cet appel, réservé à l'admin.
+create or replace function public.admin_definir_cle_gemini(p_utilisateur text, p_cle text)
+returns void
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  if coalesce(auth.jwt() ->> 'email', '') <> 'jambou592@gmail.com' then
+    raise exception 'Accès réservé à l''administrateur';
+  end if;
+  update profil
+    set donnees = jsonb_set(coalesce(donnees, '{}'::jsonb), '{geminiKey}', to_jsonb(coalesce(p_cle, '')), true)
+    where utilisateur = p_utilisateur;
+  if not found then
+    raise exception 'Compte introuvable (aucun profil enregistré pour cet utilisateur)';
+  end if;
+end;
+$$;
+grant execute on function public.admin_definir_cle_gemini(text, text) to authenticated;`;
 
 function sqlRls() { return SQL_RLS; }
 
@@ -10226,6 +10276,9 @@ function afficherFeuillUtilisateur() {
   titre.textContent = user.email || ('Compte ' + String(user.utilisateur).slice(0, 8));
   actions.style.display = 'block';
   stats.style.display = 'none';
+
+  const champGemini = document.getElementById('admin-user-gemini-key');
+  if (champGemini) champGemini.value = '';
 
   // Les actions destructrices n'ont pas de sens sur son propre compte.
   const estMoi = sessionUtilisateur && user.utilisateur === sessionUtilisateur.id;
