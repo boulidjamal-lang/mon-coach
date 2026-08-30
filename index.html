@@ -3005,7 +3005,7 @@ const SUPA_CLE_DEFAUT = 'sb_publishable_giF6iGxgrL9b3Ks9sAmtcw_qzONC3XE';
 // clé Gemini authentifie un compte Google et ne doit jamais être publiée
 // dans un dépôt. Vide par défaut : chacun renseigne la sienne dans
 // ⚙️ Profil pour activer les analyses IA — voir appliquerGeminiKeyEffective().
-const GEMINI_CLE_DEFAUT = 'AQ.Ab8RN6IjwTssERY62rHdwhQYuH_KolGyGinorJ1lErloVIKN6Q';
+const GEMINI_CLE_DEFAUT = '';
 // Table Ciqual fixe : elle ne change jamais d'un appareil à l'autre, ça n'a
 // donc pas sa place dans un champ de réglages que quelqu'un pourrait modifier
 // par erreur et perdre l'accès à toute la base d'aliments.
@@ -4292,15 +4292,28 @@ async function startScanner() {
        et éloigner le téléphone plusieurs fois pour que ça accroche enfin. Deux
        choses aident : demander explicitement une résolution confortable (ça
        pousse le pilote vers le pipeline caméra complet, avec vraie autofocus),
-       et demander la mise au point continue via la contrainte "advanced" —
-       ignorée sans erreur là où elle n'est pas supportée (iOS Safari,
-       notamment), donc sans risque. */
-    const contraintesVideo = {
-      facingMode: 'environment',
-      width: { ideal: 1920 }, height: { ideal: 1080 },
-      advanced: [{ focusMode: 'continuous' }]
-    };
-    await html5QrCode.start(contraintesVideo, { fps: 10, qrbox: 250, aspectRatio: 1.0 }, onScanSuccess);
+       et demander la mise au point continue via la contrainte "advanced".
+       En pratique, sur certains appareils (constaté sur iPhone), une
+       contrainte "advanced" ou une résolution demandée que la caméra ne
+       peut pas fournir fait échouer .start() en entier avec une
+       OverconstrainedError — la caméra entière tombait alors en panne, pas
+       seulement l'autofocus. On essaie donc ces contraintes du plus
+       ambitieux au plus sûr, et on s'arrête au premier qui démarre
+       vraiment la caméra plutôt que de tout perdre pour un confort en trop. */
+    const jeuxContraintes = [
+      { facingMode: 'environment', width: { ideal: 1920 }, height: { ideal: 1080 }, advanced: [{ focusMode: 'continuous' }] },
+      { facingMode: 'environment', width: { ideal: 1920 }, height: { ideal: 1080 } },
+      { facingMode: 'environment' }
+    ];
+    let demarre = false, derniereErreur = null;
+    for (const contraintesVideo of jeuxContraintes) {
+      try {
+        await html5QrCode.start(contraintesVideo, { fps: 10, qrbox: 250, aspectRatio: 1.0 }, onScanSuccess);
+        demarre = true;
+        break;
+      } catch (e) { derniereErreur = e; }
+    }
+    if (!demarre) throw derniereErreur;
     // Filet de sécurité : sur certains appareils, la contrainte de mise au
     // point n'est vraiment prise en compte qu'une fois le flux démarré.
     try {
