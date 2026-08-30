@@ -2204,9 +2204,9 @@
     <div id="admin-user-actions">
       <div class="input-group" style="margin-bottom:14px;">
         <label for="admin-user-gemini-key">&#128273; Cl&eacute; API Gemini de ce compte</label>
-        <input type="password" id="admin-user-gemini-key" placeholder="AIzaSy&hellip;" autocomplete="off">
+        <input type="text" id="admin-user-gemini-key" placeholder="AIzaSy&hellip;" autocomplete="off" spellcheck="false">
         <button class="btn btn-primary" type="button" style="margin-top:8px;width:100%;" onclick="definirCleGeminiUtilisateur()">Enregistrer la cl&eacute;</button>
-        <p class="note" style="margin-top:6px;">Enregistr&eacute;e uniquement dans Supabase, jamais dans le code. Laisser vide puis enregistrer retire la cl&eacute; du compte.</p>
+        <p class="note" style="margin-top:6px;">Enregistr&eacute;e uniquement dans Supabase, jamais dans le code. Laisser vide puis enregistrer retire la cl&eacute; du compte. La cl&eacute; actuelle du compte, si elle existe, est pr&eacute;-remplie ci-dessus.</p>
       </div>
       <button class="feuille-action" type="button" onclick="afficherStatsUtilisateur()">
         <span class="ic" aria-hidden="true">&#128202;</span>
@@ -4291,7 +4291,6 @@ async function startScanner() {
   scannerEnDemarrage = true;
   try {
     await stopperScanner();
-    html5QrCode = new Html5Qrcode('reader');
     /* Sans indication de résolution, beaucoup de téléphones Android démarrent
        la caméra sur un flux d'aperçu basse résolution dont le pilote utilise
        une mise au point simplifiée (quasi fixe) — d'où le besoin de rapprocher
@@ -4299,12 +4298,12 @@ async function startScanner() {
        choses aident : demander explicitement une résolution confortable (ça
        pousse le pilote vers le pipeline caméra complet, avec vraie autofocus),
        et demander la mise au point continue via la contrainte "advanced".
-       En pratique, sur certains appareils (constaté sur iPhone), une
-       contrainte "advanced" ou une résolution demandée que la caméra ne
-       peut pas fournir fait échouer .start() en entier avec une
-       OverconstrainedError — la caméra entière tombait alors en panne, pas
-       seulement l'autofocus. On essaie donc ces contraintes du plus
-       ambitieux au plus sûr, et on s'arrête au premier qui démarre
+       En pratique, sur beaucoup d'appareils (pas seulement iPhone — de
+       nombreux Android aussi), une contrainte "advanced" ou une résolution
+       demandée que la caméra ne peut pas fournir fait échouer .start() en
+       entier avec une OverconstrainedError — la caméra entière tombait alors
+       en panne, pas seulement l'autofocus. On essaie donc ces contraintes du
+       plus ambitieux au plus sûr, et on s'arrête au premier qui démarre
        vraiment la caméra plutôt que de tout perdre pour un confort en trop. */
     const jeuxContraintes = [
       { facingMode: 'environment', width: { ideal: 1920 }, height: { ideal: 1080 }, advanced: [{ focusMode: 'continuous' }] },
@@ -4314,10 +4313,26 @@ async function startScanner() {
     let demarre = false, derniereErreur = null;
     for (const contraintesVideo of jeuxContraintes) {
       try {
+        /* Chaque tentative repart d'une instance Html5Qrcode toute neuve :
+           quand .start() rejette en cours de route (ex. OverconstrainedError
+           sur la 1re tentative, très fréquent), la bibliothèque laisse
+           parfois son état interne en "transition" — tout appel suivant à
+           .start() sur CETTE MÊME instance échoue alors systématiquement,
+           quelles que soient les contraintes, même les plus sûres. C'est ce
+           qui rendait le repli inopérant : la caméra ne redémarrait plus
+           pour personne dès que la 1re contrainte (fréquemment refusée)
+           avait été tentée. */
+        const lecteur = document.getElementById('reader');
+        if (lecteur) lecteur.innerHTML = '';
+        html5QrCode = new Html5Qrcode('reader');
         await html5QrCode.start(contraintesVideo, { fps: 10, qrbox: 250, aspectRatio: 1.0 }, onScanSuccess);
         demarre = true;
         break;
-      } catch (e) { derniereErreur = e; }
+      } catch (e) {
+        derniereErreur = e;
+        try { await html5QrCode.stop(); } catch (e2) {}
+        try { html5QrCode.clear(); } catch (e2) {}
+      }
     }
     if (!demarre) throw derniereErreur;
     // Filet de sécurité : sur certains appareils, la contrainte de mise au
@@ -4328,8 +4343,14 @@ async function startScanner() {
       }
     } catch (e) { /* pas supporté sur cet appareil : la mise au point par défaut du navigateur prend le relais */ }
   } catch (err) {
+    console.error('[Scanner] échec du démarrage :', err);
     const lecteur = document.getElementById('reader');
-    if (lecteur) lecteur.innerHTML = '<p style="color:var(--text-muted);padding:20px;text-align:center;">Caméra indisponible. Utilisez la recherche par code.</p>';
+    if (lecteur) {
+      const detail = err && (err.name || err.message) ? String(err.name || err.message) : '';
+      lecteur.innerHTML = '<p style="color:var(--text-muted);padding:20px;text-align:center;">Caméra indisponible. Utilisez la recherche par code.'
+        + (detail ? '<br><small style="opacity:.6;">(' + detail.replace(/[<>]/g, '') + ')</small>' : '')
+        + '</p>';
+    }
   } finally {
     scannerEnDemarrage = false;
   }
@@ -5923,9 +5944,9 @@ async function definirBlocage(utilisateur, type, dejaConfirme) {
 }
 
 /* Affecte la cle Gemini saisie au compte adminUserCourant. Le champ est
-   toujours vide a l'ouverture de la feuille (admin_liste_comptes() ne
-   renvoie pas les cles existantes, par prudence) : on ecrase donc la cle
-   actuelle par la saisie, meme vide (ce qui revient a la retirer). */
+   pre-rempli avec la cle actuelle a l'ouverture de la feuille (voir
+   afficherFeuillUtilisateur()) : on ecrase donc la cle actuelle par la
+   saisie, meme vide (ce qui revient a la retirer). */
 async function definirCleGeminiUtilisateur() {
   if (!adminUserCourant) return;
   const champ = document.getElementById('admin-user-gemini-key');
@@ -5934,7 +5955,7 @@ async function definirCleGeminiUtilisateur() {
   try {
     const { error } = await supa.rpc('admin_definir_cle_gemini', { p_utilisateur: adminUserCourant, p_cle: cle });
     if (error) throw error;
-    champ.value = '';
+    if (adminComptes[adminUserCourant]) adminComptes[adminUserCourant].gemini_key = cle;
     alert(cle ? 'Clé enregistrée pour ce compte.' : 'Clé retirée de ce compte.');
   } catch (e) {
     alert('Erreur : ' + e.message + ' — as-tu exécuté le tout dernier script SQL (avec admin_definir_cle_gemini) ?');
@@ -7782,10 +7803,15 @@ create policy "exercices_perso_musculation par compte" on exercices_perso_muscul
 -- fonction y accède à sa place, mais vérifie elle-même que l'appelant est
 -- bien jambou592@gmail.com avant de renvoyer quoi que ce soit : n'importe
 -- qui d'autre qui l'appellerait recevrait une erreur, jamais de données.
+-- drop d'abord : on ajoute une colonne (gemini_key) au type de retour, ce que
+-- "create or replace" refuse de faire seul sur une fonction déjà existante.
+drop function if exists public.admin_liste_comptes();
+
 create or replace function public.admin_liste_comptes()
 returns table (
   utilisateur text, email text, cree_le timestamptz, derniere_connexion timestamptz,
-  age int, taille numeric, poids numeric, genre text, nb_journees bigint, maj bigint, statut text
+  age int, taille numeric, poids numeric, genre text, nb_journees bigint, maj bigint, statut text,
+  gemini_key text
 )
 language plpgsql
 security definer
@@ -7807,7 +7833,8 @@ begin
       (p.donnees->>'gender')::text,
       (select count(*) from journees j where j.utilisateur = p.utilisateur)::bigint,
       p.maj::bigint,
-      cb.type::text
+      cb.type::text,
+      (p.donnees->>'geminiKey')::text
     from profil p
     left join auth.users u on u.id::text = p.utilisateur
     left join comptes_bloques cb on cb.utilisateur = p.utilisateur;
@@ -10278,7 +10305,7 @@ function afficherFeuillUtilisateur() {
   stats.style.display = 'none';
 
   const champGemini = document.getElementById('admin-user-gemini-key');
-  if (champGemini) champGemini.value = '';
+  if (champGemini) champGemini.value = user.gemini_key || '';
 
   // Les actions destructrices n'ont pas de sens sur son propre compte.
   const estMoi = sessionUtilisateur && user.utilisateur === sessionUtilisateur.id;
