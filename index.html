@@ -843,7 +843,7 @@
     #modal-edit-aliment { z-index: 1200; }
     /* Ouverte depuis #compte-modal (z-index 1000 par défaut), doit se poser
        par-dessus, pas derrière. */
-    #modal-creer-compte { z-index: 1100; }
+    #modal-creer-compte, #modal-nouveau-mdp { z-index: 1100; }
     .feuille-contenu {
       width: 100%; max-width: 560px; max-height: min(85dvh, 85vh);
       background: var(--verre-fort);
@@ -1692,7 +1692,7 @@
       <!-- Le bouton « Mon compte » vivait ici, puis un bouton de bascule de
            thème (🌗) : tous deux retirés, direction Réglages pour ce
            qu'on ne touche pas plusieurs fois par jour. -->
-      <button class="btn-icone" onclick="ouvrirModal('settings-modal')" aria-label="Profil et réglages" title="Profil">⚙️</button>
+      <button class="btn-icone" onclick="majAffichageObjectifEau(); ouvrirModal('settings-modal')" aria-label="Profil et réglages" title="Profil">⚙️</button>
     </div>
   </div>
 </header>
@@ -1736,6 +1736,20 @@
           <div class="macro-jauge" id="piste-f"><i id="jauge-f" style="background:var(--fat)"></i></div>
           <div class="macro-pct" id="pct-f">0 %</div>
         </div>
+      </div>
+    </div>
+
+    <div class="bloc-verre" style="margin-bottom:16px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;gap:10px;">
+        <h3 style="margin:0;font-size:0.85rem;text-transform:uppercase;letter-spacing:0.8px;">💧 Eau bue</h3>
+        <span class="note" id="eau-texte" style="margin:0;white-space:nowrap;">0 / 2000 ml</span>
+      </div>
+      <div class="jauge"><i id="jauge-eau"></i></div>
+      <div style="display:flex;gap:8px;margin-top:12px;">
+        <button class="btn-icone" style="flex:1;" onclick="ajouterEau(250)">+250 ml</button>
+        <button class="btn-icone" style="flex:1;" onclick="ajouterEau(500)">+500 ml</button>
+        <button class="btn-icone" style="flex:1;" onclick="ajouterEau(1000)">+1 L</button>
+        <button class="btn-icone" style="flex:0 0 auto;width:42px;padding:0;" onclick="retirerEau()" aria-label="Retirer 250 ml" title="Retirer 250 ml">−</button>
       </div>
     </div>
 
@@ -1873,6 +1887,9 @@
 
     <div class="titre-section">👟 Pas quotidiens</div>
     <div class="chart-container"><canvas id="stepsChart"></canvas></div>
+
+    <div class="titre-section">💧 Eau bue (vs objectif)</div>
+    <div class="chart-container"><canvas id="eauChart"></canvas></div>
 
     <div class="titre-section">🏋️ Activités (minutes par sport)</div>
     <div class="chart-container"><canvas id="workoutChart"></canvas></div>
@@ -2101,7 +2118,7 @@
     </button>
     <button class="feuille-action" onclick="depuisFeuille('photo')">
       <span class="ic" aria-hidden="true">📸</span>
-      <span>Photo du plat<span class="sous">Détection des aliments par l'IA</span></span>
+      <span>Photo ou description<span class="sous">Détection des aliments par l'IA, avec ou sans photo</span></span>
     </button>
     <button class="feuille-action" onclick="depuisFeuille('barcode')">
       <span class="ic" aria-hidden="true">📷</span>
@@ -2120,7 +2137,7 @@
       <button class="close-modal" onclick="fermerModal('macros-popup-modal')" aria-label="Fermer">&times;</button>
     </div>
     <div class="input-group" style="margin-bottom:14px;">
-      <label for="macros-popup-poids">Poids (g)</label>
+      <label for="macros-popup-poids">Poids (<span id="macros-popup-unite">g</span>)</label>
       <input type="number" id="macros-popup-poids" inputmode="numeric" min="1" max="5000" step="1"
              oninput="recalculerApercuPoids()">
     </div>
@@ -2165,7 +2182,7 @@
 
     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 15px;">
       <div class="input-group" style="margin-bottom: 0;">
-        <label for="man-grams">Quantité (g / ml)</label>
+        <label for="man-grams">Quantité (<span id="man-grams-unite">g ou ml</span>)</label>
         <input type="text" id="man-grams" value="100" inputmode="decimal" oninput="calculerApercuManuel()">
       </div>
       <div class="input-group" style="margin-bottom: 0;">
@@ -2429,13 +2446,31 @@
 <div class="modal" id="modal-creer-compte" role="dialog" aria-modal="true" aria-labelledby="titre-creer-compte">
   <div class="modal-content">
     <div class="modal-entete">
-      <h3 id="titre-creer-compte">Utilisateur inconnu</h3>
-      <button class="close-modal" type="button" onclick="annulerCreationCompte()" aria-label="Fermer">&times;</button>
+      <h3 id="titre-creer-compte">Mot de passe incorrect</h3>
+      <button class="close-modal" type="button" onclick="annulerConfirmationCompte()" aria-label="Fermer">&times;</button>
     </div>
     <p class="note" id="creer-compte-texte">&mdash;</p>
     <div style="display:flex; gap:10px;">
-      <button class="btn btn-secondaire" type="button" style="flex:1;" onclick="annulerCreationCompte()">Annuler</button>
-      <button class="btn btn-primary" type="button" style="flex:1;" onclick="validerCreationCompte()">Créer le compte</button>
+      <button class="btn btn-secondaire" type="button" style="flex:1;" onclick="annulerConfirmationCompte()">Annuler</button>
+      <button class="btn btn-primary" type="button" style="flex:1;" id="creer-compte-bouton" onclick="validerConfirmationCompte()">Envoyer l'email</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal" id="modal-nouveau-mdp" role="dialog" aria-modal="true" aria-labelledby="titre-nouveau-mdp">
+  <div class="modal-content">
+    <div class="modal-entete">
+      <h3 id="titre-nouveau-mdp">🔑 Nouveau mot de passe</h3>
+    </div>
+    <p class="note">Choisis un nouveau mot de passe pour ton compte.</p>
+    <div class="input-group">
+      <label for="nouveau-mdp-input">Nouveau mot de passe</label>
+      <input type="password" id="nouveau-mdp-input" autocomplete="new-password">
+    </div>
+    <p class="note" id="note-nouveau-mdp"></p>
+    <div style="display:flex; gap:10px;">
+      <button class="btn btn-secondaire" type="button" style="flex:1;" onclick="annulerNouveauMdp()">Annuler</button>
+      <button class="btn btn-primary" type="button" style="flex:1;" onclick="validerNouveauMdp()">Enregistrer</button>
     </div>
   </div>
 </div>
@@ -2498,7 +2533,7 @@
     </div>
 
     <button class="btn btn-primary" onclick="synchroniser('manuel')">🔄 Synchroniser maintenant</button>
-    <button class="btn btn-secondaire" style="margin-top:10px; width:100%;" onclick="fermerModal('sync-info-modal'); ouvrirModal('settings-modal');">⚙️ Réglages de synchronisation</button>
+    <button class="btn btn-secondaire" style="margin-top:10px; width:100%;" onclick="fermerModal('sync-info-modal'); majAffichageObjectifEau(); ouvrirModal('settings-modal');">⚙️ Réglages de synchronisation</button>
   </div>
 </div>
 
@@ -2750,6 +2785,11 @@
       <label for="base-height">Taille (cm)</label>
       <input type="number" id="base-height" value="175" inputmode="numeric" onchange="sauvegarderParametresGlobaux()">
     </div>
+    <div class="input-group">
+      <label>💧 Objectif d'eau bue</label>
+      <p style="margin:0; font-weight:700;" id="affichage-objectif-eau"></p>
+      <p class="note" style="margin:6px 0 0;">Calculé automatiquement à partir de ton poids, ton âge, ton sexe et le sport du jour — rien à régler ici, visible sur l'écran Repas.</p>
+    </div>
 
     <hr class="sep">
 
@@ -2760,6 +2800,8 @@
         <button class="btn-action btn-manual" onclick="document.getElementById('import-file-input').click()">📥 Importer</button>
         <input type="file" id="import-file-input" accept=".json,application/json" class="hidden" onchange="importerDonnees(event)">
       </div>
+      <button class="btn btn-secondaire" id="btn-corriger-unites" style="margin-top:10px; width:100%;" onclick="corrigerUnitesHistorique()">🔍 Corriger les unités g/ml de l'historique</button>
+      <p class="note" style="margin:8px 0 0;">Repasse sur tous les repas déjà enregistrés pour repérer les boissons encore marquées en grammes (eau, jus, soda…) et les convertir en ml.</p>
     </div>
 
     <button class="btn btn-primary" onclick="fermerModal('settings-modal')">Fermer</button>
@@ -2806,21 +2848,29 @@
 <div id="ai-modal" class="modal" role="dialog" aria-modal="true" aria-labelledby="titre-ai">
   <div class="modal-content">
     <div class="modal-entete">
-      <h3 id="titre-ai">📸 Analyse d'une photo</h3>
+      <h3 id="titre-ai">📸 Analyse d'un repas</h3>
       <button class="close-modal" onclick="fermerModal('ai-modal')" aria-label="Fermer">&times;</button>
     </div>
 
     <div class="input-group">
-      <label for="ai-description">Descriptif (facultatif, mais ça aide beaucoup)</label>
+      <label for="ai-description">Description du plat</label>
       <textarea id="ai-description" rows="2" placeholder="ex : poulet basquaise maison, riz basmati, un filet d'huile d'olive"
                 style="width:100%; resize:vertical; font-family:inherit;"></textarea>
       <small style="color:var(--text-muted); display:block; margin-top:6px; font-size:0.75rem;">
-        Précise ce qui n'est pas visible sur la photo : recette, cuisson, marque, matière grasse ajoutée.
+        Avec une photo, précise ce qui n'est pas visible (recette, cuisson, marque, matière grasse ajoutée).
+        Sans photo — quand tu sais ce que tu as mangé mais que tu n'as pas de photo —
+        décris le plat le plus précisément possible : ce sera la seule information dont l'IA dispose.
+        Une photo, une description, ou les deux : au moins l'un des deux est nécessaire.
       </small>
     </div>
-    <input type="file" id="ai-file-input" accept="image/*" capture="environment" onchange="analyserPhotoGemini(event)">
+    <div class="input-group">
+      <label for="ai-file-input">Photo (facultative)</label>
+      <input type="file" id="ai-file-input" accept="image/*" capture="environment" onchange="previsualiserPhoto(event)">
+    </div>
     <span class="puce-ia"></span>
     <img id="preview-image" class="hidden" alt="Aperçu du plat photographié">
+
+    <button class="btn btn-primary" style="width:100%; margin-top:12px;" onclick="analyserRepasGemini()">🧠 Analyser</button>
 
     <div id="ai-loader" class="loader hidden">🧠 Détection des aliments…</div>
     <div id="error-display" class="error-box hidden"></div>
@@ -2858,7 +2908,7 @@
         <p class="note" id="barcode-source" style="margin:6px 2px 0;"></p>
       </div>
       <div class="input-group">
-        <label for="barcode-grams">Quantité (g ou ml)</label>
+        <label for="barcode-grams">Quantité (<span id="barcode-grams-unite">g ou ml</span>)</label>
         <input type="text" id="barcode-grams" value="100" inputmode="decimal">
       </div>
       <button class="btn btn-primary" onclick="ajouterAlimentBarcode()">Ajouter au repas</button>
@@ -3010,6 +3060,9 @@ const STORAGE_KEY = 'elite_fitness_data_v1';
 const PROFILE_KEY = 'elite_fitness_profile_v1';
 const GEMINI_KEY_LS = 'gemini_key_v43';
 const GEMINI_MODEL = 'gemini-3.5-flash';
+// À quel compte appartiennent les données actuellement en localStorage.
+// Sert à détecter un changement de personne sur un même téléphone.
+const MUSCU_COMPTE_LOCAL_LS = 'mc_compte_local';
 
 /* =====================================================================
    VALEURS PAR DÉFAUT DE L'APPLICATION
@@ -3099,6 +3152,7 @@ let currentScannedFood = null;
 let detectedBufferGemini = [];
 
 let caloriesChartInstance = null, macrosChartInstance = null, stepsChartInstance = null, workoutChartInstance = null;
+let eauChartInstance = null;
 let compoChartInstance = null;
 let poidsChartInstance = null;
 
@@ -3422,6 +3476,8 @@ function ouvrirPoidsAliment(el) {
   };
   document.getElementById('macros-popup-nom').textContent = item.name || 'Aliment';
   document.getElementById('macros-popup-poids').value = Math.round(g);
+  const lblUnite = document.getElementById('macros-popup-unite');
+  if (lblUnite) lblUnite.textContent = item.unite === 'ml' ? 'ml' : 'g';
   recalculerApercuPoids();
   ouvrirModal('macros-popup-modal');
 }
@@ -3473,7 +3529,7 @@ function renderMeals(day) {
              data-nom="${escapeHtml(it.name)}" data-kcal="${Math.round(it.kcal)}"
              data-p="${Math.round(it.p)}" data-c="${Math.round(it.c)}" data-f="${Math.round(it.f)}">
           <span class="food-name">${escapeHtml(it.name)}</span>
-          <span class="food-detail">${Math.round(it.grams)} g${it.code ? `
+          <span class="food-detail">${Math.round(it.grams)} ${it.unite === 'ml' ? 'ml' : 'g'}${it.code ? `
             <button class="chip-code" onclick="event.stopPropagation(); copierCode('${escapeHtml(String(it.code))}')"
                     title="Code-barres OpenFoodFacts — toucher pour copier">⌗ ${escapeHtml(String(it.code))}</button>` : ''}</span>
           <div class="food-macros">
@@ -3541,6 +3597,7 @@ function updateSummary(day) {
 
   majDetailDepense(day, t);
   updateLiquidFill(totals.kcal, t.target);
+  majJaugeEau(day);
 }
 
 /* Chaque macro a sa barre : la comparaison « 118 / 180 g » demandait un
@@ -3557,6 +3614,88 @@ function majMacro(cle, valeur, cible) {
     pct.textContent = Math.round(p) + ' %';
     pct.style.color = p > 110 ? 'var(--danger)' : 'var(--text-muted)';
   }
+}
+
+/* Eau bue : comparée à un objectif calculé automatiquement (quotaEauSuggere),
+   jamais réglé à la main — sans lien avec l'hydratation en % de la balance à
+   impédancemétrie (mesures corporelles) — deux choses différentes malgré le
+   nom proche, d'où des identifiants distincts (eauMl / eauPct). */
+function majJaugeEau(day) {
+  day = day || getDay(currentDate);
+  const bu = Math.max(0, Number(day.eauMl) || 0);
+  const quota = quotaEauSuggere(currentDate);
+  const texte = document.getElementById('eau-texte');
+  if (texte) texte.textContent = `${bu} / ${quota} ml`;
+  const jauge = document.getElementById('jauge-eau');
+  if (jauge) {
+    jauge.style.width = pourcent(bu, quota) + '%';
+    jauge.style.background = bu >= quota ? 'var(--primary)' : 'var(--accent)';
+  }
+}
+
+function ajouterEau(ml) {
+  const day = getDay(currentDate);
+  day.eauMl = Math.max(0, (Number(day.eauMl) || 0) + ml);
+  saveData(currentDate);
+  majJaugeEau(day);
+}
+
+// Un seul pas de retrait (250 ml) : assez pour corriger un tap de trop,
+// pas besoin d'un clavier pour une correction aussi mineure.
+function retirerEau() {
+  const day = getDay(currentDate);
+  day.eauMl = Math.max(0, (Number(day.eauMl) || 0) - 250);
+  saveData(currentDate);
+  majJaugeEau(day);
+}
+
+/* Besoin en EAU BUE du jour — calculé automatiquement, jamais un réglage :
+   personne ne connaît son propre besoin en eau au ml près, donc rien à
+   régler à la main. Trois éléments que l'appli connaît déjà :
+   - le poids : ml par kg de poids corporel. La fourchette usuelle est
+     30-35 ml/kg pour un adulte actif, et elle diminue avec l'âge — la masse
+     hydrique corporelle et la capacité de concentration du rein baissent
+     toutes deux avec le temps. L'eau contenue dans les aliments couvre une
+     autre part des besoins totaux ; ce calcul ne porte volontairement que
+     sur ce qu'il reste à boire.
+   - l'âge : 35 ml/kg avant 30 ans, 33 entre 30 et 55, 30 entre 55 et 65,
+     28 après 65 ans.
+   - le sexe : à poids égal, une femme a en moyenne un peu plus de masse
+     grasse (qui retient moins d'eau que le muscle) — léger ajustement
+     (-5 %), jamais de quoi inverser l'effet du poids ou de l'âge.
+   - l'effort : environ 600 ml de sueur perdus par heure d'effort modéré,
+     à reconstituer en plus de la base — soit 10 ml par minute de sport
+     déjà loggée ce jour-là (musculation, cardio...).
+   Ce que ce calcul ne peut PAS connaître, et qui fait varier le vrai
+   besoin : chaleur/climat, altitude, apport élevé en protéines, café et
+   alcool (qui augmentent les pertes), grossesse/allaitement, fièvre ou
+   diarrhée. La valeur reste une estimation à l'oeil, jamais un avis
+   médical. */
+function quotaEauSuggere(dateStr) {
+  const ds = dateStr || currentDate;
+  const poids = dernierPoidsConnu(ds);
+  const age = Number(userProfile.age) || 25;
+  const day = appData[ds];
+  const minutesSport = ((day && day.workouts) || []).reduce((s, w) => s + (Number(w.time) || 0), 0);
+
+  let mlParKg = 35;
+  if (age >= 65) mlParKg = 28;
+  else if (age >= 55) mlParKg = 30;
+  else if (age >= 30) mlParKg = 33;
+  if (userProfile.gender === 'f') mlParKg *= 0.95;
+
+  const base = poids * mlParKg;
+  const effort = minutesSport * 10;
+  // Plancher à 1200 ml : même pour un poids très faible ou un âge avancé,
+  // en dessous ce n'est plus une estimation crédible.
+  return Math.max(1200, Math.round((base + effort) / 100) * 100);
+}
+
+// Affiche en Réglages la valeur du jour, purement informative : ce n'est
+// plus un champ éditable, rien à confirmer ni à appliquer.
+function majAffichageObjectifEau() {
+  const el = document.getElementById('affichage-objectif-eau');
+  if (el) el.textContent = quotaEauSuggere(currentDate).toLocaleString('fr-FR') + ' ml aujourd’hui';
 }
 
 /* Un objectif calorique sorti de nulle part n'inspire pas confiance : on montre
@@ -3582,6 +3721,14 @@ function majDetailDepense(day, t) {
     const b = document.createElement('span'); b.textContent = d;
     r.appendChild(a); r.appendChild(b); el.appendChild(r);
   });
+  // Unité différente (ml, pas kcal), donc séparée du reste plutôt que mêlée
+  // à la dégradation "Objectif" ci-dessus — même logique de calcul basée sur
+  // l'activité du jour, d'où sa place ici plutôt qu'ailleurs.
+  const ligneEau = document.createElement('div');
+  ligneEau.style.cssText = 'display:flex;justify-content:space-between;gap:12px;padding:6px 0;margin-top:4px;border-top:1px solid var(--verre-brd);';
+  const aEau = document.createElement('span'); aEau.textContent = '💧 Objectif eau';
+  const bEau = document.createElement('span'); bEau.textContent = quotaEauSuggere(currentDate).toLocaleString('fr-FR') + ' ml';
+  ligneEau.appendChild(aEau); ligneEau.appendChild(bEau); el.appendChild(ligneEau);
   const note = document.getElementById('note-poids');
   if (note) {
     note.textContent = t.poidsEstime
@@ -3723,6 +3870,8 @@ function sauvegarderParametresGlobaux() {
   userProfile.height = Number(document.getElementById('base-height').value) || 175;
   saveData();
   updateSummary(getDay(currentDate));
+  majJaugeEau();
+  majAffichageObjectifEau();
 }
 
 function changerDate(delta) {
@@ -3891,6 +4040,10 @@ function ouvrirManuel(mealId) {
   // suivant : on repart toujours d'une fiche vierge.
   codeCourant = '';
   majCodeCourant();
+  // Idem pour l'unité : sans remise à zéro, choisir "eau" (ml) puis annuler
+  // et taper "poulet" à la main aurait quand même enregistré des ml.
+  uniteCourante = 'g';
+  majUniteCourante();
   cacherSuggestionsOFF();
   calculerApercuManuel();
   ouvrirModal('manual-modal');
@@ -3913,6 +4066,10 @@ function ouvrirBarcode(mealId) {
   activeMealId = mealId;
   document.getElementById('manual-barcode-input').value = '';
   document.getElementById('barcode-result').classList.add('hidden');
+  // Sinon l'unité détectée pour le dernier produit scanné reste affichée
+  // au scan suivant, avant même que la recherche n'ait répondu.
+  const lblUnite = document.getElementById('barcode-grams-unite');
+  if (lblUnite) lblUnite.textContent = 'g ou ml';
   ouvrirModal('barcode-modal');
   startScanner();
 }
@@ -4091,6 +4248,10 @@ function fillFromOFF(product) {
   if (product.grammes > 0) document.getElementById('man-grams').value = product.grammes;
   codeCourant = product.code || '';
   majCodeCourant();
+  // L'historique et le scan connaissent parfois déjà l'unité ; sinon, le nom
+  // du produit est le seul indice qui reste (base CIQUAL, partagés, USDA).
+  uniteCourante = product.unite || uniteProbableParNom(product.name);
+  majUniteCourante();
   calculerApercuManuel();
 }
 function round1(v) { return v == null ? '' : Math.round(Number(v) * 10) / 10; }
@@ -4134,6 +4295,7 @@ function construireHistorique() {
         e.p100 = Math.round((Number(it.p) || 0) * f * 10) / 10;
         e.c100 = Math.round((Number(it.c) || 0) * f * 10) / 10;
         e.f100 = Math.round((Number(it.f) || 0) * f * 10) / 10;
+        if (it.unite) e.unite = it.unite;
         if (it.code) e.code = String(it.code);
         parCle.set(cle, e);
       });
@@ -4166,6 +4328,7 @@ function entreeVersProduit(e) {
     source: 'historique',
     grammes: e.grammes,
     code: e.code,
+    unite: e.unite,
     fois: e.fois,
     dernierJour: e.dernierJour,
     nutriments: {
@@ -4197,6 +4360,16 @@ function chercherDansHistorique(q, limite) {
 /* Le code-barres de l'aliment en cours de saisie. Il voyage du scanner ou de
    l'historique jusqu'à l'enregistrement, sinon il serait perdu en route. */
 let codeCourant = '';
+
+/* Pareil pour l'unité : une suggestion sélectionnée en saisie manuelle doit
+   se souvenir si elle a été détectée comme une boisson, sinon le "g / ml" du
+   libellé ne servait à rien et l'aliment repartait toujours en grammes. */
+let uniteCourante = 'g';
+
+function majUniteCourante() {
+  const el = document.getElementById('man-grams-unite');
+  if (el) el.textContent = uniteCourante === 'ml' ? 'ml' : 'g';
+}
 
 function majCodeCourant() {
   const z = document.getElementById('zone-code');
@@ -4269,6 +4442,7 @@ function validerAjoutManuel() {
   const f = g / 100;
   const item = {
     name, grams: g,
+    unite: uniteCourante === 'ml' ? 'ml' : 'g',
     kcal: kcal100 * f,
     p: nombreChamp('man-p100') * f,
     c: nombreChamp('man-c100') * f,
@@ -4278,6 +4452,7 @@ function validerAjoutManuel() {
   // l'historique : c'est ce qui permet de retrouver le produit exact plus tard.
   if (codeCourant) item.code = codeCourant;
   addItemToMeal(activeMealId, item);
+  if (item.unite === 'ml') ajouterEau(Math.round(g));
   fermerModal('manual-modal');
 }
 
@@ -4404,6 +4579,118 @@ async function onScanSuccess(decodedText) {
   }
 }
 
+/* OpenFoodFacts étiquette systématiquement ses nutriments "_100g" dans le
+   JSON, même pour un liquide — et son propre champ nutrition_data_per, censé
+   distinguer 100g de 100ml, vaut quasiment toujours "100g" y compris pour
+   des boissons (incohérence connue de la base). Trois signaux, du plus au
+   moins direct : l'unité déclarée du produit, ses catégories, et à défaut
+   (beaucoup de fiches n'ont ni l'une ni l'autre — ex. produits protéinés
+   peu renseignés) la présence d'un "ml"/"cl"/"l" dans le format de portion
+   ou la quantité, souvent renseignés même quand le reste ne l'est pas. */
+function uniteProbable(product) {
+  if (!product) return 'g';
+  if (product.product_quantity_unit === 'ml') return 'ml';
+  const tags = (product.categories_tags || []).join(' ').toLowerCase();
+  // Les tags OFF sont parfois uniquement en français ("fr:eaux-de-source",
+  // "en:boissons") : "water" seul ratait Volvic, dont la fiche ne porte
+  // que des catégories françaises.
+  if (/beverage|drink|water|juice|soda|milk|beer|wine|smoothie|nectar|eau|boisson/.test(tags)) return 'ml';
+  const texte = [product.serving_size, product.quantity].filter(Boolean).join(' ');
+  return /\d\s*(ml|cl)\b|\d\s*l\b/i.test(texte) ? 'ml' : 'g';
+}
+
+/* Les suggestions de la base CIQUAL, des aliments partagés et d'USDA n'ont
+   ni catégorie ni taille de portion à interroger : seul le nom reste comme
+   indice. Un mot générique (eau, jus, soda...) ne suffit pas : « Volvic »
+   ou « Evian » ne contiennent aucun de ces mots. On ajoute donc les grandes
+   marques d'eaux et de boissons vendues en France — liste volontairement
+   limitée aux cas évidents, mieux vaut rater une marque obscure que faire
+   passer un plat en ml par erreur. */
+function uniteProbableParNom(nom) {
+  const t = normaliserRecherche(nom);
+  return /\b(eau|jus|soda|coca|cola|limonade|the|cafe|lait|biere|vin|smoothie|nectar|sirop|boisson|infusion|kombucha|milkshake|cidre|volvic|evian|vittel|contrex|hepar|badoit|perrier|cristaline|vichy|quezac|orezza|salvetat|thonon|courmayeur|orangina|oasis|tropicana|schweppes|fanta|sprite|pepsi|lipton|ricqles|teisseire|yop|actimel|pellegrino|redbull|red bull)\b/.test(t)
+    ? 'ml' : 'g';
+}
+
+/* Tout ce qui a été mangé avant l'existence de la distinction g/ml est resté
+   marqué en grammes, y compris les boissons. On repasse une fois sur tout
+   l'historique pour corriger : d'abord le nom (rapide, hors ligne, couvre
+   la grande majorité des cas), puis les codes-barres restants via
+   OpenFoodFacts pour les fiches dont le nom seul ne trahissait rien
+   (ex. une marque). Un geste explicite (bouton en Réglages), pas un passage
+   automatique au chargement : c'est une modification de données, l'appli
+   ne la déclenche jamais toute seule. */
+async function corrigerUnitesHistorique() {
+  if (!confirm("Analyser tous les repas déjà enregistrés pour repérer les "
+    + "boissons encore marquées en grammes et les convertir en ml ?\n\n"
+    + "Seuls les aliments actuellement en g sont revérifiés ; le reste ne change pas.")) return;
+
+  const bouton = document.getElementById('btn-corriger-unites');
+  const texteInitial = bouton ? bouton.textContent : '';
+  if (bouton) { bouton.disabled = true; bouton.textContent = '⏳ Analyse en cours…'; }
+
+  try {
+    const joursModifies = new Set();
+    let corriges = 0;
+
+    // 1) Passe locale, instantanée : le nom seul suffit pour la plupart des
+    //    boissons évidentes (eau, jus, soda, lait...). Les aliments avec un
+    //    code-barres que le nom ne trahit pas sont mis de côté pour la passe 2.
+    const parCode = new Map();   // code -> [{ ds, mealId, idx }]
+    Object.keys(appData).forEach(ds => {
+      const j = appData[ds];
+      if (!j || !j.meals) return;
+      Object.keys(j.meals).forEach(mealId => {
+        const liste = j.meals[mealId];
+        if (!Array.isArray(liste)) return;
+        liste.forEach((it, idx) => {
+          if (!it || it.unite === 'ml') return;
+          if (uniteProbableParNom(it.name) === 'ml') {
+            it.unite = 'ml';
+            corriges++;
+            joursModifies.add(ds);
+          } else if (it.code) {
+            const cle = String(it.code);
+            if (!parCode.has(cle)) parCode.set(cle, []);
+            parCode.get(cle).push({ ds, mealId, idx });
+          }
+        });
+      });
+    });
+
+    // 2) Passe réseau : un code-barres à la fois, avec une courte pause —
+    //    l'API OpenFoodFacts est gratuite et publique, on ne la bombarde pas.
+    const codes = Array.from(parCode.keys());
+    for (let i = 0; i < codes.length; i++) {
+      const code = codes[i];
+      if (bouton) bouton.textContent = `⏳ Code-barres ${i + 1}/${codes.length}…`;
+      try {
+        const r = await fetch(`https://world.openfoodfacts.org/api/v0/product/${code}.json`);
+        const j = await r.json();
+        if (j.status === 1 && uniteProbable(j.product) === 'ml') {
+          parCode.get(code).forEach(({ ds, mealId, idx }) => {
+            appData[ds].meals[mealId][idx].unite = 'ml';
+            corriges++;
+            joursModifies.add(ds);
+          });
+        }
+      } catch (e) { /* hors ligne ou code introuvable : cet aliment reste en g */ }
+      if (i < codes.length - 1) await new Promise(res => setTimeout(res, 200));
+    }
+
+    joursModifies.forEach(ds => saveData(ds));
+    invaliderHistorique();
+    buildMasterArrays();
+    updateSummary(getDay(currentDate));
+
+    alert(corriges > 0
+      ? `${corriges} aliment(s) corrigé(s) en ml, sur ${joursModifies.size} jour(s).`
+      : "Rien à corriger : tout était déjà correctement marqué.");
+  } finally {
+    if (bouton) { bouton.disabled = false; bouton.textContent = texteInitial; }
+  }
+}
+
 async function chercherProduitOFFParCode(code) {
   code = String(code).trim();
   let trouve = null;
@@ -4414,14 +4701,22 @@ async function chercherProduitOFFParCode(code) {
     const j = await r.json();
     if (j.status === 1) {
       const p = j.product; const n = p.nutriments || {};
+      // energy-kcal_100g absent (undefined) = fiche sans données nutritionnelles ;
+      // egal a 0 = vraiment zero kcal (eau, soda zero...). Le || 0 d'avant
+      // confondait les deux, et déclenchait l'avertissement "aucune calorie"
+      // même pour une eau minérale scannée, dont le 0 est parfaitement exact.
+      const kcalBrut = n['energy-kcal_100g'] !== undefined ? n['energy-kcal_100g']
+        : (n['energy_100g'] !== undefined ? n['energy_100g'] / 4.184 : undefined);
       trouve = {
         name: p.product_name || 'Produit ' + code,
         code,
         marque: (p.brands || '').split(',')[0].trim(),
-        kcal100: Math.round(n['energy-kcal_100g'] || (n['energy_100g'] ? n['energy_100g'] / 4.184 : 0)),
+        kcal100: Math.round(kcalBrut || 0),
         p100: Number(n['proteins_100g']) || 0,
         c100: Number(n['carbohydrates_100g']) || 0,
         f100: Number(n['fat_100g']) || 0,
+        unite: uniteProbable(p),
+        sansDonneesNutrition: kcalBrut === undefined,
         source: 'OpenFoodFacts'
       };
     }
@@ -4430,7 +4725,7 @@ async function chercherProduitOFFParCode(code) {
   // 2) Sinon, ce qu'on a déjà mangé avec ce code-barres (le plus rapide, hors ligne).
   if (!trouve) {
     const h = chercherHistoriqueParCode(code);
-    if (h) trouve = { name: h.nom, code, marque: '', kcal100: h.kcal100 || 0, p100: h.p100 || 0, c100: h.c100 || 0, f100: h.f100 || 0, source: 'ton historique' };
+    if (h) trouve = { name: h.nom, code, marque: '', kcal100: h.kcal100 || 0, p100: h.p100 || 0, c100: h.c100 || 0, f100: h.f100 || 0, unite: h.unite || 'g', sansDonneesNutrition: false, source: 'ton historique' };
   }
 
   // 3) Sinon, la base perso synchronisée (utile si scanné depuis un autre appareil).
@@ -4442,6 +4737,10 @@ async function chercherProduitOFFParCode(code) {
     document.getElementById('barcode-grams').value = 100;
     const src = document.getElementById('barcode-source');
     if (src) src.textContent = trouve.source ? `Trouvé dans : ${trouve.source}` : '';
+    // Le libellé annonce l'unité détectée (boisson -> ml) au lieu de
+    // laisser deviner : la valeur saisie ensuite reste ambiguë sinon.
+    const lblUnite = document.getElementById('barcode-grams-unite');
+    if (lblUnite) lblUnite.textContent = trouve.unite === 'ml' ? 'ml' : 'g';
     document.getElementById('barcode-result').classList.remove('hidden');
     return;
   }
@@ -4475,6 +4774,7 @@ async function chercherBaseParCode(code) {
       name: row[s.nom] || ('Produit ' + code), code: String(code), marque: '',
       kcal100: Math.round(nombreSouple(row[s.kcal])),
       p100: nombreSouple(row[s.prot]), c100: nombreSouple(row[s.gluc]), f100: nombreSouple(row[s.lip]),
+      sansDonneesNutrition: false,
       source: 'ta base perso'
     };
   } catch (e) { return null; }
@@ -4505,10 +4805,12 @@ function stopperScanner() {
 function ajouterAlimentBarcode() {
   if (!currentScannedFood) return;
   const g = nombreChamp('barcode-grams') || 100;
-  /* Beaucoup de fiches OpenFoodFacts n'ont aucune valeur nutritionnelle :
+  /* Certaines fiches OpenFoodFacts n'ont vraiment aucune donnée nutritionnelle :
      le produit etait alors ajoute a 0 kcal, ce qui fausse la journee en
-     silence. On previent et on propose de completer a la main. */
-  if (!(currentScannedFood.kcal100 > 0)) {
+     silence. On previent et on propose de completer a la main — mais
+     seulement quand la donnee est ABSENTE, pas quand 0 kcal est la vraie
+     valeur (une eau minérale scannée affiche alors ce message à tort). */
+  if (currentScannedFood.sansDonneesNutrition) {
     if (!confirm("Cette fiche OpenFoodFacts n'indique aucune calorie.\n\n"
       + "OK : ouvrir la saisie manuelle pour completer.\n"
       + "Annuler : revenir au scanner.")) return;
@@ -4526,10 +4828,16 @@ function ajouterAlimentBarcode() {
   const f = g / 100;
   addItemToMeal(activeMealId, {
     name: currentScannedFood.name, grams: g,
+    unite: currentScannedFood.unite || 'g',
     code: currentScannedFood.code || undefined,
     kcal: currentScannedFood.kcal100 * f, p: currentScannedFood.p100 * f,
     c: currentScannedFood.c100 * f, f: currentScannedFood.f100 * f
   });
+  // Un produit détecté en ml est une boisson : sa quantité compte aussi
+  // pour l'hydratation du jour, sans geste en plus. Compte toute boisson
+  // (pas seulement l'eau littérale) — soda, jus, lait apportent aussi de
+  // l'eau, même si l'alcool ou la caféine en atténuent un peu l'effet.
+  if (currentScannedFood.unite === 'ml') ajouterEau(Math.round(g));
   // Sans cet arrêt, la caméra restait allumée tant que l'onglet vivait :
   // batterie vidée, voyant allumé, décodage à 10 images/seconde en fond.
   stopperScanner();
@@ -4537,44 +4845,69 @@ function ajouterAlimentBarcode() {
 }
 
 // --- GEMINI VISION PHOTO ---
-function analyserPhotoGemini(event) {
+// Juste l'aperçu : ne lance plus l'analyse toute seule, pour laisser le
+// temps d'ajouter aussi une description avant d'appuyer sur "Analyser"
+// (ou de ne mettre aucune photo et de décrire le plat à la place).
+function previsualiserPhoto(event) {
   const file = event.target.files[0];
-  if (!file) return;
-  if (!geminiKey) { showAiError('Ajoute ta clé API Gemini dans ⚙️ Profil.'); return; }
+  const img = document.getElementById('preview-image');
+  if (!file) { img.classList.add('hidden'); img.removeAttribute('src'); return; }
   const reader = new FileReader();
-  reader.onload = async (e) => {
-    const dataUrl = e.target.result;
-    const img = document.getElementById('preview-image');
-    img.src = dataUrl; img.classList.remove('hidden');
-    document.getElementById('ai-results-container').classList.add('hidden');
-    document.getElementById('error-display').classList.add('hidden');
-    document.getElementById('ai-loader').classList.remove('hidden');
-    try {
-      const base64 = dataUrl.split(',')[1];
-      const desc = (document.getElementById('ai-description')?.value || '').trim();
-      const contexte = desc
-        ? "L'utilisateur precise : \"" + desc.replace(/"/g, "'") + "\". Tiens compte de ce descriptif en priorite sur ta seule lecture de l'image (recette, cuisson, marque, matieres grasses ajoutees). "
-        : "";
-      const prompt = contexte + "Analyse cette photo de repas. Renvoie UNIQUEMENT un tableau JSON (sans texte autour) des aliments visibles. Pour chaque aliment: {\"name\": string en français, \"grams\": number (portion estimée en g), \"kcal100\": number (kcal pour 100g), \"p100\": number, \"c100\": number, \"f100\": number}.";
-      const res = await geminiGenerate([
-        { text: prompt },
-        { inline_data: { mime_type: file.type || 'image/jpeg', data: base64 } }
-      ], 'photo');
-      const arr = parseJsonArray(res);
-      document.getElementById('ai-loader').classList.add('hidden');
-      if (!arr || !arr.length) { showAiError('Aucun aliment détecté.'); return; }
-      detectedBufferGemini = arr.map(a => ({
-        name: a.name || 'Aliment', grams: Number(a.grams) || 100,
-        kcal100: Number(a.kcal100) || 0, p100: Number(a.p100) || 0,
-        c100: Number(a.c100) || 0, f100: Number(a.f100) || 0
-      }));
-      renderDetectedRows();
-    } catch (err) {
-      document.getElementById('ai-loader').classList.add('hidden');
-      showAiError(messageIA(err));
-    }
-  };
+  reader.onload = (e) => { img.src = e.target.result; img.classList.remove('hidden'); };
   reader.readAsDataURL(file);
+}
+
+function fichierVersBase64(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = (e) => resolve(e.target.result.split(',')[1]);
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
+const PROMPT_JSON_ALIMENTS = "Renvoie UNIQUEMENT un tableau JSON (sans texte autour) des aliments. Pour chaque aliment: {\"name\": string en français, \"grams\": number (portion estimée en g), \"kcal100\": number (kcal pour 100g), \"p100\": number, \"c100\": number, \"f100\": number}.";
+
+/* Photo, description, ou les deux : les deux champs sont maintenant
+   indépendants (avant, seule une photo pouvait déclencher l'analyse — pas
+   moyen de dire à l'IA ce qu'on a mangé quand on n'a pas de photo). */
+async function analyserRepasGemini() {
+  if (!geminiKey) { showAiError('Ajoute ta clé API Gemini dans ⚙️ Profil.'); return; }
+  const file = document.getElementById('ai-file-input').files[0];
+  const desc = (document.getElementById('ai-description')?.value || '').trim();
+  if (!file && !desc) { showAiError('Ajoute une photo, une description, ou les deux.'); return; }
+
+  document.getElementById('ai-results-container').classList.add('hidden');
+  document.getElementById('error-display').classList.add('hidden');
+  document.getElementById('ai-loader').classList.remove('hidden');
+
+  try {
+    let prompt;
+    if (file && desc) {
+      prompt = "L'utilisateur precise : \"" + desc.replace(/"/g, "'") + "\". Tiens compte de ce descriptif en priorite sur ta seule lecture de l'image (recette, cuisson, marque, matieres grasses ajoutees). Analyse cette photo de repas. " + PROMPT_JSON_ALIMENTS;
+    } else if (file) {
+      prompt = "Analyse cette photo de repas. " + PROMPT_JSON_ALIMENTS;
+    } else {
+      // Pas de photo : l'IA n'a que la description pour estimer les aliments.
+      prompt = "Aucune photo n'est fournie. Voici uniquement la description par l'utilisateur de ce qu'il/elle a mangé : \"" + desc.replace(/"/g, "'") + "\". A partir de cette seule description, estime les aliments et leurs quantités probables. " + PROMPT_JSON_ALIMENTS;
+    }
+    const parts = [{ text: prompt }];
+    if (file) parts.push({ inline_data: { mime_type: file.type || 'image/jpeg', data: await fichierVersBase64(file) } });
+
+    const res = await geminiGenerate(parts, 'photo');
+    const arr = parseJsonArray(res);
+    document.getElementById('ai-loader').classList.add('hidden');
+    if (!arr || !arr.length) { showAiError('Aucun aliment détecté.'); return; }
+    detectedBufferGemini = arr.map(a => ({
+      name: a.name || 'Aliment', grams: Number(a.grams) || 100,
+      kcal100: Number(a.kcal100) || 0, p100: Number(a.p100) || 0,
+      c100: Number(a.c100) || 0, f100: Number(a.f100) || 0
+    }));
+    renderDetectedRows();
+  } catch (err) {
+    document.getElementById('ai-loader').classList.add('hidden');
+    showAiError(messageIA(err));
+  }
 }
 function renderDetectedRows() {
   document.getElementById('detected-ingredients-list').innerHTML = detectedBufferGemini.map((a, i) => `
@@ -4643,7 +4976,7 @@ async function lancerAnalyseJour() {
   const seanceMuscuDesc = resumeSeanceMuscuJour(currentDate);
 
   const prompt = `Tu es un coach nutrition & sport haut de gamme. Analyse cette journée et donne un clair, motivant et actionnable en français (max 180 mots, sans markdown).
-Objectif: ${t.goal}. Poids: ${t.poids} kg. Pas: ${day.steps}. Sports: ${workoutsDesc}.${seanceMuscuDesc ? `
+Objectif: ${t.goal}. Poids: ${t.poids} kg. Pas: ${day.steps}. Eau bue: ${Number(day.eauMl) || 0} / ${quotaEauSuggere(currentDate)} ml. Sports: ${workoutsDesc}.${seanceMuscuDesc ? `
 Détail de la séance de musculation du jour: ${seanceMuscuDesc}.` : ''}
 Calories consommées: ${totals.kcal} / objectif ${t.target} kcal. Protéines ${totals.p}/${t.protein}g, Glucides ${totals.c}/${t.carbs}g, Lipides ${totals.f}/${t.fat}g.`;
   try {
@@ -4805,7 +5138,8 @@ function parseJsonArray(text) {
 function buildMasterArrays() {
   globalMasterLabels = []; globalMasterConsumed = []; globalMasterTarget = [];
   globalMasterProtein = []; globalMasterCarbs = []; globalMasterFat = [];
-  globalMasterSteps = []; globalMasterWorkoutData = {};
+  globalMasterSteps = []; globalMasterWorkoutData = {}; globalMasterEauBue = [];
+  globalMasterEauObjectif = [];
   globalMasterWeight = []; globalMasterRempli = []; globalMasterSportMin = [];
   globalMasterGrasse = []; globalMasterMuscle = []; globalMasterOs = []; globalMasterEau = [];
 
@@ -4818,6 +5152,10 @@ function buildMasterArrays() {
     const ds = shiftDate(todayStr(), -i);
     const d = appData[ds];
     globalMasterLabels.push(new Date(ds + 'T12:00:00').toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit' }));
+    // Contrairement à l'objectif calorique, celui-ci ne dépend pas d'avoir
+    // mangé ce jour-là — juste du poids connu à cette date, de l'âge/sexe
+    // du profil et du sport loggé ce jour : calculable même sans repas saisi.
+    globalMasterEauObjectif.push(quotaEauSuggere(ds));
 
     const dailySportMinutes = {};
     let minutesJour = 0;
@@ -4827,6 +5165,7 @@ function buildMasterArrays() {
       globalMasterConsumed.push(totals.kcal); globalMasterTarget.push(t.target);
       globalMasterProtein.push(totals.p); globalMasterCarbs.push(totals.c); globalMasterFat.push(totals.f);
       globalMasterSteps.push(Number(d.steps) || 0);
+      globalMasterEauBue.push(Number(d.eauMl) || 0);
 
       /* Une journée « renseignée » est une journée où quelque chose a été mangé.
          Sans ce drapeau, les moyennes étaient calculées sur 180 jours dont la
@@ -4863,6 +5202,7 @@ function buildMasterArrays() {
       globalMasterConsumed.push(null); globalMasterTarget.push(null);
       globalMasterProtein.push(null); globalMasterCarbs.push(null); globalMasterFat.push(null);
       globalMasterSteps.push(null);
+      globalMasterEauBue.push(null);
       globalMasterRempli.push(false);
       globalMasterWeight.push(null);
       globalMasterGrasse.push(null);
@@ -4880,6 +5220,7 @@ function buildMasterArrays() {
 
 let globalMasterLabels = [], globalMasterConsumed = [], globalMasterTarget = [];
 let globalMasterProtein = [], globalMasterCarbs = [], globalMasterFat = [], globalMasterSteps = [];
+let globalMasterEauBue = [], globalMasterEauObjectif = [];
 let globalMasterWorkoutData = {};
 let globalMasterWeight = [], globalMasterRempli = [], globalMasterSportMin = [];
 let globalMasterGrasse = [], globalMasterMuscle = [], globalMasterOs = [], globalMasterEau = [];
@@ -4958,6 +5299,8 @@ function bilanPeriode(s, e) {
     poidsDebut, poidsFin, poidsRef,
     protParKg: (poidsRef > 0 && prot.length) ? avg(prot) / poidsRef : null,
     moyPas: Math.round(avg(idx.filter(i => globalMasterRempli[i]).map(i => globalMasterSteps[i]))),
+    moyEau: Math.round(avg(idx.filter(i => globalMasterRempli[i]).map(i => globalMasterEauBue[i]))),
+    moyEauObjectif: Math.round(avg(idx.filter(i => globalMasterRempli[i]).map(i => globalMasterEauObjectif[i]))),
     dansLaCible,
     partCible: remplis.length ? Math.round(dansLaCible / remplis.length * 100) : 0,
     minutesSport, joursSport,
@@ -5019,7 +5362,10 @@ function afficherChiffresCles(s, e) {
     { lbl: 'Entraînement', val: b.minutesParSemaine + ' min/sem.',
       cls: b.minutesParSemaine >= 150 ? 'pos' : '',
       sous: b.joursSport + ' jours actifs' + (b.minutesParSemaine >= 150 ? ' — recommandation OMS atteinte' : '') },
-    { lbl: 'Pas / jour', val: b.moyPas.toLocaleString('fr-FR'), sous: 'Moyenne sur les jours renseignés' }
+    { lbl: 'Pas / jour', val: b.moyPas.toLocaleString('fr-FR'), sous: 'Moyenne sur les jours renseignés' },
+    { lbl: 'Eau / jour', val: b.moyEau.toLocaleString('fr-FR') + ' ml',
+      cls: b.moyEau >= b.moyEauObjectif ? 'pos' : '',
+      sous: 'Objectif moyen sur la période : ' + b.moyEauObjectif.toLocaleString('fr-FR') + ' ml/jour' }
   ];
 
   g.innerHTML = '';
@@ -5328,6 +5674,18 @@ function renderCharts(s, e) {
     data: { labels, datasets: [
       { label: 'Pas', data: globalMasterSteps.slice(s, e + 1), borderColor: cPrimaire, backgroundColor: 'rgba(0,200,120,0.14)', tension: 0.35, fill: true, pointRadius: 0, borderWidth: 2, spanGaps: false }
     ] }, options: baseOpts
+  });
+
+  // Même logique que le graphique Calories : la valeur réelle en aire pleine,
+  // l'objectif en pointillés — sauf qu'ici l'objectif varie lui aussi jour
+  // après jour (poids, âge, sport de ce jour-là), plutôt qu'une ligne plate.
+  if (eauChartInstance) eauChartInstance.destroy();
+  eauChartInstance = new Chart(document.getElementById('eauChart'), {
+    type: 'line',
+    data: { labels, datasets: [
+      { label: 'Eau bue', data: globalMasterEauBue.slice(s, e + 1), borderColor: cPrimaire, backgroundColor: 'rgba(0,200,120,0.14)', tension: 0.35, fill: true, pointRadius: 0, borderWidth: 2, spanGaps: false },
+      { label: 'Objectif', data: globalMasterEauObjectif.slice(s, e + 1), borderColor: cAccent, borderDash: [5, 5], tension: 0.35, pointRadius: 0, fill: false, borderWidth: 2 }
+    ] }, options: optionsGraphiqueBase(p, { avecLegende: true })
   });
 
   if (workoutChartInstance) workoutChartInstance.destroy();
@@ -5765,14 +6123,34 @@ function initAuth() {
     // même pour quelqu'un déjà connecté, le temps que la réponse arrive.
     verifierConnexionObligatoire();
   });
-  supa.auth.onAuthStateChange((_event, session) => {
+  supa.auth.onAuthStateChange((event, session) => {
     definirSessionUtilisateur(session ? session.user : null);
+    // Lien de réinitialisation cliqué dans l'email : Supabase établit une
+    // session temporaire et signale l'événement plutôt qu'une simple
+    // connexion. On ouvre directement la saisie du nouveau mot de passe —
+    // sans ça, la personne se retrouverait connectée sans le savoir, avec
+    // toujours son ancien mot de passe (celui-là même qu'elle a oublié).
+    if (event === 'PASSWORD_RECOVERY') ouvrirModal('modal-nouveau-mdp');
   });
 }
 
 function definirSessionUtilisateur(user) {
   const etaitConnecte = !!sessionUtilisateur;
   sessionUtilisateur = user ? { id: user.id, email: user.email } : null;
+
+  // Téléphone partagé entre deux comptes : si les données encore en mémoire
+  // appartiennent à quelqu'un d'autre, les garder les aurait fait remonter
+  // vers CE compte à la prochaine synchro (les deux comptes utilisent
+  // souvent les mêmes dates de journée). On repart d'un stockage vide avant
+  // même la première synchro de ce compte-ci — elle re-téléchargera ses
+  // propres données juste après.
+  if (sessionUtilisateur) {
+    let compteLocalPrecedent = null;
+    try { compteLocalPrecedent = localStorage.getItem(MUSCU_COMPTE_LOCAL_LS); } catch (e) {}
+    if (compteLocalPrecedent && compteLocalPrecedent !== sessionUtilisateur.id) viderDonneesLocales();
+    try { localStorage.setItem(MUSCU_COMPTE_LOCAL_LS, sessionUtilisateur.id); } catch (e) {}
+  }
+
   majUICompte();
   if (sessionUtilisateur) {
     // Une connexion réussie referme la gate toute seule : sans ça, la
@@ -5793,6 +6171,30 @@ function definirSessionUtilisateur(user) {
   // Le changement d'identifiant ne rejoue pas automatiquement les données
   // déjà en mémoire : on relance juste une synchro vers/depuis le bon compte.
   if (!!sessionUtilisateur !== etaitConnecte) synchroniser(sessionUtilisateur ? 'connexion' : 'deconnexion');
+}
+
+/* Efface les données de CET APPAREIL (pas le compte distant) : repas, poids,
+   séances, programmes de musculation. Utilisée à la déconnexion — une fois
+   les dernières modifications bien transférées — et à la détection d'un
+   changement de compte sur un téléphone partagé, pour qu'aucun repas ou
+   poids d'une personne ne traîne visible pour la suivante, ni ne se
+   retrouve poussé par erreur vers son compte à elle. */
+function viderDonneesLocales() {
+  appData = {};
+  userProfile = { height: 175, age: 25, gender: 'm', weight: 70 };
+  musculationProgrammes = []; musculationHistorique = []; musculationExosPerso = [];
+  try {
+    localStorage.removeItem(STORAGE_KEY);
+    localStorage.removeItem(PROFILE_KEY);
+    localStorage.removeItem(MUSCU_PROGRAMMES_KEY);
+    localStorage.removeItem(MUSCU_HISTORIQUE_KEY);
+    localStorage.removeItem(MUSCU_EXOS_PERSO_KEY);
+    localStorage.removeItem(MUSCU_COMPTE_LOCAL_LS);
+  } catch (e) {}
+  invaliderHistorique();
+  renderApp();
+  if (ecranActif === 'stats') prepareStats();
+  if (ecranActif === 'seance') renderSeance();
 }
 
 /* Un compte suspendu ou marqué supprimé garde des identifiants valides côté
@@ -5891,10 +6293,12 @@ async function connexionCompte() {
 
 /* Bouton unique "Se connecter" de la modale de compte : tente une connexion
    normale, et si l'adresse/mot de passe ne correspond à aucun compte
-   existant, propose de créer le compte plutôt que de se contenter d'une
-   erreur — l'ancien bouton séparé "Créer un compte" passait inaperçu, la
-   plupart des gens cliquant par réflexe sur le bouton vert même pour un
-   tout premier compte. */
+   existant, crée le compte automatiquement plutôt que de se contenter
+   d'une erreur — l'ancien bouton séparé "Créer un compte" passait
+   inaperçu, la plupart des gens cliquant par réflexe sur le bouton vert
+   même pour un tout premier compte. Si l'adresse a en fait déjà un compte
+   et que c'est le mot de passe qui est faux, propose de le réinitialiser
+   par email plutôt que d'en créer un second. */
 async function connexionOuCreerCompte() {
   if (!supa) { alert("Renseigne d'abord l'URL et la clé du projet Supabase (section Synchronisation) : la connexion utilise le même projet."); return; }
   const email = (document.getElementById('compte-email-input').value || '').trim();
@@ -5922,18 +6326,16 @@ async function connexionOuCreerCompte() {
     // Supabase renvoie volontairement la même erreur générique ("Invalid
     // login credentials") que l'adresse soit inconnue OU que le mot de
     // passe soit faux, pour ne pas révéler quelles adresses ont un compte.
-    // On ne peut donc distinguer les deux cas qu'en tentant signUp() ensuite.
+    // On ne peut donc distinguer les deux cas qu'en tentant signUp() ensuite :
+    // sur une adresse qui a déjà un compte confirmé, signUp() ne crée rien
+    // et renvoie identities vide plutôt qu'une erreur.
     if (!/invalid login credentials/i.test(error.message || '')) throw error;
   } catch (e) { if (note) note.textContent = messageAuth(e); return; }
 
-  if (!(await demanderCreationCompte(email))) {
-    if (note) note.textContent = 'Adresse ou mot de passe incorrect.';
-    return;
-  }
-
-  if (note) note.textContent = 'Création du compte…';
+  if (note) note.textContent = 'Vérification…';
+  let sonde;
   try {
-    const { data, error } = await supa.auth.signUp({
+    sonde = await supa.auth.signUp({
       email, password: mdp,
       // Sans ceci, le lien de confirmation envoyé par email renvoie vers
       // l'URL "Site URL" configurée côté tableau de bord Supabase, qui ne
@@ -5943,30 +6345,55 @@ async function connexionOuCreerCompte() {
       // Configuration), sinon Supabase l'ignore et retombe sur Site URL.
       options: { emailRedirectTo: window.location.origin + window.location.pathname }
     });
-    if (error) throw error;
-    // data.user.identities est vide quand l'adresse a déjà un compte
-    // confirmé : signUp() ne le signale pas par une erreur explicite (même
-    // logique anti-énumération que signInWithPassword ci-dessus), c'est le
-    // seul moyen fiable de détecter ce cas après coup.
-    if (data.user && data.user.identities && data.user.identities.length === 0) {
-      if (note) note.textContent = 'Un compte existe déjà avec cette adresse : le mot de passe saisi est incorrect.';
-      return;
-    }
-    if (data.session) {
-      // Confirmation par email désactivée côté Supabase : le compte est
-      // actif immédiatement, la session est déjà valide.
-      if (note) note.textContent = '';
-      memoriser();
-      document.getElementById('compte-mdp-input').value = '';
-    } else {
-      if (note) note.textContent = 'Compte créé : vérifie ta boîte mail pour confirmer ton adresse, puis reviens te connecter avec ce même mot de passe.';
-    }
-  } catch (e) { if (note) note.textContent = messageAuth(e); }
+    if (sonde.error) throw sonde.error;
+  } catch (e) { if (note) note.textContent = messageAuth(e); return; }
+
+  // data.user.identities est vide quand l'adresse a déjà un compte confirmé :
+  // le mot de passe saisi est donc le vrai coupable, pas une adresse inconnue.
+  // On ne propose plus jamais "créer un compte" dans ce cas — ce serait faux
+  // et trompeur — mais la réinitialisation du mot de passe.
+  const compteExisteDeja = !!(sonde.data.user && sonde.data.user.identities && sonde.data.user.identities.length === 0);
+  if (compteExisteDeja) {
+    if (note) note.textContent = 'Adresse ou mot de passe incorrect.';
+    if (!(await demanderResetMdp(email))) return;
+    if (note) note.textContent = 'Envoi en cours…';
+    try {
+      const { error: errReset } = await supa.auth.resetPasswordForEmail(email, {
+        redirectTo: window.location.origin + window.location.pathname
+      });
+      if (errReset) throw errReset;
+      if (note) note.textContent = `Email envoyé à ${email} : suis le lien pour choisir un nouveau mot de passe.`;
+    } catch (e) { if (note) note.textContent = messageAuth(e); }
+    return;
+  }
+
+  // Vraiment une nouvelle adresse : le signUp() ci-dessus vient de créer le
+  // compte (impossible de demander confirmation avant : tant qu'on ignore
+  // lequel des deux cas c'est, il faut déjà avoir appelé signUp() pour le
+  // savoir).
+  if (sonde.data.session) {
+    // Confirmation par email désactivée côté Supabase : le compte est
+    // actif immédiatement, la session est déjà valide.
+    if (note) note.textContent = '';
+    memoriser();
+    document.getElementById('compte-mdp-input').value = '';
+  } else {
+    if (note) note.textContent = 'Compte créé : vérifie ta boîte mail pour confirmer ton adresse, puis reviens te connecter avec ce même mot de passe.';
+  }
 }
 
 async function deconnexionCompte() {
   if (!supa) return;
+  // On force un dernier envoi avant de couper : sans ça, une modification
+  // faite dans les 2,5 dernières secondes (le délai de planifierSync)
+  // pourrait ne pas être encore partie vers le serveur au moment où on
+  // vide l'appareil juste après.
+  try { await synchroniser('avant-deconnexion'); } catch (e) {}
   try { await supa.auth.signOut(); } catch (e) {}
+  // Téléphone partagé entre plusieurs comptes : une fois les données bien
+  // transférées, on ne laisse plus les repas/poids de cette personne
+  // traîner sur l'appareil pour la suivante.
+  viderDonneesLocales();
 }
 
 function oublierIdentifiants() {
@@ -6621,32 +7048,62 @@ function annulerMotif() {
 }
 
 /* =====================================================================
-   COMPTE — confirmation de création (remplace confirm())
-   Le confirm() natif affiche systématiquement l'origine du site
-   ("boulidjamal-lang.github.io indique"), impossible à retirer ou
-   personnaliser (protection anti-phishing intégrée au navigateur). Cette
-   fenêtre "maison", à l'apparence de l'appli, n'a pas cette limite.
-   ===================================================================== */
-let creerCompteResolve = null;
+   COMPTE — confirmation avant envoi de l'email de réinitialisation
+   (remplace confirm()). Le confirm() natif affiche systématiquement
+   l'origine du site ("boulidjamal-lang.github.io indique"), impossible à
+   retirer ou personnaliser (protection anti-phishing intégrée au
+   navigateur). Cette fenêtre "maison", à l'apparence de l'appli, n'a pas
+   cette limite.
+   Cette modale servait à l'origine à confirmer la CRÉATION d'un compte —
+   mais on ne peut distinguer "adresse inconnue" de "mot de passe incorrect"
+   qu'après avoir déjà appelé signUp() (voir connexionOuCreerCompte), donc
+   le compte est déjà créé au moment où on le saurait : plus rien à
+   confirmer dans ce cas. Elle ne sert plus qu'à confirmer l'envoi de
+   l'email de réinitialisation quand le mot de passe est incorrect. */
+let confirmCompteResolve = null;
 
-function demanderCreationCompte(email) {
+function demanderResetMdp(email) {
   const modal = document.getElementById('modal-creer-compte');
   const texte = document.getElementById('creer-compte-texte');
   if (!modal) return Promise.resolve(false);
-  if (texte) texte.innerHTML = `Aucun compte n'est associé à <strong>${escapeHtml(email)}</strong>.<br><br>Souhaitez-vous créer un compte avec cette adresse et ce mot de passe ?`;
+  if (texte) texte.innerHTML = `Le mot de passe saisi ne correspond pas au compte <strong>${escapeHtml(email)}</strong>.<br><br>Recevoir un email pour en choisir un nouveau ?`;
   modal.classList.add('show');
   majCoucheOuverte();
-  return new Promise(res => { creerCompteResolve = res; });
+  return new Promise(res => { confirmCompteResolve = res; });
 }
 
-function validerCreationCompte() {
+function validerConfirmationCompte() {
   fermerModal('modal-creer-compte');
-  if (creerCompteResolve) { creerCompteResolve(true); creerCompteResolve = null; }
+  if (confirmCompteResolve) { confirmCompteResolve(true); confirmCompteResolve = null; }
 }
 
-function annulerCreationCompte() {
+function annulerConfirmationCompte() {
   fermerModal('modal-creer-compte');
-  if (creerCompteResolve) { creerCompteResolve(false); creerCompteResolve = null; }
+  if (confirmCompteResolve) { confirmCompteResolve(false); confirmCompteResolve = null; }
+}
+
+async function validerNouveauMdp() {
+  const mdp = document.getElementById('nouveau-mdp-input').value || '';
+  const note = document.getElementById('note-nouveau-mdp');
+  if (mdp.length < 6) { if (note) note.textContent = 'Mot de passe trop court (6 caractères minimum).'; return; }
+  if (note) note.textContent = 'Enregistrement…';
+  try {
+    const { error } = await supa.auth.updateUser({ password: mdp });
+    if (error) throw error;
+    fermerModal('modal-nouveau-mdp');
+    document.getElementById('nouveau-mdp-input').value = '';
+    if (note) note.textContent = '';
+    alert('Mot de passe mis à jour : tu es connecté avec ce nouveau mot de passe.');
+  } catch (e) { if (note) note.textContent = messageAuth(e); }
+}
+
+// Le lien reçu par email ouvre une session de récupération temporaire :
+// annuler doit la refermer, sinon l'appareil resterait connecté sans que
+// la personne ait choisi de nouveau mot de passe ni reconnu ce compte.
+function annulerNouveauMdp() {
+  fermerModal('modal-nouveau-mdp');
+  document.getElementById('nouveau-mdp-input').value = '';
+  try { supa.auth.signOut(); } catch (e) {}
 }
 
 /* =====================================================================
@@ -10030,9 +10487,9 @@ function fermerBackdropSiCible(target) {
     if (target.id === 'barcode-modal') stopperScanner();
     if (target.id === 'fiche-exercice-modal') arreterAnimationFiche();
     // Sans ça, un clic sur le fond laisse la promesse de
-    // demanderCreationCompte() sans réponse pour toujours : le bouton "Se
+    // demanderResetMdp() sans réponse pour toujours : le bouton "Se
     // connecter" resterait bloqué sur "Connexion en cours…".
-    if (target.id === 'modal-creer-compte' && creerCompteResolve) { creerCompteResolve(false); creerCompteResolve = null; }
+    if (target.id === 'modal-creer-compte' && confirmCompteResolve) { confirmCompteResolve(false); confirmCompteResolve = null; }
     target.classList.remove('show');
     majCoucheOuverte();
     return true;
@@ -10080,7 +10537,7 @@ window.addEventListener('keydown', (e) => {
     if (dessus.id === 'modal-bienvenue' && bilanForce) return;
     if (dessus.id === 'barcode-modal') stopperScanner();
     if (dessus.id === 'fiche-exercice-modal') arreterAnimationFiche();
-    if (dessus.id === 'modal-creer-compte' && creerCompteResolve) { creerCompteResolve(false); creerCompteResolve = null; }
+    if (dessus.id === 'modal-creer-compte' && confirmCompteResolve) { confirmCompteResolve(false); confirmCompteResolve = null; }
     dessus.classList.remove('show');
     majCoucheOuverte();
     return;
@@ -10107,6 +10564,7 @@ window.addEventListener('load', () => {
   document.getElementById('base-gender').value = userProfile.gender;
   document.getElementById('base-age').value = userProfile.age;
   document.getElementById('base-height').value = userProfile.height;
+  majAffichageObjectifEau();
 
   const cs = confSupabase();
   document.getElementById('supa-url').value = localStorage.getItem(SUPA_URL_LS) || '';
