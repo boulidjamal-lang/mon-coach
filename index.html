@@ -181,7 +181,12 @@
 
       --verre: rgba(255, 255, 255, 0.055);
       --verre-fort: rgba(255, 255, 255, 0.10);
-      --verre-creux: rgba(0, 0, 0, 0.28);
+      /* Noir sur fond quasi noir : sans la bordure qu'ils avaient avant
+         (retirée avec les liserés), tous les éléments posés sur ce fond
+         (cases, puces, champs…) devenaient invisibles en thème sombre.
+         Une pointe de blanc au lieu du noir leur redonne un contour lisible,
+         comme .verre/.verre-fort, en restant le plus discret des trois. */
+      --verre-creux: rgba(255, 255, 255, 0.06);
       --verre-brd: rgba(255, 255, 255, 0.11);
       --verre-brd-vive: rgba(255, 255, 255, 0.18);
       --verre-hi: rgba(255, 255, 255, 0.20);
@@ -474,7 +479,7 @@
       background: var(--verre-sheen), var(--verre);
       -webkit-backdrop-filter: blur(var(--verre-flou)) saturate(var(--verre-sat));
       backdrop-filter: blur(var(--verre-flou)) saturate(var(--verre-sat));
-      border: 1px solid var(--verre-brd);
+      border: 0;
       box-shadow: var(--ombre),
                   inset 0 1px 0 var(--verre-hi),
                   inset 0 -1px 0 var(--verre-lo);
@@ -503,23 +508,23 @@
     .app-bar h2 .eclair { color: var(--primary); }
     .header-buttons { display: flex; gap: 8px; }
 
+    /* Aplati au même niveau que .filtre-chip/.chip-code : plus de flou
+       vitreux ni de reliefs (box-shadow), juste un fond plat et un liseré
+       léger — l'ancien traitement "verre embouti" faisait plus lourd que
+       tout le reste des petites puces de l'appli, pas plus beau. */
     .btn-icone {
       min-width: 42px; height: 42px; padding: 0 12px;
       display: inline-flex; align-items: center; justify-content: center; gap: 6px;
-      background: var(--verre-sheen), var(--verre-fort);
-      -webkit-backdrop-filter: blur(var(--verre-flou-doux)) saturate(var(--verre-sat));
-      backdrop-filter: blur(var(--verre-flou-doux)) saturate(var(--verre-sat));
-      border: 1px solid var(--verre-brd);
-      box-shadow: inset 0 1px 0 var(--verre-hi), inset 0 -1px 0 var(--verre-lo);
-      color: var(--text);
-      border-radius: 13px; font-weight: 600; cursor: pointer; font-size: 0.9rem;
+      background: var(--verre-creux); border: 0;
+      color: var(--text-muted);
+      border-radius: 13px; font-weight: 700; cursor: pointer; font-size: 0.9rem;
       font-family: inherit;
-      transition: transform 0.2s cubic-bezier(0.16,1,0.3,1), border-color 0.2s, background 0.2s, box-shadow 0.2s;
+      transition: background 0.2s, border-color 0.2s, color 0.2s;
     }
-    .btn-icone:hover { border-color: var(--verre-brd-vive); transform: translateY(-1px); box-shadow: var(--ombre), inset 0 1px 0 var(--verre-hi), inset 0 -1px 0 var(--verre-lo); }
-    .btn-icone:active { transform: translateY(0) scale(0.97); }
+    .btn-icone:hover { color: var(--text); }
+    .btn-icone:active { transform: scale(0.97); }
     /* Anneau vert discret : signale un compte connecté sans avoir a ouvrir la modale. */
-    .btn-icone.compte-actif { border-color: var(--primary); box-shadow: 0 0 0 2px var(--primary-glow), inset 0 1px 0 var(--verre-hi), inset 0 -1px 0 var(--verre-lo); }
+    .btn-icone.compte-actif { border-color: var(--primary); box-shadow: 0 0 0 2px var(--primary-glow); }
 
     /* --- BARRE DE DATE --- */
     .date-nav {
@@ -527,7 +532,7 @@
       background: var(--verre-sheen), var(--verre);
       -webkit-backdrop-filter: blur(var(--verre-flou-doux)) saturate(var(--verre-sat));
       backdrop-filter: blur(var(--verre-flou-doux)) saturate(var(--verre-sat));
-      border: 1px solid var(--verre-brd);
+      border: 0;
       box-shadow: var(--ombre), inset 0 1px 0 var(--verre-hi);
       padding: 6px 8px; border-radius: 16px; margin: 14px 0 16px;
     }
@@ -537,7 +542,7 @@
       border: 1px solid transparent; font-size: 1.1rem; cursor: pointer;
       border-radius: 12px; transition: background 0.2s, border-color 0.2s;
     }
-    .date-nav button:hover { background: var(--verre-fort); border-color: var(--verre-brd); }
+    .date-nav button:hover { background: var(--verre-fort); }
     .date-display { font-weight: 700; font-size: 0.95rem; letter-spacing: 0.3px; }
     #btn-aujourdhui {
       font-size: 0.68rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.8px;
@@ -569,7 +574,7 @@
       background: var(--verre-sheen), var(--verre-fort);
       -webkit-backdrop-filter: blur(var(--verre-flou)) saturate(var(--verre-sat));
       backdrop-filter: blur(var(--verre-flou)) saturate(var(--verre-sat));
-      border: 1px solid var(--verre-brd);
+      border: 0;
       box-shadow: var(--ombre-haute), inset 0 1px 0 var(--verre-hi), inset 0 -1px 0 var(--verre-lo);
       padding: 24px 20px; border-radius: 24px; text-align: center; margin-bottom: 16px;
       position: relative; overflow: hidden;
@@ -591,7 +596,7 @@
     .macros-bar {
       display: flex; justify-content: space-around;
       background: var(--verre-creux);
-      border: 1px solid var(--verre-brd);
+      border: 0;
       box-shadow: inset 0 1px 0 var(--verre-lo);
       padding: 12px; border-radius: 16px;
     }
@@ -620,14 +625,14 @@
       background: var(--verre-sheen), var(--verre);
       -webkit-backdrop-filter: blur(var(--verre-flou)) saturate(var(--verre-sat));
       backdrop-filter: blur(var(--verre-flou)) saturate(var(--verre-sat));
-      border: 1px solid var(--verre-brd);
+      border: 0;
       border-radius: var(--rayon);
       padding: var(--densite-pad);
       margin-bottom: var(--densite-gap);
       box-shadow: var(--ombre), inset 0 1px 0 var(--verre-hi), inset 0 -1px 0 var(--verre-lo);
       transition: border-color 0.3s, transform 0.3s cubic-bezier(0.16,1,0.3,1), box-shadow 0.3s;
     }
-    .daily-questionnaire:hover, .fitness-card:hover, .analysis-card:hover, .meal-card:hover { border-color: var(--verre-brd-vive); transform: translateY(-2px); box-shadow: var(--ombre-haute), inset 0 1px 0 var(--verre-hi), inset 0 -1px 0 var(--verre-lo); }
+    .daily-questionnaire:hover, .fitness-card:hover, .analysis-card:hover, .meal-card:hover { transform: translateY(-2px); box-shadow: var(--ombre-haute), inset 0 1px 0 var(--verre-hi), inset 0 -1px 0 var(--verre-lo); }
     .daily-questionnaire h3, .fitness-card h3, .analysis-card h3 {
       margin-top: 0; margin-bottom: 14px; font-size: 0.85rem; font-weight: 700;
       color: var(--text); letter-spacing: 0.8px; text-transform: uppercase;
@@ -640,7 +645,7 @@
     }
     .meal-title { font-weight: 700; font-size: 0.98rem; letter-spacing: 0.2px; }
     .meal-kcals {
-      background: var(--verre-creux); border: 1px solid var(--verre-brd);
+      background: var(--verre-creux); border: 0;
       color: var(--primary); padding: 5px 12px; border-radius: 20px;
       font-weight: 700; font-size: 0.78rem; white-space: nowrap;
     }
@@ -663,11 +668,11 @@
       font-size: 0.68rem; letter-spacing: 0.4px;
       padding: 2px 7px; min-height: 22px;
       border-radius: 7px; cursor: pointer;
-      background: var(--verre-creux); border: 1px solid var(--verre-brd);
+      background: var(--verre-creux); border: 0;
       color: var(--text-muted);
       transition: color 0.2s, border-color 0.2s, background 0.2s;
     }
-    .chip-code:hover, .chip-code:focus-visible { color: var(--text); border-color: var(--verre-brd-vive); }
+    .chip-code:hover, .chip-code:focus-visible { color: var(--text); }
     .chip-code.copie { color: var(--primary); border-color: var(--primary); }
     .food-macros { font-size: 0.7rem; display: flex; gap: 8px; margin-top: 2px; }
     :root[data-densite="compact"] .food-macros { display: none; }
@@ -690,11 +695,11 @@
       border-radius: 11px; transition: background 0.2s, border-color 0.2s;
       font-family: inherit;
     }
-    .btn-delete:hover, .btn-delete:focus-visible { background: var(--verre-fort); border-color: var(--verre-brd); }
+    .btn-delete:hover, .btn-delete:focus-visible { background: var(--verre-fort); }
 
     .btn-ajout-repas {
       width: 100%; margin-top: 12px; min-height: 42px;
-      background: var(--verre-creux); border: 1px dashed var(--verre-brd-vive);
+      background: var(--verre-creux); border: 0;
       color: var(--text); border-radius: 13px; font-weight: 700; font-size: 0.82rem;
       cursor: pointer; font-family: inherit; letter-spacing: 0.3px;
       transition: background 0.2s, border-color 0.2s, transform 0.2s;
@@ -705,7 +710,7 @@
     .meal-buttons { display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap; }
     .btn-action {
       padding: 11px 12px; min-height: 42px;
-      border: 1px solid var(--verre-brd); border-radius: 13px;
+      border: 0; border-radius: 13px;
       font-weight: 700; font-size: 0.76rem; cursor: pointer; flex: 1; min-width: 92px;
       text-align: center; font-family: inherit; letter-spacing: 0.3px;
       background: var(--verre-fort); color: var(--text);
@@ -733,11 +738,18 @@
        sur les conteneurs qui, eux, ont le droit de défiler (voir
        .modal-content et .feuille-contenu plus bas). */
     body.couche-ouverte { overflow: hidden; touch-action: none; }
+    /* Fondu radial plutôt qu'un liseré : le vert reste net au centre (comme
+       avant) et s'assombrit vers le bord, au lieu d'un aplat de couleur
+       cerné d'un contour. Le dernier palier ne va pas jusqu'au noir pur :
+       en thème sombre, un bord qui rejoint #000 se fond entièrement dans
+       le fond de page (quasi noir lui aussi) et le bouton perd tout
+       contour visible — il garde donc une pointe de vert jusqu'au bord. */
     .fab {
-      width: 60px; height: 60px; border-radius: 21px; border: 1px solid var(--verre-brd);
-      background: var(--primary); color: var(--primary-txt);
+      width: 60px; height: 60px; border-radius: 21px; border: none;
+      background: radial-gradient(circle at 50% 42%, var(--primary) 0%, var(--primary) 40%, color-mix(in srgb, var(--primary) 55%, #000) 75%, color-mix(in srgb, var(--primary) 30%, #000) 100%);
+      color: var(--primary-txt);
       font-size: 1.5rem; line-height: 1; cursor: pointer;
-      box-shadow: 0 14px 34px var(--primary-glow), inset 0 1px 0 rgba(255,255,255,0.35);
+      box-shadow: 0 14px 34px var(--primary-glow);
       display: flex; align-items: center; justify-content: center;
       transition: transform 0.32s cubic-bezier(0.16,1,0.3,1), box-shadow 0.3s;
       font-family: inherit;
@@ -749,20 +761,20 @@
       display: flex; flex-direction: column; align-items: flex-end; gap: 9px;
       pointer-events: none;
     }
+    /* Plus de pastille de verre par bouton : le fond sombre (#scrim, voir
+       plus bas) porte déjà largement assez le texte pour qu'il se lise
+       seul — la boîte vitrée en plus par-dessus faisait surtout du bruit
+       visuel, avec cinq boutons empilés à l'ouverture. */
     .fab-action {
-      display: flex; align-items: center; gap: 11px; white-space: nowrap;
-      padding: 11px 17px; min-height: 46px; border-radius: 16px;
-      background: var(--verre-fort);
-      -webkit-backdrop-filter: blur(var(--verre-flou)) saturate(var(--verre-sat));
-      backdrop-filter: blur(var(--verre-flou)) saturate(var(--verre-sat));
-      border: 1px solid var(--verre-brd);
-      box-shadow: var(--ombre), inset 0 1px 0 var(--verre-hi);
-      color: var(--text); font-family: inherit; font-weight: 700; font-size: 0.85rem;
+      display: flex; align-items: center; gap: 10px; white-space: nowrap;
+      padding: 11px 6px; min-height: 46px; border: 0; background: none; box-shadow: none;
+      color: #fff; text-shadow: 0 1px 8px rgba(0,0,0,0.5);
+      font-family: inherit; font-weight: 700; font-size: 0.92rem;
       cursor: pointer; opacity: 0; transform: translateY(12px) scale(0.94);
-      transition: opacity 0.22s ease, transform 0.3s cubic-bezier(0.16,1,0.3,1), border-color 0.2s;
+      transition: opacity 0.22s ease, transform 0.3s cubic-bezier(0.16,1,0.3,1), color 0.2s;
     }
-    .fab-action .ic { font-size: 1.1rem; }
-    .fab-action[aria-current="page"] { border-color: var(--primary); color: var(--primary); }
+    .fab-action .ic { font-size: 1.15rem; }
+    .fab-action[aria-current="page"] { color: var(--primary); }
     .fab-zone.ouvert .fab-actions { pointer-events: auto; }
     .fab-zone.ouvert .fab-action { opacity: 1; transform: none; }
     .fab-zone.ouvert .fab-action:nth-child(4) { transition-delay: 0.02s; }
@@ -793,7 +805,7 @@
       background: var(--verre-sheen), var(--verre-fort);
       -webkit-backdrop-filter: blur(var(--verre-flou)) saturate(var(--verre-sat));
       backdrop-filter: blur(var(--verre-flou)) saturate(var(--verre-sat));
-      border: 1px solid var(--verre-brd);
+      border: 0;
       border-radius: 26px; padding: 22px; max-width: 520px; width: 100%;
       max-height: min(88dvh, 88vh); overflow-y: auto;
       /* Le geste tactile doit fonctionner ici malgré le touch-action:none
@@ -823,7 +835,7 @@
       width: 40px; height: 40px; flex: 0 0 40px;
       display: inline-flex; align-items: center; justify-content: center;
       font-size: 1.35rem; line-height: 1; cursor: pointer; color: var(--text-muted);
-      background: var(--verre-creux); border: 1px solid var(--verre-brd);
+      background: var(--verre-creux); border: 0;
       border-radius: 12px; font-family: inherit;
       transition: color 0.2s, background 0.2s;
     }
@@ -849,7 +861,7 @@
       background: var(--verre-fort);
       -webkit-backdrop-filter: blur(var(--verre-flou)) saturate(var(--verre-sat));
       backdrop-filter: blur(var(--verre-flou)) saturate(var(--verre-sat));
-      border: 1px solid var(--verre-brd);
+      border: 0;
       border-radius: 26px 26px 0 0;
       box-shadow: var(--ombre-haute), inset 0 1px 0 var(--verre-hi);
       padding: 10px 16px calc(20px + env(safe-area-inset-bottom, 0px));
@@ -873,12 +885,12 @@
     .feuille-action {
       display: flex; align-items: center; gap: 12px; width: 100%;
       min-height: 54px; padding: 12px 16px; margin-bottom: 9px;
-      background: var(--verre-creux); border: 1px solid var(--verre-brd);
+      background: var(--verre-creux); border: 0;
       border-radius: 16px; color: var(--text); font-family: inherit;
       font-weight: 700; font-size: 0.9rem; text-align: left; cursor: pointer;
       transition: background 0.2s, border-color 0.2s, transform 0.2s;
     }
-    .feuille-action:hover { background: var(--verre-fort); border-color: var(--verre-brd-vive); }
+    .feuille-action:hover { background: var(--verre-fort); }
     .feuille-action:active { transform: scale(0.985); }
     .feuille-action .ic { font-size: 1.25rem; }
     .feuille-action .sous { display: block; font-weight: 500; font-size: 0.73rem; color: var(--text-muted); margin-top: 2px; }
@@ -893,7 +905,7 @@
     .feuille-entete .feuille-titre { margin: 0; flex: 1; text-align: left; }
     .feuille-fermer {
       flex: none; width: 44px; height: 44px; border-radius: 12px;
-      background: var(--verre-creux); border: 1px solid var(--verre-brd);
+      background: var(--verre-creux); border: 0;
       color: var(--text); font-size: 1.3rem; line-height: 1; cursor: pointer;
       display: flex; align-items: center; justify-content: center;
     }
@@ -919,7 +931,7 @@
     .onb-option {
       display: block; width: 100%; text-align: left;
       padding: 13px 15px; min-height: var(--cible-tactile, 48px);
-      background: var(--verre-creux); border: 1.5px solid var(--verre-brd);
+      background: var(--verre-creux); border: 0;
       border-radius: 14px; color: inherit; font-family: inherit;
       font-weight: 700; font-size: 0.88rem; cursor: pointer;
       transition: border-color 0.2s, background 0.2s;
@@ -934,7 +946,7 @@
     }
     .onb-resultat {
       text-align: center; padding: 18px 0 14px; margin-bottom: 14px;
-      background: var(--verre-creux); border: 1px solid var(--verre-brd);
+      background: var(--verre-creux); border: 0;
       border-radius: 18px;
     }
     .onb-cible {
@@ -961,7 +973,7 @@
     .apercu-case {
       display: flex; flex-direction: column; align-items: center; gap: 3px;
       padding: 11px 4px; min-height: 62px;
-      background: var(--verre-creux); border: 1px solid var(--verre-brd);
+      background: var(--verre-creux); border: 0;
       border-radius: 14px; color: inherit; font-family: inherit;
       cursor: pointer; transition: border-color 0.2s, background 0.2s;
     }
@@ -980,7 +992,7 @@
     .compte-option {
       display: block; width: 100%; text-align: left;
       padding: 12px 14px; min-height: 48px; margin-bottom: 8px;
-      background: var(--verre-creux); border: 1px solid var(--verre-brd);
+      background: var(--verre-creux); border: 0;
       border-radius: 13px; color: inherit; font-family: inherit; cursor: pointer;
     }
     .compte-option:hover { background: var(--verre-fort); }
@@ -1001,7 +1013,7 @@
     .admin-select-ligne input[type="search"] {
       flex: 1; min-width: 0;
       padding: 12px 15px; min-height: 44px;
-      background: var(--verre-creux); border: 1px solid var(--verre-brd);
+      background: var(--verre-creux); border: 0;
       color: var(--text); border-radius: 14px;
       font-size: max(16px, 0.92rem); font-family: inherit; outline: none;
     }
@@ -1031,14 +1043,14 @@
     }
     .aliments-filtres input {
       width: 100%; padding: 9px 12px; min-height: 40px;
-      background: var(--verre); border: 1px solid var(--verre-brd);
+      background: var(--verre); border: 1px solid transparent;
       color: var(--text); border-radius: 10px;
       font-size: 0.88rem; font-family: inherit; outline: none;
     }
     .aliments-filtres input:focus { border-color: var(--primary); }
 
     .admin-aliment-card {
-      background: var(--verre-creux); border: 1px solid var(--verre-brd);
+      background: var(--verre-creux); border: 0;
       border-radius: 16px; padding: 13px; margin-bottom: 10px;
     }
     .aliment-header {
@@ -1054,7 +1066,7 @@
     .aliment-actions { display: flex; gap: 6px; flex: none; }
     .bouton-petit {
       width: 44px; height: 44px; padding: 0; font-size: 1rem;
-      border: 1px solid var(--verre-brd); border-radius: 12px;
+      border: 0; border-radius: 12px;
       background: var(--verre); color: var(--text); cursor: pointer;
       display: flex; align-items: center; justify-content: center;
       transition: background 0.2s, border-color 0.2s;
@@ -1090,7 +1102,7 @@
     .input-group input, .input-group select, .input-group textarea {
       width: 100%; padding: 12px 15px; min-height: 44px;
       background: var(--verre-creux);
-      border: 1px solid var(--verre-brd); color: var(--text);
+      border: 1px solid transparent; color: var(--text);
       border-radius: 14px; font-size: 0.92rem; font-family: inherit;
       outline: none; transition: all 0.25s;
       box-shadow: inset 0 1px 0 var(--verre-lo);
@@ -1110,7 +1122,7 @@
     }
     .trio input {
       width: 100%; padding: 9px 8px; min-height: 38px; text-align: center;
-      background: var(--verre-creux); border: 1px solid var(--verre-brd); color: var(--text);
+      background: var(--verre-creux); border: 1px solid transparent; color: var(--text);
       border-radius: 11px; font-size: 0.82rem; font-family: inherit; outline: none;
       box-shadow: inset 0 1px 0 var(--verre-lo);
     }
@@ -1124,61 +1136,43 @@
     .btn:active { transform: scale(0.985); }
 
     /* --- BOUTONS "VERRE COLORÉ" ---
-       Le principe du Liquid Glass : pas d'aplat de couleur, juste un contour
-       teinté et un vrai verre dépoli derrière lui — flou et saturation poussés
-       au maximum, un reflet net qui glisse en haut à gauche comme sur du verre
-       bombé, et une lueur douce de la couleur qui sourd depuis le bord plutôt
-       que de remplir tout le bouton. Le texte reprend la couleur du contour :
-       ce sont les mêmes teintes déjà validées ailleurs comme texte sur le
-       fond de l'appli, donc le contraste reste bon dans les deux thèmes. */
-    .btn-primary, .btn-analysis {
-      -webkit-backdrop-filter: blur(calc(var(--verre-flou) + 14px)) saturate(240%);
-      backdrop-filter: blur(calc(var(--verre-flou) + 14px)) saturate(240%);
-    }
+       Ancienne recette Liquid Glass (contour teinté + verre dépoli très
+       flouté/saturé + lueur en bevel) : abandonnée pour tous les boutons.
+       Même fond plat + teinte que .btn-icone.compte-actif / .filtre-chip
+       sélectionnée, pour que .btn-primary/.btn-analysis/.btn-secondaire
+       aient tous le même poids visuel — plus aucun ne doit jurer à côté
+       d'un bouton déjà aplati (ex. "Modifier" dans l'onglet Séance). */
     .btn-primary {
-      background: var(--verre-sheen-vive), color-mix(in srgb, var(--primary) 16%, var(--verre-fort));
-      border-color: var(--primary); color: var(--primary);
-      box-shadow:
-        0 10px 26px color-mix(in srgb, var(--primary) 30%, transparent),
-        inset 0 1px 0 var(--verre-hi), inset 0 -1px 0 var(--verre-lo),
-        inset 0 0 22px color-mix(in srgb, var(--primary) 16%, transparent);
+      background: color-mix(in srgb, var(--primary) 20%, var(--verre-creux));
+      color: var(--primary);
     }
     .btn-primary:hover {
-      background: var(--verre-sheen-vive), color-mix(in srgb, var(--primary) 24%, var(--verre-fort));
-      box-shadow:
-        0 14px 32px color-mix(in srgb, var(--primary) 38%, transparent),
-        inset 0 1px 0 var(--verre-hi), inset 0 -1px 0 var(--verre-lo),
-        inset 0 0 26px color-mix(in srgb, var(--primary) 22%, transparent);
+      background: color-mix(in srgb, var(--primary) 28%, var(--verre-creux));
     }
     .btn-analysis {
       margin-top: 10px;
-      background: var(--verre-sheen-vive), color-mix(in srgb, var(--ai-color) 16%, var(--verre-fort));
-      border-color: var(--ai-color); color: var(--ai-color);
-      box-shadow:
-        0 10px 26px color-mix(in srgb, var(--ai-color) 28%, transparent),
-        inset 0 1px 0 var(--verre-hi), inset 0 -1px 0 var(--verre-lo),
-        inset 0 0 22px color-mix(in srgb, var(--ai-color) 14%, transparent);
+      background: color-mix(in srgb, var(--ai-color) 20%, var(--verre-creux));
+      color: var(--ai-color);
     }
     .btn-analysis:hover {
-      background: var(--verre-sheen-vive), color-mix(in srgb, var(--ai-color) 24%, var(--verre-fort));
+      background: color-mix(in srgb, var(--ai-color) 28%, var(--verre-creux));
     }
     .btn-secondaire {
-      background: var(--verre-sheen), var(--verre-creux); border-color: var(--verre-brd); color: var(--text);
-      box-shadow: inset 0 1px 0 var(--verre-hi);
+      background: var(--verre-creux); color: var(--text);
     }
 
-    #preview-image { max-width: 100%; max-height: 180px; margin: 12px 0; border-radius: 14px; object-fit: cover; border: 1px solid var(--verre-brd); }
+    #preview-image { max-width: 100%; max-height: 180px; margin: 12px 0; border-radius: 14px; object-fit: cover; border: 0; }
     .hidden { display: none !important; }
     .loader { text-align: center; font-weight: 700; color: var(--ai-color); margin: 18px 0; letter-spacing: 0.4px; font-size: 0.88rem; }
     .error-box { background: color-mix(in srgb, var(--danger) 12%, transparent); border: 1px solid color-mix(in srgb, var(--danger) 35%, transparent); color: var(--danger); padding: 14px; border-radius: 13px; font-size: 0.85rem; margin-top: 10px; word-break: break-word; }
 
-    .detected-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; background: var(--verre-creux); border: 1px solid var(--verre-brd); padding: 11px 14px; border-radius: 13px; margin-bottom: 9px; }
-    .detected-row input[type="number"] { width: 80px; min-height: 42px; padding: 8px; text-align: center; border-radius: 11px; border: 1px solid var(--verre-brd); background: var(--verre-creux); color: var(--text); font-family: inherit; font-weight: 700; }
-    #reader { width: 100%; border-radius: 14px; overflow: hidden; margin-bottom: 14px; background: #000; min-height: 160px; border: 1px solid var(--verre-brd); }
-    .analysis-output { background: var(--verre-creux); border: 1px solid var(--verre-brd); padding: 16px; border-radius: 14px; font-size: 0.9rem; line-height: 1.6; margin-top: 14px; white-space: pre-line; color: var(--text); }
+    .detected-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; background: var(--verre-creux); border: 0; padding: 11px 14px; border-radius: 13px; margin-bottom: 9px; }
+    .detected-row input[type="number"] { width: 80px; min-height: 42px; padding: 8px; text-align: center; border-radius: 11px; border: 0; background: var(--verre-creux); color: var(--text); font-family: inherit; font-weight: 700; }
+    #reader { width: 100%; border-radius: 14px; overflow: hidden; margin-bottom: 14px; background: #000; min-height: 160px; border: 0; }
+    .analysis-output { background: var(--verre-creux); border: 0; padding: 16px; border-radius: 14px; font-size: 0.9rem; line-height: 1.6; margin-top: 14px; white-space: pre-line; color: var(--text); }
 
-    .chart-container { position: relative; width: 100%; height: 170px; margin-bottom: 16px; background: var(--verre-creux); border: 1px solid var(--verre-brd); border-radius: 16px; padding: 12px; }
-    .slider-control { margin-bottom: 12px; background: var(--verre-creux); padding: 12px 15px; border-radius: 14px; border: 1px solid var(--verre-brd); }
+    .chart-container { position: relative; width: 100%; height: 170px; margin-bottom: 16px; background: var(--verre-creux); border: 0; border-radius: 16px; padding: 12px; }
+    .slider-control { margin-bottom: 12px; background: var(--verre-creux); padding: 12px 15px; border-radius: 14px; border: 0; }
     .slider-control label { display: flex; justify-content: space-between; font-size: 0.72rem; color: var(--text-muted); margin-bottom: 6px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.8px; }
     .slider-control input[type="range"] { width: 100%; accent-color: var(--primary); cursor: pointer; min-height: 28px; }
 
@@ -1230,7 +1224,7 @@
          suggestions. Le dégradé plein posé sur --bg garantit un fond solide
          quelle que soit la couche d'ambiance derrière. */
       background: linear-gradient(var(--barre), var(--barre)), var(--bg);
-      border: 1px solid var(--verre-brd-vive);
+      border: 0;
       box-shadow: var(--ombre-haute);
     }
     .off-suggestion {
@@ -1264,7 +1258,7 @@
     .puce-sync {
       display: inline-flex; align-items: center; gap: 6px;
       min-height: 42px; padding: 0 12px; border-radius: 13px;
-      background: var(--verre-fort); border: 1px solid var(--verre-brd);
+      background: var(--verre-fort); border: 0;
       box-shadow: inset 0 1px 0 var(--verre-hi);
       color: var(--text-muted); font-family: inherit; font-weight: 700;
       font-size: 0.72rem; cursor: pointer;
@@ -1282,7 +1276,7 @@
     @keyframes pulseSync { 0%, 100% { opacity: 1; } 50% { opacity: 0.25; } }
 
     .bloc-sql {
-      background: var(--verre-creux); border: 1px solid var(--verre-brd);
+      background: var(--verre-creux); border: 0;
       border-radius: 13px; padding: 12px 14px; margin-top: 10px;
       font-family: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
       font-size: 0.68rem; line-height: 1.5; color: var(--text-muted);
@@ -1293,7 +1287,7 @@
     .off-suggestion:hover, .off-suggestion:focus-visible { background: color-mix(in srgb, var(--primary) 14%, transparent); }
     .off-vide { padding: 13px 14px; font-size: 0.8rem; color: var(--text-muted); line-height: 1.45; }
 
-    .segment { display: flex; gap: 6px; background: var(--verre-creux); border: 1px solid var(--verre-brd); border-radius: 14px; padding: 4px; }
+    .segment { display: flex; gap: 6px; background: var(--verre-creux); border: 0; border-radius: 14px; padding: 4px; }
     .segment button {
       flex: 1; min-height: 40px; border: none; background: transparent; color: var(--text-muted);
       font-family: inherit; font-weight: 700; font-size: 0.78rem; border-radius: 11px; cursor: pointer;
@@ -1304,7 +1298,7 @@
     /* --- CHIFFRES CLÉS DE LA PÉRIODE --- */
     .grille-cles { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
     .cle {
-      background: var(--verre-creux); border: 1px solid var(--verre-brd);
+      background: var(--verre-creux); border: 0;
       border-radius: 15px; padding: 13px 14px;
       box-shadow: inset 0 1px 0 var(--verre-lo);
     }
@@ -1336,16 +1330,22 @@
        directionnel. Le reflet spéculaire, lui, suit l'inclinaison du
        téléphone via --lx / --ly.
        ===================================================================== */
-    .verre, .app-bar, .summary-card, .btn, .btn-icone, .fab, .fab-action,
-    .feuille-action, .meal-card, .bloc-verre, .fitness-card, .analysis-card,
-    .daily-questionnaire, .modal-content, .feuille-contenu {
+    /* .btn-icone, .fab-action et .fab retirés de ce groupe (voir leurs
+       styles propres) : l'anneau lentille — flou + rehauts de bord — est
+       precisement ce qui leur donnait cet aspect embouti/vitreux. Pour le
+       bouton flottant (.fab), le liseré est remplacé par un fondu radial
+       (vert au centre, qui se mêle au noir vers le bord). Les cartes
+       (.summary-card, .meal-card, .bloc-verre, .fitness-card,
+       .analysis-card, .daily-questionnaire) et les conteneurs de modale/
+       feuille (.modal-content, .feuille-contenu) sont retirées elles aussi :
+       même sans bordure propre, cet anneau dessinait encore un contour
+       visible tout autour. Les CTA (.btn) et les grandes lignes de feuille
+       (.feuille-action) gardent l'anneau, qui reste voulu à cette
+       échelle-là. */
+    .verre, .app-bar, .btn, .feuille-action {
       isolation: isolate;
     }
-    .verre::before, .app-bar::before, .summary-card::before, .btn::before,
-    .btn-icone::before, .fab::before, .fab-action::before, .feuille-action::before,
-    .meal-card::before, .bloc-verre::before, .fitness-card::before,
-    .analysis-card::before, .daily-questionnaire::before,
-    .modal-content::before, .feuille-contenu::before {
+    .verre::before, .app-bar::before, .btn::before, .feuille-action::before {
       content: '';
       position: absolute; inset: 0; z-index: 0;
       border-radius: inherit;
@@ -1364,54 +1364,39 @@
       mask-clip: content-box, border-box;
       mask-composite: exclude;
     }
-    /* Même correctif que .modal-content/.feuille-contenu plus haut : cet
-       anneau décoratif est positionné à l'intérieur d'un élément qui défile
-       (overflow-y:auto) et son propre backdrop-filter ne s'étendait pas au
-       contenu révélé par le scroll. Le liseré (box-shadow) et la bordure
-       restent ; seul le flou en direct du bord est retiré ici. */
-    .modal-content::before, .feuille-contenu::before {
-      -webkit-backdrop-filter: none; backdrop-filter: none;
-    }
     /* Sans mask-composite, l'anneau couvrirait toute la carte : on n'en garde
        alors que le liseré, qui est déjà l'essentiel de l'effet. */
     @supports not ((mask-composite: exclude) or (-webkit-mask-composite: xor)) {
-      .verre::before, .app-bar::before, .summary-card::before, .btn::before,
-      .btn-icone::before, .fab::before, .fab-action::before, .feuille-action::before,
-      .meal-card::before, .bloc-verre::before, .fitness-card::before,
-      .analysis-card::before, .daily-questionnaire::before,
-      .modal-content::before, .feuille-contenu::before {
+      .verre::before, .app-bar::before, .btn::before, .feuille-action::before {
         -webkit-backdrop-filter: none; backdrop-filter: none; border-color: transparent;
       }
     }
     /* Les éléments encore statiques ont besoin d'un repère pour l'anneau ;
        ceux qui sont déjà sticky / fixed / relative gardent le leur. */
-    .btn, .btn-icone, .fab, .fab-action, .feuille-action, .meal-card, .bloc-verre,
+    .btn, .feuille-action, .meal-card, .bloc-verre,
     .fitness-card, .analysis-card, .daily-questionnaire, .modal-content,
     .feuille-contenu, .verre { position: relative; }
     /* Le contenu passe devant l'anneau. */
-    .meal-card > *, .bloc-verre > *, .fitness-card > *, .analysis-card > *,
-    .daily-questionnaire > *, .modal-content > *, .feuille-contenu > *,
-    .btn > *, .fab-action > *, .feuille-action > * { position: relative; z-index: 1; }
+    .btn > *, .feuille-action > * { position: relative; z-index: 1; }
 
     /* Anneau plus fin sur les petites cibles : sur 46 px de haut, 7 px de bord
        mangeraient la moitié de la pastille. */
-    .btn, .btn-icone, .fab-action, .feuille-action, .puce-sync { --lentille-ep: 4px; }
-    .fab { --lentille-ep: 5px; }
-    .summary-card, .modal-content, .feuille-contenu { --lentille-ep: 9px; }
+    .btn, .feuille-action, .puce-sync { --lentille-ep: 4px; }
 
     /* Le verre s'enfonce quand on le presse : la lentille se rétracte. */
-    .btn:active, .btn-icone:active, .fab-action:active, .feuille-action:active { --lentille-ep: 2.5px; }
+    .btn:active, .feuille-action:active { --lentille-ep: 2.5px; }
 
     html.sans-verre .verre::before, html.sans-verre .app-bar::before,
-    html.sans-verre .summary-card::before, html.sans-verre .btn::before,
-    html.sans-verre .btn-icone::before, html.sans-verre .fab::before,
-    html.sans-verre .fab-action::before, html.sans-verre .feuille-action::before,
-    html.sans-verre .meal-card::before, html.sans-verre .bloc-verre::before,
-    html.sans-verre .fitness-card::before, html.sans-verre .analysis-card::before,
-    html.sans-verre .daily-questionnaire::before,
-    html.sans-verre .modal-content::before, html.sans-verre .feuille-contenu::before {
+    html.sans-verre .btn::before, html.sans-verre .feuille-action::before {
       display: none;
     }
+    /* .btn-primary/.btn-analysis/.btn-secondaire sont aplatis (voir plus
+       haut) : même l'anneau lentille, flouté par-dessus leur fond teinté,
+       ressortait comme un fin liseré coloré sur le bord. On le coupe
+       spécifiquement pour ces trois-là plutôt que de sortir .btn du
+       groupe partagé, pour ne pas priver .feuille-action de l'anneau
+       qu'il garde. */
+    .btn-primary::before, .btn-analysis::before, .btn-secondaire::before { display: none; }
 
     /* =====================================================================
        SÉANCE — MUSCULATION
@@ -1462,7 +1447,7 @@
       background: var(--verre-sheen), var(--verre);
       -webkit-backdrop-filter: blur(var(--verre-flou)) saturate(var(--verre-sat));
       backdrop-filter: blur(var(--verre-flou)) saturate(var(--verre-sat));
-      border: 1px solid var(--verre-brd); border-radius: var(--rayon);
+      border: 0; border-radius: var(--rayon);
       padding: 16px; margin-bottom: 12px;
       box-shadow: var(--ombre), inset 0 1px 0 var(--verre-hi), inset 0 -1px 0 var(--verre-lo);
     }
@@ -1476,7 +1461,7 @@
     .filtre-chips { display: flex; flex-wrap: wrap; gap: 7px; margin-bottom: 12px; }
     .filtre-chip {
       padding: 7px 13px; border-radius: 99px; font-size: 0.76rem; font-weight: 700;
-      background: var(--verre-creux); border: 1px solid var(--verre-brd); color: var(--text-muted);
+      background: var(--verre-creux); border: 0; color: var(--text-muted);
       cursor: pointer; font-family: inherit; white-space: nowrap;
       transition: background 0.2s, border-color 0.2s, color 0.2s;
     }
@@ -1489,11 +1474,11 @@
     .exo-ligne {
       display: flex; align-items: center; gap: 12px; width: 100%;
       padding: 11px 12px; margin-bottom: 8px;
-      background: var(--verre-creux); border: 1px solid var(--verre-brd);
+      background: var(--verre-creux); border: 0;
       border-radius: 14px; cursor: pointer; text-align: left; font-family: inherit;
       transition: background 0.2s, border-color 0.2s;
     }
-    .exo-ligne:hover, .exo-ligne:focus-visible { background: var(--verre-fort); border-color: var(--verre-brd-vive); }
+    .exo-ligne:hover, .exo-ligne:focus-visible { background: var(--verre-fort); }
     .exo-ligne-nom { display: block; font-weight: 700; font-size: 0.88rem; color: var(--text); }
     .exo-ligne-meta { display: block; font-size: 0.72rem; color: var(--text-muted); margin-top: 2px; }
     .exo-ligne-mat { font-size: 1.15rem; flex: none; }
@@ -1501,7 +1486,7 @@
     /* --- Vignette d'exercice : photo (base libre) ou schéma corps de repli --- */
     .exo-ligne-vignette {
       width: 44px; height: 44px; flex: none; border-radius: 11px; overflow: hidden;
-      background: var(--verre-fort); border: 1px solid var(--verre-brd);
+      background: var(--verre-fort); border: 0;
       display: flex; align-items: center; justify-content: center;
     }
     .exo-ligne-vignette img { width: 100%; height: 100%; object-fit: cover; display: block; }
@@ -1512,7 +1497,7 @@
     .fiche-exo-image {
       position: relative; width: 100%; aspect-ratio: 4 / 3; border-radius: 14px;
       overflow: hidden; background: #f4f4f4; margin-bottom: 14px;
-      border: 1px solid var(--verre-brd);
+      border: 0;
     }
     .fiche-exo-image img {
       position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain;
@@ -1533,35 +1518,98 @@
 
     /* --- Exercice ajouté à un programme, en édition --- */
     .exo-en-programme {
-      background: var(--verre-creux); border: 1px solid var(--verre-brd);
+      background: var(--verre-creux); border: 0;
       border-radius: 14px; padding: 12px; margin-bottom: 10px;
     }
     .exo-en-programme-entete { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; margin-bottom: 10px; }
     .exo-en-programme-nom { font-weight: 700; font-size: 0.88rem; }
     .exo-en-programme-meta { font-size: 0.7rem; color: var(--text-muted); margin-top: 2px; }
-    .exo-en-programme-champs { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
-    .exo-en-programme-champs .input-group { margin-bottom: 0; }
-    .exo-en-programme-champs label { font-size: 0.58rem; }
     .exo-en-programme-reordre { display: flex; flex-direction: column; gap: 3px; }
     .exo-en-programme-reordre button {
-      width: 28px; height: 22px; border-radius: 6px; border: 1px solid var(--verre-brd);
+      width: 28px; height: 22px; border-radius: 6px; border: 0;
       background: var(--verre); color: var(--text-muted); font-size: 0.65rem; cursor: pointer; font-family: inherit;
     }
     .exo-en-programme-reordre button:disabled { opacity: 0.3; cursor: default; }
 
-    /* --- Tableau de séries pendant une séance --- */
-    .serie-table { width: 100%; border-collapse: collapse; margin-top: 4px; }
-    .serie-table th { font-size: 0.6rem; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-muted); text-align: center; font-weight: 700; padding-bottom: 6px; }
-    .serie-table td { padding: 4px 3px; text-align: center; }
-    .serie-num { font-size: 0.75rem; font-weight: 700; color: var(--text-muted); }
+    /* --- Liste de séries pendant une séance / dans un programme ---
+       Des lignes en grille (pas un <table>) : un glisser vers la gauche
+       doit pouvoir faire coulisser toute la ligne pour révéler la
+       suppression dessous, ce qu'un <tr> anime mal une fois transformé. */
+    .serie-table { width: 100%; margin-top: 4px; display: flex; flex-direction: column; gap: 6px; }
+    .serie-entete { display: grid; gap: 6px; padding: 0 3px 2px; }
+    .serie-entete span { font-size: 0.6rem; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-muted); text-align: center; font-weight: 700; }
+    .serie-entete--4col, .serie-ligne--4col { grid-template-columns: 34px 1fr 1fr 40px; }
+    .serie-entete--3col, .serie-ligne--3col { grid-template-columns: 34px 1fr 1fr; }
+    .serie-ligne-fenetre { position: relative; overflow: hidden; border-radius: 10px; }
+    /* Révélée en glissant la ligne au-dessus vers la gauche ; en dessous
+       tant qu'on ne glisse pas, jamais visible autrement. */
+    .serie-ligne-suppr {
+      position: absolute; inset: 0; width: 100%; border: 0; font-family: inherit;
+      display: flex; align-items: center; justify-content: flex-end; gap: 6px;
+      padding-right: 18px; background: var(--danger); color: #fff;
+      font-weight: 700; font-size: 0.78rem; cursor: pointer;
+    }
+    .serie-ligne {
+      position: relative; display: grid; align-items: center; gap: 6px; padding: 3px 3px;
+      /* Doit être vraiment opaque pour cacher le rouge en dessous tant qu'on
+         ne glisse pas : --verre-fort est un voile translucide (10 % en
+         thème sombre) fait pour un fond flouté, pas pour masquer quoi que
+         ce soit — le rouge transparaissait complètement à travers. Même
+         composition opaque que .off-liste. */
+      background: linear-gradient(var(--barre), var(--barre)), var(--bg);
+      border-radius: 10px; text-align: center;
+      touch-action: pan-y; transition: transform 0.18s ease;
+    }
+    .serie-ligne.en-glissement { transition: none; }
+    /* "Ajouter une série" : le seul bouton restant sous la liste (le
+       glisser a remplacé "– Série", voir plus haut) — pleine largeur, sans
+       bordure ni relief, plus bas qu'un .btn-icone standard. display:flex +
+       line-height:1 + padding:0 : sans ça, le line-height et le padding par
+       défaut du bouton auraient empêché de descendre sous ~38-40px sans
+       rogner le texte. */
+    .btn-ajouter-serie {
+      width: 100%; height: 26px; margin-top: 8px; padding: 0; border: 0; box-shadow: none;
+      display: flex; align-items: center; justify-content: center; line-height: 1;
+      background: var(--verre-creux);
+      color: var(--text-muted); border-radius: 8px; font-weight: 700; cursor: pointer;
+      font-size: 0.75rem; font-family: inherit;
+    }
+    /* Le numéro de série sert aussi à choisir son type (normale/dégressif/
+       pyramidal/échec) : un tap ouvre un petit menu (comme Strong), et une
+       fois un type choisi, la pastille affiche sa lettre (D/P/É) au lieu du
+       numéro — la couleur suffit à la distinguer d'une numérotation. */
+    .serie-num-btn {
+      width: 26px; height: 26px; border-radius: 50%; padding: 0; border: 0;
+      background: var(--verre-fort); color: var(--text-muted); font-size: 0.75rem; font-weight: 700;
+      font-family: inherit; display: inline-flex; align-items: center; justify-content: center; cursor: pointer;
+    }
+    .serie-num-btn[data-technique="degressif"] { background: var(--accent); border-color: var(--accent); color: #fff; }
+    .serie-num-btn[data-technique="pyramidal"] { background: var(--carbs); border-color: var(--carbs); color: #fff; }
+    .serie-num-btn[data-technique="echec"] { background: var(--danger); border-color: var(--danger); color: #fff; }
+    /* Menu qui s'ouvre au tap sur la pastille — même habillage que la liste
+       de suggestions d'aliments (.off-liste), en position fixe pour rester
+       ancré au bon endroit quel que soit le défilement du contenu derrière. */
+    .menu-technique-popup {
+      position: fixed; z-index: 3000; min-width: 168px; border-radius: 14px; overflow: hidden;
+      background: linear-gradient(var(--barre), var(--barre)), var(--bg);
+      border: 0; box-shadow: var(--ombre-haute);
+    }
+    .menu-technique-popup button {
+      display: block; width: 100%; text-align: left; border: 0;
+      border-bottom: 1px solid var(--verre-brd); background: transparent;
+      color: inherit; font-family: inherit; padding: 10px 14px; font-size: 0.85rem;
+      cursor: pointer; min-height: 42px;
+    }
+    .menu-technique-popup button:last-child { border-bottom: none; }
+    .menu-technique-popup button:hover, .menu-technique-popup button:focus-visible { background: color-mix(in srgb, var(--primary) 14%, transparent); }
     .serie-table input {
       width: 100%; min-height: 40px; padding: 6px 4px; text-align: center;
-      background: var(--verre); border: 1px solid var(--verre-brd); color: var(--text);
+      background: var(--verre); border: 1px solid transparent; color: var(--text);
       border-radius: 10px; font-size: 0.85rem; font-family: inherit; font-weight: 700; outline: none;
     }
     .serie-table input:focus { border-color: var(--primary); box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 22%, transparent); }
     .serie-check {
-      width: 34px; height: 34px; border-radius: 9px; border: 1.5px solid var(--verre-brd-vive);
+      width: 34px; height: 34px; border-radius: 9px; border: 1.5px solid transparent;
       background: var(--verre-creux); cursor: pointer; display: inline-flex; align-items: center; justify-content: center;
       font-size: 1rem; color: transparent; font-family: inherit; transition: background 0.2s, border-color 0.2s, color 0.2s;
     }
@@ -1578,7 +1626,7 @@
 
     /* --- Historique des séances --- */
     .historique-carte {
-      background: var(--verre-creux); border: 1px solid var(--verre-brd); border-radius: 16px;
+      background: var(--verre-creux); border: 0; border-radius: 16px;
       padding: 13px 15px; margin-bottom: 9px; cursor: pointer; text-align: left; width: 100%;
       font-family: inherit; transition: background 0.2s;
     }
@@ -1597,7 +1645,7 @@
     .exo-en-programme-technique { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; flex-wrap: wrap; }
     .exo-en-programme-technique select {
       flex: 1; min-width: 110px; padding: 8px 10px; min-height: 38px;
-      background: var(--verre); border: 1px solid var(--verre-brd); color: var(--text);
+      background: var(--verre); border: 1px solid transparent; color: var(--text);
       border-radius: 10px; font-family: inherit; font-size: 0.78rem; outline: none;
       /* Même flèche personnalisée que .input-group select : sans ça, ce menu
          affichait la flèche native du navigateur, visuellement différente. */
@@ -2095,6 +2143,16 @@
   <span class="bandeau-seance-flottant-texte" id="bandeau-seance-flottant-texte"></span>
 </button>
 
+<!-- Menu du type de série (normale/dégressif/pyramidal/échec), ouvert au tap
+     sur la pastille numérotée d'une série — un seul menu partagé, positionné
+     dynamiquement (voir ouvrirMenuTechnique). -->
+<div class="menu-technique-popup hidden" id="menu-technique-popup" role="menu">
+  <button type="button" role="menuitem" onclick="choisirTechniqueMenu(null)">Normale</button>
+  <button type="button" role="menuitem" onclick="choisirTechniqueMenu('degressif')">💧 Dégressif</button>
+  <button type="button" role="menuitem" onclick="choisirTechniqueMenu('pyramidal')">🔺 Pyramidal</button>
+  <button type="button" role="menuitem" onclick="choisirTechniqueMenu('echec')">🔥 Échec</button>
+</div>
+
 <!-- ============ NAVIGATION : tout passe par le bouton flottant ============ -->
 <nav class="fab-zone" id="fab-zone" aria-label="Navigation principale">
   <div class="fab-actions">
@@ -2206,7 +2264,7 @@
       </div>
     </div>
 
-    <div id="man-preview" style="background: var(--verre-creux); border: 1px solid var(--verre-brd); padding: 14px; border-radius: 13px; text-align: center; font-weight: 700; font-size: 0.88rem; color: var(--primary); margin-bottom: 16px;">
+    <div id="man-preview" style="background: var(--verre-creux); border: 0; padding: 14px; border-radius: 13px; text-align: center; font-weight: 700; font-size: 0.88rem; color: var(--primary); margin-bottom: 16px;">
       Aperçu : 0 kcal | P: 0g | G: 0g | L: 0g
     </div>
 
@@ -3385,7 +3443,7 @@ function renderWorkoutsList(day) {
     // évident que c'est déjà comptée et qu'il ne faut pas en resaisir une.
     if (w.source === 'seance') {
       return `
-    <div style="display: flex; gap: 10px; align-items: center; margin-bottom: 10px; background: var(--verre-creux); padding: 10px; border-radius: 14px; border: 1px solid var(--verre-brd);">
+    <div style="display: flex; gap: 10px; align-items: center; margin-bottom: 10px; background: var(--verre-creux); padding: 10px; border-radius: 14px; border: 0;">
       <div style="flex: 2;">
         <div style="font-size: 0.65rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px;">Sport</div>
         <div style="font-weight: 700; font-size: 0.85rem; margin-top: 2px;">🏋️ Musculation <span class="badge-technique">Séance</span></div>
@@ -3399,7 +3457,7 @@ function renderWorkoutsList(day) {
     </div>`;
     }
     return `
-    <div style="display: flex; gap: 10px; align-items: flex-end; margin-bottom: 10px; background: var(--verre-creux); padding: 10px; border-radius: 14px; border: 1px solid var(--verre-brd);">
+    <div style="display: flex; gap: 10px; align-items: flex-end; margin-bottom: 10px; background: var(--verre-creux); padding: 10px; border-radius: 14px; border: 0;">
       <div class="input-group" style="flex: 2; margin-bottom: 0;">
         <label style="font-size: 0.65rem;">Sport</label>
         <select onchange="modifierSport(${index}, 'type', this.value)">
@@ -3900,6 +3958,10 @@ function fermerModal(id) {
   if (id === 'compte-modal' && connexionObligatoire) return;
   if (id === 'modal-bienvenue' && bilanForce) return;
   if (id === 'fiche-exercice-modal') arreterAnimationFiche();
+  // Sinon, fermer la séance/le programme en cours d'édition sans avoir
+  // choisi d'option laissait le petit menu de type de série flotter,
+  // orphelin, par-dessus tout le reste de l'appli.
+  if (typeof fermerMenuTechnique === 'function') fermerMenuTechnique();
   const el = document.getElementById(id);
   if (el) el.classList.remove('show');
   majCoucheOuverte();
@@ -9410,29 +9472,54 @@ function parseRepsCible(reps) {
   return m ? Number(m[0]) : null;
 }
 
+/* Ancien format d'un exercice de programme : series = un nombre (compte),
+   reps = un texte cible unique pour toutes les séries (ex. "8-12"). Format
+   actuel : series = un tableau, une entrée par série, chacune avec son
+   propre poids et ses propres répétitions cibles — ce qui permet de
+   planifier un dégressif ou un pyramidal (poids/reps qui varient série par
+   série) directement dans le programme, pas seulement en direct pendant la
+   séance. Cette fonction migre l'ancien format à la volée, sans jamais
+   modifier un programme que la personne n'a pas elle-même rouvert : les
+   anciens programmes continuent de s'afficher et de se lancer normalement
+   tant qu'ils ne sont pas édités. */
+function normaliserSeriesProgramme(pe) {
+  if (Array.isArray(pe.series)) return pe.series;
+  const n = Math.max(1, Number(pe.series) || 3);
+  const repsCible = parseRepsCible(pe.reps);
+  const tableau = [];
+  for (let i = 0; i < n; i++) tableau.push({ poids: null, reps: repsCible });
+  return tableau;
+}
+
 /* Construit les séries d'une séance à partir d'un programme : reprend
    exactement les poids/répétitions de la dernière fois quand l'exercice a
    déjà été fait (l'objectif étant de pouvoir juste cocher au fur et à
-   mesure), sinon part des répétitions cibles du programme, poids vide. */
+   mesure), sinon part des poids/répétitions cibles définis dans le
+   programme lui-même, série par série. */
 function construireExercicesSession(programme) {
   return programme.exercices.map(pe => {
     const exo = trouverExercice(pe.exerciceId);
     const derniere = dernierePerfExercice(pe.exerciceId);
-    const nbSeries = Math.max(1, Number(pe.series) || (derniere ? derniere.series.length : 3));
+    const cibles = normaliserSeriesProgramme(pe);
+    const nbSeries = Math.max(1, cibles.length);
     let series;
     if (derniere && derniere.series.length) {
-      series = derniere.series.map(s => ({ poids: s.poids, reps: s.reps, fait: false }));
+      series = derniere.series.map(s => ({ poids: s.poids, reps: s.reps, fait: false, technique: s.technique || null }));
       while (series.length < nbSeries) {
         const derniereSerie = series[series.length - 1];
-        series.push({ poids: derniereSerie ? derniereSerie.poids : null, reps: parseRepsCible(pe.reps), fait: false });
+        const cible = cibles[series.length] || cibles[cibles.length - 1];
+        series.push({
+          poids: derniereSerie ? derniereSerie.poids : (cible ? cible.poids : null),
+          reps: (cible && cible.reps != null) ? cible.reps : parseRepsCible(pe.reps),
+          fait: false, technique: (cible && cible.technique) || null
+        });
       }
     } else {
-      series = [];
-      for (let i = 0; i < nbSeries; i++) series.push({ poids: null, reps: parseRepsCible(pe.reps), fait: false });
+      series = cibles.map(c => ({ poids: c.poids, reps: c.reps, fait: false, technique: c.technique || null }));
     }
     return {
       exerciceId: pe.exerciceId, nom: exo ? exo.nom : 'Exercice', series,
-      technique: pe.technique || 'normale', supersetSuivant: !!pe.supersetSuivant
+      supersetSuivant: !!pe.supersetSuivant
     };
   });
 }
@@ -9456,10 +9543,8 @@ function grouperBlocsExercices(liste) {
   }
   return blocs;
 }
-const TECHNIQUE_LABELS = { degressif: '💧 Dégressif', pyramidal: '🔺 Pyramidal' };
-function badgeTechnique(technique) {
-  return (technique && TECHNIQUE_LABELS[technique]) ? ` <span class="badge-technique">${TECHNIQUE_LABELS[technique]}</span>` : '';
-}
+const TECHNIQUE_LABELS = { degressif: '💧 Dégressif', pyramidal: '🔺 Pyramidal', echec: '🔥 Échec' };
+const TECHNIQUE_LETTRES = { degressif: 'D', pyramidal: 'P', echec: 'É' };
 
 /* =====================================================================
    Rendu de l'onglet Séance
@@ -9854,17 +9939,19 @@ function voirDetailProgramme(cle) {
 
 /* Rendu partagé de la liste d'exercices d'une séance (en cours, ou déjà
    enregistrée dans l'historique) : regroupe les supersets et affiche
-   l'éventuelle technique (dégressif/pyramidal). Réutilisé par le détail
-   d'une séance de l'historique et le détail d'un programme. */
+   l'éventuelle technique (dégressif/pyramidal) de chaque série — elle
+   s'applique à une série précise, pas à tout l'exercice (une série de
+   dégressif est en général suivie de séries normales). Réutilisé par le
+   détail d'une séance de l'historique et le détail d'un programme. */
 function renderListeExercicesDetail(liste) {
   return grouperBlocsExercices(liste).map(indices => {
     const contenu = indices.map(i => {
       const e = liste[i];
       const exoRef = trouverExercice(e.exerciceId);
       const label = exoRef ? libelleExercice(exoRef) : e.nom;
-      const series = e.series.map((s, si) => `<div style="display:flex; justify-content:space-between; font-size:0.82rem; padding:4px 0; border-bottom:1px solid var(--verre-brd);">
-        <span>Série ${si + 1}</span><span>${s.poids ?? '—'} kg × ${s.reps ?? '—'}${s.fait ? ' ✅' : ''}</span></div>`).join('');
-      return `<div style="margin-bottom:14px;"><div style="font-weight:700; font-size:0.88rem; margin-bottom:6px;">${escapeHtml(label)}${badgeTechnique(e.technique)}</div>${series}</div>`;
+      const series = e.series.map((s, si) => `<div style="display:flex; align-items:center; gap:8px; justify-content:space-between; font-size:0.82rem; padding:4px 0; border-bottom:1px solid var(--verre-brd);">
+        <span style="display:flex; align-items:center; gap:8px;">${boutonNumeroSerie(si, s.technique)}</span><span>${s.poids ?? '—'} kg × ${s.reps ?? '—'}${s.fait ? ' ✅' : ''}</span></div>`).join('');
+      return `<div style="margin-bottom:14px;"><div style="font-weight:700; font-size:0.88rem; margin-bottom:6px;">${escapeHtml(label)}</div>${series}</div>`;
     }).join('');
     return indices.length > 1
       ? `<div class="session-superset-bloc"><div class="session-superset-titre">🔗 Superset</div>${contenu}</div>`
@@ -9962,7 +10049,10 @@ function ouvrirCreationProgramme() {
 function ouvrirEditionProgramme(id) {
   const p = musculationProgrammes.find(x => x.id === id);
   if (!p) return;
-  programmeEnEdition = { id: p.id, nom: p.nom, exercices: p.exercices.map(e => ({ ...e })) };
+  // Copie profonde : sans elle, le tableau de séries serait partagé avec le
+  // programme enregistré, et modifier une série dans l'éditeur (avant même
+  // d'appuyer sur Enregistrer, ou en cas d'Annuler) l'aurait déjà changée.
+  programmeEnEdition = { id: p.id, nom: p.nom, exercices: p.exercices.map(e => ({ ...e, series: normaliserSeriesProgramme(e).map(s => ({ ...s })) })) };
   document.getElementById('titre-programme-modal').textContent = '✏️ Modifier le programme';
   document.getElementById('programme-nom-input').value = p.nom;
   document.getElementById('btn-suppr-programme').style.display = 'block';
@@ -9971,13 +10061,26 @@ function ouvrirEditionProgramme(id) {
 }
 function renderProgrammeExercicesEnEdition() {
   const c = document.getElementById('programme-exercices-container');
+  initSwipeSeries('programme-exercices-container');
   const vide = document.getElementById('programme-exercices-vide');
   if (!programmeEnEdition.exercices.length) { c.innerHTML = ''; vide.style.display = 'block'; return; }
   vide.style.display = 'none';
   c.innerHTML = programmeEnEdition.exercices.map((pe, i) => {
+    // Migre une fois pour toutes le format série=nombre d'un vieux programme
+    // vers un tableau, à l'ouverture de l'éditeur (voir normaliserSeriesProgramme).
+    pe.series = normaliserSeriesProgramme(pe);
     const exo = trouverExercice(pe.exerciceId);
     const meta = exo ? (GROUPES_MUSCULAIRES[exo.groupe] + ' · ' + MATERIELS[exo.materiel].label) : 'Exercice introuvable';
     const dernierDeLaListe = i === programmeEnEdition.exercices.length - 1;
+    const lignesSeries = pe.series.map((s, si) => `
+      <div class="serie-ligne-fenetre">
+        <button type="button" class="serie-ligne-suppr" onclick="retirerSerieProgramme(${i},${si})" aria-label="Supprimer cette série">🗑️ Supprimer</button>
+        <div class="serie-ligne serie-ligne--3col">
+          ${boutonNumeroSerie(si, s.technique, `ouvrirMenuTechniqueProgramme(this,${i},${si})`)}
+          <input type="number" inputmode="decimal" step="0.5" value="${s.poids ?? ''}" placeholder="—" onchange="modifierSerieProgramme(${i},${si},'poids',this.value)">
+          <input type="number" inputmode="numeric" step="1" value="${s.reps ?? ''}" placeholder="—" onchange="modifierSerieProgramme(${i},${si},'reps',this.value)">
+        </div>
+      </div>`).join('');
     return `<div class="exo-en-programme">
       <div class="exo-en-programme-entete">
         <div>
@@ -9992,29 +10095,39 @@ function renderProgrammeExercicesEnEdition() {
           <button class="btn-delete" onclick="retirerExerciceProgramme(${i})" aria-label="Retirer l'exercice">&times;</button>
         </div>
       </div>
-      <div class="exo-en-programme-technique">
-        <select onchange="modifierExerciceProgramme(${i},'technique',this.value)" aria-label="Technique">
-          <option value="normale" ${pe.technique === 'normale' || !pe.technique ? 'selected' : ''}>Normale</option>
-          <option value="degressif" ${pe.technique === 'degressif' ? 'selected' : ''}>💧 Dégressif</option>
-          <option value="pyramidal" ${pe.technique === 'pyramidal' ? 'selected' : ''}>🔺 Pyramidal</option>
-        </select>
-        ${dernierDeLaListe ? '' : `<button type="button" class="filtre-chip" aria-pressed="${pe.supersetSuivant ? 'true' : 'false'}" onclick="toggleSupersetProgramme(${i})">🔗 Superset avec le suivant</button>`}
+      ${dernierDeLaListe ? '' : `<div class="exo-en-programme-technique">
+        <button type="button" class="filtre-chip" aria-pressed="${pe.supersetSuivant ? 'true' : 'false'}" onclick="toggleSupersetProgramme(${i})">🔗 Superset avec le suivant</button>
+      </div>`}
+      <div class="serie-table">
+        <div class="serie-entete serie-entete--3col"><span>Série</span><span>Poids (kg)</span><span>Répétitions</span></div>
+        ${lignesSeries}
       </div>
-      <div class="exo-en-programme-champs">
-        <div class="input-group"><label>Séries</label><input type="number" min="1" value="${pe.series}" onchange="modifierExerciceProgramme(${i},'series',this.value)"></div>
-        <div class="input-group"><label>Répétitions</label><input type="text" value="${escapeHtml(pe.reps || '')}" placeholder="ex : 8-12" onchange="modifierExerciceProgramme(${i},'reps',this.value)"></div>
-        <div class="input-group"><label>Repos (s)</label><input type="number" min="0" step="15" value="${pe.repos}" onchange="modifierExerciceProgramme(${i},'repos',this.value)"></div>
-      </div>
+      <button type="button" class="btn-ajouter-serie" onclick="ajouterSerieProgramme(${i})">Ajouter une série</button>
     </div>`;
   }).join('');
 }
-function modifierExerciceProgramme(i, champ, valeur) {
+function modifierSerieProgramme(i, si, champ, valeur) {
+  const pe = programmeEnEdition.exercices[i];
+  const s = pe && pe.series[si];
+  if (!s) return;
+  s[champ] = valeur === '' ? null : Number(valeur);
+}
+function ajouterSerieProgramme(i) {
   const pe = programmeEnEdition.exercices[i];
   if (!pe) return;
-  if (champ === 'series') pe.series = Math.max(1, Number(valeur) || 1);
-  else if (champ === 'repos') pe.repos = Math.max(0, Number(valeur) || 0);
-  else if (champ === 'technique') pe.technique = valeur;
-  else pe.reps = valeur;
+  const derniere = pe.series[pe.series.length - 1];
+  pe.series.push({ poids: derniere ? derniere.poids : null, reps: derniere ? derniere.reps : null, technique: null });
+  renderProgrammeExercicesEnEdition();
+}
+// Déclenché par le bouton révélé en glissant une ligne de série vers la
+// gauche (voir renderProgrammeExercicesEnEdition) : si précise LAQUELLE,
+// pas forcément la dernière comme avant le glisser-supprimer.
+function retirerSerieProgramme(i, si) {
+  const pe = programmeEnEdition.exercices[i];
+  if (!pe || pe.series.length <= 1) return;
+  if (!confirm('Supprimer cette série ?')) return;
+  pe.series.splice(si, 1);
+  renderProgrammeExercicesEnEdition();
 }
 /* Un exercice marqué "superset avec le suivant" est exécuté juste après le
    suivant, sans repos entre les deux — deux boutons cochés à la suite
@@ -10028,6 +10141,9 @@ function toggleSupersetProgramme(i) {
   renderProgrammeExercicesEnEdition();
 }
 function retirerExerciceProgramme(i) {
+  const pe = programmeEnEdition.exercices[i];
+  const exo = pe && trouverExercice(pe.exerciceId);
+  if (!confirm(`Retirer ${exo ? libelleExercice(exo) : 'cet exercice'} du programme ?`)) return;
   programmeEnEdition.exercices.splice(i, 1);
   // Un exercice qui devient le dernier de la liste ne peut plus être lié à
   // "celui d'après" : sans ça, un superset supprimé en plein milieu de sa
@@ -10080,7 +10196,11 @@ function dupliquerProgramme(id) {
   if (!p) return;
   musculationProgrammes.push({
     id: idUnique('prog'), nom: p.nom + ' (copie)',
-    exercices: p.exercices.map(e => ({ ...e })), creeLe: Date.now(), maj: Date.now()
+    // Copie profonde du tableau de séries : un simple {...e} laisserait la
+    // copie et l'original pointer vers le MÊME tableau, si bien que modifier
+    // une série de la copie modifiait aussi l'originale.
+    exercices: p.exercices.map(e => ({ ...e, series: normaliserSeriesProgramme(e).map(s => ({ ...s })) })),
+    creeLe: Date.now(), maj: Date.now()
   });
   sauvegarderProgrammes();
   renderSeance();
@@ -10159,7 +10279,11 @@ function rendrePickerExercices() {
 }
 function choisirExercicePicker(id) {
   if (pickerMode === 'programme') {
-    programmeEnEdition.exercices.push({ exerciceId: id, series: 3, reps: '8-12', repos: 90, technique: 'normale', supersetSuivant: false });
+    programmeEnEdition.exercices.push({
+      exerciceId: id,
+      series: [{ poids: null, reps: 10, technique: null }, { poids: null, reps: 10, technique: null }, { poids: null, reps: 10, technique: null }],
+      supersetSuivant: false
+    });
     fermerModal('picker-exercices-modal');
     renderProgrammeExercicesEnEdition();
   } else if (pickerMode === 'session') {
@@ -10251,7 +10375,10 @@ function validerExercicePerso() {
    plutôt que de se lancer à l'aveugle — comme le fait Strong avant son
    propre bouton "Début entraînement". Le bouton "▶️ Démarrer" des cartes
    programme ouvre désormais cet aperçu ; demarrerSeance() reste la fonction
-   qui démarre vraiment la séance, appelée depuis le bouton de cette modale. */
+   qui démarre vraiment la séance, appelée depuis le bouton de cette modale.
+   Le détail des séries (poids, reps, type dégressif/pyramidal par série) se
+   règle dans le programme lui-même ou en direct pendant la séance — cet
+   aperçu reste volontairement un résumé compact avant de se lancer. */
 function apercuProgramme(programmeId) {
   const programme = musculationProgrammes.find(p => p.id === programmeId);
   if (!programme) return;
@@ -10262,13 +10389,12 @@ function apercuProgramme(programmeId) {
   document.getElementById('apercu-programme-container').innerHTML = programme.exercices.map(pe => {
     const exo = trouverExercice(pe.exerciceId);
     if (!exo) return '';
-    const derniereExo = dernierePerfExercice(pe.exerciceId);
-    const nbSeries = Math.max(1, Number(pe.series) || (derniereExo ? derniereExo.series.length : 3));
+    const nbSeries = normaliserSeriesProgramme(pe).length;
     return `<div class="exo-ligne" style="cursor:default;">
       <span class="exo-ligne-vignette" aria-hidden="true">${medaillonExercice(exo)}</span>
       <span style="flex:1; min-width:0;">
         <span class="exo-ligne-nom">${nbSeries} × ${escapeHtml(libelleExercice(exo))}</span>
-        <span class="exo-ligne-meta">${escapeHtml(GROUPES_MUSCULAIRES[exo.groupe] || '')}${badgeTechnique(pe.technique)}</span>
+        <span class="exo-ligne-meta">${escapeHtml(GROUPES_MUSCULAIRES[exo.groupe] || '')}</span>
       </span>
       <button type="button" class="btn-icone" style="flex:none;" onclick="afficherFicheExerciceBiblio('${exo.id}')" aria-label="Détails de l'exercice">❓</button>
     </div>`;
@@ -10332,9 +10458,9 @@ function ajouterExerciceASession(id) {
   if (!exo) return;
   const derniere = dernierePerfExercice(id);
   const series = derniere && derniere.series.length
-    ? derniere.series.map(s => ({ poids: s.poids, reps: s.reps, fait: false }))
-    : [{ poids: null, reps: null, fait: false }, { poids: null, reps: null, fait: false }, { poids: null, reps: null, fait: false }];
-  musculationSessionActive.exercices.push({ exerciceId: id, nom: exo.nom, series, technique: 'normale', supersetSuivant: false });
+    ? derniere.series.map(s => ({ poids: s.poids, reps: s.reps, fait: false, technique: s.technique || null }))
+    : [{ poids: null, reps: null, fait: false, technique: null }, { poids: null, reps: null, fait: false, technique: null }, { poids: null, reps: null, fait: false, technique: null }];
+  musculationSessionActive.exercices.push({ exerciceId: id, nom: exo.nom, series, supersetSuivant: false });
   sauvegarderSessionActive();
   renderSessionModal();
 }
@@ -10354,6 +10480,7 @@ function renderSessionModal() {
     }).join('');
   }
   document.getElementById('session-notes').value = s.notes || '';
+  initSwipeSeries('session-exercices-container');
 }
 function renderSessionExerciceBlocHTML(exo, ei) {
   const derniere = dernierePerfExercice(exo.exerciceId);
@@ -10362,27 +10489,163 @@ function renderSessionExerciceBlocHTML(exo, ei) {
       derniere.series.filter(x => x.fait).map(x => (x.poids ?? '—') + '×' + (x.reps ?? '—')).join(', ')
     : 'Première fois sur cet exercice.';
   const lignesSeries = exo.series.map((set, si) => `
-    <tr>
-      <td class="serie-num">${si + 1}</td>
-      <td><input type="number" inputmode="decimal" step="0.5" value="${set.poids ?? ''}" placeholder="—" onchange="modifierSerieSession(${ei},${si},'poids',this.value)"></td>
-      <td><input type="number" inputmode="numeric" step="1" value="${set.reps ?? ''}" placeholder="—" onchange="modifierSerieSession(${ei},${si},'reps',this.value)"></td>
-      <td><button type="button" class="serie-check ${set.fait ? 'faite' : ''}" onclick="basculerSerieSession(${ei},${si})" aria-label="Marquer la série comme faite">✓</button></td>
-    </tr>`).join('');
+    <div class="serie-ligne-fenetre">
+      <button type="button" class="serie-ligne-suppr" onclick="retirerSerieSession(${ei},${si})" aria-label="Supprimer cette série">🗑️ Supprimer</button>
+      <div class="serie-ligne serie-ligne--4col">
+        ${boutonNumeroSerie(si, set.technique, `ouvrirMenuTechniqueSession(this,${ei},${si})`)}
+        <input type="number" inputmode="decimal" step="0.5" value="${set.poids ?? ''}" placeholder="—" onchange="modifierSerieSession(${ei},${si},'poids',this.value)">
+        <input type="number" inputmode="numeric" step="1" value="${set.reps ?? ''}" placeholder="—" onchange="modifierSerieSession(${ei},${si},'reps',this.value)">
+        <button type="button" class="serie-check ${set.fait ? 'faite' : ''}" onclick="basculerSerieSession(${ei},${si})" aria-label="Marquer la série comme faite">✓</button>
+      </div>
+    </div>`).join('');
   return `<div class="session-exo-bloc">
     <div class="session-exo-titre">
-      <span class="session-exo-nom">${escapeHtml(trouverExercice(exo.exerciceId) ? libelleExercice(trouverExercice(exo.exerciceId)) : exo.nom)}${badgeTechnique(exo.technique)}</span>
+      <button type="button" class="session-exo-nom" style="background:none;border:none;padding:0;font:inherit;color:inherit;cursor:pointer;text-decoration:underline;text-underline-offset:3px;text-align:left;"
+              onclick="afficherFicheExerciceBiblio('${exo.exerciceId}')">${escapeHtml(trouverExercice(exo.exerciceId) ? libelleExercice(trouverExercice(exo.exerciceId)) : exo.nom)}</button>
       <button class="btn-delete" onclick="retirerExerciceSession(${ei})" aria-label="Retirer l'exercice">&times;</button>
     </div>
     <div class="session-exo-derniere">${escapeHtml(infoDerniere)}</div>
-    <table class="serie-table">
-      <thead><tr><th>Série</th><th>Poids (kg)</th><th>Répétitions</th><th>✓</th></tr></thead>
-      <tbody>${lignesSeries}</tbody>
-    </table>
-    <div style="display:flex; gap:8px; margin-top:8px;">
-      <button class="btn-icone" style="font-size:0.75rem; font-weight:700;" onclick="ajouterSerieSession(${ei})">+ Série</button>
-      ${exo.series.length > 1 ? `<button class="btn-icone" style="font-size:0.75rem; font-weight:700;" onclick="retirerSerieSession(${ei})">– Série</button>` : ''}
+    <div class="serie-table">
+      <div class="serie-entete serie-entete--4col"><span>Série</span><span>Poids (kg)</span><span>Répétitions</span><span>✓</span></div>
+      ${lignesSeries}
     </div>
+    <button type="button" class="btn-ajouter-serie" onclick="ajouterSerieSession(${ei})">Ajouter une série</button>
   </div>`;
+}
+/* Le "type" d'une série (dégressif, pyramidal, échec) — comme Warm up/Drop
+   set/Failure chez Strong — s'applique à CETTE série précise, pas à tout
+   l'exercice : une même série de dégressif est en général suivie de séries
+   normales, pas l'inverse. Pas de champ ni de menu toujours visible : le
+   numéro de la série lui-même sert de bouton, qui ouvre au tap un petit
+   menu (menuTechniquePopup ci-dessous) — une fois un type choisi, la
+   pastille affiche sa lettre (D/P/É) et sa couleur plutôt que le numéro.
+   ouvrirMenuJs est absent (undefined) pour un rendu en lecture seule
+   (détail d'une séance déjà terminée). */
+function boutonNumeroSerie(si, technique, ouvrirMenuJs) {
+  const libelle = technique && TECHNIQUE_LABELS[technique] ? TECHNIQUE_LABELS[technique] : 'Normale';
+  const contenu = (technique && TECHNIQUE_LETTRES[technique]) || (si + 1);
+  if (!ouvrirMenuJs) {
+    return `<span class="serie-num-btn" data-technique="${technique || ''}" aria-label="Série ${si + 1} — ${libelle}">${contenu}</span>`;
+  }
+  return `<button type="button" class="serie-num-btn" data-technique="${technique || ''}" onclick="${ouvrirMenuJs}"
+    aria-label="Série ${si + 1} — ${libelle} — appuyer pour changer le type">${contenu}</button>`;
+}
+
+/* Menu du type de série : un seul élément partagé (#menu-technique-popup),
+   repositionné à chaque ouverture sous la pastille tapée. menuTechniqueSur
+   retient QUOI modifier quand une option est choisie — appelant spécifique
+   (session ou programme), pas une fonction générique passée en chaîne : on
+   ne peut pas sérialiser une closure dans un attribut onclick. */
+let menuTechniqueSur = null;
+function ouvrirMenuTechnique(boutonEl, appliquer) {
+  const menu = document.getElementById('menu-technique-popup');
+  if (!menu) return;
+  menuTechniqueSur = appliquer;
+  const r = boutonEl.getBoundingClientRect();
+  const largeurMenu = 168;
+  menu.style.top = (r.bottom + 4) + 'px';
+  // Le menu déborderait à droite pour une pastille proche du bord : on le
+  // recale plutôt que de le laisser sortir de l'écran.
+  menu.style.left = Math.min(r.left, window.innerWidth - largeurMenu - 8) + 'px';
+  menu.classList.remove('hidden');
+}
+function fermerMenuTechnique() {
+  const menu = document.getElementById('menu-technique-popup');
+  if (menu) menu.classList.add('hidden');
+  menuTechniqueSur = null;
+}
+function choisirTechniqueMenu(valeur) {
+  if (menuTechniqueSur) menuTechniqueSur(valeur);
+  fermerMenuTechnique();
+}
+// Tap en dehors du menu (ou de la pastille qui vient de l'ouvrir) = on le
+// referme sans rien changer, comme n'importe quel menu contextuel. Même
+// geste pour une ligne de série glissée-ouverte (voir plus bas).
+document.addEventListener('click', (e) => {
+  const menu = document.getElementById('menu-technique-popup');
+  if (menu && !menu.classList.contains('hidden') && !menu.contains(e.target) && !e.target.closest('.serie-num-btn')) {
+    fermerMenuTechnique();
+  }
+  document.querySelectorAll('.serie-ligne.ouverte').forEach(l => {
+    const fenetre = l.closest('.serie-ligne-fenetre');
+    if (fenetre && !fenetre.contains(e.target)) refermerLigneSerie(l);
+  });
+});
+
+/* Glisser une ligne de série vers la gauche révèle le bouton "Supprimer"
+   caché dessous (le fond rouge de .serie-ligne-suppr, toujours là, juste
+   masqué par la ligne tant qu'on ne glisse pas) — ça permet de ne garder
+   que "+ Série" en bouton visible en permanence, sans "– Série" à côté.
+   Écouteurs posés une fois sur le conteneur (délégation), pas ligne par
+   ligne : les lignes sont régénérées à chaque modification, des
+   écouteurs directs seraient perdus à chaque rendu. Pointer Events plutôt
+   que Touch Events : un seul code pour tactile et souris/trackpad. */
+const SWIPE_REVEAL = 92;
+let swipeEtat = null;
+function initSwipeSeries(conteneurId) {
+  const c = document.getElementById(conteneurId);
+  if (!c || c.dataset.swipeInit) return;
+  c.dataset.swipeInit = '1';
+  c.addEventListener('pointerdown', (e) => {
+    const ligne = e.target.closest('.serie-ligne');
+    if (!ligne) return;
+    document.querySelectorAll('.serie-ligne.ouverte').forEach(l => { if (l !== ligne) refermerLigneSerie(l); });
+    try { ligne.setPointerCapture(e.pointerId); } catch (err) {}
+    swipeEtat = {
+      ligne, startX: e.clientX, startY: e.clientY, dx: 0, horizontal: false,
+      pointerId: e.pointerId, dejaOuverte: ligne.classList.contains('ouverte')
+    };
+  });
+  c.addEventListener('pointermove', (e) => {
+    if (!swipeEtat || e.pointerId !== swipeEtat.pointerId) return;
+    const dx0 = e.clientX - swipeEtat.startX;
+    const dy = e.clientY - swipeEtat.startY;
+    if (!swipeEtat.horizontal) {
+      // Sous les 8px, encore ambigu entre tap, scroll vertical et glisser :
+      // on attend d'avoir une direction franche avant de choisir.
+      if (Math.abs(dx0) < 8 && Math.abs(dy) < 8) return;
+      if (Math.abs(dy) > Math.abs(dx0)) { swipeEtat = null; return; }
+      swipeEtat.horizontal = true;
+      swipeEtat.ligne.classList.add('en-glissement');
+    }
+    const base = swipeEtat.dejaOuverte ? -SWIPE_REVEAL : 0;
+    swipeEtat.dx = Math.min(0, Math.max(-SWIPE_REVEAL - 24, base + dx0));
+    swipeEtat.ligne.style.transform = `translateX(${swipeEtat.dx}px)`;
+  });
+  const finGlissement = (e) => {
+    if (!swipeEtat || e.pointerId !== swipeEtat.pointerId) return;
+    const { ligne, dx, horizontal } = swipeEtat;
+    ligne.classList.remove('en-glissement');
+    if (horizontal) {
+      if (dx < -SWIPE_REVEAL / 2) { ligne.style.transform = `translateX(-${SWIPE_REVEAL}px)`; ligne.classList.add('ouverte'); }
+      else refermerLigneSerie(ligne);
+    }
+    swipeEtat = null;
+  };
+  c.addEventListener('pointerup', finGlissement);
+  c.addEventListener('pointercancel', finGlissement);
+}
+function refermerLigneSerie(ligne) {
+  ligne.style.transform = '';
+  ligne.classList.remove('ouverte');
+}
+function ouvrirMenuTechniqueSession(boutonEl, ei, si) {
+  ouvrirMenuTechnique(boutonEl, (valeur) => {
+    const set = musculationSessionActive.exercices[ei] && musculationSessionActive.exercices[ei].series[si];
+    if (!set) return;
+    set.technique = valeur;
+    sauvegarderSessionActive();
+    renderSessionModal();
+  });
+}
+function ouvrirMenuTechniqueProgramme(boutonEl, i, si) {
+  ouvrirMenuTechnique(boutonEl, (valeur) => {
+    const pe = programmeEnEdition.exercices[i];
+    const s = pe && pe.series[si];
+    if (!s) return;
+    s.technique = valeur;
+    renderProgrammeExercicesEnEdition();
+  });
 }
 function modifierSerieSession(ei, si, champ, valeur) {
   const set = musculationSessionActive.exercices[ei] && musculationSessionActive.exercices[ei].series[si];
@@ -10401,18 +10664,25 @@ function basculerSerieSession(ei, si) {
 function ajouterSerieSession(ei) {
   const exo = musculationSessionActive.exercices[ei];
   const derniereSerie = exo.series[exo.series.length - 1];
-  exo.series.push({ poids: derniereSerie ? derniereSerie.poids : null, reps: derniereSerie ? derniereSerie.reps : null, fait: false });
+  exo.series.push({ poids: derniereSerie ? derniereSerie.poids : null, reps: derniereSerie ? derniereSerie.reps : null, fait: false, technique: null });
   sauvegarderSessionActive();
   renderSessionModal();
 }
-function retirerSerieSession(ei) {
+// Déclenché par le bouton révélé en glissant une ligne de série vers la
+// gauche (voir renderSessionExerciceBlocHTML) : si précise LAQUELLE,
+// pas forcément la dernière comme avant le glisser-supprimer.
+function retirerSerieSession(ei, si) {
   const exo = musculationSessionActive.exercices[ei];
-  if (exo.series.length <= 1) return;
-  exo.series.pop();
+  if (!exo || exo.series.length <= 1) return;
+  if (!confirm('Supprimer cette série ?')) return;
+  exo.series.splice(si, 1);
   sauvegarderSessionActive();
   renderSessionModal();
 }
 function retirerExerciceSession(ei) {
+  const exo = musculationSessionActive.exercices[ei];
+  const nom = exo && (trouverExercice(exo.exerciceId) ? libelleExercice(trouverExercice(exo.exerciceId)) : exo.nom);
+  if (!confirm(`Retirer ${nom || 'cet exercice'} de la séance ?`)) return;
   musculationSessionActive.exercices.splice(ei, 1);
   const dernier = musculationSessionActive.exercices[musculationSessionActive.exercices.length - 1];
   if (dernier) dernier.supersetSuivant = false;
@@ -10436,7 +10706,7 @@ function terminerSeance() {
     date: todayStr(), debut: s.debut, fin, dureeMin, notes: s.notes || '', maj: fin,
     exercices: s.exercices.map(e => ({
       exerciceId: e.exerciceId, nom: e.nom, series: e.series.filter(x => x.fait || x.poids || x.reps),
-      technique: e.technique || 'normale', supersetSuivant: !!e.supersetSuivant
+      supersetSuivant: !!e.supersetSuivant
     })).filter(e => e.series.length)
   };
   musculationHistorique.unshift(entree);
@@ -10460,10 +10730,15 @@ function terminerSeance() {
   if (etaitLibre && confirm('Enregistrer cette séance comme nouveau programme réutilisable ?')) {
     programmeEnEdition = {
       id: null,
-      exercices: entree.exercices.map(e => {
-        const derniereSerie = e.series[e.series.length - 1];
-        return { exerciceId: e.exerciceId, series: e.series.length || 3, reps: String((derniereSerie && derniereSerie.reps) || 10), repos: 90 };
-      })
+      // Reprend le poids et les répétitions réels de chaque série de la
+      // séance qui vient de se terminer, pas juste leur nombre : c'est tout
+      // l'intérêt d'enregistrer une séance libre comme programme plutôt que
+      // d'en repartir d'un programme vide.
+      exercices: entree.exercices.map(e => ({
+        exerciceId: e.exerciceId,
+        series: e.series.map(s => ({ poids: s.poids, reps: s.reps, technique: s.technique || null })),
+        supersetSuivant: !!e.supersetSuivant
+      }))
     };
     document.getElementById('titre-programme-modal').textContent = '📋 Nouveau programme';
     document.getElementById('programme-nom-input').value = '';
