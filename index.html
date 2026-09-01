@@ -2865,7 +2865,7 @@
     </div>
     <div class="input-group">
       <label for="ai-file-input">Photo (facultative)</label>
-      <input type="file" id="ai-file-input" accept="image/*" capture="environment" onchange="previsualiserPhoto(event)">
+      <input type="file" id="ai-file-input" accept="image/*" onchange="previsualiserPhoto(event)">
     </div>
     <span class="puce-ia"></span>
     <img id="preview-image" class="hidden" alt="Aperçu du plat photographié">
@@ -8495,6 +8495,12 @@ grant execute on function public.admin_rattacher_donnees(text, text) to authenti
 -- utilisée uniquement par ce compte, exactement comme s'il l'avait saisie
 -- lui-même dans ⚙️ Profil. Rien n'est jamais écrit dans le code de
 -- l'application : la clé ne transite que par cet appel, réservé à l'admin.
+-- maj est aussi mis à jour (horodatage epoch ms, même format que le reste de
+-- l'appli) : synchroniser() ne redescend le profil sur l'appareil du compte
+-- que si le maj du serveur dépasse celui déjà connu localement — sans ce
+-- rafraîchissement, l'admin avait beau enregistrer la clé, l'appareil du
+-- compte gardait indéfiniment son ancien profil (donc pas de clé) puisque
+-- rien ne semblait avoir changé de son point de vue.
 create or replace function public.admin_definir_cle_gemini(p_utilisateur text, p_cle text)
 returns void
 language plpgsql
@@ -8506,7 +8512,8 @@ begin
     raise exception 'Accès réservé à l''administrateur';
   end if;
   update profil
-    set donnees = jsonb_set(coalesce(donnees, '{}'::jsonb), '{geminiKey}', to_jsonb(coalesce(p_cle, '')), true)
+    set donnees = jsonb_set(coalesce(donnees, '{}'::jsonb), '{geminiKey}', to_jsonb(coalesce(p_cle, '')), true),
+        maj = (extract(epoch from clock_timestamp()) * 1000)::bigint
     where utilisateur = p_utilisateur;
   if not found then
     raise exception 'Compte introuvable (aucun profil enregistré pour cet utilisateur)';
@@ -11279,27 +11286,14 @@ function fermerFeuilles() {
   }, { passive: true });
 
   /* Sur iPhone (iOS 13+), l'inclinaison ne se déclenche qu'après une
-     autorisation explicite — jamais accordée au chargement, elle doit être
-     demandée depuis un geste de l'utilisateur. Sans ça, "deviceorientation"
-     ne se déclenche tout simplement jamais et le reflet reste immobile ; sur
-     téléphone, "pointermove" ne prend pas non plus le relais (pointerType
-     "touch" y est ignoré ci-dessus, pour ne pas faire sauter le reflet à
-     chaque tap). On la demande donc au tout premier effleurement de l'écran,
-     sans bouton dédié : l'effet est cosmétique, inutile d'interrompre
-     l'ouverture de l'appli avec une demande d'autorisation visible avant
-     même le premier geste. Sans effet sur Android, qui n'a pas cette API. */
-  if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
-    var demandeFaite = false;
-    var demanderInclinaison = function () {
-      if (demandeFaite) return;
-      demandeFaite = true;
-      DeviceOrientationEvent.requestPermission().catch(function () {});
-      document.removeEventListener('touchend', demanderInclinaison);
-      document.removeEventListener('click', demanderInclinaison);
-    };
-    document.addEventListener('touchend', demanderInclinaison, { passive: true });
-    document.addEventListener('click', demanderInclinaison, { passive: true });
-  }
+     autorisation explicite demandée via DeviceOrientationEvent.requestPermission().
+     On ne la demande plus du tout : la popup système qu'elle déclenche
+     revenait trop souvent (iOS ne mémorise pas toujours la réponse d'une
+     session à l'autre) pour ce que l'effet apporte. Sans cette demande,
+     "deviceorientation" ne se déclenche simplement jamais sur iPhone — le
+     reflet y reste fixe, comme sur un appareil sans capteur. Il continue de
+     suivre le pointeur sur ordinateur, et l'inclinaison sur Android (qui ne
+     demande pas cette permission). */
 })();
 </script>
 </body>
