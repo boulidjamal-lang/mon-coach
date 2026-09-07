@@ -803,6 +803,16 @@
     }
     .close-modal:hover, .close-modal:focus-visible { color: var(--text); background: var(--verre-fort); }
 
+    /* Saisie manuelle d'un aliment : plein écran plutôt qu'une petite carte
+       centrée — la recherche (voir .off-liste plus bas) a besoin de place
+       pour être parcourue confortablement, pas juste 232px coincés par-dessus
+       le formulaire. */
+    #manual-modal { padding: 0; align-items: stretch; }
+    #manual-modal .modal-content {
+      max-width: none; width: 100%; height: 100dvh; max-height: 100dvh;
+      border-radius: 0; margin: 0;
+    }
+
     /* --- FEUILLE D'ACTION (bottom sheet) --- */
     .feuille {
       position: fixed; inset: 0; z-index: 1100; display: none;
@@ -1188,6 +1198,16 @@
       background: linear-gradient(var(--barre), var(--barre)), var(--bg);
       border: 0;
       box-shadow: var(--ombre-haute);
+    }
+    /* Dans la saisie manuelle plein écran (#manual-modal), la liste n'a plus
+       besoin de flotter par-dessus le formulaire ni d'être plafonnée à
+       232px : elle prend sa place normale dans le flux, sur toute la
+       hauteur disponible — c'est elle, l'essentiel de l'écran pendant
+       qu'on cherche. Les champs de saisie manuelle restent juste en
+       dessous, atteignables en descendant. */
+    #manual-modal .off-liste {
+      position: static; width: auto; margin: 12px 0 0; max-height: none;
+      box-shadow: none;
     }
     .off-suggestion {
       display: block; width: 100%; text-align: left; border: 0;
@@ -1768,7 +1788,13 @@
     <div class="titre-section">🍳 Idées recettes</div>
     <div class="analysis-card">
       <p class="note">Des idées de repas ou collations pour compléter tes macros du jour, sans dépasser ton objectif.</p>
-      <button class="btn btn-analysis" onclick="chercherRecettesMacros()">🍳 Trouver des recettes</button>
+      <p class="note" style="margin:0 0 8px; font-weight:700;">Pour quel repas ?</p>
+      <div style="display:flex; gap:6px; flex-wrap:wrap; margin-bottom:14px;">
+        <button type="button" class="filtre-chip" onclick="chercherRecettesMacros('breakfast')">🌅 Petit-déj</button>
+        <button type="button" class="filtre-chip" onclick="chercherRecettesMacros('lunch')">🍴 Déjeuner</button>
+        <button type="button" class="filtre-chip" onclick="chercherRecettesMacros('snack')">🍪 Collation</button>
+        <button type="button" class="filtre-chip" onclick="chercherRecettesMacros('dinner')">🍽️ Dîner</button>
+      </div>
       <span class="puce-ia"></span>
       <div id="recette-loader" class="loader hidden">🧠 Recherche de recettes…</div>
       <div id="recette-box" class="analysis-output hidden"></div>
@@ -5088,7 +5114,7 @@ function fichierVersBase64(file) {
   });
 }
 
-const PROMPT_JSON_ALIMENTS = "Renvoie UNIQUEMENT un tableau JSON (sans texte autour) des aliments. Pour chaque aliment: {\"name\": string en français, \"grams\": number (portion estimée en g), \"kcal100\": number (kcal pour 100g), \"p100\": number, \"c100\": number, \"f100\": number}.";
+const PROMPT_JSON_ALIMENTS = "Renvoie UNIQUEMENT un tableau JSON (sans texte autour) des aliments. Pour chaque aliment: {\"name\": string en français, \"grams\": number (portion estimée en g), \"kcal100\": number (kcal pour 100g), \"p100\": number, \"c100\": number, \"f100\": number}. Pour estimer grams le plus précisément possible : si une photo est fournie, appuie-toi sur les repères visuels de taille présents dans l'image (diamètre de l'assiette ou du bol, longueur des couverts, taille d'un verre ou d'une main) plutôt que sur une estimation à l'aveugle, et tiens compte de la densité de l'aliment (un féculent cuit ou une viande pèsent plus qu'un légume vert pour un volume équivalent) ; sans photo, base-toi sur une portion individuelle standard pour ce type d'aliment.";
 
 /* Photo, description, ou les deux : les deux champs sont maintenant
    indépendants (avant, seule une photo pouvait déclencher l'analyse — pas
@@ -5210,7 +5236,7 @@ Calories consommées: ${totals.kcal} / objectif ${t.target} kcal. Protéines ${t
     box.textContent = messageIA(e); box.classList.remove('hidden');
   }
 }
-async function chercherRecettesMacros() {
+async function chercherRecettesMacros(typeRepas) {
   if (!geminiKey) { alert('Ajoute ta clé API Gemini dans ⚙️ Profil.'); return; }
   const loader = document.getElementById('recette-loader');
   const box = document.getElementById('recette-box');
@@ -5233,7 +5259,12 @@ async function chercherRecettesMacros() {
     return;
   }
 
-  const prompt = `Tu es un coach nutrition. Propose 2 idées de repas ou collations simples et rapides à préparer, en français, sans markdown, pour aider la personne à se rapprocher de ses objectifs nutritionnels du jour sans les dépasser. Pour chaque idée : un nom, les ingrédients principaux avec quantités approximatives, et une estimation kcal/protéines/glucides/lipides.
+  // Le libellé du repas (ex. "🌅 Petit-déjeuner") oriente le type de plat
+  // proposé — sans ça, Gemini pouvait suggérer un plat de dîner pour un
+  // petit-déjeuner. MEAL_LABELS est déjà utilisé pour les repas eux-mêmes.
+  const libelleRepas = (typeRepas && MEAL_LABELS[typeRepas]) ? MEAL_LABELS[typeRepas].replace(/^\S+\s/, '') : null;
+
+  const prompt = `Tu es un coach nutrition. Propose 2 idées de${libelleRepas ? ' ' + libelleRepas.toLowerCase() : ' repas ou collations'} simples et rapides à préparer, en français, sans markdown, pour aider la personne à se rapprocher de ses objectifs nutritionnels du jour sans les dépasser. Pour chaque idée : un nom, les ingrédients principaux avec quantités approximatives, et une estimation kcal/protéines/glucides/lipides.
 
 Objectif du jour : ${t.goal}.
 Il reste à consommer aujourd'hui : ${reste.kcal} kcal, dont ${reste.p}g de protéines, ${reste.c}g de glucides, ${reste.f}g de lipides.`;
