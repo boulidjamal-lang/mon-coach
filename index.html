@@ -1823,11 +1823,13 @@
         <label for="objectif-select">Objectif actuel</label>
         <select id="objectif-select" onchange="changerObjectif()">
           <option value="maintien">Maintien</option>
+          <option value="recomposition">Recomposition (muscle + perte de gras)</option>
           <option value="seche">Sèche / Perte</option>
           <option value="masse">Prise de masse</option>
         </select>
       </div>
       <p class="note" style="margin:10px 0 0;">Pas besoin de le re-choisir chaque jour : une fois réglé, il reste actif jusqu'à ce que tu le changes — inutile de le retoucher avant ton prochain vrai changement d'objectif, dans quelques mois. Le changer ne modifie que la suite : l'historique de tes statistiques passées n'est jamais réécrit.</p>
+      <p class="note" style="margin:10px 0 0;" id="note-recomposition">🔄 <strong>Recomposition</strong> : mêmes calories qu'en maintien, mais protéines aussi élevées qu'en sèche — pour prendre du muscle et perdre du gras en même temps. Fonctionne surtout si tu progresses encore en charge à l'entraînement et que tu as des réserves de graisse (le corps y puise l'énergie du gain musculaire).</p>
     </div>
 
     <div class="fitness-card">
@@ -1862,6 +1864,16 @@
         <summary style="cursor:pointer;font-size:0.75rem;color:var(--text-muted);font-weight:700;">D'où viennent ces chiffres ?</summary>
         <p class="note" style="margin:10px 0 0;">
           Métabolisme de base : formule de Mifflin-St Jeor (poids, taille, âge, sexe).
+          Si un % de masse grasse est enregistré dans Mesures corporelles (saisi à
+          la main ou importé depuis la balance Withings), la formule Katch-McArdle
+          prend le relais et se base sur ta masse maigre plutôt que ton poids total
+          — plus précis pour les profils très musclés ou avec un taux de masse
+          grasse élevé. L'objectif de protéines se base aussi sur la masse maigre
+          dans ce cas (les lipides restent sur le poids total, leur plancher étant
+          hormonal, pas lié au tissu maigre). L'objectif "Recomposition" reprend
+          les calories du maintien mais des protéines au niveau d'une sèche : c'est
+          la combinaison qui permet de prendre du muscle et perdre du gras en même
+          temps, à condition de continuer à progresser en charge à l'entraînement.
           Le facteur × 1,2 correspond à un mode de vie sédentaire — il inclut déjà
           environ 4 000 pas, c'est pourquoi seuls les pas au-delà sont ajoutés.
           Les séances utilisent les MET du <em>Compendium of Physical Activities</em>,
@@ -3382,6 +3394,20 @@ function dernierPoidsConnu(avant) {
   return Number(userProfile.weight) || 70;
 }
 
+/* Même principe pour le % de masse grasse, saisi dans "Mesures corporelles"
+   (manuellement ou importé depuis la balance Withings) : on prend la
+   dernière valeur connue à date, pas seulement celle du jour même — la
+   composition corporelle ne se mesure pas tous les jours. */
+function derniereGrassePctConnue(avant) {
+  const mesures = userProfile.mesures || {};
+  const dates = Object.keys(mesures).filter(d => d <= avant).sort().reverse();
+  for (const d of dates) {
+    const g = Number(mesures[d] && mesures[d].grassePct);
+    if (Number.isFinite(g) && g > 0) return g;
+  }
+  return null;
+}
+
 /* Même principe que le poids : l'objectif ne se ressaisit pas chaque jour,
    il reste celui du dernier changement explicite. Changer l'objectif
    aujourd'hui n'affecte donc jamais le calcul des journées passées — elles
@@ -3398,7 +3424,20 @@ function computeTargets(day, dateStr) {
   const weight = Number(day.weight) || dernierPoidsConnu(dateStr || todayStr());
   const height = Number(userProfile.height) || 175;
   const age = Number(userProfile.age) || 25;
-  const bmr = 10 * weight + 6.25 * height - 5 * age + (userProfile.gender === 'f' ? -161 : 5);
+  const bodyFatPercent = derniereGrassePctConnue(dateStr || todayStr());
+  // Katch-McArdle (basée sur la masse maigre) quand un % de masse grasse a
+  // été mesuré (saisi à la main ou importé depuis la balance Withings dans
+  // Mesures corporelles) : plus précis, notamment pour les profils très
+  // musclés ou avec un taux de masse grasse élevé, que Mifflin-St Jeor qui
+  // ignore la composition corporelle et ne voit que le poids total. Sans
+  // mesure disponible, on retombe sur Mifflin-St Jeor (poids total).
+  const masseMaigre = bodyFatPercent ? weight * (1 - bodyFatPercent / 100) : null;
+  let bmr;
+  if (masseMaigre) {
+    bmr = 370 + 21.6 * masseMaigre;
+  } else {
+    bmr = 10 * weight + 6.25 * height - 5 * age + (userProfile.gender === 'f' ? -161 : 5);
+  }
 
   /* Le facteur 1,2 de Mifflin-St Jeor correspond à « sédentaire », qui inclut
      déjà environ 4 000 pas quotidiens. Ajouter tous les pas par-dessus les
@@ -3436,8 +3475,16 @@ function computeTargets(day, dateStr) {
   const sousPlancher = target < plancher;
   if (sousPlancher) target = plancher;
 
-  const protein = Math.round(weight * (objectif === 'seche' ? 2.2 : 1.8));
-  // Les lipides ne descendent pas sous 0,8 g/kg : en dessous, c'est hormonal.
+  // Sur la masse maigre quand elle est connue : la graisse n'a pas besoin de
+  // protéines pour se maintenir, seul le tissu maigre (muscle, organes...) en
+  // a besoin. Sans mesure de masse grasse, on retombe sur le poids total.
+  // En recomposition, les protéines montent au niveau d'une sèche : c'est
+  // elles qui permettent de construire du muscle tout en étant à calories
+  // de maintien (voire en léger déficit).
+  const protein = Math.round((masseMaigre || weight) * ((objectif === 'seche' || objectif === 'recomposition') ? 2.2 : 1.8));
+  // Les lipides ne descendent pas sous 0,8 g/kg (de poids total, pas de masse
+  // maigre) : en dessous, c'est hormonal — lié à la taille du corps dans son
+  // ensemble, pas seulement au tissu maigre.
   const fat = Math.max(Math.round(weight * 0.8), Math.round((target * 0.25) / 9));
   const carbs = Math.max(0, Math.round((target - protein * 4 - fat * 9) / 4));
   return {
@@ -3823,7 +3870,7 @@ function majDetailDepense(day, t) {
     ['Pas au-delà de 4 000', '+ ' + t.stepsKcal + ' kcal'],
     ['Séances de sport', '+ ' + t.workoutKcal + ' kcal'],
     ['Dépense totale estimée', t.tdee + ' kcal'],
-    ['Objectif (' + ({ seche: 'sèche −20 %', masse: 'masse +15 %', maintien: 'maintien' }[t.goal] || t.goal) + ')', t.target + ' kcal']
+    ['Objectif (' + ({ seche: 'sèche −20 %', masse: 'masse +15 %', maintien: 'maintien', recomposition: 'recomposition' }[t.goal] || t.goal) + ')', t.target + ' kcal']
   ];
   if (t.sousPlancher) lignes.push(['⚠️ Ramené au métabolisme de base', 'plancher']);
   el.innerHTML = '';
