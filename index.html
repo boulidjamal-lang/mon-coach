@@ -1878,8 +1878,13 @@
           environ 4 000 pas, c'est pourquoi seuls les pas au-delà sont ajoutés.
           Les séances utilisent les MET du <em>Compendium of Physical Activities</em>,
           moins 1 MET : l'heure de sport remplace une heure de repos déjà comptée,
-          elle ne s'y ajoute pas. Une heure de musculation à 80 kg donne ainsi
-          336 kcal, pas 500.
+          elle ne s'y ajoute pas.
+          Pour une séance de musculation trackée dans l'onglet Séance, le temps de
+          repos entre les séries n'est pas compté comme de l'effort (il se passe à
+          un rythme proche du repos, déjà compté ailleurs) : seul le nombre de
+          séries réellement faites compte, à raison d'environ 40 secondes d'effort
+          par série. Une séance de musculation ajoutée à la main dans Activité
+          (sans détail des séries) reste calculée sur sa durée totale déclarée.
         </p>
       </details>
     </div>
@@ -3257,7 +3262,25 @@ const MEAL_LABELS = { breakfast: '🌅 Petit-déjeuner', lunch: '🍴 Déjeuner'
    = 336 kcal nettes, au lieu de 420 kcal auparavant.
    --------------------------------------------------------------------- */
 const SPORT_MET = { musculation: 5.0, course: 9.0, natation: 7.0, cyclisme: 7.5, hiit: 8.0, foot: 8.0, marche_rapide: 4.5 };
-function kcalSeance(type, minutes, poids) {
+/* Pour une séance de musculation trackée dans l'appli (donc dont on connaît
+   le nombre de séries réellement faites), le temps total entre le début et
+   la fin inclut le repos entre les séries — souvent 60 à 70 % de la durée.
+   Ce repos se passe debout/assis, à un rythme proche du métabolisme de base
+   déjà compté ailleurs : l'inclure dans une durée à MET 5,0 (une moyenne
+   pensée pour une séance "au rythme habituel", repos compris) surestimait
+   la dépense. On calcule donc plutôt le temps actif (nombre de séries x
+   une durée moyenne par série, exécution + mise en place) avec le MET d'un
+   effort vigoureux (le repos n'étant plus dans la durée, l'effort qui reste
+   l'est réellement). Sans nombre de séries connu (séance non trackée,
+   saisie à la main dans Activité), on retombe sur l'ancien calcul basé sur
+   la durée totale saisie. */
+const SECONDES_PAR_SERIE_MUSCU = 40;
+const MET_MUSCULATION_ACTIF = 6.0;
+function kcalSeance(type, minutes, poids, seriesFaites) {
+  if (type === 'musculation' && Number(seriesFaites) > 0) {
+    const dureeActiveMin = (Number(seriesFaites) * SECONDES_PAR_SERIE_MUSCU) / 60;
+    return Math.max(0, (MET_MUSCULATION_ACTIF - 1) * 3.5 * poids / 200) * dureeActiveMin;
+  }
   const met = SPORT_MET[type];
   if (!met) return 0;
   return Math.max(0, (met - 1) * 3.5 * poids / 200) * (Number(minutes) || 0);
@@ -3458,7 +3481,7 @@ function computeTargets(day, dateStr) {
 
   let workoutKcal = 0;
   if (day.workouts && day.workouts.length > 0) {
-    day.workouts.forEach(w => { workoutKcal += kcalSeance(w.type, w.time, weight); });
+    day.workouts.forEach(w => { workoutKcal += kcalSeance(w.type, w.time, weight, w.seriesFaites); });
   }
   let tdee = bmr * 1.2 + stepsKcal + workoutKcal;
 
@@ -7090,7 +7113,7 @@ function targetsPourCompte(day, dateStr, jours, compte) {
   const pasEnPlus = Math.max(0, pasDuJour - PAS_DEJA_COMPTES);
   const stepsKcal = pasEnPlus * 0.03 * (weight / 70);
   let workoutKcal = 0;
-  (day.workouts || []).forEach(w => { workoutKcal += kcalSeance(w.type, w.time, weight); });
+  (day.workouts || []).forEach(w => { workoutKcal += kcalSeance(w.type, w.time, weight, w.seriesFaites); });
   const tdee = bmr * 1.2 + stepsKcal + workoutKcal;
   const objectif = day.goal || dernierObjectifDansListe(jours, dateStr);
   const adj = objectif === 'seche' ? -0.20 : objectif === 'masse' ? 0.15 : 0;
@@ -11353,7 +11376,7 @@ function terminerSeance() {
   // marqueur `source: 'seance'` pour que l'onglet Activité l'affiche
   // distinctement et que personne ne la ressaisisse à la main en double.
   const day = getDay(entree.date);
-  day.workouts.push({ type: 'musculation', time: dureeMin, source: 'seance', nom: entree.programmeNom });
+  day.workouts.push({ type: 'musculation', time: dureeMin, seriesFaites, source: 'seance', nom: entree.programmeNom });
   saveData(entree.date);
 
   const etaitLibre = !s.programmeId && entree.exercices.length > 0;
