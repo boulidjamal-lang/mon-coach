@@ -1740,7 +1740,7 @@
         var regle = function (theme, v) {
           if (!v) return '';
           return ':root[data-theme="' + theme + '"]{--bg:' + v.bg + ';--text:' + v.text +
-            ';--primary:' + v.primary + ';--accent:' + v.accent + ';--ai-color:' + v.accent +
+            ';--barre:' + v.bg + ';--primary:' + v.primary + ';--accent:' + v.accent + ';--ai-color:' + v.accent +
             ';--danger:' + v.danger + ';}';
         };
         style.textContent = regle('light', cc.clair) + regle('dark', cc.sombre);
@@ -6652,7 +6652,7 @@ function hexVersRgb(hex) {
 function construireCssCouleurs(donnees) {
   const regle = (theme, v) => {
     if (!v) return '';
-    return `:root[data-theme="${theme}"]{--bg:${v.bg};--text:${v.text};` +
+    return `:root[data-theme="${theme}"]{--bg:${v.bg};--text:${v.text};--barre:${v.bg};` +
       `--primary:${v.primary};--primary-txt:${texteContrastePour(v.primary)};` +
       `--primary-glow:rgba(${hexVersRgb(v.primary)},.3);` +
       `--accent:${v.accent};--ai-color:${v.accent};--danger:${v.danger};}`;
