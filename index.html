@@ -652,7 +652,7 @@
     .macro-pct { font-size: 0.6rem; font-weight: 700; color: var(--text-muted); margin-top: 4px; letter-spacing: 0.4px; }
 
     /* --- CARTES --- */
-    .daily-questionnaire, .fitness-card, .analysis-card, .meal-card, .bloc-verre {
+    .fitness-card, .analysis-card, .meal-card, .bloc-verre {
       background: var(--verre);
       -webkit-backdrop-filter: blur(var(--verre-flou)) saturate(var(--verre-sat));
       backdrop-filter: blur(var(--verre-flou)) saturate(var(--verre-sat));
@@ -663,8 +663,8 @@
       box-shadow: var(--ombre);
       transition: border-color 0.3s, transform 0.3s cubic-bezier(0.16,1,0.3,1), box-shadow 0.3s;
     }
-    .daily-questionnaire:hover, .fitness-card:hover, .analysis-card:hover, .meal-card:hover { transform: translateY(-2px); box-shadow: var(--ombre-haute); }
-    .daily-questionnaire h3, .fitness-card h3, .analysis-card h3 {
+    .fitness-card:hover, .analysis-card:hover, .meal-card:hover { transform: translateY(-2px); box-shadow: var(--ombre-haute); }
+    .fitness-card h3, .analysis-card h3 {
       margin-top: 0; margin-bottom: var(--densite-h3-marge); font-size: 0.85rem; font-weight: 700;
       color: var(--text); letter-spacing: 0.8px; text-transform: uppercase;
     }
@@ -738,7 +738,6 @@
     .btn-ajout-repas:hover { background: var(--verre-fort); border-color: var(--primary); color: var(--primary); }
     .btn-ajout-repas:active { transform: scale(0.985); }
 
-    .meal-buttons { display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap; }
     .btn-action {
       padding: 11px 12px; min-height: 42px;
       border: 0; border-radius: 13px;
@@ -747,12 +746,8 @@
       background: var(--verre-fort); color: var(--text);
       transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
     }
-    .btn-ai { color: var(--ai-color); border-color: color-mix(in srgb, var(--ai-color) 35%, transparent); }
-    .btn-ai:hover { border-color: var(--ai-color); }
     .btn-barcode { color: var(--accent); border-color: color-mix(in srgb, var(--accent) 35%, transparent); }
     .btn-barcode:hover { border-color: var(--accent); }
-    .btn-manual { color: var(--primary); border-color: color-mix(in srgb, var(--primary) 40%, transparent); }
-    .btn-manual:hover { border-color: var(--primary); }
 
     /* --- BOUTON FLOTTANT : c'est desormais toute la navigation ---
        La barre d'onglets prenait 66 px en permanence pour quatre libelles
@@ -1193,14 +1188,6 @@
 
     .edit-macros { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 
-    /* Badge de provenance dans les suggestions de recherche. */
-    .off-suggestion .off-origine {
-      display: inline-block; margin-left: 6px; font-size: 0.62rem;
-      padding: 1px 6px; border-radius: 99px; font-weight: 700;
-      background: var(--verre-fort); color: var(--text-muted);
-      vertical-align: middle;
-    }
-
     /* --- FORMULAIRES --- */
     .input-group { margin-bottom: 15px; }
     .input-group label { display: block; font-weight: 700; font-size: 0.72rem; margin-bottom: 6px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.8px; }
@@ -1402,8 +1389,6 @@
       font-size: 0.68rem; line-height: 1.5; color: var(--text-muted);
       max-height: 190px; overflow: auto; white-space: pre;
     }
-    .ligne-boutons { display: flex; gap: 9px; flex-wrap: wrap; }
-    .ligne-boutons > * { flex: 1; min-width: 120px; }
     .off-suggestion:hover, .off-suggestion:focus-visible { background: color-mix(in srgb, var(--primary) 14%, transparent); }
     .off-vide { padding: 13px 14px; font-size: 0.8rem; color: var(--text-muted); line-height: 1.45; }
 
@@ -1447,13 +1432,6 @@
 
     hr.sep { margin: 18px 0; border: none; border-top: 1px solid var(--verre-brd); }
 
-    /* --- Modale d'édition d'aliment ---------------------------------
-       Ces classes complètent les styles existants. Elles ne redéfinissent
-       ni .modal-content, ni .btn, ni .btn-secondaire : une version
-       précédente le faisait et cassait le défilement de TOUTES les
-       modales de l'appli, ainsi que l'apparence de tous les boutons. */
-    .info-small { font-size: 0.8rem; color: var(--text-muted); margin: 8px 0 0; }
-
     /* =====================================================================
        LIQUID GLASS — LA LENTILLE
        Une surface en verre ne fait pas que flouter : sur son épaisseur, la
@@ -1468,7 +1446,7 @@
        bouton flottant (.fab), le liseré est remplacé par un fondu radial
        (vert au centre, qui se mêle au noir vers le bord). Les cartes
        (.summary-card, .meal-card, .bloc-verre, .fitness-card,
-       .analysis-card, .daily-questionnaire) et les conteneurs de modale/
+       .analysis-card) et les conteneurs de modale/
        feuille (.modal-content, .feuille-contenu) sont retirées elles aussi :
        même sans bordure propre, cet anneau dessinait encore un contour
        visible tout autour. Les CTA (.btn) et les grandes lignes de feuille
@@ -1506,7 +1484,7 @@
     /* Les éléments encore statiques ont besoin d'un repère pour l'anneau ;
        ceux qui sont déjà sticky / fixed / relative gardent le leur. */
     .btn, .feuille-action, .meal-card, .bloc-verre,
-    .fitness-card, .analysis-card, .daily-questionnaire, .modal-content,
+    .fitness-card, .analysis-card, .modal-content,
     .feuille-contenu, .verre { position: relative; }
     /* Le contenu passe devant l'anneau. */
     .btn > *, .feuille-action > * { position: relative; z-index: 1; }
@@ -1592,7 +1570,6 @@
     .programme-actions .btn-icone { min-width: 28px; width: 28px; height: 32px; padding: 0; font-size: 0.85rem; }
 
     /* --- Puces de filtre (groupe musculaire / matériel) --- */
-    .filtre-chips { display: flex; flex-wrap: wrap; gap: 7px; margin-bottom: 12px; }
     .filtre-chip {
       padding: 7px 13px; border-radius: 99px; font-size: 0.76rem; font-weight: 700;
       background: var(--verre-creux); border: 0; color: var(--text-muted);
@@ -1615,7 +1592,6 @@
     .exo-ligne:hover, .exo-ligne:focus-visible { background: var(--verre-fort); }
     .exo-ligne-nom { display: block; font-weight: 700; font-size: 0.88rem; color: var(--text); }
     .exo-ligne-meta { display: block; font-size: 0.72rem; color: var(--text-muted); margin-top: 2px; }
-    .exo-ligne-mat { font-size: 1.15rem; flex: none; }
 
     /* --- Vignette d'exercice : photo (base libre) ou schéma corps de repli --- */
     .exo-ligne-vignette {
@@ -2784,6 +2760,7 @@
         <span class="ic" aria-hidden="true"><svg class="icone-ui" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 15V3" /><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><path d="m7 10 5 5 5-5" /></svg></span>
         <span>Importer des données<span class="sous">Remplace les journées de ce compte</span></span>
       </button>
+      <input type="file" id="admin-import-file-input" accept=".json,application/json" class="hidden" onchange="importerDonneesUtilisateurAdmin(event)">
       <button class="feuille-action" type="button" onclick="ouvrirJournalAdmin(adminUserCourant)">
         <span class="ic" aria-hidden="true"><svg class="icone-ui" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="8" height="4" x="8" y="2" rx="1" ry="1" /><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2" /><path d="M12 11h4" /><path d="M12 16h4" /><path d="M8 11h.01" /><path d="M8 16h.01" /></svg></span>
         <span>Historique<span class="sous">Actions passées sur ce compte</span></span>
@@ -4136,7 +4113,7 @@ function renderMeals(day) {
              data-p="${Math.round(it.p)}" data-c="${Math.round(it.c)}" data-f="${Math.round(it.f)}">
           <span class="food-name">${escapeHtml(it.name)}</span>
           <span class="food-detail">${Math.round(it.grams)} ${it.unite === 'ml' ? 'ml' : 'g'}${it.code ? `
-            <button class="chip-code" onclick="event.stopPropagation(); copierCode('${escapeHtml(String(it.code))}')"
+            <button class="chip-code" data-code="${escapeHtml(String(it.code))}" onclick="event.stopPropagation(); copierCode(this.dataset.code, this)"
                     title="Code-barres OpenFoodFacts — toucher pour copier"><svg class="icone-ui" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="4" x2="20" y1="9" y2="9" /><line x1="4" x2="20" y1="15" y2="15" /><line x1="10" x2="8" y1="3" y2="21" /><line x1="16" x2="14" y1="3" y2="21" /></svg> ${escapeHtml(String(it.code))}</button>` : ''}</span>
           <div class="food-macros">
             <span class="tag-p">P ${Math.round(it.p)}g</span>
@@ -5640,7 +5617,7 @@ async function corrigerUnitesTousComptes() {
       const code = codes[i];
       if (texte) texte.textContent = `Code-barres restants ${i + 1}/${codes.length}…`;
       try {
-        const r = await fetch(`https://world.openfoodfacts.org/api/v0/product/${code}.json`);
+        const r = await fetch(`https://world.openfoodfacts.org/api/v0/product/${encodeURIComponent(code)}.json`);
         const j = await r.json();
         if (j.status === 1 && uniteProbable(j.product) === 'ml') {
           parCode.get(code).forEach(({ utilisateur, jour, donnees, mealId, idx }) => {
@@ -5681,7 +5658,7 @@ async function chercherProduitOFFParCode(code) {
 
   // 1) OpenFoodFacts en premier : la base la plus complète et la plus à jour.
   try {
-    const r = await fetch(`https://world.openfoodfacts.org/api/v0/product/${code}.json`);
+    const r = await fetch(`https://world.openfoodfacts.org/api/v0/product/${encodeURIComponent(code)}.json`);
     const j = await r.json();
     if (j.status === 1) {
       const p = j.product; const n = p.nutriments || {};
@@ -8163,22 +8140,6 @@ async function definirCleGeminiUtilisateur() {
   }
 }
 
-/* ouvrirRattachement() utilisait prompt() : remplacee par
-   ouvrirRattachementFeuille(), qui presente les comptes dans une feuille. */
-
-async function rattacherDonnees(ancien, nouveau, nomNouveau) {
-  if (!confirm(`Rattacher toutes les données à ${nomNouveau} ? Cette action est irréversible.`)) return;
-  try {
-    const { error } = await supa.rpc('admin_rattacher_donnees', { p_ancien: ancien, p_nouveau: nouveau });
-    if (error) throw error;
-    alert('Données rattachées.');
-    document.getElementById('admin-stats-zone').classList.add('hidden');
-    chargerAdmin();
-  } catch (e) {
-    alert('Erreur : ' + e.message);
-  }
-}
-
 /* Suppression définitive : on ne se contente plus d'un confirm() du
    navigateur — cette action est irréversible, donc trois barrières avant
    qu'elle ne s'exécute (voir demarrerConfirmationSuppression /
@@ -9091,19 +9052,6 @@ function filtrerStatsCompte() {
     data: { labels, datasets: [{ data: sportParJour, backgroundColor: cPrimaire, borderRadius: 5, borderSkipped: false }] },
     options: baseOpts
   });
-}
-
-/* Utile quand deux personnes se relaient sur le même appareil : les données
-   déjà enregistrées localement ne changent pas toutes seules de propriétaire
-   au moment où on se déconnecte, donc on propose de les vider explicitement
-   pour ne pas mélanger deux journées de deux personnes différentes. */
-function viderDonneesAppareil() {
-  if (!confirm("Effacer toutes les données enregistrées sur CET appareil (repas, poids, activité) ? Ce qui est déjà envoyé sur Supabase sous ton compte n'est pas supprimé et sera re-téléchargé à la prochaine connexion.")) return;
-  try {
-    localStorage.removeItem(STORAGE_KEY);
-    localStorage.removeItem(PROFILE_KEY);
-  } catch (e) {}
-  location.reload();
 }
 
 /* =====================================================================
@@ -10347,27 +10295,17 @@ function identifiantUnique() {
   return Date.now().toString(36) + Math.random().toString(36).slice(2, 11);
 }
 
-/* Écriture localStorage protégée : quand le quota est atteint, setItem
-   lève une exception. Sans ce garde-fou, la sauvegarde échouait en
-   silence et l'utilisateur croyait ses données enregistrées. */
-let quotaSignale = false;
-function ecrireLocal(cle, valeur) {
-  try {
-    localStorage.setItem(cle, valeur);
-    return true;
-  } catch (e) {
-    const quota = e && (e.name === 'QuotaExceededError' || e.code === 22 || e.code === 1014);
-    if (quota && !quotaSignale) {
-      quotaSignale = true;
-      alert("Le stockage de cet appareil est plein : les dernières données n'ont pas pu être enregistrées localement. Elles restent synchronisées si tu es connecté.");
-    }
-    console.warn('[Stockage] écriture impossible sur', cle, ':', e.message);
-    return false;
-  }
-}
-
 function escapeHtml(str) {
   return String(str).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+}
+/* Photo d'exercice personnalisée (perso ou override admin d'un exercice de
+   base) : un simple champ texte libre, affiché ensuite tel quel comme
+   src="…" d'une balise <img> (voir medaillonExercice()/afficherFicheExerciceBiblio()).
+   escapeHtml() au rendu empêche déjà l'injection, mais autant refuser à la
+   source tout ce qui n'est pas une URL http(s) plausible — en bonus ça
+   évite d'enregistrer un lien cassé ou un schéma inattendu (javascript:…). */
+function urlImageValide(url) {
+  return /^https?:\/\/\S+$/i.test(url);
 }
 function avg(arr) { return arr.length ? arr.reduce((a, b) => a + b, 0) / arr.length : 0; }
 
@@ -11051,7 +10989,7 @@ function medaillonExercice(exo) {
     // ou une modale (jamais des centaines), ça ne fait que retarder le
     // début du téléchargement d'un cran (le temps que le navigateur
     // confirme que l'image est bien visible) sans aucun bénéfice de perf.
-    return `<img src="${media.img[0]}" alt="" decoding="async"${fondSombre}>`;
+    return `<img src="${escapeHtml(media.img[0])}" alt="" decoding="async"${fondSombre}>`;
   }
   return svgSilhouetteGroupe(exo.groupe);
 }
@@ -12211,8 +12149,8 @@ function afficherFicheExerciceBiblio(id) {
     const illustration = estIllustrationVectorielle(media.img[0]);
     const gifExerciseDb = estGifExerciseDb(media.img[0]);
     html += `<div class="fiche-exo-image" id="fiche-exo-image"${illustration ? ' style="background:#14171d;"' : ''}>
-      <img src="${media.img[0]}" class="actif" alt="${escapeHtml(libelleExercice(e))}">
-      ${media.img[1] ? `<img src="${media.img[1]}" alt="">` : ''}
+      <img src="${escapeHtml(media.img[0])}" class="actif" alt="${escapeHtml(libelleExercice(e))}">
+      ${media.img[1] ? `<img src="${escapeHtml(media.img[1])}" alt="">` : ''}
       ${media.img[1] ? `<button type="button" class="fiche-exo-anim-btn" id="fiche-exo-anim-btn" onclick="basculerPauseFiche()" aria-label="Pause"><svg class="icone-ui" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="14" y="3" width="5" height="18" rx="1" /><rect x="5" y="3" width="5" height="18" rx="1" /></svg></button>` : ''}
     </div>
     <p class="note fiche-exo-note-source">${e.img
@@ -12309,6 +12247,7 @@ function validerExercicePerso() {
   const nom = document.getElementById('perso-nom').value.trim();
   if (!nom) { alert('Donne un nom à cet exercice.'); return; }
   const image = document.getElementById('perso-image').value.trim();
+  if (image && !urlImageValide(image)) { alert("Le lien de la photo doit commencer par http:// ou https://."); return; }
   const groupe = document.getElementById('perso-groupe').value;
   const materiel = document.getElementById('perso-materiel').value;
   if (exercicePersoEnEdition) {
@@ -13978,6 +13917,7 @@ async function sauvegarderEditionExerciceAdmin() {
   const nom = document.getElementById('edit-exo-nom').value.trim();
   if (!nom) { alert('Le nom ne peut pas être vide.'); return; }
   const image = document.getElementById('edit-exo-image').value.trim();
+  if (image && !urlImageValide(image)) { alert("Le lien de la photo doit commencer par http:// ou https://."); return; }
   const groupe = document.getElementById('edit-exo-groupe').value;
   const materiel = document.getElementById('edit-exo-materiel').value;
 
