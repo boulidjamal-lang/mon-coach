@@ -481,9 +481,9 @@
 
     .container { max-width: 560px; margin: 0 auto; padding: 0 16px; position: relative; z-index: 1; }
 
-    /* --- BARRE D'APPLICATION COLLANTE --- */
+    /* --- BARRE D'APPLICATION --- */
     .app-bar {
-      position: sticky; top: 0; z-index: 60;
+      position: relative; z-index: 60;
       padding: calc(7px + env(safe-area-inset-top, 0px)) 16px 7px;
       /* Fond plat, sans --verre-sheen : ce reflet est le plus lumineux en
          haut à gauche (radial-gradient à var(--lx)/var(--ly), plus le
@@ -787,9 +787,22 @@
       display: flex; align-items: center; justify-content: center;
       transition: transform 0.32s cubic-bezier(0.16,1,0.3,1), box-shadow 0.3s;
       font-family: inherit;
+      /* Rester appuyé dessus le détache pour le déplacer (voir
+         initFabDeplacable) : sans ça, le geste de maintien déclenchait le
+         menu contextuel/la sélection de texte du navigateur sur mobile. */
+      touch-action: none; -webkit-touch-callout: none; -webkit-user-select: none; user-select: none;
     }
     .fab:active { transform: scale(0.94); }
     .fab.ouvert { transform: rotate(90deg); }
+    /* Retour visuel pendant le maintien/déplacement : légèrement agrandi et
+       détaché du fond (ombre plus marquée), pour qu'on sente qu'il est
+       "décroché" et suit le doigt plutôt que d'être resté une cible fixe. */
+    .fab-zone--deplacement .fab {
+      transform: scale(1.08);
+      box-shadow: 0 8px 28px rgba(0,0,0,0.4);
+      transition: box-shadow 0.2s ease;
+    }
+    .fab-zone--deplacement { transition: none !important; }
     .fab-actions {
       position: absolute; right: 0; bottom: 70px;
       display: flex; flex-direction: column; align-items: flex-end; gap: 9px;
@@ -7424,7 +7437,13 @@ function verifierSupportVerre() {
    BOUTON FLOTTANT
    ===================================================================== */
 let fabOuvert = false;
-function basculerFab() { fabOuvert ? fermerFab() : ouvrirFab(); }
+function basculerFab() {
+  // Un déplacement qui vient de se terminer ne doit pas en plus ouvrir/fermer
+  // le menu : le relâchement du doigt après un glissement déclenche quand
+  // même le click natif du bouton, qu'il faut donc ignorer une fois.
+  if (fabVientDeGlisser) return;
+  fabOuvert ? fermerFab() : ouvrirFab();
+}
 function ouvrirFab() {
   fabOuvert = true;
   document.getElementById('fab-zone').classList.add('ouvert');
@@ -7446,6 +7465,109 @@ function fermerFab() {
   }
   const sc = document.getElementById('scrim');
   if (sc) sc.classList.remove('visible');
+}
+
+/* Rester appuyé sur le bouton flottant le détache pour le déplacer ailleurs
+   à l'écran — utile quand il cache un bouton ou une info sur un écran donné.
+   Un simple tap doit continuer à ouvrir le menu comme avant : le geste n'est
+   traité comme un déplacement qu'après un maintien de ~420 ms sans bouger
+   (le délai distingue l'intention de déplacer d'un tap un peu lent), et un
+   mouvement franc pendant l'attente annule le maintien (c'est un tap qui a
+   dérapé, pas une volonté de glisser). Position retenue sur cet appareil
+   (localStorage), et replacée dans l'écran si jamais elle n'y tient plus
+   (rotation, fenêtre plus petite...). */
+const FAB_POSITION_LS = 'elite_fab_position';
+const FAB_DELAI_MAINTIEN_MS = 420;
+const FAB_SEUIL_ANNULATION_PX = 8;
+let fabGlissement = null; // { x, y, left, top, actif }
+let fabVientDeGlisser = false;
+
+function limitesFabZone(zone) {
+  const marge = 6;
+  return {
+    left: [marge, Math.max(marge, window.innerWidth - zone.offsetWidth - marge)],
+    top: [marge, Math.max(marge, window.innerHeight - zone.offsetHeight - marge)]
+  };
+}
+
+function placerFabZone(zone, left, top) {
+  const lim = limitesFabZone(zone);
+  const l = Math.min(Math.max(left, lim.left[0]), lim.left[1]);
+  const t = Math.min(Math.max(top, lim.top[0]), lim.top[1]);
+  zone.style.right = 'auto';
+  zone.style.bottom = 'auto';
+  zone.style.left = l + 'px';
+  zone.style.top = t + 'px';
+  return { left: l, top: t };
+}
+
+function appliquerPositionFabSauvegardee() {
+  const zone = document.getElementById('fab-zone');
+  if (!zone) return;
+  let pos = null;
+  try { pos = JSON.parse(localStorage.getItem(FAB_POSITION_LS) || 'null'); } catch (e) {}
+  if (!pos || typeof pos.left !== 'number' || typeof pos.top !== 'number') return;
+  placerFabZone(zone, pos.left, pos.top);
+}
+
+function initFabDeplacable() {
+  const zone = document.getElementById('fab-zone');
+  const bouton = document.getElementById('fab');
+  if (!zone || !bouton) return;
+  appliquerPositionFabSauvegardee();
+
+  let minuteur = null;
+
+  bouton.addEventListener('pointerdown', (e) => {
+    if (e.isPrimary === false) return;
+    const rect = zone.getBoundingClientRect();
+    fabGlissement = { x: e.clientX, y: e.clientY, left: rect.left, top: rect.top, actif: false };
+    clearTimeout(minuteur);
+    minuteur = setTimeout(() => {
+      if (!fabGlissement) return;
+      fabGlissement.actif = true;
+      zone.classList.add('fab-zone--deplacement');
+      placerFabZone(zone, fabGlissement.left, fabGlissement.top);
+      try { bouton.setPointerCapture(e.pointerId); } catch (err) {}
+    }, FAB_DELAI_MAINTIEN_MS);
+  });
+
+  bouton.addEventListener('pointermove', (e) => {
+    if (!fabGlissement) return;
+    const dx = e.clientX - fabGlissement.x;
+    const dy = e.clientY - fabGlissement.y;
+    if (!fabGlissement.actif) {
+      if (Math.abs(dx) > FAB_SEUIL_ANNULATION_PX || Math.abs(dy) > FAB_SEUIL_ANNULATION_PX) {
+        clearTimeout(minuteur);
+        fabGlissement = null;
+      }
+      return;
+    }
+    e.preventDefault();
+    placerFabZone(zone, fabGlissement.left + dx, fabGlissement.top + dy);
+  });
+
+  const terminerGlissement = () => {
+    clearTimeout(minuteur);
+    if (fabGlissement && fabGlissement.actif) {
+      zone.classList.remove('fab-zone--deplacement');
+      const rect = zone.getBoundingClientRect();
+      try { localStorage.setItem(FAB_POSITION_LS, JSON.stringify({ left: rect.left, top: rect.top })); } catch (e) {}
+      fabVientDeGlisser = true;
+      setTimeout(() => { fabVientDeGlisser = false; }, 50);
+    }
+    fabGlissement = null;
+  };
+  bouton.addEventListener('pointerup', terminerGlissement);
+  bouton.addEventListener('pointercancel', terminerGlissement);
+
+  // Rotation d'écran / redimensionnement : la position gardée en mémoire
+  // peut ne plus tenir dans le nouvel écran, on la recadre sans la perdre.
+  window.addEventListener('resize', () => {
+    if (zone.style.left && zone.style.left !== 'auto') {
+      placerFabZone(zone, parseFloat(zone.style.left), parseFloat(zone.style.top));
+    }
+  });
 }
 
 /* =====================================================================
@@ -13028,6 +13150,7 @@ window.addEventListener('load', () => {
   let densite = 'confort';
   try { densite = localStorage.getItem('elite_densite') || 'confort'; } catch (e) {}
   choisirDensite(densite);
+  initFabDeplacable();
 
   // Champs volontairement vides quand aucune valeur n'a été enregistrée sur
   // cet appareil : ça montre clairement qu'ils tournent sur les valeurs par
