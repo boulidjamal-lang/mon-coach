@@ -683,11 +683,26 @@
 
     .food-list { list-style: none; padding: 0; margin: 0; }
     .food-item {
-      display: flex; justify-content: space-between; align-items: center;
+      display: flex; flex-direction: column; gap: 3px;
       padding: 9px 0; font-size: 0.9rem; border-bottom: 1px solid var(--verre-brd);
-      gap: 10px;
     }
     .food-item:last-child { border-bottom: none; }
+    .food-item-ligne { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+    /* Détail des ingrédients d'un aliment ajouté depuis une recette — même
+       principe de repli que .serie-paliers-toggle ailleurs, juste réaligné
+       sur le bord gauche (pas d'indentation de pastille de série ici). */
+    .food-item .serie-paliers-toggle { padding: 0; }
+    .food-item .choix-recette-ingredients { padding: 2px 0 0; gap: 6px; }
+    /* Chaque ingrédient d'un aliment-recette reste éditable (poids
+       seulement) : c'est leur somme qui détermine le poids total de
+       l'aliment, jamais l'inverse (voir modifierPoidsIngredientAliment). */
+    .ingredient-aliment-ligne { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+    .ingredient-aliment-ligne input {
+      width: 52px; min-height: 28px; padding: 2px; text-align: center;
+      border-radius: 8px; border: 1px solid transparent; background: var(--verre-creux);
+      color: var(--text); font-family: inherit; font-size: 0.8rem; font-weight: 700; outline: none;
+    }
+    .ingredient-aliment-ligne input:focus { border-color: var(--primary); }
     .food-info { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
     .food-name { font-weight: 600; font-size: var(--densite-nom); overflow-wrap: anywhere; }
     .food-detail { font-size: 0.74rem; color: var(--text-muted); display: flex; align-items: center; gap: 7px; flex-wrap: wrap; }
@@ -711,6 +726,10 @@
     /* Le tap révèle les macros masquées : autant que ça se voie et se sente. */
     .food-info { cursor: pointer; border-radius: 8px; transition: background 0.15s; }
     .food-info:active { background: var(--verre-creux); }
+    /* Poids non modifiable pour un aliment venu d'une recette (voir
+       renderMeals) : aucun curseur cliquable, aucun retour au toucher. */
+    .food-info--fixe { cursor: default; }
+    .food-info--fixe:active { background: none; }
     .tag-p { color: var(--protein); font-weight: 700; }
     .tag-c { color: var(--carbs); font-weight: 700; }
     .tag-f { color: var(--fat); font-weight: 700; }
@@ -1748,6 +1767,41 @@
       border-radius: 10px; font-size: 0.85rem; font-family: inherit; font-weight: 700; outline: none;
     }
     .serie-table input:focus { border-color: var(--primary); box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 22%, transparent); }
+    /* --- Paliers d'une série en dégressif : repliés par défaut (voir
+       palierOuvert), pour ne pas noyer la liste de séries sous des lignes
+       qu'on ne veut pas toujours voir. --- */
+    .serie-paliers-toggle {
+      display: flex; align-items: center; gap: 5px; width: 100%;
+      background: none; border: 0; color: var(--accent);
+      font-family: inherit; font-size: 0.72rem; font-weight: 700;
+      padding: 3px 3px 2px 39px; cursor: pointer;
+    }
+    .serie-paliers-toggle svg { width: 11px; height: 11px; flex-shrink: 0; transition: transform 0.2s ease; }
+    .serie-paliers-toggle.ouvert svg { transform: rotate(90deg); }
+    .serie-paliers { display: flex; flex-direction: column; gap: 4px; padding: 2px 3px 6px 39px; }
+    .serie-palier-ligne { display: grid; grid-template-columns: 1fr 1fr 28px; align-items: center; gap: 6px; }
+    .serie-palier-ligne input { min-height: 30px; font-size: 0.8rem; }
+    .serie-palier-ligne button {
+      border: 0; background: none; color: var(--text-muted); cursor: pointer;
+      display: flex; align-items: center; justify-content: center; opacity: 0.7;
+    }
+    .serie-palier-ligne button:hover { opacity: 1; color: var(--danger); }
+    .serie-palier-ligne button svg { width: 15px; height: 15px; }
+    .btn-ajouter-palier {
+      margin-top: 2px; padding: 6px; border-radius: 8px; border: 1px dashed var(--verre-brd);
+      background: none; color: var(--text-muted); font-family: inherit; font-size: 0.72rem; font-weight: 700;
+      cursor: pointer;
+    }
+    /* --- Détail des ingrédients d'une recette (choix-recette-liste) ---
+       Même principe de repli que les paliers d'un dégressif : la carte
+       garde la bordure de séparation entre recettes, le bouton "Recette"
+       lui-même ne l'a plus (sinon elle apparaîtrait au milieu de la carte,
+       entre le nom et le détail). */
+    .choix-recette-carte { border-bottom: 1px solid var(--verre-brd); }
+    .choix-recette-carte .off-suggestion { border-bottom: 0; padding-bottom: 6px; }
+    .choix-recette-carte .serie-paliers-toggle { padding: 0 14px 8px; color: var(--accent); }
+    .choix-recette-ingredients { padding: 0 14px 10px; display: flex; flex-direction: column; gap: 3px; }
+    .choix-recette-ingredients div { font-size: 0.78rem; color: var(--text-muted); }
     .serie-check {
       width: 30px; height: 30px; border-radius: 9px; border: 1.5px solid transparent;
       background: var(--verre-creux); cursor: pointer; display: inline-flex; align-items: center; justify-content: center;
@@ -1766,12 +1820,6 @@
     .session-exo-entete { display: flex; align-items: flex-start; gap: 10px; margin-bottom: 8px; }
     .session-exo-titre { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 4px; }
     .session-exo-nom-ligne { display: flex; align-items: center; gap: 8px; min-width: 0; }
-    .session-exo-numero {
-      display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0;
-      width: 20px; height: 20px; border-radius: 50%;
-      background: var(--primary); color: var(--primary-txt);
-      font-size: 0.68rem; font-weight: 800;
-    }
     .session-exo-nom { font-weight: 800; font-size: 0.92rem; }
 
     /* Dans un superset, les exercices restent à l'intérieur d'un même cadre
@@ -3427,9 +3475,13 @@
     <div id="error-display" class="error-box hidden"></div>
 
     <div id="ai-results-container" class="hidden">
-      <h4 style="font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 10px; color: var(--text-muted);">Aliments détectés</h4>
+      <h4 id="ai-results-titre" style="font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 10px; color: var(--text-muted);">Aliments détectés</h4>
+      <div id="ai-recette-nom-group" class="input-group hidden">
+        <label for="ai-recette-nom">Nom de la recette</label>
+        <input type="text" id="ai-recette-nom" oninput="nomRecetteGemini=this.value">
+      </div>
       <div id="detected-ingredients-list"></div>
-      <button class="btn btn-primary" onclick="ajouterIngredientsGemini()" style="margin-top: 16px;"><svg class="icone-ui" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10" /><path d="m16 9-5.5 5.5L8 12" /></svg> Tout ajouter au repas</button>
+      <button class="btn btn-primary" id="ai-results-btn" onclick="confirmerDetectionGemini()" style="margin-top: 16px;"><svg class="icone-ui" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10" /><path d="m16 9-5.5 5.5L8 12" /></svg> <span id="ai-results-btn-texte">Tout ajouter au repas</span></button>
     </div>
   </div>
 </div>
@@ -3710,6 +3762,8 @@ let activeMealId = null;
 let html5QrCode = null;
 let currentScannedFood = null;
 let detectedBufferGemini = [];
+let typeDetectionGemini = 'aliment'; // 'aliment' ou 'recette' — déterminé par Gemini à l'analyse
+let nomRecetteGemini = '';
 
 let caloriesChartInstance = null, macrosChartInstance = null, stepsChartInstance = null, workoutChartInstance = null;
 let eauChartInstance = null;
@@ -4114,31 +4168,64 @@ function validerPoidsAliment() {
   fermerModal('macros-popup-modal');
 }
 
+// Détail des ingrédients d'un aliment issu d'une recette, replié par
+// défaut (voir loguerPortionRecettePerso). Clé "jour_repas_index" plutôt
+// qu'un id stable : les aliments n'en ont pas, mais inclure la date suffit
+// à éviter qu'un repli ouvert sur un jour donné ressorte ouvert ailleurs en
+// changeant simplement de journée.
+let ingredientsAlimentOuvert = {};
+function basculerIngredientsAliment(mealId, i) {
+  const clef = currentDate + '_' + mealId + '_' + i;
+  ingredientsAlimentOuvert[clef] = !ingredientsAlimentOuvert[clef];
+  renderMeals(getDay(currentDate));
+}
 function renderMeals(day) {
   const container = document.getElementById('meals-container');
   container.innerHTML = MEALS.map(mealId => {
     const items = day.meals[mealId];
-    const rows = items.length ? items.map((it, i) => `
+    const rows = items.length ? items.map((it, i) => {
+      const ingredients = Array.isArray(it.ingredients) ? it.ingredients : [];
+      const clefIngr = currentDate + '_' + mealId + '_' + i;
+      const ouvertIngr = !!ingredientsAlimentOuvert[clefIngr];
+      const blocIngredients = ingredients.length ? `
+          <button type="button" class="serie-paliers-toggle ${ouvertIngr ? 'ouvert' : ''}" aria-expanded="${ouvertIngr}" onclick="basculerIngredientsAliment('${mealId}',${i})">
+            <svg class="icone-ui" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 18 6-6-6-6" /></svg>
+            ${ingredients.length} ingrédient${ingredients.length > 1 ? 's' : ''}
+          </button>${ouvertIngr ? `<div class="choix-recette-ingredients">${ingredients.map((ing, j) => `
+            <div class="ingredient-aliment-ligne">
+              <span>${escapeHtml(ing.nom)}</span>
+              <span><input type="number" inputmode="decimal" step="1" value="${ing.grammes ?? ''}" onchange="modifierPoidsIngredientAliment('${mealId}',${i},${j},this.value)"> g</span>
+            </div>`).join('')}</div>` : ''}` : '';
+      // Le poids total d'un aliment venu d'une recette ne se modifie pas
+      // directement : il découle de la somme de ses ingrédients (voir
+      // modifierPoidsIngredientAliment, dans le détail replié ci-dessus) —
+      // ce sont eux qu'on ajuste, jamais le total en bloc.
+      const estRecette = ingredients.length > 0;
+      return `
       <li class="food-item">
-        <div class="food-info" onclick="ouvrirPoidsAliment(this)"
-             data-meal="${mealId}" data-index="${i}" data-grams="${Number(it.grams) || 0}"
-             data-nom="${escapeHtml(it.name)}" data-kcal="${Math.round(it.kcal)}"
-             data-p="${Math.round(it.p)}" data-c="${Math.round(it.c)}" data-f="${Math.round(it.f)}">
-          <span class="food-name">${escapeHtml(it.name)}</span>
-          <span class="food-detail">${Math.round(it.grams)} ${it.unite === 'ml' ? 'ml' : 'g'}${it.code ? `
-            <button class="chip-code" data-code="${escapeHtml(String(it.code))}" onclick="event.stopPropagation(); copierCode(this.dataset.code, this)"
-                    title="Code-barres OpenFoodFacts — toucher pour copier"><svg class="icone-ui" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="4" x2="20" y1="9" y2="9" /><line x1="4" x2="20" y1="15" y2="15" /><line x1="10" x2="8" y1="3" y2="21" /><line x1="16" x2="14" y1="3" y2="21" /></svg> ${escapeHtml(String(it.code))}</button>` : ''}</span>
-          <div class="food-macros">
-            <span class="tag-p">P ${Math.round(it.p)}g</span>
-            <span class="tag-c">G ${Math.round(it.c)}g</span>
-            <span class="tag-f">L ${Math.round(it.f)}g</span>
+        <div class="food-item-ligne">
+          <div class="food-info${estRecette ? ' food-info--fixe' : ''}"${estRecette ? '' : ' onclick="ouvrirPoidsAliment(this)"'}
+               ${estRecette ? 'title="Poids déterminé par les ingrédients ci-dessous — déplie-les pour ajuster"' : ''}
+               data-meal="${mealId}" data-index="${i}" data-grams="${Number(it.grams) || 0}"
+               data-nom="${escapeHtml(it.name)}" data-kcal="${Math.round(it.kcal)}"
+               data-p="${Math.round(it.p)}" data-c="${Math.round(it.c)}" data-f="${Math.round(it.f)}">
+            <span class="food-name">${escapeHtml(it.name)}</span>
+            <span class="food-detail">${Math.round(it.grams)} ${it.unite === 'ml' ? 'ml' : 'g'}${it.code ? `
+              <button class="chip-code" data-code="${escapeHtml(String(it.code))}" onclick="event.stopPropagation(); copierCode(this.dataset.code, this)"
+                      title="Code-barres OpenFoodFacts — toucher pour copier"><svg class="icone-ui" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="4" x2="20" y1="9" y2="9" /><line x1="4" x2="20" y1="15" y2="15" /><line x1="10" x2="8" y1="3" y2="21" /><line x1="16" x2="14" y1="3" y2="21" /></svg> ${escapeHtml(String(it.code))}</button>` : ''}</span>
+            <div class="food-macros">
+              <span class="tag-p">P ${Math.round(it.p)}g</span>
+              <span class="tag-c">G ${Math.round(it.c)}g</span>
+              <span class="tag-f">L ${Math.round(it.f)}g</span>
+            </div>
           </div>
-        </div>
-        <div class="food-right">
-          <span class="food-kcal">${Math.round(it.kcal)} kcal</span>
-          <button class="btn-delete" onclick="supprimerAliment('${mealId}', ${i})" aria-label="Supprimer">&times;</button>
-        </div>
-      </li>`).join('') : `<li class="food-item"><span class="food-detail">Aucun aliment ajouté.</span></li>`;
+          <div class="food-right">
+            <span class="food-kcal">${Math.round(it.kcal)} kcal</span>
+            <button class="btn-delete" onclick="supprimerAliment('${mealId}', ${i})" aria-label="Supprimer">&times;</button>
+          </div>
+        </div>${blocIngredients}
+      </li>`;
+    }).join('') : `<li class="food-item"><span class="food-detail">Aucun aliment ajouté.</span></li>`;
     const totalMeal = mealKcal(day, mealId);
 
     return `
@@ -5188,10 +5275,56 @@ function loguerPortionRecettePerso(id, mealIdCible) {
   const r = recettesPerso.find(x => x.id === id);
   if (!r) return;
   const t = totauxRecettePerso(r);
-  addItemToMeal(mealIdCible || activeMealId || repasDuMoment(), {
-    name: r.nom, grams: Math.round(t.grammesParPortion) || 100, unite: 'g',
-    kcal: t.parPortionKcal, p: t.parPortionP, c: t.parPortionC, f: t.parPortionF
-  });
+  const item = { name: r.nom, unite: 'g' };
+  // Instantané STRUCTURÉ des ingrédients au moment de l'ajout (jamais une
+  // référence vers la recette : si elle est modifiée ou supprimée plus
+  // tard, ce qui a déjà été mangé ce jour-là ne doit pas changer
+  // rétroactivement) — les valeurs /100g sont gardées pour pouvoir
+  // recalculer kcal/macros quand une quantité est ajustée après coup (voir
+  // modifierPoidsIngredientAliment). Le poids total de l'aliment n'est lui
+  // jamais modifiable directement : il découle de la somme des ingrédients.
+  if (r.ingredients && r.ingredients.length) {
+    item.ingredients = r.ingredients.map(ing => ({
+      nom: ing.nom,
+      grammes: Math.round((Number(ing.grammes) || 0) / t.portions),
+      kcal100: Number(ing.kcal100) || 0, p100: Number(ing.p100) || 0,
+      c100: Number(ing.c100) || 0, f100: Number(ing.f100) || 0
+    }));
+    recalculerItemDepuisIngredients(item);
+  } else {
+    item.grams = Math.round(t.grammesParPortion) || 100;
+    item.kcal = t.parPortionKcal; item.p = t.parPortionP; item.c = t.parPortionC; item.f = t.parPortionF;
+  }
+  addItemToMeal(mealIdCible || activeMealId || repasDuMoment(), item);
+}
+
+// Recalcule le poids total et les macros d'un aliment à partir de ses
+// ingrédients (même formule que totauxRecettePerso, appliquée ici sur les
+// grammages éventuellement modifiés par la personne après coup).
+function recalculerItemDepuisIngredients(item) {
+  const ingredients = item.ingredients || [];
+  item.grams = ingredients.reduce((s, ing) => s + (Number(ing.grammes) || 0), 0);
+  item.kcal = ingredients.reduce((s, ing) => s + (Number(ing.grammes) || 0) / 100 * (Number(ing.kcal100) || 0), 0);
+  item.p = ingredients.reduce((s, ing) => s + (Number(ing.grammes) || 0) / 100 * (Number(ing.p100) || 0), 0);
+  item.c = ingredients.reduce((s, ing) => s + (Number(ing.grammes) || 0) / 100 * (Number(ing.c100) || 0), 0);
+  item.f = ingredients.reduce((s, ing) => s + (Number(ing.grammes) || 0) / 100 * (Number(ing.f100) || 0), 0);
+}
+
+// Changer le poids d'UN ingrédient d'un aliment déjà loggé — le seul moyen
+// d'ajuster la quantité d'une recette une fois ajoutée (voir
+// renderMeals/food-info--fixe) : le poids total et les macros se
+// recalculent automatiquement à partir de la somme des ingrédients.
+function modifierPoidsIngredientAliment(mealId, i, j, valeur) {
+  const day = getDay(currentDate);
+  const item = day.meals[mealId] && day.meals[mealId][i];
+  const ing = item && item.ingredients && item.ingredients[j];
+  if (!ing) return;
+  ing.grammes = Math.max(0, Number(valeur) || 0);
+  recalculerItemDepuisIngredients(item);
+  saveData(currentDate);
+  invaliderHistorique();
+  renderMeals(day);
+  updateSummary(day);
 }
 
 function ouvrirCreationRecettePerso(idExistant) {
@@ -5916,7 +6049,7 @@ function fichierVersBase64(file) {
   });
 }
 
-const PROMPT_JSON_ALIMENTS = "Renvoie UNIQUEMENT un tableau JSON (sans texte autour) des aliments. Pour chaque aliment: {\"name\": string en français, \"grams\": number (portion estimée en g), \"kcal100\": number (kcal pour 100g), \"p100\": number, \"c100\": number, \"f100\": number}. Pour estimer grams le plus précisément possible : si une photo est fournie, examine d'abord l'intégralité de l'image (pas seulement l'aliment) pour repérer tous les objets de référence disponibles — assiette, bol, couverts, verre, main, emballage, table, etc. Sers-toi de tailles standards connues pour calibrer l'échelle de la photo : assiette plate ~24-27cm de diamètre, assiette à dessert ~18-20cm, fourchette ou couteau ~20cm, verre standard ~8-10cm de diamètre, main d'adulte ~18-20cm de longueur. Quand plusieurs repères sont visibles, croise-les entre eux plutôt que de te fier à un seul, pour fiabiliser l'échelle avant d'estimer le poids. Tiens compte aussi du volume apparent de l'aliment (hauteur et empilement dans l'assiette, pas seulement la surface occupée vue de dessus) et de sa densité (un féculent cuit ou une viande pèsent plus qu'un légume vert pour un volume équivalent) ; sans photo, base-toi sur une portion individuelle standard pour ce type d'aliment.";
+const PROMPT_JSON_ALIMENTS = "Renvoie UNIQUEMENT un objet JSON (sans texte autour), de la forme {\"type\": \"aliment\" ou \"recette\", \"nom\": string (nom du plat, uniquement si type est \"recette\"), \"aliments\": tableau}. Mets \"recette\" si c'est un plat composé de plusieurs ingrédients assemblés ou cuisinés ensemble (ex: gratin, curry, salade composée, plat mijoté, pâtes en sauce, sushis/makis, sandwich, wrap, burger, pizza, onigiri) qui mérite d'être enregistré comme recette réutilisable — même si le plat se présente en plusieurs morceaux identiques côte à côte (ex: un plateau de makis, plusieurs parts de pizza, plusieurs sandwichs identiques) : ce sont toujours les ingrédients d'une seule recette, pas des aliments séparés. Mets \"aliment\" uniquement si les éléments visibles sont réellement distincts et non assemblés entre eux (ex: un yaourt posé à côté d'une pomme, un fruit seul, une boisson seule). Le tableau \"aliments\" liste dans les deux cas les éléments détectés : les ingrédients si \"recette\", les aliments séparés si \"aliment\". Chaque élément du tableau doit être UN SEUL aliment réel et précis, correspondant à une entrée qu'on trouverait dans une base nutritionnelle (ex: \"Saumon\", \"Thon\", \"Surimi\") — jamais un regroupement ou une description combinant plusieurs aliments entre parenthèses ou avec \"et\"/\"ou\" (proscris par exemple \"Garniture de poisson (saumon, thon et surimi)\" ou \"Légumes (carotte, courgette)\") : si plusieurs aliments distincts composent une garniture ou un mélange, crée une entrée séparée pour chacun, avec sa propre estimation de poids et ses propres valeurs nutritionnelles. Pour chaque élément du tableau : {\"name\": string en français, \"grams\": number (portion estimée en g), \"kcal100\": number (kcal pour 100g), \"p100\": number, \"c100\": number, \"f100\": number}. Pour estimer grams le plus précisément possible : si une photo est fournie, examine d'abord l'intégralité de l'image (pas seulement l'aliment) pour repérer tous les objets de référence disponibles — assiette, bol, couverts, verre, main, emballage, table, etc. Sers-toi de tailles standards connues pour calibrer l'échelle de la photo : assiette plate ~24-27cm de diamètre, assiette à dessert ~18-20cm, fourchette ou couteau ~20cm, verre standard ~8-10cm de diamètre, main d'adulte ~18-20cm de longueur. Quand plusieurs repères sont visibles, croise-les entre eux plutôt que de te fier à un seul, pour fiabiliser l'échelle avant d'estimer le poids. Tiens compte aussi du volume apparent de l'aliment (hauteur et empilement dans l'assiette, pas seulement la surface occupée vue de dessus) et de sa densité (un féculent cuit ou une viande pèsent plus qu'un légume vert pour un volume équivalent) ; sans photo, base-toi sur une portion individuelle standard pour ce type d'aliment.";
 
 /* Photo, description, ou les deux : les deux champs sont maintenant
    indépendants (avant, seule une photo pouvait déclencher l'analyse — pas
@@ -5945,30 +6078,85 @@ async function analyserRepasGemini() {
     if (file) parts.push({ inline_data: { mime_type: file.type || 'image/jpeg', data: await fichierVersBase64(file) } });
 
     const res = await geminiGenerate(parts, 'photo');
-    const arr = parseJsonArray(res);
-    document.getElementById('ai-loader').classList.add('hidden');
-    if (!arr || !arr.length) { showAiError('Aucun aliment détecté.'); return; }
-    detectedBufferGemini = arr.map(a => ({
+    const data = parseJsonObject(res);
+    const aliments = data && Array.isArray(data.aliments) ? data.aliments : null;
+    if (!aliments || !aliments.length) { document.getElementById('ai-loader').classList.add('hidden'); showAiError('Aucun aliment détecté.'); return; }
+
+    typeDetectionGemini = data.type === 'recette' ? 'recette' : 'aliment';
+    nomRecetteGemini = String(data.nom || '').trim() || 'Recette détectée';
+    detectedBufferGemini = aliments.map(a => ({
       name: a.name || 'Aliment', grams: Number(a.grams) || 100,
       kcal100: Number(a.kcal100) || 0, p100: Number(a.p100) || 0,
       c100: Number(a.c100) || 0, f100: Number(a.f100) || 0
     }));
+
+    /* Une recette est enregistrée comme réutilisable : avant de la créer, on
+       vérifie si chaque ingrédient existe déjà dans la base (historique,
+       CIQUAL, aliments partagés, USDA — mêmes sources que la recherche
+       manuelle), pour réutiliser ses valeurs nutritionnelles de référence
+       plutôt que la seule estimation de Gemini. Pas fait pour un simple
+       "aliment" détecté : ce chemin existait déjà et fonctionne bien tel quel. */
+    if (typeDetectionGemini === 'recette') {
+      await completerIngredientsDepuisBase(detectedBufferGemini);
+    }
+
+    document.getElementById('ai-loader').classList.add('hidden');
     renderDetectedRows();
   } catch (err) {
     document.getElementById('ai-loader').classList.add('hidden');
     showAiError(messageIA(err));
   }
 }
+
+// Pour chaque ingrédient détecté, cherche une correspondance exacte de nom
+// dans les sources déjà utilisées par la recherche manuelle d'aliments ; si
+// trouvée, ses valeurs/100g (plus fiables qu'une estimation visuelle)
+// remplacent celles de Gemini. Sinon l'ingrédient est marqué "nouveau" pour
+// rejoindre la base partagée une fois la recette créée (voir creerEtLoguerRecetteGemini).
+async function completerIngredientsDepuisBase(items) {
+  for (const it of items) {
+    try {
+      const { deja, suite } = await rechercherTousAliments(it.name);
+      const cible = normaliserRecherche(it.name);
+      const match = deja.concat(suite).find(p => normaliserRecherche(p.name) === cible);
+      if (match) {
+        const n = match.nutriments || {};
+        it.name = match.name || it.name;
+        it.kcal100 = Math.round(n['energy-kcal_100g'] || 0);
+        it.p100 = round1(n['proteins_100g']) || 0;
+        it.c100 = round1(n['carbohydrates_100g']) || 0;
+        it.f100 = round1(n['fat_100g']) || 0;
+        it.dejaEnBase = true;
+      } else {
+        it.dejaEnBase = false;
+      }
+    } catch (e) { it.dejaEnBase = false; }
+  }
+}
+
 function renderDetectedRows() {
+  const estRecette = typeDetectionGemini === 'recette';
+  document.getElementById('ai-results-titre').textContent = estRecette ? 'Ingrédients de la recette' : 'Aliments détectés';
+  document.getElementById('ai-results-btn-texte').textContent = estRecette ? 'Créer la recette et l\'ajouter au repas' : 'Tout ajouter au repas';
+  const groupeNom = document.getElementById('ai-recette-nom-group');
+  groupeNom.classList.toggle('hidden', !estRecette);
+  if (estRecette) document.getElementById('ai-recette-nom').value = nomRecetteGemini;
+
   document.getElementById('detected-ingredients-list').innerHTML = detectedBufferGemini.map((a, i) => `
     <div class="detected-row">
-      <span style="font-weight:600;font-size:0.88rem;">${escapeHtml(a.name)}</span>
+      <span style="font-weight:600;font-size:0.88rem;">${escapeHtml(a.name)}${estRecette && a.dejaEnBase ? ' <span style="font-weight:400;color:var(--text-muted);font-size:0.75rem;">(déjà en base)</span>' : ''}</span>
       <div style="display:flex;align-items:center;gap:6px;">
         <input type="number" value="${Math.round(a.grams)}" onchange="detectedBufferGemini[${i}].grams=Number(this.value)"> <span style="font-size:0.75rem;color:var(--text-muted);">g</span>
       </div>
     </div>`).join('');
   document.getElementById('ai-results-container').classList.remove('hidden');
 }
+
+function confirmerDetectionGemini() {
+  if (typeDetectionGemini === 'recette') creerEtLoguerRecetteGemini();
+  else ajouterIngredientsGemini();
+}
+
 function ajouterIngredientsGemini() {
   const day = getDay(currentDate);
   detectedBufferGemini.forEach(a => {
@@ -5983,6 +6171,34 @@ function ajouterIngredientsGemini() {
   saveData(currentDate);
   invaliderHistorique();
   renderMeals(day); updateSummary(day);
+  detectedBufferGemini = [];
+  fermerModal('ai-modal');
+}
+
+// Crée la recette repérée par Gemini dans "Mes recettes", y loggue aussitôt
+// une portion dans le repas actif, et fait rejoindre la base partagée les
+// ingrédients qui n'y étaient pas déjà (même mécanisme que l'ajout manuel
+// d'un aliment, voir enregistrerAlimentDansBase).
+async function creerEtLoguerRecetteGemini() {
+  const nom = (document.getElementById('ai-recette-nom').value || '').trim() || nomRecetteGemini || 'Recette détectée';
+  const recette = {
+    id: identifiantUnique(), nom, portions: 1,
+    ingredients: detectedBufferGemini.map(a => ({
+      nom: a.name, grammes: Math.round(a.grams) || 0,
+      kcal100: a.kcal100, p100: a.p100, c100: a.c100, f100: a.f100
+    }))
+  };
+  const ok = await enregistrerRecettePersoDistant(recette);
+  if (!ok) return;
+  recettesPerso.push(recette);
+  try { localStorage.setItem(RECETTES_PERSO_KEY, JSON.stringify(recettesPerso)); } catch (e) {}
+  renderRecettesPerso();
+
+  detectedBufferGemini.filter(a => !a.dejaEnBase).forEach(a => {
+    enregistrerAlimentDansBase({ name: a.name, grams: 100, kcal: a.kcal100, p: a.p100, c: a.c100, f: a.f100 });
+  });
+
+  loguerPortionRecettePerso(recette.id, activeMealId || repasDuMoment());
   detectedBufferGemini = [];
   fermerModal('ai-modal');
 }
@@ -6066,7 +6282,7 @@ async function chercherRecettesMacros(typeRepas) {
   // petit-déjeuner. MEAL_LABELS est déjà utilisé pour les repas eux-mêmes.
   const libelleRepas = (typeRepas && MEAL_LABELS[typeRepas]) ? MEAL_LABELS[typeRepas].replace(/^\S+\s/, '') : null;
 
-  const prompt = `Tu es un coach nutrition. Propose 2 idées de${libelleRepas ? ' ' + libelleRepas.toLowerCase() : ' repas ou collations'} simples et rapides à préparer, en français, sans markdown, pour aider la personne à se rapprocher de ses objectifs nutritionnels du jour sans les dépasser. Pour chaque idée : un nom, les ingrédients principaux avec quantités approximatives, et une estimation kcal/protéines/glucides/lipides.
+  const prompt = `Tu es un coach nutrition. Propose 2 idées de${libelleRepas ? ' ' + libelleRepas.toLowerCase() : ' repas ou collations'} simples et rapides à préparer, en français, pour aider la personne à se rapprocher de ses objectifs nutritionnels du jour sans les dépasser. Réponds UNIQUEMENT un tableau JSON (sans texte autour), un objet par idée : {"nom": string, "kcal": number, "p": number (protéines en g), "c": number (glucides en g), "f": number (lipides en g), "ingredients": array de strings — un ingrédient principal par élément, avec sa quantité approximative (ex. "150 g de blanc de poulet")}.
 
 Objectif du jour : ${t.goal}.
 Il reste à consommer aujourd'hui : ${reste.kcal} kcal, dont ${reste.p}g de protéines, ${reste.c}g de glucides, ${reste.f}g de lipides.`;
@@ -6074,11 +6290,53 @@ Il reste à consommer aujourd'hui : ${reste.kcal} kcal, dont ${reste.p}g de prot
   try {
     const res = await geminiGenerate([{ text: prompt }]);
     loader.classList.add('hidden');
-    box.textContent = res.trim(); box.classList.remove('hidden');
+    const recettes = parseJsonArray(res);
+    if (!recettes || !recettes.length) {
+      // Repli si Gemini n'a pas renvoyé un JSON exploitable : au moins
+      // montrer sa réponse brute plutôt que de faire disparaître l'idée.
+      box.textContent = res.trim();
+      box.classList.remove('hidden');
+      return;
+    }
+    dernieresIdeesRecettes = recettes;
+    ideeRecetteDerouleeIndex = null;
+    renderIdeesRecettes();
   } catch (e) {
     loader.classList.add('hidden');
     box.textContent = messageIA(e); box.classList.remove('hidden');
   }
+}
+/* Idées de repas suggérées par l'IA : nom + macros visibles d'emblée, le
+   détail des ingrédients replié derrière un bouton — même principe que les
+   paliers d'un dégressif en séance ou le détail d'une recette enregistrée
+   (voir renderChoixRecette), pour ne pas noyer deux suggestions sous un
+   pavé de texte dès l'arrivée. */
+let dernieresIdeesRecettes = [];
+let ideeRecetteDerouleeIndex = null;
+function renderIdeesRecettes() {
+  const box = document.getElementById('recette-box');
+  box.innerHTML = dernieresIdeesRecettes.map((r, i) => {
+    const ingredients = Array.isArray(r.ingredients) ? r.ingredients : [];
+    const ouvert = ideeRecetteDerouleeIndex === i;
+    const lignesIngredients = ouvert
+      ? `<div class="choix-recette-ingredients">${ingredients.map(ing => `<div>${escapeHtml(String(ing))}</div>`).join('')}</div>`
+      : '';
+    return `<div class="choix-recette-carte">
+      <div class="off-suggestion" style="cursor:default;">
+        <div class="off-nom">${escapeHtml(r.nom || 'Idée de repas')}</div>
+        <div class="off-meta">${Math.round(Number(r.kcal) || 0)} kcal · P ${Math.round(Number(r.p) || 0)}g · G ${Math.round(Number(r.c) || 0)}g · L ${Math.round(Number(r.f) || 0)}g</div>
+      </div>
+      <button type="button" class="serie-paliers-toggle ${ouvert ? 'ouvert' : ''}" aria-expanded="${ouvert}" onclick="basculerIdeeRecette(${i})">
+        <svg class="icone-ui" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 18 6-6-6-6" /></svg>
+        ${ingredients.length} ingrédient${ingredients.length > 1 ? 's' : ''}
+      </button>${lignesIngredients}
+    </div>`;
+  }).join('');
+  box.classList.remove('hidden');
+}
+function basculerIdeeRecette(i) {
+  ideeRecetteDerouleeIndex = ideeRecetteDerouleeIndex === i ? null : i;
+  renderIdeesRecettes();
 }
 async function lancerAnalysePeriode() {
   if (!geminiKey) { alert('Ajoute ta clé API Gemini dans Profil.'); return; }
@@ -6237,6 +6495,12 @@ async function geminiGenerate(parts, type) {
 function parseJsonArray(text) {
   try {
     const m = text.match(/\[[\s\S]*\]/);
+    return JSON.parse(m ? m[0] : text);
+  } catch (e) { return null; }
+}
+function parseJsonObject(text) {
+  try {
+    const m = text.match(/\{[\s\S]*\}/);
     return JSON.parse(m ? m[0] : text);
   } catch (e) { return null; }
 }
@@ -7784,8 +8048,13 @@ function ouvrirFeuilleRepas(mealId) {
 }
 
 /* Option « Recette » de la feuille-repas (voir depuisFeuille) : liste des
-   recettes enregistrées, un tap en ajoute une portion directement au
-   repas visé par cette feuille (repasFeuille). */
+   recettes enregistrées, un tap sur la carte en ajoute une portion
+   directement au repas visé par cette feuille (repasFeuille) — vitesse
+   inchangée pour l'usage courant. Le détail des ingrédients, lui, reste
+   replié par défaut derrière un bouton séparé (même idée que les paliers
+   d'un dégressif en séance) : on ne le déplie que pour vérifier ce qu'il y
+   a dedans, sans alourdir systématiquement la liste. */
+let recetteDerouleeId = null;
 function renderChoixRecette() {
   const container = document.getElementById('choix-recette-liste');
   const vide = document.getElementById('choix-recette-vide');
@@ -7798,6 +8067,9 @@ function renderChoixRecette() {
   vide.classList.add('hidden');
   recettesPerso.forEach(r => {
     const t = totauxRecettePerso(r);
+    const carte = document.createElement('div');
+    carte.className = 'choix-recette-carte';
+
     const btn = document.createElement('button');
     btn.type = 'button';
     btn.className = 'off-suggestion';
@@ -7813,7 +8085,38 @@ function renderChoixRecette() {
       loguerPortionRecettePerso(r.id, repasFeuille);
       fermerFeuilles();
     });
-    container.appendChild(btn);
+    carte.appendChild(btn);
+
+    const ingredients = r.ingredients || [];
+    const ouvert = recetteDerouleeId === r.id;
+    const toggle = document.createElement('button');
+    toggle.type = 'button';
+    toggle.className = 'serie-paliers-toggle' + (ouvert ? ' ouvert' : '');
+    toggle.setAttribute('aria-expanded', String(ouvert));
+    toggle.innerHTML = '<svg class="icone-ui" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 18 6-6-6-6" /></svg> ';
+    toggle.appendChild(document.createTextNode(ingredients.length + ' ingrédient' + (ingredients.length > 1 ? 's' : '')));
+    // stopPropagation : sans ça, le tap remontait au conteneur et risquait
+    // d'être confondu avec un tap sur la carte (qui ajoute la recette).
+    toggle.addEventListener('click', (e) => {
+      e.stopPropagation();
+      recetteDerouleeId = ouvert ? null : r.id;
+      renderChoixRecette();
+    });
+    carte.appendChild(toggle);
+
+    if (ouvert) {
+      const liste = document.createElement('div');
+      liste.className = 'choix-recette-ingredients';
+      ingredients.forEach(ing => {
+        const ligne = document.createElement('div');
+        const grammes = Math.round((Number(ing.grammes) || 0) / t.portions);
+        ligne.textContent = `${ing.nom} — ${grammes} g`;
+        liste.appendChild(ligne);
+      });
+      carte.appendChild(liste);
+    }
+
+    container.appendChild(carte);
   });
 }
 /* Un seul point de fermeture pour toutes les feuilles (repas, admin
@@ -11028,6 +11331,11 @@ let sessionChronoInterval = null;
 // série ou un exercice est supprimé, pour que les minuteurs en cours
 // restent attachés à la bonne ligne.
 let reposActifs = {};
+// Repli/dépli des paliers d'une série en dégressif (voir
+// renderSessionExerciceBlocHTML) : repliés par défaut pour ne pas noyer la
+// liste de séries sous des lignes qu'on ne veut pas toujours voir — un pur
+// état d'affichage, jamais sauvegardé, indexé "ei_si" comme reposActifs.
+let palierOuvert = {};
 // Séance libre venant d'être terminée, en attente de la proposition « en
 // faire un programme » une fois le bilan local (voir terminerSeance) fermé —
 // null sinon.
@@ -12444,6 +12752,7 @@ function demarrerSeance(programmeId) {
     exercices: construireExercicesSession(programme)
   };
   reposActifs = {};
+  palierOuvert = {};
   sauvegarderSessionActive();
   renderSeance();
   ouvrirSessionModal();
@@ -12453,6 +12762,7 @@ function demarrerSeanceLibre() {
       !confirm('Une séance (' + (musculationSessionActive.programmeNom || 'séance libre') + ') est déjà en cours. L’abandonner pour démarrer celle-ci ?')) return;
   musculationSessionActive = { programmeId: null, programmeNom: null, debut: Date.now(), notes: '', exercices: [] };
   reposActifs = {};
+  palierOuvert = {};
   sauvegarderSessionActive();
   renderSeance();
   ouvrirSessionModal();
@@ -12559,7 +12869,7 @@ function renderSessionExerciceBlocHTML(exo, ei) {
         <input type="number" inputmode="numeric" step="1" value="${set.reps ?? ''}" placeholder="—" onchange="modifierSerieSession(${ei},${si},'reps',this.value)">
         <button type="button" class="serie-check ${set.fait ? 'faite' : ''}" onclick="basculerSerieSession(${ei},${si})" aria-label="Marquer la série comme faite"><svg class="icone-ui" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5" /></svg></button>
       </div>
-    </div>${barreRepos}`;
+    </div>${barreRepos}${blocPaliersHTML(ei, si, set)}`;
   }).join('');
   return `<div class="session-exo-bloc">
     <div class="session-exo-entete">
@@ -12567,7 +12877,6 @@ function renderSessionExerciceBlocHTML(exo, ei) {
       <div style="flex:1; min-width:0;">
         <div class="session-exo-titre">
           <div class="session-exo-nom-ligne">
-            <span class="session-exo-numero">${ei + 1}</span>
             <button type="button" class="session-exo-nom" style="background:none;border:none;padding:0;font:inherit;color:inherit;cursor:pointer;text-decoration:underline;text-underline-offset:3px;text-align:left;"
                     onclick="afficherFicheExerciceBiblio('${exo.exerciceId}')">${escapeHtml(exerciceComplet ? libelleExercice(exerciceComplet) : exo.nom)}</button>
           </div>
@@ -12584,6 +12893,62 @@ function renderSessionExerciceBlocHTML(exo, ei) {
     </div>
     <button type="button" class="btn-ajouter-serie" onclick="ajouterSerieSession(${ei})">Ajouter une série</button>
   </div>`;
+}
+/* Paliers d'une série en dégressif (poids/reps de chaque baisse de charge
+   après le palier le plus lourd, saisi normalement dans la ligne de série
+   elle-même) : repliés par défaut sous un simple lien "N palier(s)", pour
+   ne pas transformer chaque dégressif en trois-quatre lignes systématiques
+   dans la liste — seulement pour qui veut vraiment les détailler. */
+function blocPaliersHTML(ei, si, set) {
+  if (set.technique !== 'degressif') return '';
+  const paliers = set.paliers || [];
+  const ouvert = !!palierOuvert[ei + '_' + si];
+  const toggle = `<button type="button" class="serie-paliers-toggle ${ouvert ? 'ouvert' : ''}" onclick="basculerPaliersSession(${ei},${si})" aria-expanded="${ouvert}">
+    <svg class="icone-ui" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 18 6-6-6-6" /></svg>
+    ${paliers.length ? paliers.length + ' palier' + (paliers.length > 1 ? 's' : '') : 'Ajouter les paliers'}
+  </button>`;
+  if (!ouvert) return toggle;
+  const lignesPaliers = paliers.map((p, pi) => `
+    <div class="serie-palier-ligne">
+      <input type="number" inputmode="decimal" step="0.5" value="${p.poids ?? ''}" placeholder="Poids" onchange="modifierPalierSession(${ei},${si},${pi},'poids',this.value)">
+      <input type="number" inputmode="numeric" step="1" value="${p.reps ?? ''}" placeholder="Reps" onchange="modifierPalierSession(${ei},${si},${pi},'reps',this.value)">
+      <button type="button" onclick="retirerPalierSession(${ei},${si},${pi})" aria-label="Supprimer ce palier"><svg class="icone-ui" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18" /><path d="m6 6 12 12" /></svg></button>
+    </div>`).join('');
+  return `${toggle}<div class="serie-paliers">${lignesPaliers}
+    <button type="button" class="btn-ajouter-palier" onclick="ajouterPalierSession(${ei},${si})">+ Ajouter un palier</button>
+  </div>`;
+}
+function basculerPaliersSession(ei, si) {
+  const clef = ei + '_' + si;
+  palierOuvert[clef] = !palierOuvert[clef];
+  renderSessionModal();
+}
+function ajouterPalierSession(ei, si) {
+  const set = musculationSessionActive.exercices[ei] && musculationSessionActive.exercices[ei].series[si];
+  if (!set) return;
+  if (!set.paliers) set.paliers = [];
+  const dernier = set.paliers[set.paliers.length - 1];
+  // Poids pré-rempli depuis le dernier palier (ou depuis la série
+  // principale pour le tout premier) : il ne reste qu'à l'ajuster à la
+  // baisse plutôt que de repartir d'un champ vide à chaque palier.
+  set.paliers.push({ poids: dernier ? dernier.poids : set.poids, reps: null });
+  palierOuvert[ei + '_' + si] = true;
+  sauvegarderSessionActive();
+  renderSessionModal();
+}
+function modifierPalierSession(ei, si, pi, champ, valeur) {
+  const set = musculationSessionActive.exercices[ei] && musculationSessionActive.exercices[ei].series[si];
+  const palier = set && set.paliers && set.paliers[pi];
+  if (!palier) return;
+  palier[champ] = valeur === '' ? null : Number(valeur);
+  sauvegarderSessionActive();
+}
+function retirerPalierSession(ei, si, pi) {
+  const set = musculationSessionActive.exercices[ei] && musculationSessionActive.exercices[ei].series[si];
+  if (!set || !set.paliers) return;
+  set.paliers.splice(pi, 1);
+  sauvegarderSessionActive();
+  renderSessionModal();
 }
 /* Le "type" d'une série (dégressif, pyramidal, échec) — comme Warm up/Drop
    set/Failure chez Strong — s'applique à CETTE série précise, pas à tout
@@ -12785,28 +13150,38 @@ function arreterRepos(ei, si) {
   delete reposActifs[ei + '_' + si];
   renderSessionModal();
 }
-/* Les minuteurs sont indexés par position (ei_si), pas par un id stable —
-   quand une série ou un exercice est supprimé, les positions après celle
-   retirée glissent d'un cran : sans ce réalignement, un minuteur en cours
-   se retrouverait accroché à la mauvaise ligne après suppression. */
-function reindexerReposApresSuppressionSerie(ei, siSupprime) {
+/* Les minuteurs de repos ET le dépli des paliers sont tous deux indexés par
+   position (ei_si), pas par un id stable — quand une série ou un exercice
+   est supprimé, les positions après celle retirée glissent d'un cran : sans
+   ce réalignement, un minuteur ou un dépli en cours se retrouverait
+   accroché à la mauvaise ligne après suppression. Même logique pour les
+   deux, factorisée ici plutôt que dupliquée. */
+function reindexerObjetParPositionApresSuppressionSerie(objet, ei, siSupprime) {
   const suivant = {};
-  Object.keys(reposActifs).forEach(clef => {
+  Object.keys(objet).forEach(clef => {
     const [e, s] = clef.split('_').map(Number);
-    if (e !== ei) { suivant[clef] = reposActifs[clef]; return; }
+    if (e !== ei) { suivant[clef] = objet[clef]; return; }
     if (s === siSupprime) return;
-    suivant[e + '_' + (s > siSupprime ? s - 1 : s)] = reposActifs[clef];
+    suivant[e + '_' + (s > siSupprime ? s - 1 : s)] = objet[clef];
   });
-  reposActifs = suivant;
+  return suivant;
 }
-function reindexerReposApresSuppressionExercice(eiSupprime) {
+function reindexerObjetParPositionApresSuppressionExercice(objet, eiSupprime) {
   const suivant = {};
-  Object.keys(reposActifs).forEach(clef => {
+  Object.keys(objet).forEach(clef => {
     const [e, s] = clef.split('_').map(Number);
     if (e === eiSupprime) return;
-    suivant[(e > eiSupprime ? e - 1 : e) + '_' + s] = reposActifs[clef];
+    suivant[(e > eiSupprime ? e - 1 : e) + '_' + s] = objet[clef];
   });
-  reposActifs = suivant;
+  return suivant;
+}
+function reindexerReposApresSuppressionSerie(ei, siSupprime) {
+  reposActifs = reindexerObjetParPositionApresSuppressionSerie(reposActifs, ei, siSupprime);
+  palierOuvert = reindexerObjetParPositionApresSuppressionSerie(palierOuvert, ei, siSupprime);
+}
+function reindexerReposApresSuppressionExercice(eiSupprime) {
+  reposActifs = reindexerObjetParPositionApresSuppressionExercice(reposActifs, eiSupprime);
+  palierOuvert = reindexerObjetParPositionApresSuppressionExercice(palierOuvert, eiSupprime);
 }
 // Au-delà de ce délai, la barre disparaît d'elle-même même si la série
 // suivante n'a pas encore été cochée — pas de minuterie infinie oubliée en
@@ -12896,6 +13271,7 @@ function terminerSeance() {
   const etaitLibre = !s.programmeId && entree.exercices.length > 0;
   musculationSessionActive = null;
   reposActifs = {};
+  palierOuvert = {};
   sauvegarderSessionActive();
   renderSeance();
   renderApp();
@@ -13036,6 +13412,7 @@ function abandonnerSeance() {
   if (!confirm('Abandonner cette séance ? Rien ne sera enregistré dans ton historique.')) return;
   musculationSessionActive = null;
   reposActifs = {};
+  palierOuvert = {};
   sauvegarderSessionActive();
   renderSeance();
 }
