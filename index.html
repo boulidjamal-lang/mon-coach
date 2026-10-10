@@ -3680,9 +3680,10 @@
       <!-- Étape 3 : matériel -->
       <div class="ia-prog-etape hidden" data-etape="3">
         <h3 style="margin:0 0 10px; font-size:1.02rem;">Matériel disponible</h3>
+        <button type="button" class="onb-option" id="ia-prog-salle-complete" style="width:100%; text-align:center; margin-bottom:10px;">🏋️ Salle complète (tout le matériel)</button>
         <div class="input-group" style="margin-bottom:0;">
           <div id="ia-prog-materiel" class="onb-choix" style="grid-template-columns:1fr 1fr;"></div>
-          <small class="onb-aide">Aucune case cochée = tout le matériel de la bibliothèque.</small>
+          <small class="onb-aide">Rien de coché = tout le matériel de la bibliothèque, comme "Salle complète".</small>
         </div>
         <div style="display:flex; gap:10px; margin-top:16px;">
           <button class="btn btn-secondaire" type="button" style="flex:1;" onclick="iaProgAller(2)">Retour</button>
@@ -12659,8 +12660,20 @@ function initAssistantProgrammeIA() {
   zoneMateriel.innerHTML = ORDRE_MATERIELS.map(m =>
     `<button type="button" class="onb-option" data-valeur="${m}" style="text-align:center;">${MATERIELS[m].ic} ${MATERIELS[m].label}</button>`
   ).join('');
+  const btnSalleComplete = document.getElementById('ia-prog-salle-complete');
   zoneMateriel.querySelectorAll('.onb-option').forEach(bouton => {
-    bouton.addEventListener('click', () => bouton.classList.toggle('choisi'));
+    bouton.addEventListener('click', () => {
+      bouton.classList.toggle('choisi');
+      // Un ajustement individuel fait sortir du "tout coche" explicite --
+      // meme si ca retombe sur tout coche a la main, le bouton se recoche
+      // naturellement grace au test juste en dessous.
+      btnSalleComplete.classList.toggle('choisi', [...zoneMateriel.querySelectorAll('.onb-option')].every(b => b.classList.contains('choisi')));
+    });
+  });
+  btnSalleComplete.addEventListener('click', () => {
+    const complet = !btnSalleComplete.classList.contains('choisi');
+    zoneMateriel.querySelectorAll('.onb-option').forEach(b => b.classList.toggle('choisi', complet));
+    btnSalleComplete.classList.toggle('choisi', complet);
   });
   const zoneGroupes = document.getElementById('ia-prog-groupes');
   zoneGroupes.innerHTML = ORDRE_GROUPES.filter(g => g !== 'autres').map(g =>
