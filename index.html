@@ -2109,6 +2109,7 @@
         <button class="btn btn-primary" style="flex:1; min-height:auto; padding:10px 8px; font-size:0.78rem;" onclick="ouvrirCreationProgramme()"><svg class="icone-ui" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14" /><path d="M12 5v14" /></svg> Créer un programme</button>
         <button class="btn btn-secondaire" style="flex:1; min-height:auto; padding:10px 8px; font-size:0.78rem;" onclick="demarrerSeanceLibre()"><svg class="icone-ui" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15.914 4a1.5 1.5 0 00-2.474-1.561l-9 9A1.5 1.5 0 005.5 14h4.002a.5.5 0 01.471.666L8.086 20a1.5 1.5 0 002.475 1.56l9-9A1.5 1.5 0 0018.5 10h-3.997a.5.5 0 01-.472-.667z" /></svg> Séance libre</button>
       </div>
+      <button class="btn btn-secondaire" style="width:100%; min-height:auto; padding:10px 8px; font-size:0.78rem; margin-bottom:6px;" onclick="ouvrirAssistantProgrammeIA()"><svg class="icone-ui" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9.937 15.5A2 2 0 0 0 8.5 14.063l-6.135-1.582a.5.5 0 0 1 0-.962L8.5 9.936A2 2 0 0 0 9.937 8.5l1.582-6.135a.5.5 0 0 1 .963 0L14.063 8.5A2 2 0 0 0 15.5 9.937l6.135 1.581a.5.5 0 0 1 0 .964L15.5 14.063a2 2 0 0 0-1.437 1.437l-1.582 6.135a.5.5 0 0 1-.963 0z" /><path d="M20 3v4" /><path d="M22 5h-4" /><path d="M4 17v2" /><path d="M5 18H3" /></svg> Créer un programme avec l'IA</button>
       <p class="note note-explicative" style="margin:10px 2px 0;">Séance libre : choisis tes exercices au fil de l'eau, tu pourras l'enregistrer comme programme à la fin.</p>
 
       <div class="titre-section"><svg class="icone-ui" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v16" /><path d="M20.001 19A2 2 0 0022 17V5a2 2 0 00-1.999-2L16 3.002A5 5 0 0012 5a5 5 0 00-4-2H4a2 2 0 00-2 2v12a2 2 0 001.999 2H8a5 5 0 014 2 5 5 0 014-2z" /></svg> Bibliothèque d'exercices</div>
@@ -3597,6 +3598,83 @@
       <button class="close-modal" onclick="fermerModal('fiche-exercice-modal')" aria-label="Fermer">&times;</button>
     </div>
     <div id="fiche-exercice-container"></div>
+  </div>
+</div>
+
+<!-- ================= SÉANCE — Assistant de création de programme par IA ================= -->
+<div id="ia-programme-modal" class="modal" role="dialog" aria-modal="true" aria-labelledby="titre-ia-programme">
+  <div class="modal-content" style="max-width:560px;">
+    <div class="modal-entete">
+      <h3 id="titre-ia-programme"><svg class="icone-ui" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9.937 15.5A2 2 0 0 0 8.5 14.063l-6.135-1.582a.5.5 0 0 1 0-.962L8.5 9.936A2 2 0 0 0 9.937 8.5l1.582-6.135a.5.5 0 0 1 .963 0L14.063 8.5A2 2 0 0 0 15.5 9.937l6.135 1.581a.5.5 0 0 1 0 .964L15.5 14.063a2 2 0 0 0-1.437 1.437l-1.582 6.135a.5.5 0 0 1-.963 0z" /></svg> Programme par IA</h3>
+      <button class="close-modal" onclick="fermerModal('ia-programme-modal')" aria-label="Fermer">&times;</button>
+    </div>
+
+    <div id="ia-programme-formulaire">
+      <p class="note note-explicative" style="margin-top:0;">Réponds à quelques questions, l'IA compose un ou plusieurs programmes à partir de la bibliothèque d'exercices de l'appli. Rien n'est ajouté avant ta validation.</p>
+
+      <div class="input-group">
+        <label>Objectif principal</label>
+        <div class="onb-choix" id="ia-prog-objectif">
+          <button type="button" class="onb-option" data-valeur="muscle">Prise de muscle</button>
+          <button type="button" class="onb-option" data-valeur="force">Force</button>
+          <button type="button" class="onb-option" data-valeur="perte_gras">Perte de gras</button>
+          <button type="button" class="onb-option" data-valeur="endurance">Endurance musculaire</button>
+          <button type="button" class="onb-option" data-valeur="recomposition">Recomposition</button>
+          <button type="button" class="onb-option" data-valeur="forme">Remise en forme générale</button>
+        </div>
+      </div>
+
+      <div class="input-group">
+        <label>Niveau</label>
+        <div class="onb-choix" id="ia-prog-niveau">
+          <button type="button" class="onb-option" data-valeur="debutant">Débutant</button>
+          <button type="button" class="onb-option" data-valeur="intermediaire">Intermédiaire</button>
+          <button type="button" class="onb-option" data-valeur="avance">Avancé</button>
+        </div>
+      </div>
+
+      <div style="display:flex; gap:10px;">
+        <div class="input-group" style="flex:1;">
+          <label for="ia-prog-seances">Séances / semaine</label>
+          <input type="number" id="ia-prog-seances" min="1" max="7" value="3" inputmode="numeric">
+        </div>
+        <div class="input-group" style="flex:1;">
+          <label for="ia-prog-duree">Durée/séance (min, facultatif)</label>
+          <input type="number" id="ia-prog-duree" min="15" max="180" step="5" placeholder="ex. 60" inputmode="numeric">
+        </div>
+      </div>
+
+      <div class="input-group">
+        <label>Matériel disponible</label>
+        <div id="ia-prog-materiel" class="onb-choix" style="grid-template-columns:1fr 1fr;"></div>
+        <small class="onb-aide">Aucune case cochée = tout le matériel de la bibliothèque.</small>
+      </div>
+
+      <div class="input-group">
+        <label for="ia-prog-nombre">Nombre de programmes à générer</label>
+        <input type="number" id="ia-prog-nombre" min="1" max="6" value="1" inputmode="numeric">
+        <small class="onb-aide">Plusieurs programmes se répartissent les groupes musculaires (ex. haut/bas, push/pull/legs) au lieu de se répéter.</small>
+      </div>
+
+      <div class="input-group" style="margin-bottom:0;">
+        <label for="ia-prog-notes">Précisions, contraintes, blessures (facultatif)</label>
+        <textarea id="ia-prog-notes" rows="2" placeholder="ex. épaule droite fragile, pas de squat, insister sur le dos…"></textarea>
+      </div>
+
+      <button class="btn btn-primary" id="ia-prog-generer-btn" style="margin-top:16px;" onclick="genererProgrammesIA()">Générer</button>
+      <div id="ia-prog-erreur" class="error-box hidden"></div>
+    </div>
+
+    <div id="ia-prog-loader" class="loader hidden"><svg class="icone-ui" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 18V5" /><path d="M15 13a4.17 4.17 0 0 1-3-4 4.17 4.17 0 0 1-3 4" /><path d="M17.598 6.5A3 3 0 1 0 12 5a3 3 0 1 0-5.598 1.5" /><path d="M17.997 5.125a4 4 0 0 1 2.526 5.77" /><path d="M18 18a4 4 0 0 0 2-7.464" /><path d="M19.967 17.483A4 4 0 1 1 12 18a4 4 0 1 1-7.967-.517" /><path d="M6 18a4 4 0 0 1-2-7.464" /><path d="M6.003 5.125a4 4 0 0 0-2.526 5.77" /></svg> L'IA compose le(s) programme(s)…</div>
+
+    <div id="ia-prog-resultats" class="hidden">
+      <p class="note note-explicative" style="margin-top:0;">Décoche ce que tu ne veux pas ajouter, puis valide.</p>
+      <div id="ia-prog-resultats-liste"></div>
+      <div style="display:flex; gap:8px; margin-top:14px;">
+        <button class="btn btn-secondaire" style="flex:1;" onclick="rebasculerFormulaireIAProgramme()">Refaire les questions</button>
+        <button class="btn btn-primary" style="flex:1;" onclick="ajouterProgrammesIASelectionnes()">Ajouter les programmes</button>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -12441,6 +12519,179 @@ function dupliquerProgramme(id) {
   sauvegarderProgrammes();
   renderSeance();
 }
+
+/* =====================================================================
+   Assistant de création de programme(s) par IA
+   Questionnaire -> prompt Gemini contraint à la bibliothèque d'exercices
+   existante (jamais un nom inventé hors de cette liste) -> aperçu ->
+   ajout seulement après validation, via le même chemin qu'un programme
+   créé à la main (musculationProgrammes.push + sauvegarderProgrammes).
+   ===================================================================== */
+const IA_PROG_OBJECTIFS = {
+  muscle: 'Prise de muscle (hypertrophie)', force: 'Force', perte_gras: 'Perte de gras',
+  endurance: 'Endurance musculaire', recomposition: 'Recomposition corporelle', forme: 'Remise en forme générale'
+};
+const IA_PROG_NIVEAUX = { debutant: 'Débutant', intermediaire: 'Intermédiaire', avance: 'Avancé' };
+let iaProgrammesProposes = null;
+
+function toggleUnique(groupe, bouton) {
+  groupe.querySelectorAll('.onb-option').forEach(b => b.classList.remove('choisi'));
+  bouton.classList.add('choisi');
+}
+function initAssistantProgrammeIA() {
+  ['ia-prog-objectif', 'ia-prog-niveau'].forEach(id => {
+    const groupe = document.getElementById(id);
+    groupe.querySelectorAll('.onb-option').forEach(bouton => {
+      bouton.addEventListener('click', () => toggleUnique(groupe, bouton));
+    });
+  });
+  const zoneMateriel = document.getElementById('ia-prog-materiel');
+  zoneMateriel.innerHTML = ORDRE_MATERIELS.map(m =>
+    `<button type="button" class="onb-option" data-valeur="${m}" style="text-align:center;">${MATERIELS[m].ic} ${MATERIELS[m].label}</button>`
+  ).join('');
+  zoneMateriel.querySelectorAll('.onb-option').forEach(bouton => {
+    bouton.addEventListener('click', () => bouton.classList.toggle('choisi'));
+  });
+}
+function ouvrirAssistantProgrammeIA() {
+  if (!geminiKey) { alert('Ajoute ta clé API Gemini dans Profil.'); return; }
+  rebasculerFormulaireIAProgramme();
+  ouvrirModal('ia-programme-modal');
+}
+function rebasculerFormulaireIAProgramme() {
+  iaProgrammesProposes = null;
+  document.getElementById('ia-programme-formulaire').classList.remove('hidden');
+  document.getElementById('ia-prog-loader').classList.add('hidden');
+  document.getElementById('ia-prog-resultats').classList.add('hidden');
+  document.getElementById('ia-prog-erreur').classList.add('hidden');
+}
+
+async function genererProgrammesIA() {
+  const objectifBtn = document.querySelector('#ia-prog-objectif .onb-option.choisi');
+  const niveauBtn = document.querySelector('#ia-prog-niveau .onb-option.choisi');
+  const erreurBox = document.getElementById('ia-prog-erreur');
+  erreurBox.classList.add('hidden');
+  if (!objectifBtn || !niveauBtn) {
+    erreurBox.textContent = 'Choisis un objectif et un niveau.';
+    erreurBox.classList.remove('hidden');
+    return;
+  }
+  const objectif = objectifBtn.dataset.valeur;
+  const niveau = niveauBtn.dataset.valeur;
+  const seances = Math.max(1, Math.min(7, Number(document.getElementById('ia-prog-seances').value) || 3));
+  const duree = Number(document.getElementById('ia-prog-duree').value) || null;
+  const nombreProgrammes = Math.max(1, Math.min(6, Number(document.getElementById('ia-prog-nombre').value) || 1));
+  const notes = document.getElementById('ia-prog-notes').value.trim();
+  const materielsChoisis = [...document.querySelectorAll('#ia-prog-materiel .onb-option.choisi')].map(b => b.dataset.valeur);
+
+  // Aucun materiel coche = toute la bibliotheque (pas de filtre).
+  const exosDisponibles = toutesLesExercices().filter(e => !materielsChoisis.length || materielsChoisis.includes(e.materiel));
+  if (!exosDisponibles.length) {
+    erreurBox.textContent = 'Aucun exercice ne correspond au matériel sélectionné.';
+    erreurBox.classList.remove('hidden');
+    return;
+  }
+  // identifiant|nom|groupe, un par ligne : assez pour que l'IA choisisse
+  // parmi de vrais exercices sans gonfler le prompt avec les champs inutiles
+  // ici (nom anglais, muscles secondaires...).
+  const catalogue = exosDisponibles.map(e => `${e.id}|${e.nom}|${GROUPES_MUSCULAIRES[e.groupe] || e.groupe}`).join('\n');
+
+  const prompt = `Tu es un coach sportif expert en musculation. Compose ${nombreProgrammes} programme${nombreProgrammes > 1 ? 's' : ''} d'entraînement sur mesure, STRICTEMENT à partir de la liste d'exercices disponibles ci-dessous. N'invente JAMAIS un exercice hors de cette liste : utilise uniquement les identifiants fournis, tels quels.
+
+Besoin de la personne :
+- Objectif : ${IA_PROG_OBJECTIFS[objectif]}
+- Niveau : ${IA_PROG_NIVEAUX[niveau]}
+- Séances par semaine visées : ${seances}
+- Durée par séance : ${duree ? duree + ' minutes' : 'non précisée'}
+- Matériel disponible : ${materielsChoisis.length ? materielsChoisis.map(m => MATERIELS[m].label).join(', ') : 'tout le matériel listé ci-dessous'}
+${notes ? '- Précisions, contraintes ou blessures à prendre en compte : ' + notes : ''}
+
+Exercices disponibles (identifiant|nom|groupe musculaire principal), un par ligne :
+${catalogue}
+
+Réponds UNIQUEMENT avec un JSON (sans texte autour, sans markdown) de cette forme exacte :
+{"programmes":[{"nom": string (court, évocateur, en français), "exercices": [{"exerciceId": string (un identifiant EXACT de la liste ci-dessus), "series": number (entre 2 et 5), "reps": number (répétitions cibles par série, entre 4 et 20)}]}]}
+
+Règles :
+- Génère exactement ${nombreProgrammes} programme${nombreProgrammes > 1 ? 's' : ''}.
+- Chaque programme doit avoir entre 4 et 10 exercices, cohérents avec l'objectif et le niveau.
+- Si plusieurs programmes sont demandés, ils doivent se compléter (répartition des groupes musculaires par séance, ex. haut/bas ou push/pull/legs) plutôt que se répéter.
+- N'utilise que des exerciceId présents dans la liste fournie ci-dessus.`;
+
+  document.getElementById('ia-programme-formulaire').classList.add('hidden');
+  document.getElementById('ia-prog-loader').classList.remove('hidden');
+  try {
+    const res = await geminiGenerate([{ text: prompt }]);
+    const reponse = parseJsonObject(res);
+    const idsValides = new Set(exosDisponibles.map(e => e.id));
+    const programmes = (reponse && Array.isArray(reponse.programmes) ? reponse.programmes : [])
+      .map(p => ({
+        nom: String(p.nom || 'Programme IA').slice(0, 80),
+        exercices: (Array.isArray(p.exercices) ? p.exercices : [])
+          // Ecarte silencieusement tout identifiant hors liste plutot que de
+          // planter : un programme avec quelques exercices en moins reste
+          // utilisable, un exerciceId invalide casserait son affichage.
+          .filter(e => e && idsValides.has(e.exerciceId))
+          .map(e => {
+            const n = Math.max(2, Math.min(5, Math.round(Number(e.series)) || 3));
+            const reps = Math.max(4, Math.min(20, Math.round(Number(e.reps)) || 10));
+            return {
+              exerciceId: e.exerciceId,
+              series: Array.from({ length: n }, () => ({ poids: null, reps, technique: null })),
+              supersetSuivant: false
+            };
+          })
+      }))
+      .filter(p => p.exercices.length);
+
+    document.getElementById('ia-prog-loader').classList.add('hidden');
+    if (!programmes.length) {
+      document.getElementById('ia-programme-formulaire').classList.remove('hidden');
+      erreurBox.textContent = "L'IA n'a pas renvoyé de programme exploitable. Réessaie, ou ajuste tes réponses.";
+      erreurBox.classList.remove('hidden');
+      return;
+    }
+    iaProgrammesProposes = programmes;
+    rendrePreviewProgrammesIA();
+    document.getElementById('ia-prog-resultats').classList.remove('hidden');
+  } catch (e) {
+    document.getElementById('ia-prog-loader').classList.add('hidden');
+    document.getElementById('ia-programme-formulaire').classList.remove('hidden');
+    erreurBox.textContent = messageIA(e);
+    erreurBox.classList.remove('hidden');
+  }
+}
+
+function rendrePreviewProgrammesIA() {
+  const c = document.getElementById('ia-prog-resultats-liste');
+  c.innerHTML = iaProgrammesProposes.map((p, i) => {
+    const lignes = p.exercices.map(e => {
+      const exo = trouverExercice(e.exerciceId);
+      return `<li>${escapeHtml(exo ? libelleExercice(exo) : e.exerciceId)} — ${e.series.length}×${e.series[0].reps}</li>`;
+    }).join('');
+    return `<label class="fitness-card" style="display:block; margin-bottom:10px; cursor:pointer;">
+      <div style="display:flex; align-items:center; gap:10px; margin-bottom:8px;">
+        <input type="checkbox" id="ia-prog-check-${i}" checked style="width:20px; height:20px; flex:none;">
+        <strong style="flex:1;">${escapeHtml(p.nom)}</strong>
+      </div>
+      <ul style="margin:0; padding-left:34px; font-size:0.82rem; color:var(--text-muted); line-height:1.6;">${lignes}</ul>
+    </label>`;
+  }).join('');
+}
+
+function ajouterProgrammesIASelectionnes() {
+  if (!iaProgrammesProposes) return;
+  const retenus = iaProgrammesProposes.filter((p, i) => document.getElementById('ia-prog-check-' + i).checked);
+  if (!retenus.length) { alert('Sélectionne au moins un programme.'); return; }
+  retenus.forEach(p => {
+    musculationProgrammes.push({ id: idUnique('prog'), nom: p.nom, exercices: p.exercices, creeLe: Date.now(), maj: Date.now() });
+  });
+  sauvegarderProgrammes();
+  iaProgrammesProposes = null;
+  fermerModal('ia-programme-modal');
+  renderSeance();
+}
+initAssistantProgrammeIA();
 
 /* =====================================================================
    Sélecteur d'exercices (bibliothèque + ajout à un programme / une séance)
