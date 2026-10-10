@@ -3658,10 +3658,19 @@
           </div>
         </div>
         <div class="input-group" style="margin-bottom:0;">
-          <label for="ia-prog-nombre">Nombre de programmes à générer</label>
-          <input type="number" id="ia-prog-nombre" min="1" max="6" value="1" inputmode="numeric">
-          <small class="onb-aide">Plusieurs programmes se répartissent les groupes musculaires (ex. haut/bas, push/pull/legs) au lieu de se répéter.</small>
+          <label>Répartition souhaitée (split)</label>
+          <div class="onb-choix onb-vertical" id="ia-prog-split">
+            <button type="button" class="onb-option" data-valeur="full_body"><strong>Full body</strong><small>Tout le corps à chaque séance — un seul programme</small></button>
+            <button type="button" class="onb-option" data-valeur="haut_bas"><strong>Haut / Bas</strong><small>2 programmes qui alternent</small></button>
+            <button type="button" class="onb-option" data-valeur="ppl"><strong>Push / Pull / Legs</strong><small>3 programmes : pousser, tirer, jambes</small></button>
+            <button type="button" class="onb-option" data-valeur="autre"><strong>Autre / laisse l'IA décider</strong><small>Tu choisis toi-même le nombre de programmes</small></button>
+          </div>
+          <div id="ia-prog-nombre-wrap" class="hidden" style="margin-top:12px;">
+            <label for="ia-prog-nombre">Nombre de programmes à générer</label>
+            <input type="number" id="ia-prog-nombre" min="1" max="6" value="2" inputmode="numeric">
+          </div>
         </div>
+        <p class="note" id="ia-prog-erreur-2" style="color:var(--danger);"></p>
         <div style="display:flex; gap:10px; margin-top:16px;">
           <button class="btn btn-secondaire" type="button" style="flex:1;" onclick="iaProgAller(1)">Retour</button>
           <button class="btn btn-primary" type="button" style="flex:1;" onclick="iaProgSuivant(3)">Continuer</button>
@@ -12614,13 +12623,36 @@ function iaProgSuivant(cible) {
     if (!objectifChoisi || !niveauChoisi) { erreur1.textContent = 'Choisis un objectif et un niveau.'; return; }
     erreur1.textContent = '';
   }
+  const erreur2 = document.getElementById('ia-prog-erreur-2');
+  if (cible === 3) {
+    const splitChoisi = document.querySelector('#ia-prog-split .onb-option.choisi');
+    if (!splitChoisi) { erreur2.textContent = 'Choisis une répartition.'; return; }
+    erreur2.textContent = '';
+  }
   iaProgAller(cible);
 }
+/* Chaque split impose un nombre de programmes et une structure precise
+   decrite a l'IA (voir genererProgrammesIA) -- "autre" laisse la main sur
+   le nombre de programmes, sans structure imposee. */
+const IA_PROG_SPLITS = {
+  full_body: { nombre: 1, structure: "Un seul programme \"Full body\" qui travaille l'ensemble du corps a chaque seance." },
+  haut_bas: { nombre: 2, structure: "Exactement 2 programmes : \"Haut du corps\" (pectoraux, dos, epaules, biceps, triceps) et \"Bas du corps\" (quadriceps, ischio-jambiers, fessiers, mollets), abdos/lombaires repartis sur les deux." },
+  ppl: { nombre: 3, structure: "Exactement 3 programmes : \"Push\" (pectoraux, epaules, triceps), \"Pull\" (dos, biceps) et \"Legs\" (quadriceps, ischio-jambiers, fessiers, mollets)." },
+  autre: { nombre: null, structure: null }
+};
 function initAssistantProgrammeIA() {
-  ['ia-prog-objectif', 'ia-prog-niveau'].forEach(id => {
+  ['ia-prog-objectif', 'ia-prog-niveau', 'ia-prog-split'].forEach(id => {
     const groupe = document.getElementById(id);
     groupe.querySelectorAll('.onb-option').forEach(bouton => {
       bouton.addEventListener('click', () => toggleUnique(groupe, bouton));
+    });
+  });
+  const wrapNombre = document.getElementById('ia-prog-nombre-wrap');
+  document.querySelectorAll('#ia-prog-split .onb-option').forEach(bouton => {
+    bouton.addEventListener('click', () => {
+      const split = IA_PROG_SPLITS[bouton.dataset.valeur];
+      wrapNombre.classList.toggle('hidden', split.nombre != null);
+      if (split.nombre != null) document.getElementById('ia-prog-nombre').value = split.nombre;
     });
   });
   const zoneMateriel = document.getElementById('ia-prog-materiel');
@@ -12669,7 +12701,11 @@ async function genererProgrammesIA() {
   const niveau = niveauBtn.dataset.valeur;
   const seances = Math.max(1, Math.min(7, Number(document.getElementById('ia-prog-seances').value) || 3));
   const duree = Number(document.getElementById('ia-prog-duree').value) || null;
-  const nombreProgrammes = Math.max(1, Math.min(6, Number(document.getElementById('ia-prog-nombre').value) || 1));
+  const splitBtn = document.querySelector('#ia-prog-split .onb-option.choisi');
+  const split = IA_PROG_SPLITS[splitBtn ? splitBtn.dataset.valeur : 'autre'];
+  const nombreProgrammes = split.nombre != null
+    ? split.nombre
+    : Math.max(1, Math.min(6, Number(document.getElementById('ia-prog-nombre').value) || 1));
   const materielsChoisis = [...document.querySelectorAll('#ia-prog-materiel .onb-option.choisi')].map(b => b.dataset.valeur);
   const groupesPrioritaires = [...document.querySelectorAll('#ia-prog-groupes .onb-option.choisi')].map(b => GROUPES_MUSCULAIRES[b.dataset.valeur]);
   const exercicesInclure = document.getElementById('ia-prog-inclure').value.trim();
@@ -12696,6 +12732,7 @@ Besoin de la personne :
 - Séances par semaine visées : ${seances}
 - Durée par séance : ${duree ? duree + ' minutes' : 'non précisée'}
 - Matériel disponible : ${materielsChoisis.length ? materielsChoisis.map(m => MATERIELS[m].label).join(', ') : 'tout le matériel listé ci-dessous'}
+${split.structure ? '- Répartition (split) imposée : ' + split.structure : ''}
 ${groupesPrioritaires.length ? '- Zones à prioriser cette fois : ' + groupesPrioritaires.join(', ') : ''}
 ${exercicesInclure ? '- Exercices que la personne veut absolument avoir dans le/les programme(s) (reprends l\'exercice de la liste ci-dessous qui correspond le mieux à chacun) : ' + exercicesInclure : ''}
 ${exercicesExclure ? '- Exercices ou mouvements à NE JAMAIS inclure : ' + exercicesExclure : ''}
@@ -12710,7 +12747,7 @@ Réponds UNIQUEMENT avec un JSON (sans texte autour, sans markdown) de cette for
 Règles :
 - Génère exactement ${nombreProgrammes} programme${nombreProgrammes > 1 ? 's' : ''}.
 - Chaque programme doit avoir entre 4 et 10 exercices, cohérents avec l'objectif et le niveau.
-- Si plusieurs programmes sont demandés, ils doivent se compléter (répartition des groupes musculaires par séance, ex. haut/bas ou push/pull/legs) plutôt que se répéter.
+${split.structure ? '- Respecte EXACTEMENT la répartition (split) imposée ci-dessus, y compris le nombre et le rôle de chaque programme.' : "- Si plusieurs programmes sont demandés, ils doivent se compléter (répartition des groupes musculaires par séance) plutôt que se répéter."}
 - N'utilise que des exerciceId présents dans la liste fournie ci-dessus.
 - Respecte STRICTEMENT les exercices à éviter listés ci-dessus : aucun d'eux (ni un équivalent évident) ne doit apparaître dans la réponse.
 - Si des exercices à inclure absolument sont listés ci-dessus, place-les dans le ou les programmes les plus pertinents.`;
