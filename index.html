@@ -1383,6 +1383,21 @@
     .off-suggestion:hover, .off-suggestion:focus-visible { background: color-mix(in srgb, var(--primary) 14%, transparent); }
     .off-vide { padding: 13px 14px; font-size: 0.8rem; color: var(--text-muted); line-height: 1.45; }
 
+    .aide-routine-etapes { margin: 0; padding-left: 20px; display: grid; gap: 10px; }
+    .aide-routine-etapes li { font-size: 0.84rem; }
+    .aide-routine-etapes li span { display: block; color: var(--text-muted); font-size: 0.78rem; margin-top: 2px; line-height: 1.45; }
+    .ajout-rapide { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin: 0 0 16px; }
+    .ajout-rapide button {
+      display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px;
+      min-height: 68px; padding: 10px 4px; border: 0; border-radius: 16px; cursor: pointer;
+      background: var(--verre-fort); color: var(--text); font-family: inherit; font-weight: 700; font-size: 0.72rem;
+    }
+    .ajout-rapide button .icone-ui { width: 22px; height: 22px; color: var(--primary); }
+    .feuille-action--suggere { box-shadow: 0 0 0 2px var(--primary) inset; }
+    .lien-depense { margin-top: 6px; font-size: 0.74rem; font-weight: 700; color: var(--primary); }
+    .profil-entete { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 16px; }
+    .btn-engrenage { width: 42px; height: 42px; padding: 0; display: inline-flex; align-items: center; justify-content: center; flex: none; }
+    .btn-engrenage .icone-ui { width: 20px; height: 20px; }
     .segment { display: flex; gap: 6px; background: var(--verre-creux); border: 0; border-radius: 14px; padding: 4px; }
     .segment button {
       flex: 1; min-height: 40px; border: none; background: transparent; color: var(--text-muted);
@@ -2030,11 +2045,12 @@
   <!-- ================= ÉCRAN 1 : REPAS ================= -->
   <section id="ecran-repas" class="ecran actif" role="region" aria-label="Repas">
     <h2 class="titre-ecran"><span class="ic" aria-hidden="true"><svg class="icone-ui" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 2v7c0 1.1.9 2 2 2h4a2 2 0 0 0 2-2V2" /><path d="M7 2v20" /><path d="M21 15V2a5 5 0 0 0-5 5v6c0 1.1.9 2 2 2h3Zm0 0v7" /></svg></span> Repas du jour</h2>
-    <div class="summary-card">
+    <div class="summary-card" role="button" tabindex="0" onclick="ouvrirModal('depense-modal')" onkeydown="if(event.key==='Enter')ouvrirModal('depense-modal')" style="cursor:pointer;" aria-label="Calories du jour — toucher pour voir la dépense estimée">
       <span class="libelle">Calories consommées</span>
       <h1 id="total-kcals">0</h1>
       <div class="target-kcal" id="target-kcals-display">Objectif : 0 kcal</div>
       <div class="reste-kcal" id="reste-kcals">—</div>
+      <div class="lien-depense" id="lien-depense">Dépense estimée ›</div>
       <div class="jauge"><i id="jauge-kcal"></i></div>
       <div class="macros-bar">
         <div class="macro-item">
@@ -2056,6 +2072,16 @@
           <div class="macro-pct" id="pct-f">0 %</div>
         </div>
       </div>
+    </div>
+
+    <!-- Ajout rapide : un seul jeu de boutons pour toute la journée (au lieu
+         d'un bouton « Ajouter un aliment » sous chaque repas) — le repas visé
+         est demandé juste après (voir choisirModeAjout). -->
+    <div class="ajout-rapide" role="group" aria-label="Ajouter à un repas">
+      <button type="button" onclick="choisirModeAjout('recette')"><svg class="icone-ui" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 11v8a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-8" /><path d="M12 19V9" /><path d="m8 13 4-4 4 4" /><path d="M3 11h18" /><path d="m3 11 2.447-4.894A2 2 0 0 1 7.236 5h9.528a2 2 0 0 1 1.789 1.106L21 11" /></svg><span>Recette</span></button>
+      <button type="button" onclick="choisirModeAjout('manuel')"><svg class="icone-ui" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M13 21h8" /><path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z" /></svg><span>Aliment</span></button>
+      <button type="button" onclick="choisirModeAjout('photo')"><svg class="icone-ui" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="18" height="18" x="3" y="3" rx="2" ry="2" /><circle cx="9" cy="9" r="2" /><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21" /></svg><span>Photo</span></button>
+      <button type="button" onclick="choisirModeAjout('barcode')"><svg class="icone-ui" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M13.997 4a2 2 0 0 1 1.76 1.05l.486.9A2 2 0 0 0 18.003 7H20a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2h1.997a2 2 0 0 0 1.759-1.048l.489-.904A2 2 0 0 1 10.004 4z" /><circle cx="12" cy="13" r="3" /></svg><span>Code-barres</span></button>
     </div>
 
     <div class="bloc-verre" id="bloc-eau" style="margin-bottom:16px;">
@@ -2137,43 +2163,6 @@
 
     <p class="note" id="note-poids" style="margin: -4px 2px 14px;"></p>
 
-    <div class="fitness-card">
-      <h3><svg class="icone-ui" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21.3 15.3a2.4 2.4 0 0 1 0 3.4l-2.6 2.6a2.4 2.4 0 0 1-3.4 0L2.7 8.7a2.41 2.41 0 0 1 0-3.4l2.6-2.6a2.41 2.41 0 0 1 3.4 0Z" /><path d="m14.5 12.5 2-2" /><path d="m11.5 9.5 2-2" /><path d="m8.5 6.5 2-2" /><path d="m17.5 15.5 2-2" /></svg> Mesures corporelles</h3>
-      <p class="note" id="resume-mesures" style="margin:0 0 12px;">Aucune mesure enregistrée pour l'instant.</p>
-      <button class="btn btn-secondaire" style="width:100%;" onclick="ouvrirMesuresModal()"><svg class="icone-ui" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14" /><path d="M12 5v14" /></svg> Ajouter une mesure</button>
-    </div>
-
-    <div class="bloc-verre" id="bloc-depense">
-      <h3 style="margin-top:0;margin-bottom:10px;font-size:0.85rem;text-transform:uppercase;letter-spacing:0.8px;"><svg class="icone-ui" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3q1 4 4 6.5t3 5.5a1 1 0 0 1-14 0 5 5 0 0 1 1-3 1 1 0 0 0 5 0c0-2-1.5-3-1.5-5q0-2 2.5-4" /></svg> Dépense estimée</h3>
-      <div id="detail-depense" class="note" style="margin:0;"></div>
-      <details style="margin-top:12px;">
-        <summary style="cursor:pointer;font-size:0.75rem;color:var(--text-muted);font-weight:700;">D'où viennent ces chiffres ?</summary>
-        <p class="note" style="margin:10px 0 0;">
-          Métabolisme de base : formule de Mifflin-St Jeor (poids, taille, âge, sexe).
-          Si un % de masse grasse est enregistré dans Mesures corporelles (saisi à
-          la main ou importé depuis la balance Withings), la formule Katch-McArdle
-          prend le relais et se base sur ta masse maigre plutôt que ton poids total
-          — plus précis pour les profils très musclés ou avec un taux de masse
-          grasse élevé. L'objectif de protéines se base aussi sur la masse maigre
-          dans ce cas (les lipides restent sur le poids total, leur plancher étant
-          hormonal, pas lié au tissu maigre). L'objectif "Recomposition" reprend
-          les calories du maintien mais des protéines au niveau d'une sèche : c'est
-          la combinaison qui permet de prendre du muscle et perdre du gras en même
-          temps, à condition de continuer à progresser en charge à l'entraînement.
-          Le facteur × 1,2 correspond à un mode de vie sédentaire — il inclut déjà
-          environ 4 000 pas, c'est pourquoi seuls les pas au-delà sont ajoutés.
-          Les séances utilisent les MET du <em>Compendium of Physical Activities</em>,
-          moins 1 MET : l'heure de sport remplace une heure de repos déjà comptée,
-          elle ne s'y ajoute pas.
-          Pour une séance de musculation trackée dans l'onglet Séance, le temps de
-          repos entre les séries n'est pas compté comme de l'effort (il se passe à
-          un rythme proche du repos, déjà compté ailleurs) : seul le nombre de
-          séries réellement faites compte, à raison d'environ 40 secondes d'effort
-          par série. Une séance de musculation ajoutée à la main dans Activité
-          (sans détail des séries) reste calculée sur sa durée totale déclarée.
-        </p>
-      </details>
-    </div>
   </section>
 
   <!-- ================= ÉCRAN : SÉANCE (musculation) ================= -->
@@ -2188,6 +2177,7 @@
         <button class="btn btn-secondaire" style="flex:1; min-height:auto; padding:10px 8px; font-size:0.78rem;" onclick="demarrerSeanceLibre()"><svg class="icone-ui" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15.914 4a1.5 1.5 0 00-2.474-1.561l-9 9A1.5 1.5 0 005.5 14h4.002a.5.5 0 01.471.666L8.086 20a1.5 1.5 0 002.475 1.56l9-9A1.5 1.5 0 0018.5 10h-3.997a.5.5 0 01-.472-.667z" /></svg> Séance libre</button>
       </div>
       <button class="btn btn-secondaire" style="width:100%; min-height:auto; padding:10px 8px; font-size:0.78rem; margin-bottom:6px;" onclick="ouvrirAssistantProgrammeIA()"><svg class="icone-ui" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9.937 15.5A2 2 0 0 0 8.5 14.063l-6.135-1.582a.5.5 0 0 1 0-.962L8.5 9.936A2 2 0 0 0 9.937 8.5l1.582-6.135a.5.5 0 0 1 .963 0L14.063 8.5A2 2 0 0 0 15.5 9.937l6.135 1.581a.5.5 0 0 1 0 .964L15.5 14.063a2 2 0 0 0-1.437 1.437l-1.582 6.135a.5.5 0 0 1-.963 0z" /><path d="M20 3v4" /><path d="M22 5h-4" /><path d="M4 17v2" /><path d="M5 18H3" /></svg> Créer un programme avec l'IA</button>
+      <button class="btn btn-secondaire" style="width:100%; min-height:auto; padding:10px 8px; font-size:0.78rem; margin-bottom:6px; background:transparent;" onclick="ouvrirModal('aide-routine-modal')"><svg class="icone-ui" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10" /><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" /><path d="M12 17h.01" /></svg> Comment créer une routine ?</button>
       <p class="note note-explicative" style="margin:10px 2px 0;">Séance libre : choisis tes exercices au fil de l'eau, tu pourras l'enregistrer comme programme à la fin.</p>
 
       <div class="titre-section"><svg class="icone-ui" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v16" /><path d="M20.001 19A2 2 0 0022 17V5a2 2 0 00-1.999-2L16 3.002A5 5 0 0012 5a5 5 0 00-4-2H4a2 2 0 00-2 2v12a2 2 0 001.999 2H8a5 5 0 014 2 5 5 0 014-2z" /></svg> Bibliothèque d'exercices</div>
@@ -2229,7 +2219,10 @@
         <label for="programme-nom-input">Nom du programme</label>
         <input type="text" id="programme-nom-input" placeholder="ex : Push, Pull, Legs, Full body…" autocomplete="off" oninput="onSaisieNomProgramme(this.value)">
       </div>
-      <label style="display:block; font-weight:700; font-size:0.72rem; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.8px; margin-bottom:12px;">Exercices</label>
+      <div style="display:flex; align-items:center; justify-content:space-between; gap:8px; margin-bottom:12px;">
+        <label style="display:block; font-weight:700; font-size:0.72rem; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.8px; margin:0;">Exercices</label>
+        <button type="button" class="btn-icone" style="font-size:0.72rem; font-weight:700;" onclick="ouvrirModal('aide-routine-modal')"><svg class="icone-ui" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10" /><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" /><path d="M12 17h.01" /></svg> Aide</button>
+      </div>
       <div id="programme-exercices-container"></div>
       <p class="note" id="programme-exercices-vide" style="margin:0 0 12px;">Aucun exercice ajouté pour l'instant.</p>
       <button class="btn btn-secondaire" style="width:100%; margin-bottom:14px;" onclick="ouvrirPickerExercices('programme')"><svg class="icone-ui" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14" /><path d="M12 5v14" /></svg> Ajouter un exercice</button>
@@ -2556,8 +2549,11 @@
   </section>
 
   <!-- ================= ÉCRAN : RÉGLAGES ================= -->
-  <section id="ecran-reglages" class="ecran" role="region" aria-label="Réglages">
-    <h2 class="titre-ecran"><span class="ic" aria-hidden="true"><svg class="icone-ui" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9.671 4.136a2.34 2.34 0 0 1 4.659 0 2.34 2.34 0 0 0 3.319 1.915 2.34 2.34 0 0 1 2.33 4.033 2.34 2.34 0 0 0 0 3.831 2.34 2.34 0 0 1-2.33 4.033 2.34 2.34 0 0 0-3.319 1.915 2.34 2.34 0 0 1-4.659 0 2.34 2.34 0 0 0-3.32-1.915 2.34 2.34 0 0 1-2.33-4.033 2.34 2.34 0 0 0 0-3.831A2.34 2.34 0 0 1 6.35 6.051a2.34 2.34 0 0 0 3.319-1.915" /><circle cx="12" cy="12" r="3" /></svg></span> Profil &amp; réglages</h2>
+  <section id="ecran-reglages" class="ecran" role="region" aria-label="Profil">
+    <div class="profil-entete">
+      <h2 class="titre-ecran" style="margin:0;"><span class="ic" aria-hidden="true"><svg class="icone-ui" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="5" /><path d="M20 21a8 8 0 0 0-16 0" /></svg></span> Profil</h2>
+      <button type="button" class="btn-icone btn-engrenage" onclick="ouvrirModal('reglages-modal')" aria-label="Réglages" title="Réglages"><svg class="icone-ui" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9.671 4.136a2.34 2.34 0 0 1 4.659 0 2.34 2.34 0 0 0 3.319 1.915 2.34 2.34 0 0 1 2.33 4.033 2.34 2.34 0 0 0 0 3.831 2.34 2.34 0 0 1-2.33 4.033 2.34 2.34 0 0 0-3.319 1.915 2.34 2.34 0 0 1-4.659 0 2.34 2.34 0 0 0-3.32-1.915 2.34 2.34 0 0 1-2.33-4.033 2.34 2.34 0 0 0 0-3.831A2.34 2.34 0 0 1 6.35 6.051a2.34 2.34 0 0 0 3.319-1.915" /><circle cx="12" cy="12" r="3" /></svg></button>
+    </div>
 
     <div class="bloc-verre" style="padding:15px; margin-bottom:16px;">
       <div style="display:flex; align-items:center; justify-content:space-between; gap:12px;">
@@ -2570,45 +2566,7 @@
       </div>
     </div>
 
-    <div class="bloc-verre" style="padding:15px; margin-bottom:16px;">
-      <div style="display:flex; align-items:center; justify-content:space-between; gap:12px;">
-        <div style="min-width:0;">
-          <div style="font-weight:700; font-size:0.72rem; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.8px;"><svg class="icone-ui" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10" /><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" /><path d="M12 17h.01" /></svg> Découverte</div>
-          <div style="font-weight:700; font-size:0.88rem; margin-top:4px;">Visite guidée de l'application</div>
-        </div>
-        <button class="btn btn-secondaire" id="btn-revoir-tutoriel" style="width:auto; flex:none; white-space:nowrap;" onclick="demarrerTourGuide()">Revoir</button>
-      </div>
-    </div>
-
-    <div class="bloc-verre hidden" id="bloc-installer-app" style="padding:15px; margin-bottom:16px;">
-      <div style="display:flex; align-items:center; justify-content:space-between; gap:12px;">
-        <div style="min-width:0;">
-          <div style="font-weight:700; font-size:0.72rem; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.8px;"><svg class="icone-ui" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="14" height="20" x="5" y="2" rx="2" ry="2" /><path d="M12 18h.01" /></svg> Application</div>
-          <div style="font-weight:700; font-size:0.88rem; margin-top:4px;">Pas encore sur ton écran d'accueil</div>
-        </div>
-        <button class="btn btn-secondaire" style="width:auto; flex:none; white-space:nowrap;" onclick="ouvrirInstallation()">Installer</button>
-      </div>
-    </div>
-
-    <div class="input-group">
-      <label><svg class="icone-ui" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 22a1 1 0 0 1 0-20 10 9 0 0 1 10 9 5 5 0 0 1-5 5h-2.25a1.75 1.75 0 0 0-1.4 2.8l.3.4a1.75 1.75 0 0 1-1.4 2.8z" /><circle cx="13.5" cy="6.5" r=".5" fill="currentColor" /><circle cx="17.5" cy="10.5" r=".5" fill="currentColor" /><circle cx="6.5" cy="12.5" r=".5" fill="currentColor" /><circle cx="8.5" cy="7.5" r=".5" fill="currentColor" /></svg> Thème</label>
-      <div class="segment" id="segment-theme">
-        <button type="button" onclick="choisirTheme('light')" aria-pressed="false">Clair</button>
-        <button type="button" onclick="choisirTheme('dark')" aria-pressed="false">Sombre</button>
-      </div>
-    </div>
-
-    <div class="slider-control">
-      <label><span><svg class="icone-ui" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="7" height="7" x="3" y="3" rx="1" /><rect width="7" height="7" x="14" y="3" rx="1" /><rect width="7" height="7" x="14" y="14" rx="1" /><rect width="7" height="7" x="3" y="14" rx="1" /></svg> Densité d'affichage</span><span id="densite-niveau-nom">Confort</span></label>
-      <input type="range" id="slider-densite" min="0" max="4" step="1" value="0" aria-label="Densité d'affichage" oninput="choisirDensite(this.value)">
-      <div style="display:flex; justify-content:space-between; margin-top:2px;">
-        <small class="note" style="margin:0;">Confort</small>
-        <small class="note" style="margin:0;">Compact</small>
-      </div>
-    </div>
-
-    <hr class="sep">
-
+    <div class="titre-section">Infos personnelles</div>
     <div class="input-group">
       <label for="base-gender">Sexe</label>
       <select id="base-gender" onchange="sauvegarderParametresGlobaux()">
@@ -2624,17 +2582,11 @@
       <label for="base-height">Taille (cm)</label>
       <input type="number" id="base-height" value="175" inputmode="numeric" onchange="sauvegarderParametresGlobaux()">
     </div>
-    <hr class="sep">
 
-    <div style="margin-bottom: 16px;">
-      <label style="display: block; font-weight: 700; font-size: 0.72rem; margin-bottom: 8px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.8px;"><svg class="icone-ui" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="18" height="18" x="3" y="3" rx="2" ry="2" /><circle cx="9" cy="9" r="2" /><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21" /></svg> Crédits</label>
-      <p class="note" style="margin:0;">
-        Photos et illustrations des exercices : <a href="https://github.com/bryllim/workout-guide" target="_blank" rel="noopener" style="color:var(--accent);">bryllim/workout-guide</a> (CC BY-SA 4.0),
-        <a href="https://github.com/yuhonas/free-exercise-db" target="_blank" rel="noopener" style="color:var(--accent);">yuhonas/free-exercise-db</a> (domaine public),
-        <a href="https://wger.de" target="_blank" rel="noopener" style="color:var(--accent);">wger.de</a> (CC BY-SA),
-        <a href="https://repdb.co" target="_blank" rel="noopener" style="color:var(--accent);">RepDB</a> (repdb.co) et
-        <a href="https://exercisedb.dev" target="_blank" rel="noopener" style="color:var(--accent);">ExerciseDB</a> par AscendAPI (exercisedb.dev, usage non commercial).
-      </p>
+    <div class="fitness-card">
+      <h3><svg class="icone-ui" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21.3 15.3a2.4 2.4 0 0 1 0 3.4l-2.6 2.6a2.4 2.4 0 0 1-3.4 0L2.7 8.7a2.41 2.41 0 0 1 0-3.4l2.6-2.6a2.41 2.41 0 0 1 3.4 0Z" /><path d="m14.5 12.5 2-2" /><path d="m11.5 9.5 2-2" /><path d="m8.5 6.5 2-2" /><path d="m17.5 15.5 2-2" /></svg> Mesures corporelles</h3>
+      <p class="note" id="resume-mesures" style="margin:0 0 12px;">Aucune mesure enregistrée pour l'instant.</p>
+      <button class="btn btn-secondaire" style="width:100%;" onclick="ouvrirMesuresModal()"><svg class="icone-ui" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14" /><path d="M12 5v14" /></svg> Ajouter une mesure</button>
     </div>
   </section>
 </main>
@@ -2668,7 +2620,7 @@
   <div class="fab-actions">
     <!-- Tout en haut de la pile, le plus loin du bouton : c'est l'onglet le
          moins utilisé au quotidien. -->
-    <button class="fab-action" id="nav-reglages" onclick="allerA('reglages')"><span class="ic" aria-hidden="true"><svg class="icone-ui" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9.671 4.136a2.34 2.34 0 0 1 4.659 0 2.34 2.34 0 0 0 3.319 1.915 2.34 2.34 0 0 1 2.33 4.033 2.34 2.34 0 0 0 0 3.831 2.34 2.34 0 0 1-2.33 4.033 2.34 2.34 0 0 0-3.319 1.915 2.34 2.34 0 0 1-4.659 0 2.34 2.34 0 0 0-3.32-1.915 2.34 2.34 0 0 1-2.33-4.033 2.34 2.34 0 0 0 0-3.831A2.34 2.34 0 0 1 6.35 6.051a2.34 2.34 0 0 0 3.319-1.915" /><circle cx="12" cy="12" r="3" /></svg></span> Réglages</button>
+    <button class="fab-action" id="nav-reglages" onclick="allerA('reglages')"><span class="ic" aria-hidden="true"><svg class="icone-ui" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="5" /><path d="M20 21a8 8 0 0 0-16 0" /></svg></span> Profil</button>
     <button class="fab-action hidden" id="nav-admin" onclick="allerA('admin')"><span class="ic" aria-hidden="true"><svg class="icone-ui" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11.562 3.266a.5.5 0 0 1 .876 0L15.39 8.87a1 1 0 0 0 1.516.294L21.183 5.5a.5.5 0 0 1 .798.519l-2.834 10.246a1 1 0 0 1-.956.734H5.81a1 1 0 0 1-.957-.734L2.02 6.02a.5.5 0 0 1 .798-.519l4.276 3.664a1 1 0 0 0 1.516-.294z" /><path d="M5 21h14" /></svg></span> Administration</button>
     <button class="fab-action" id="nav-stats" onclick="allerA('stats')"><span class="ic" aria-hidden="true"><svg class="icone-ui" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 3v16a2 2 0 0 0 2 2h16" /><path d="M18 17V9" /><path d="M13 17V5" /><path d="M8 17v-3" /></svg></span> Statistiques</button>
     <button class="fab-action" id="nav-seance" onclick="allerA('seance')"><span class="ic" aria-hidden="true"><svg class="icone-ui" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17.596 12.768a2 2 0 1 0 2.829-2.829l-1.768-1.767a2 2 0 0 0 2.828-2.829l-2.828-2.828a2 2 0 0 0-2.829 2.828l-1.767-1.768a2 2 0 1 0-2.829 2.829z" /><path d="m2.5 21.5 1.4-1.4" /><path d="m20.1 3.9 1.4-1.4" /><path d="M5.343 21.485a2 2 0 1 0 2.829-2.828l1.767 1.768a2 2 0 1 0 2.829-2.829l-6.364-6.364a2 2 0 1 0-2.829 2.829l1.768 1.767a2 2 0 0 0-2.828 2.829z" /><path d="m9.6 14.4 4.8-4.8" /></svg></span> Séance</button>
@@ -2721,6 +2673,16 @@
       <span>Code-barres<span class="sous">Scanner ou saisir un code produit</span></span>
     </button>
     <button class="btn btn-secondaire" style="margin-top:6px;" onclick="fermerFeuilleRepas()">Annuler</button>
+  </div>
+</div>
+
+<!-- ============ FEUILLE : pour quel repas ? (après un bouton d'ajout rapide) ============ -->
+<div class="feuille" id="feuille-choix-repas" role="dialog" aria-modal="true" aria-labelledby="feuille-choix-repas-titre">
+  <div class="feuille-contenu">
+    <div class="feuille-poignee"></div>
+    <div class="feuille-titre" id="feuille-choix-repas-titre">Pour quel repas ?</div>
+    <div id="choix-repas-liste"></div>
+    <button class="btn btn-secondaire" style="margin-top:6px;" onclick="fermerFeuilles()">Annuler</button>
   </div>
 </div>
 
@@ -3439,6 +3401,105 @@
   </div>
 </div>
 
+<!-- ================= RÉGLAGES (engrenage en haut à droite du Profil) ================= -->
+<div id="reglages-modal" class="modal" role="dialog" aria-modal="true" aria-labelledby="titre-reglages">
+  <div class="modal-content" style="max-width:480px;">
+    <div class="modal-entete">
+      <h3 id="titre-reglages"><svg class="icone-ui" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9.671 4.136a2.34 2.34 0 0 1 4.659 0 2.34 2.34 0 0 0 3.319 1.915 2.34 2.34 0 0 1 2.33 4.033 2.34 2.34 0 0 0 0 3.831 2.34 2.34 0 0 1-2.33 4.033 2.34 2.34 0 0 0-3.319 1.915 2.34 2.34 0 0 1-4.659 0 2.34 2.34 0 0 0-3.32-1.915 2.34 2.34 0 0 1-2.33-4.033 2.34 2.34 0 0 0 0-3.831A2.34 2.34 0 0 1 6.35 6.051a2.34 2.34 0 0 0 3.319-1.915" /><circle cx="12" cy="12" r="3" /></svg> Réglages</h3>
+      <button class="close-modal" onclick="fermerModal('reglages-modal')" aria-label="Fermer">&times;</button>
+    </div>
+    <div class="bloc-verre" style="padding:15px; margin-bottom:16px;">
+      <div style="display:flex; align-items:center; justify-content:space-between; gap:12px;">
+        <div style="min-width:0;">
+          <div style="font-weight:700; font-size:0.72rem; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.8px;"><svg class="icone-ui" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10" /><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" /><path d="M12 17h.01" /></svg> Découverte</div>
+          <div style="font-weight:700; font-size:0.88rem; margin-top:4px;">Visite guidée de l'application</div>
+        </div>
+        <button class="btn btn-secondaire" id="btn-revoir-tutoriel" style="width:auto; flex:none; white-space:nowrap;" onclick="demarrerTourGuide()">Revoir</button>
+      </div>
+    </div>
+
+    <div class="bloc-verre hidden" id="bloc-installer-app" style="padding:15px; margin-bottom:16px;">
+      <div style="display:flex; align-items:center; justify-content:space-between; gap:12px;">
+        <div style="min-width:0;">
+          <div style="font-weight:700; font-size:0.72rem; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.8px;"><svg class="icone-ui" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="14" height="20" x="5" y="2" rx="2" ry="2" /><path d="M12 18h.01" /></svg> Application</div>
+          <div style="font-weight:700; font-size:0.88rem; margin-top:4px;">Pas encore sur ton écran d'accueil</div>
+        </div>
+        <button class="btn btn-secondaire" style="width:auto; flex:none; white-space:nowrap;" onclick="ouvrirInstallation()">Installer</button>
+      </div>
+    </div>
+
+    <div class="input-group">
+      <label><svg class="icone-ui" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 22a1 1 0 0 1 0-20 10 9 0 0 1 10 9 5 5 0 0 1-5 5h-2.25a1.75 1.75 0 0 0-1.4 2.8l.3.4a1.75 1.75 0 0 1-1.4 2.8z" /><circle cx="13.5" cy="6.5" r=".5" fill="currentColor" /><circle cx="17.5" cy="10.5" r=".5" fill="currentColor" /><circle cx="6.5" cy="12.5" r=".5" fill="currentColor" /><circle cx="8.5" cy="7.5" r=".5" fill="currentColor" /></svg> Thème</label>
+      <div class="segment" id="segment-theme">
+        <button type="button" onclick="choisirTheme('light')" aria-pressed="false">Clair</button>
+        <button type="button" onclick="choisirTheme('dark')" aria-pressed="false">Sombre</button>
+      </div>
+    </div>
+
+    <div class="slider-control">
+      <label><span><svg class="icone-ui" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="7" height="7" x="3" y="3" rx="1" /><rect width="7" height="7" x="14" y="3" rx="1" /><rect width="7" height="7" x="14" y="14" rx="1" /><rect width="7" height="7" x="3" y="14" rx="1" /></svg> Densité d'affichage</span><span id="densite-niveau-nom">Confort</span></label>
+      <input type="range" id="slider-densite" min="0" max="4" step="1" value="0" aria-label="Densité d'affichage" oninput="choisirDensite(this.value)">
+      <div style="display:flex; justify-content:space-between; margin-top:2px;">
+        <small class="note" style="margin:0;">Confort</small>
+        <small class="note" style="margin:0;">Compact</small>
+      </div>
+    </div>
+
+    <hr class="sep">
+    <div style="margin-bottom: 16px;">
+      <label style="display: block; font-weight: 700; font-size: 0.72rem; margin-bottom: 8px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.8px;"><svg class="icone-ui" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="18" height="18" x="3" y="3" rx="2" ry="2" /><circle cx="9" cy="9" r="2" /><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21" /></svg> Crédits</label>
+      <p class="note" style="margin:0;">
+        Photos et illustrations des exercices : <a href="https://github.com/bryllim/workout-guide" target="_blank" rel="noopener" style="color:var(--accent);">bryllim/workout-guide</a> (CC BY-SA 4.0),
+        <a href="https://github.com/yuhonas/free-exercise-db" target="_blank" rel="noopener" style="color:var(--accent);">yuhonas/free-exercise-db</a> (domaine public),
+        <a href="https://wger.de" target="_blank" rel="noopener" style="color:var(--accent);">wger.de</a> (CC BY-SA),
+        <a href="https://repdb.co" target="_blank" rel="noopener" style="color:var(--accent);">RepDB</a> (repdb.co) et
+        <a href="https://exercisedb.dev" target="_blank" rel="noopener" style="color:var(--accent);">ExerciseDB</a> par AscendAPI (exercisedb.dev, usage non commercial).
+      </p>
+    </div>
+  </div>
+</div>
+
+<!-- ================= DÉPENSE ESTIMÉE (tap sur les calories du jour) ================= -->
+<div id="depense-modal" class="modal" role="dialog" aria-modal="true" aria-labelledby="titre-depense">
+  <div class="modal-content" style="max-width:480px;">
+    <div class="modal-entete">
+      <h3 id="titre-depense">Calories estimées du jour</h3>
+      <button class="close-modal" onclick="fermerModal('depense-modal')" aria-label="Fermer">&times;</button>
+    </div>
+    <div class="bloc-verre" id="bloc-depense">
+      <h3 style="margin-top:0;margin-bottom:10px;font-size:0.85rem;text-transform:uppercase;letter-spacing:0.8px;"><svg class="icone-ui" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3q1 4 4 6.5t3 5.5a1 1 0 0 1-14 0 5 5 0 0 1 1-3 1 1 0 0 0 5 0c0-2-1.5-3-1.5-5q0-2 2.5-4" /></svg> Dépense estimée</h3>
+      <div id="detail-depense" class="note" style="margin:0;"></div>
+      <details style="margin-top:12px;">
+        <summary style="cursor:pointer;font-size:0.75rem;color:var(--text-muted);font-weight:700;">D'où viennent ces chiffres ?</summary>
+        <p class="note" style="margin:10px 0 0;">
+          Métabolisme de base : formule de Mifflin-St Jeor (poids, taille, âge, sexe).
+          Si un % de masse grasse est enregistré dans Mesures corporelles (saisi à
+          la main ou importé depuis la balance Withings), la formule Katch-McArdle
+          prend le relais et se base sur ta masse maigre plutôt que ton poids total
+          — plus précis pour les profils très musclés ou avec un taux de masse
+          grasse élevé. L'objectif de protéines se base aussi sur la masse maigre
+          dans ce cas (les lipides restent sur le poids total, leur plancher étant
+          hormonal, pas lié au tissu maigre). L'objectif "Recomposition" reprend
+          les calories du maintien mais des protéines au niveau d'une sèche : c'est
+          la combinaison qui permet de prendre du muscle et perdre du gras en même
+          temps, à condition de continuer à progresser en charge à l'entraînement.
+          Le facteur × 1,2 correspond à un mode de vie sédentaire — il inclut déjà
+          environ 4 000 pas, c'est pourquoi seuls les pas au-delà sont ajoutés.
+          Les séances utilisent les MET du <em>Compendium of Physical Activities</em>,
+          moins 1 MET : l'heure de sport remplace une heure de repos déjà comptée,
+          elle ne s'y ajoute pas.
+          Pour une séance de musculation trackée dans l'onglet Séance, le temps de
+          repos entre les séries n'est pas compté comme de l'effort (il se passe à
+          un rythme proche du repos, déjà compté ailleurs) : seul le nombre de
+          séries réellement faites compte, à raison d'environ 40 secondes d'effort
+          par série. Une séance de musculation ajoutée à la main dans Activité
+          (sans détail des séries) reste calculée sur sa durée totale déclarée.
+        </p>
+      </details>
+    </div>
+  </div>
+</div>
+
 <div id="mesures-modal" class="modal" role="dialog" aria-modal="true" aria-labelledby="titre-mesures">
   <div class="modal-content">
     <div class="modal-entete">
@@ -3707,6 +3768,36 @@
       <input type="url" id="perso-image" autocomplete="off" placeholder="https://…">
     </div>
     <button class="btn btn-primary" id="perso-valider-btn" style="margin-top:16px;" onclick="validerExercicePerso()">Ajouter à la base</button>
+  </div>
+</div>
+
+<!-- ================= SÉANCE — Aide à la création d'une routine ================= -->
+<div id="aide-routine-modal" class="modal" role="dialog" aria-modal="true" aria-labelledby="titre-aide-routine">
+  <div class="modal-content" style="max-width:520px;">
+    <div class="modal-entete">
+      <h3 id="titre-aide-routine"><svg class="icone-ui" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10" /><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" /><path d="M12 17h.01" /></svg> Créer une bonne routine</h3>
+      <button class="close-modal" onclick="fermerModal('aide-routine-modal')" aria-label="Fermer">&times;</button>
+    </div>
+    <ol class="aide-routine-etapes">
+      <li><b>Choisis ta répartition selon tes jours dispo.</b>
+        <span>2–3 jours : <i>Full body</i> (tout le corps à chaque séance). 4 jours : <i>Haut / Bas</i>. 5–6 jours : <i>Push / Pull / Legs</i>. Crée un programme par type de séance (ex. « Haut A », « Bas A »).</span></li>
+      <li><b>4 à 7 exercices par séance.</b>
+        <span>Commence par les gros mouvements polyarticulaires (squat, développé, rowing, soulevé de terre, tractions), quand tu es frais ; termine par l'isolation (curl, élévations latérales, extensions…).</span></li>
+      <li><b>Vise la zone de croissance pour chaque muscle.</b>
+        <span>Environ 10 à 20 séries par muscle et par semaine, réparties sur 2 séances ou plus ; 2 à 4 séries par exercice. Le suivi est automatique dans Statistiques › Muscu › Zones, et sous chaque exercice pendant la séance.</span></li>
+      <li><b>Choisis ta fourchette de répétitions.</b>
+        <span>5–8 pour la force sur les gros mouvements, 8–12 pour la prise de muscle, 12–20 pour l'isolation. Arrête chaque série à 1–3 répétitions de l'échec.</span></li>
+      <li><b>Repose-toi assez.</b>
+        <span>2–3 min sur les polyarticulaires, 1–2 min sur l'isolation : un repos trop court fait perdre des répétitions.</span></li>
+      <li><b>Progresse un peu à chaque fois.</b>
+        <span>Quand tu atteins le haut de ta fourchette sur toutes les séries, ajoute de la charge (+2,5 kg à la barre, +1 à 2 kg aux haltères). La colonne « Préc. » en séance te rappelle ce que tu as fait la dernière fois.</span></li>
+      <li><b>Garde la même routine 6 à 12 semaines.</b>
+        <span>C'est la répétition qui permet de mesurer ta progression ; change un exercice s'il te fait mal ou si tu stagnes plusieurs semaines.</span></li>
+    </ol>
+    <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-top:14px;">
+      <button class="btn btn-secondaire" onclick="fermerModal('aide-routine-modal'); if (!document.getElementById('seance-vue-programme') || document.getElementById('seance-vue-programme').classList.contains('hidden')) ouvrirCreationProgramme();">Créer moi-même</button>
+      <button class="btn btn-primary" onclick="fermerModal('aide-routine-modal'); ouvrirAssistantProgrammeIA();">Avec l'IA</button>
+    </div>
   </div>
 </div>
 
@@ -4448,7 +4539,6 @@ function renderMeals(day) {
           <span class="meal-kcals">${totalMeal} kcal</span>
         </div>
         <ul class="food-list">${rows}</ul>
-        <button class="btn-ajout-repas" onclick="ouvrirFeuilleRepas('${mealId}')">+ Ajouter un aliment</button>
       </div>`;
   }).join('');
 }
@@ -4590,6 +4680,8 @@ function quotaEauSuggere(dateStr) {
 /* Un objectif calorique sorti de nulle part n'inspire pas confiance : on montre
    d'ou viennent les chiffres, et surtout quand le poids est une estimation. */
 function majDetailDepense(day, t) {
+  const lien = document.getElementById('lien-depense');
+  if (lien && t && t.tdee) lien.textContent = 'Dépense estimée : ' + t.tdee + ' kcal ›';
   const el = document.getElementById('detail-depense');
   if (!el) return;
   const lignes = [
@@ -7665,7 +7757,7 @@ async function importerDonneesUtilisateurAdmin(event) {
    ecrans, une barre basse, et chaque tache tient dans une hauteur d'ecran.
    ===================================================================== */
 const ECRANS = ['repas', 'activite', 'seance', 'stats', 'admin', 'reglages'];
-const ECRAN_ICONE = { repas: '<svg class="icone-ui" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 2v7c0 1.1.9 2 2 2h4a2 2 0 0 0 2-2V2" /><path d="M7 2v20" /><path d="M21 15V2a5 5 0 0 0-5 5v6c0 1.1.9 2 2 2h3Zm0 0v7" /></svg>', activite: '<svg class="icone-ui" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 16v-2.38C4 11.5 2.97 10.5 3 8c.03-2.72 1.49-6 4.5-6C9.37 2 10 3.8 10 5.5c0 3.11-2 5.66-2 8.68V16a2 2 0 1 1-4 0Z" /><path d="M20 20v-2.38c0-2.12 1.03-3.12 1-5.62-.03-2.72-1.49-6-4.5-6C14.63 6 14 7.8 14 9.5c0 3.11 2 5.66 2 8.68V20a2 2 0 1 0 4 0Z" /><path d="M16 17h4" /><path d="M4 13h4" /></svg>', seance: '<svg class="icone-ui" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17.596 12.768a2 2 0 1 0 2.829-2.829l-1.768-1.767a2 2 0 0 0 2.828-2.829l-2.828-2.828a2 2 0 0 0-2.829 2.828l-1.767-1.768a2 2 0 1 0-2.829 2.829z" /><path d="m2.5 21.5 1.4-1.4" /><path d="m20.1 3.9 1.4-1.4" /><path d="M5.343 21.485a2 2 0 1 0 2.829-2.828l1.767 1.768a2 2 0 1 0 2.829-2.829l-6.364-6.364a2 2 0 1 0-2.829 2.829l1.768 1.767a2 2 0 0 0-2.828 2.829z" /><path d="m9.6 14.4 4.8-4.8" /></svg>', stats: '<svg class="icone-ui" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 3v16a2 2 0 0 0 2 2h16" /><path d="M18 17V9" /><path d="M13 17V5" /><path d="M8 17v-3" /></svg>', admin: '<svg class="icone-ui" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11.562 3.266a.5.5 0 0 1 .876 0L15.39 8.87a1 1 0 0 0 1.516.294L21.183 5.5a.5.5 0 0 1 .798.519l-2.834 10.246a1 1 0 0 1-.956.734H5.81a1 1 0 0 1-.957-.734L2.02 6.02a.5.5 0 0 1 .798-.519l4.276 3.664a1 1 0 0 0 1.516-.294z" /><path d="M5 21h14" /></svg>', reglages: '<svg class="icone-ui" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9.671 4.136a2.34 2.34 0 0 1 4.659 0 2.34 2.34 0 0 0 3.319 1.915 2.34 2.34 0 0 1 2.33 4.033 2.34 2.34 0 0 0 0 3.831 2.34 2.34 0 0 1-2.33 4.033 2.34 2.34 0 0 0-3.319 1.915 2.34 2.34 0 0 1-4.659 0 2.34 2.34 0 0 0-3.32-1.915 2.34 2.34 0 0 1-2.33-4.033 2.34 2.34 0 0 0 0-3.831A2.34 2.34 0 0 1 6.35 6.051a2.34 2.34 0 0 0 3.319-1.915" /><circle cx="12" cy="12" r="3" /></svg>' };
+const ECRAN_ICONE = { repas: '<svg class="icone-ui" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 2v7c0 1.1.9 2 2 2h4a2 2 0 0 0 2-2V2" /><path d="M7 2v20" /><path d="M21 15V2a5 5 0 0 0-5 5v6c0 1.1.9 2 2 2h3Zm0 0v7" /></svg>', activite: '<svg class="icone-ui" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 16v-2.38C4 11.5 2.97 10.5 3 8c.03-2.72 1.49-6 4.5-6C9.37 2 10 3.8 10 5.5c0 3.11-2 5.66-2 8.68V16a2 2 0 1 1-4 0Z" /><path d="M20 20v-2.38c0-2.12 1.03-3.12 1-5.62-.03-2.72-1.49-6-4.5-6C14.63 6 14 7.8 14 9.5c0 3.11 2 5.66 2 8.68V20a2 2 0 1 0 4 0Z" /><path d="M16 17h4" /><path d="M4 13h4" /></svg>', seance: '<svg class="icone-ui" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17.596 12.768a2 2 0 1 0 2.829-2.829l-1.768-1.767a2 2 0 0 0 2.828-2.829l-2.828-2.828a2 2 0 0 0-2.829 2.828l-1.767-1.768a2 2 0 1 0-2.829 2.829z" /><path d="m2.5 21.5 1.4-1.4" /><path d="m20.1 3.9 1.4-1.4" /><path d="M5.343 21.485a2 2 0 1 0 2.829-2.828l1.767 1.768a2 2 0 1 0 2.829-2.829l-6.364-6.364a2 2 0 1 0-2.829 2.829l1.768 1.767a2 2 0 0 0-2.828 2.829z" /><path d="m9.6 14.4 4.8-4.8" /></svg>', stats: '<svg class="icone-ui" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 3v16a2 2 0 0 0 2 2h16" /><path d="M18 17V9" /><path d="M13 17V5" /><path d="M8 17v-3" /></svg>', admin: '<svg class="icone-ui" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11.562 3.266a.5.5 0 0 1 .876 0L15.39 8.87a1 1 0 0 0 1.516.294L21.183 5.5a.5.5 0 0 1 .798.519l-2.834 10.246a1 1 0 0 1-.956.734H5.81a1 1 0 0 1-.957-.734L2.02 6.02a.5.5 0 0 1 .798-.519l4.276 3.664a1 1 0 0 0 1.516-.294z" /><path d="M5 21h14" /></svg>', reglages: '<svg class="icone-ui" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="5" /><path d="M20 21a8 8 0 0 0-16 0" /></svg>' };
 let ecranActif = 'repas';
 
 function allerA(nom) {
@@ -8066,9 +8158,9 @@ function initFabDeplacable() {
    ce champ est synchronisé comme le reste du profil.
    ===================================================================== */
 const TOUR_ETAPES = [
-  { titre: 'Bienvenue sur Anqā', texte: "Un tour rapide pour découvrir l'essentiel. Tu peux le quitter à tout moment, et le revoir plus tard depuis Réglages." },
-  { ecran: 'repas', cible: '.summary-card', titre: 'Ton résumé du jour', texte: 'Calories consommées, objectif du jour, et répartition entre protéines, glucides et lipides.' },
-  { ecran: 'repas', cible: '#meals-container .btn-ajout-repas', titre: 'Ajouter un aliment', texte: "Touche ce bouton sur n'importe quel repas pour ouvrir les options d'ajout, détaillées juste après." },
+  { titre: 'Bienvenue sur Anqā', texte: "Un tour rapide pour découvrir l'essentiel. Tu peux le quitter à tout moment, et le revoir plus tard depuis Profil > Réglages (engrenage)." },
+  { ecran: 'repas', cible: '.summary-card', titre: 'Ton résumé du jour', texte: 'Calories consommées, objectif du jour, et répartition entre protéines, glucides et lipides. Touche la carte pour voir le détail de ta dépense estimée.' },
+  { ecran: 'repas', cible: '.ajout-rapide', titre: 'Ajouter à un repas', texte: "Recette, aliment, photo ou code-barres : choisis comment ajouter, puis pour quel repas. Les options sont détaillées juste après." },
   { ecran: 'repas', feuille: 'feuille-repas', cible: '#opt-recette', titre: 'Option 1 : Recette', texte: 'Une de tes recettes enregistrées, ajoutée en un tap avec ses macros déjà calculées.' },
   { ecran: 'repas', feuille: 'feuille-repas', cible: '#opt-manuel', titre: 'Option 2 : Saisie manuelle', texte: "Recherche dans la base d'aliments : CIQUAL, aliments ajoutés par la communauté, et en premier ce que tu manges le plus souvent." },
   { ecran: 'repas', feuille: 'feuille-repas', cible: '#opt-photo', titre: 'Option 3 : Photo ou description', texte: "Décris ou prends en photo ce que tu manges : l'IA estime les quantités et les macros à ta place." },
@@ -8076,17 +8168,16 @@ const TOUR_ETAPES = [
   { ecran: 'repas', cible: '#bloc-eau', titre: "Suivi de l'eau", texte: 'Touche +250 ml, +500 ml ou +1 L à chaque fois que tu bois.' },
   { ecran: 'repas', cible: '#carte-bilan-jour', titre: 'Bilan de la journée', texte: 'Une analyse IA de ta nutrition et de ton activité du jour.' },
   { ecran: 'repas', cible: '#fab', titre: 'Le bouton de navigation', texte: "Ce bouton flottant permet de changer d'écran à tout moment — il remplace la barre d'onglets classique." },
-  { fab: true, cible: '#nav-activite', titre: 'Onglet Activité', texte: 'Ton objectif, tes pas, tes séances annexes et tes mesures corporelles.' },
+  { fab: true, cible: '#nav-activite', titre: 'Onglet Activité', texte: 'Ton objectif, tes pas et tes séances annexes.' },
   { ecran: 'activite', cible: '#carte-objectif', titre: 'Ton objectif', texte: "Maintien, sèche, masse ou recomposition : change-le ici, l'historique passé n'est jamais réécrit." },
-  { ecran: 'activite', cible: '#bloc-depense', titre: "D'où viennent tes calories", texte: 'Le détail complet du calcul de ta dépense calorique estimée.' },
   { fab: true, cible: '#nav-seance', titre: 'Onglet Séance', texte: "Tes programmes de musculation, et le suivi d'une séance en cours." },
   { ecran: 'seance', cible: '[onclick="ouvrirCreationProgramme()"]', titre: 'Créer un programme', texte: "Construis un programme avec tes exercices, séries et charges cibles. Tu le relances ensuite en un tap à chaque séance, avec le suivi automatique de tes performances." },
   { ecran: 'seance', cible: '[onclick="demarrerSeanceLibre()"]', titre: 'Séance libre', texte: "Entraîne-toi sans programme préparé à l'avance : ajoute tes exercices au fil de la séance, tu pourras l'enregistrer comme programme à la fin." },
   { ecran: 'seance', cible: '[onclick="ouvrirBibliotheque()"]', titre: "Bibliothèque d'exercices", texte: "Parcours toute la base d'exercices, filtrée par groupe musculaire et par matériel, avec photo et instructions pour chacun." },
   { fab: true, cible: '#nav-stats', titre: 'Onglet Statistiques', texte: 'Ton poids, ta nutrition et tes progrès en musculation, dans le temps.' },
   { ecran: 'stats', cible: '#periode-poids-bloc', titre: 'Choisir une période', texte: 'Fais glisser ces curseurs pour analyser la période de ton choix.' },
-  { fab: true, cible: '#nav-reglages', titre: 'Onglet Réglages', texte: 'Ton compte, le thème, la synchronisation et l\'export de tes données.' },
-  { ecran: 'reglages', cible: '#btn-revoir-tutoriel', titre: 'Revoir ce tour', texte: 'Ce bouton relance ce tutoriel quand tu veux.' },
+  { fab: true, cible: '#nav-reglages', titre: 'Onglet Profil', texte: 'Ton compte, tes infos et tes mesures corporelles. L\'engrenage en haut à droite ouvre les réglages (thème, densité, visite guidée).' },
+  { ecran: 'reglages', cible: '.btn-engrenage', titre: 'Réglages', texte: 'Thème, densité d\'affichage, installation et « Revoir la visite guidée » sont derrière cet engrenage.' },
   { titre: "C'est tout !", texte: 'Explore le reste à ton rythme. Bonne utilisation 🙂' }
 ];
 let tourActif = false;
@@ -8345,6 +8436,28 @@ function renderChoixRecette() {
    utilisateur, admin aliments). fermerFeuilles() est défini plus bas ;
    les déclarations de fonction étant remontées, l'appel est sûr. */
 function fermerFeuilleRepas() { fermerFeuilles(); }
+/* Boutons d'ajout rapide de l'écran Repas : on choisit d'abord COMMENT
+   ajouter (recette, aliment, photo, code-barres), puis le repas visé — le
+   repas du moment est mis en avant mais tous restent proposés. */
+let modeAjoutEnAttente = null;
+function choisirModeAjout(mode) {
+  modeAjoutEnAttente = mode;
+  const libelles = { recette: 'Ajouter une recette', manuel: 'Ajouter un aliment', photo: 'Ajouter par photo', barcode: 'Scanner un code-barres' };
+  document.getElementById('feuille-choix-repas-titre').textContent = (libelles[mode] || 'Ajouter') + ' — pour quel repas ?';
+  const actuel = repasDuMoment();
+  const day = getDay(currentDate);
+  document.getElementById('choix-repas-liste').innerHTML = MEALS.map(m => `
+    <button class="feuille-action${m === actuel ? ' feuille-action--suggere' : ''}" onclick="choisirRepasAjout('${m}')">
+      <span class="ic" aria-hidden="true">${MEAL_ICONS[m]}</span>
+      <span>${MEAL_LABELS[m]}<span class="sous">${mealKcal(day, m)} kcal${m === actuel ? ' · repas du moment' : ''}</span></span>
+    </button>`).join('');
+  ouvrirFeuille('feuille-choix-repas');
+}
+function choisirRepasAjout(mealId) {
+  repasFeuille = mealId;
+  fermerFeuilles();
+  depuisFeuille(modeAjoutEnAttente || 'manuel');
+}
 function depuisFeuille(mode) {
   const mealId = repasFeuille || repasDuMoment();
   fermerFeuilleRepas();
