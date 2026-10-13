@@ -1402,6 +1402,16 @@
     .stats-onglets-nav { margin-bottom: 14px; }
     #ecran-stats .stats-tab { max-height: 0; overflow: hidden; transition: max-height 0.28s ease; }
     #ecran-stats .stats-tab.stats-tab-actif { max-height: none; overflow: visible; }
+    /* Deuxième niveau d'onglets, à l'intérieur de l'onglet Musculation : même
+       mécanique (jamais display:none, voir plus haut), classe différente pour
+       ne pas être recapturé par le sélecteur de choisirOngletStats ci-dessus
+       (qui basculerait alors ces sous-onglets en même temps que Poids/
+       Nutrition/Muscu). Sans ça, 7 sections s'empilaient d'un coup sur cet
+       onglet (chiffres clés, 3 graphiques, records, stats par programme,
+       historique) : beaucoup trop à digérer en un seul écran. */
+    .muscu-soustabs-nav { margin: 4px 0 16px; }
+    #ecran-stats .stats-soustab { max-height: 0; overflow: hidden; transition: max-height 0.28s ease; }
+    #ecran-stats .stats-soustab.stats-soustab-actif { max-height: none; overflow: visible; }
 
     /* --- CHIFFRES CLÉS DE LA PÉRIODE --- */
     .grille-cles { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
@@ -2274,30 +2284,53 @@
     <div class="stats-tab" data-tab="muscu">
       <div class="titre-section"><svg class="icone-ui" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17.596 12.768a2 2 0 1 0 2.829-2.829l-1.768-1.767a2 2 0 0 0 2.828-2.829l-2.828-2.828a2 2 0 0 0-2.829 2.828l-1.767-1.768a2 2 0 1 0-2.829 2.829z" /><path d="m2.5 21.5 1.4-1.4" /><path d="m20.1 3.9 1.4-1.4" /><path d="M5.343 21.485a2 2 0 1 0 2.829-2.828l1.767 1.768a2 2 0 1 0 2.829-2.829l-6.364-6.364a2 2 0 1 0-2.829 2.829l1.768 1.767a2 2 0 0 0-2.828 2.829z" /><path d="m9.6 14.4 4.8-4.8" /></svg> Musculation</div>
       <div class="stats-grille" id="muscu-stats-totaux"></div>
-      <div class="chart-container"><canvas id="muscuParMoisChart"></canvas></div>
 
-      <div class="titre-section"><svg class="icone-ui" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 7h6v6" /><path d="m22 7-8.5 8.5-5-5L2 17" /></svg> Progression par exercice</div>
-      <div class="input-group" style="margin-bottom:12px;">
-        <label for="muscu-exo-select">Exercice (tous ceux déjà pratiqués, ne serait-ce qu'une fois)</label>
-        <select id="muscu-exo-select" onchange="afficherProgressionExercice(this.value)"></select>
+      <!-- Sous-onglets : les 4 sections ci-dessous (chacune déjà dense -- un
+           graphique + une liste) ne s'affichent plus toutes empilées, une
+           seule à la fois (voir choisirSousOngletMuscu). Même mécanique que
+           les onglets Poids/Nutrition/Muscu plus haut : jamais display:none
+           sur un conteneur de canvas, seul max-height/overflow varie, et le
+           .chart-container garde sa hauteur fixe propre quoi qu'il arrive. -->
+      <div class="segment muscu-soustabs-nav" id="muscu-soustabs-nav" role="group" aria-label="Détail musculation">
+        <button type="button" onclick="choisirSousOngletMuscu('apercu')" aria-pressed="true">Aperçu</button>
+        <button type="button" onclick="choisirSousOngletMuscu('progression')" aria-pressed="false">Progression</button>
+        <button type="button" onclick="choisirSousOngletMuscu('programmes')" aria-pressed="false">Programmes</button>
+        <button type="button" onclick="choisirSousOngletMuscu('historique')" aria-pressed="false">Historique</button>
       </div>
-      <p class="note" id="muscu-progression-vide" style="margin:0 0 12px; display:none;">Aucun exercice pratiqué pour l'instant.</p>
-      <div class="chart-container" id="muscu-progression-conteneur"><canvas id="muscuProgressionChart"></canvas></div>
 
-      <div class="titre-section"><svg class="icone-ui" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 14.66V17a1 1 0 0 1-1 1 2 2 0 0 0-2 2v2" /><path d="M14 14.66V17a1 1 0 0 0 1 1 2 2 0 0 1 2 2v2" /><path d="M17.916 10H19.5A2.5 2.5 0 0 0 22 7.5V5a1 1 0 0 0-1-1h-3" /><path d="M4 22h16" /><path d="M6 9a6 6 0 0 0 12 0V3a1 1 0 0 0-1-1H7a1 1 0 0 0-1 1z" /><path d="M6.084 10H4.5A2.5 2.5 0 0 1 2 7.5V5a1 1 0 0 1 1-1h3" /></svg> Records personnels</div>
-      <div id="muscu-stats-records"></div>
+      <div class="stats-soustab stats-soustab-actif" data-soustab="apercu">
+        <div class="titre-section"><svg class="icone-ui" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 3v16a2 2 0 0 0 2 2h16" /><path d="M18 17V9" /><path d="M13 17V5" /><path d="M8 17v-3" /></svg> Séances par mois</div>
+        <div class="chart-container"><canvas id="muscuParMoisChart"></canvas></div>
 
-      <div class="titre-section"><svg class="icone-ui" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17.596 12.768a2 2 0 1 0 2.829-2.829l-1.768-1.767a2 2 0 0 0 2.828-2.829l-2.828-2.828a2 2 0 0 0-2.829 2.828l-1.767-1.768a2 2 0 1 0-2.829 2.829z" /><path d="m2.5 21.5 1.4-1.4" /><path d="m20.1 3.9 1.4-1.4" /><path d="M5.343 21.485a2 2 0 1 0 2.829-2.828l1.767 1.768a2 2 0 1 0 2.829-2.829l-6.364-6.364a2 2 0 1 0-2.829 2.829l1.768 1.767a2 2 0 0 0-2.828 2.829z" /><path d="m9.6 14.4 4.8-4.8" /></svg> Séances par groupe musculaire</div>
-      <div class="chart-container"><canvas id="muscuGroupeChart"></canvas></div>
+        <div class="titre-section"><svg class="icone-ui" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17.596 12.768a2 2 0 1 0 2.829-2.829l-1.768-1.767a2 2 0 0 0 2.828-2.829l-2.828-2.828a2 2 0 0 0-2.829 2.828l-1.767-1.768a2 2 0 1 0-2.829 2.829z" /><path d="m2.5 21.5 1.4-1.4" /><path d="m20.1 3.9 1.4-1.4" /><path d="M5.343 21.485a2 2 0 1 0 2.829-2.828l1.767 1.768a2 2 0 1 0 2.829-2.829l-6.364-6.364a2 2 0 1 0-2.829 2.829l1.768 1.767a2 2 0 0 0-2.828 2.829z" /><path d="m9.6 14.4 4.8-4.8" /></svg> Séances par groupe musculaire</div>
+        <div class="chart-container"><canvas id="muscuGroupeChart"></canvas></div>
+      </div>
 
-      <div class="titre-section"><svg class="icone-ui" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="8" height="4" x="8" y="2" rx="1" ry="1" /><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2" /><path d="M12 11h4" /><path d="M12 16h4" /><path d="M8 11h.01" /><path d="M8 16h.01" /></svg> Statistiques par programme</div>
-      <div id="muscu-stats-programmes"></div>
+      <div class="stats-soustab" data-soustab="progression">
+        <div class="titre-section"><svg class="icone-ui" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 7h6v6" /><path d="m22 7-8.5 8.5-5-5L2 17" /></svg> Progression par exercice</div>
+        <div class="input-group" style="margin-bottom:12px;">
+          <label for="muscu-exo-select">Exercice (tous ceux déjà pratiqués, ne serait-ce qu'une fois)</label>
+          <select id="muscu-exo-select" onchange="afficherProgressionExercice(this.value)"></select>
+        </div>
+        <p class="note" id="muscu-progression-vide" style="margin:0 0 12px; display:none;">Aucun exercice pratiqué pour l'instant.</p>
+        <div class="chart-container" id="muscu-progression-conteneur"><canvas id="muscuProgressionChart"></canvas></div>
+
+        <div class="titre-section"><svg class="icone-ui" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 14.66V17a1 1 0 0 1-1 1 2 2 0 0 0-2 2v2" /><path d="M14 14.66V17a1 1 0 0 0 1 1 2 2 0 0 1 2 2v2" /><path d="M17.916 10H19.5A2.5 2.5 0 0 0 22 7.5V5a1 1 0 0 0-1-1h-3" /><path d="M4 22h16" /><path d="M6 9a6 6 0 0 0 12 0V3a1 1 0 0 0-1-1H7a1 1 0 0 0-1 1z" /><path d="M6.084 10H4.5A2.5 2.5 0 0 1 2 7.5V5a1 1 0 0 1 1-1h3" /></svg> Records personnels</div>
+        <div id="muscu-stats-records"></div>
+      </div>
+
+      <div class="stats-soustab" data-soustab="programmes">
+        <div class="titre-section"><svg class="icone-ui" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="8" height="4" x="8" y="2" rx="1" ry="1" /><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2" /><path d="M12 11h4" /><path d="M12 16h4" /><path d="M8 11h.01" /><path d="M8 16h.01" /></svg> Statistiques par programme</div>
+        <div id="muscu-stats-programmes"></div>
+      </div>
 
       <!-- Plus de fenêtre fixe (30 j) dans le titre : la période affichée ici
            est désormais celle du curseur « Période analysée (séances) »
            ci-dessus, visible juste au-dessus (Du … au …). -->
-      <div class="titre-section"><svg class="icone-ui" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 2v3" /><path d="M16 2v3" /><rect x="3" y="3" width="18" height="18" rx="2" /><path d="M3 9h18" /><path d="M8 13h.01" /><path d="M12 13h.01" /><path d="M16 13h.01" /><path d="M8 17h.01" /><path d="M12 17h.01" /><path d="M16 17h.01" /></svg> Historique des séances</div>
-      <div id="muscu-historique-container"></div>
+      <div class="stats-soustab" data-soustab="historique">
+        <div class="titre-section"><svg class="icone-ui" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 2v3" /><path d="M16 2v3" /><rect x="3" y="3" width="18" height="18" rx="2" /><path d="M3 9h18" /><path d="M8 13h.01" /><path d="M12 13h.01" /><path d="M16 13h.01" /><path d="M8 17h.01" /><path d="M12 17h.01" /><path d="M16 17h.01" /></svg> Historique des séances</div>
+        <div id="muscu-historique-container"></div>
+      </div>
     </div>
   </section>
 
@@ -6976,6 +7009,15 @@ function choisirOngletStats(nom) {
   document.getElementById('periode-poids-bloc').classList.toggle('hidden', nom !== 'poids');
   document.getElementById('periode-nutrition-bloc').classList.toggle('hidden', nom !== 'nutrition');
   document.getElementById('periode-muscu-bloc').classList.toggle('hidden', nom !== 'muscu');
+}
+// Deuxième niveau d'onglets, à l'intérieur de l'onglet Musculation (voir
+// commentaire sur .stats-soustab dans le CSS) : classe différente de
+// .stats-tab pour ne pas être recapturée par choisirOngletStats ci-dessus.
+function choisirSousOngletMuscu(nom) {
+  document.querySelectorAll('#ecran-stats .stats-soustab').forEach(t => {
+    t.classList.toggle('stats-soustab-actif', t.dataset.soustab === nom);
+  });
+  majSegment('muscu-soustabs-nav', ['apercu', 'progression', 'programmes', 'historique'], nom);
 }
 
 /* Les curseurs émettent « input » à chaque pixel. Sans temporisation, glisser
