@@ -1383,44 +1383,6 @@
     .off-suggestion:hover, .off-suggestion:focus-visible { background: color-mix(in srgb, var(--primary) 14%, transparent); }
     .off-vide { padding: 13px 14px; font-size: 0.8rem; color: var(--text-muted); line-height: 1.45; }
 
-    .gymbro-puces { display: flex; flex-wrap: wrap; gap: 6px; }
-    .gymbro-puces button { border: 0; border-radius: 999px; padding: 6px 12px; background: var(--verre-fort); color: var(--primary); font-weight: 700; font-family: inherit; cursor: pointer; }
-    .gymbro-table { width: 100%; border-collapse: collapse; font-size: 0.82rem; margin-bottom: 8px; }
-    .gymbro-table th, .gymbro-table td { padding: 6px 4px; text-align: right; border-bottom: 1px solid var(--verre-brd); }
-    .gymbro-table th:first-child, .gymbro-table td:first-child { text-align: left; color: var(--text-muted); }
-    .gymbro-gagne { color: var(--primary); font-weight: 800; }
-    .gymbro-exo { background: var(--verre-creux); border-radius: 12px; padding: 10px 12px; margin-bottom: 8px; }
-    .gymbro-exo-nom { font-weight: 800; font-size: 0.84rem; margin-bottom: 6px; }
-    .gymbro-barre { display: grid; grid-template-columns: 74px 1fr 54px; align-items: center; gap: 6px; font-size: 0.72rem; margin-bottom: 3px; }
-    .gymbro-barre-lib { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--text-muted); }
-    .gymbro-barre-piste { height: 8px; border-radius: 4px; background: var(--verre-fort); overflow: hidden; }
-    .gymbro-barre-piste i { display: block; height: 100%; background: var(--primary); border-radius: 4px; }
-    .gymbro-barre--lui .gymbro-barre-piste i { background: var(--accent); }
-    .gymbro-barre b { text-align: right; }
-    .gymbro-seance { display: flex; justify-content: space-between; gap: 10px; padding: 8px 0; border-bottom: 1px solid var(--verre-brd); font-size: 0.8rem; }
-    .gymbro-seance small { display: block; color: var(--text-muted); font-size: 0.7rem; }
-    .photos-grille { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
-    .photos-grille figure, .photos-avant-apres figure { position: relative; margin: 0; }
-    .photos-grille img { width: 100%; aspect-ratio: 3 / 4; object-fit: cover; border-radius: 10px; cursor: zoom-in; background: var(--verre-fort); }
-    .photos-grille figcaption, .photos-avant-apres figcaption { font-size: 0.66rem; color: var(--text-muted); text-align: center; margin-top: 3px; }
-    .photos-suppr { position: absolute; top: 4px; right: 4px; width: 24px; height: 24px; border-radius: 50%; border: 0; background: rgba(0,0,0,0.55); color: #fff; cursor: pointer; line-height: 1; }
-    .photos-avant-apres { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 14px; }
-    .photos-avant-apres img { width: 100%; aspect-ratio: 3 / 4; object-fit: cover; border-radius: 12px; }
-    .aide-routine-etapes { margin: 0; padding-left: 20px; display: grid; gap: 10px; }
-    .aide-routine-etapes li { font-size: 0.84rem; }
-    .aide-routine-etapes li span { display: block; color: var(--text-muted); font-size: 0.78rem; margin-top: 2px; line-height: 1.45; }
-    .ajout-rapide { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin: 0 0 16px; }
-    .ajout-rapide button {
-      display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px;
-      min-height: 68px; padding: 10px 4px; border: 0; border-radius: 16px; cursor: pointer;
-      background: var(--verre-fort); color: var(--text); font-family: inherit; font-weight: 700; font-size: 0.72rem;
-    }
-    .ajout-rapide button .icone-ui { width: 22px; height: 22px; color: var(--primary); }
-    .feuille-action--suggere { box-shadow: 0 0 0 2px var(--primary) inset; }
-    .lien-depense { margin-top: 6px; font-size: 0.74rem; font-weight: 700; color: var(--primary); }
-    .profil-entete { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 16px; }
-    .btn-engrenage { width: 42px; height: 42px; padding: 0; display: inline-flex; align-items: center; justify-content: center; flex: none; }
-    .btn-engrenage .icone-ui { width: 20px; height: 20px; }
     .segment { display: flex; gap: 6px; background: var(--verre-creux); border: 0; border-radius: 14px; padding: 4px; }
     .segment button {
       flex: 1; min-height: 40px; border: none; background: transparent; color: var(--text-muted);
@@ -1440,16 +1402,6 @@
     .stats-onglets-nav { margin-bottom: 14px; }
     #ecran-stats .stats-tab { max-height: 0; overflow: hidden; transition: max-height 0.28s ease; }
     #ecran-stats .stats-tab.stats-tab-actif { max-height: none; overflow: visible; }
-    /* Deuxième niveau d'onglets, à l'intérieur de l'onglet Musculation : même
-       mécanique (jamais display:none, voir plus haut), classe différente pour
-       ne pas être recapturé par le sélecteur de choisirOngletStats ci-dessus
-       (qui basculerait alors ces sous-onglets en même temps que Poids/
-       Nutrition/Muscu). Sans ça, 7 sections s'empilaient d'un coup sur cet
-       onglet (chiffres clés, 3 graphiques, records, stats par programme,
-       historique) : beaucoup trop à digérer en un seul écran. */
-    .muscu-soustabs-nav { margin: 4px 0 16px; display: grid; grid-template-columns: repeat(3, 1fr); }
-    #ecran-stats .stats-soustab { max-height: 0; overflow: hidden; transition: max-height 0.28s ease; }
-    #ecran-stats .stats-soustab.stats-soustab-actif { max-height: none; overflow: visible; }
 
     /* --- CHIFFRES CLÉS DE LA PÉRIODE --- */
     .grille-cles { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
@@ -1706,68 +1658,6 @@
     .serie-entete span { font-size: 0.6rem; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-muted); text-align: center; font-weight: 700; }
     .serie-entete--4col, .serie-ligne--4col { grid-template-columns: 34px 1fr 1fr 40px; }
     .serie-entete--3col, .serie-ligne--3col { grid-template-columns: 34px 1fr 1fr; }
-    .serie-entete--5col, .serie-ligne--5col { grid-template-columns: 30px minmax(0, 0.95fr) minmax(0, 1fr) minmax(0, 1fr) 38px; }
-    /* Performance de la même série la dernière fois (tap = la reprendre). */
-    .serie-prec {
-      border: 0; background: none; padding: 0; font-family: inherit; cursor: pointer;
-      font-size: 0.74rem; font-weight: 700; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-    }
-    .serie-prec small { font-size: 0.6rem; font-weight: 600; margin-right: 1px; }
-    .serie-prec--vide { cursor: default; opacity: 0.6; }
-    .muscles-ligne { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 2px; }
-    .muscle-puce {
-      font-size: 0.64rem; font-weight: 700; padding: 2px 7px; border-radius: 999px;
-      background: var(--verre-fort); color: var(--text-muted);
-    }
-    .muscle-puce--principal { color: var(--primary); box-shadow: 0 0 0 1px var(--primary) inset; background: transparent; }
-    .btn-note-active { color: var(--primary); }
-    .note-exo textarea {
-      width: 100%; resize: vertical; font-family: inherit; font-size: 0.8rem; margin: 0 0 8px;
-    }
-    /* Zones de volume (MV/MEV/MAV/MRV) */
-    .zone-ligne { margin: 0 0 14px; }
-    .zone-ligne--compacte { margin: 12px 0 0; }
-    .zone-ligne-tete { display: flex; justify-content: space-between; gap: 8px; font-size: 0.78rem; font-weight: 700; margin-bottom: 5px; }
-    .zone-ligne-tete span:last-child { text-align: right; }
-    .zone-barre { display: flex; gap: 2px; height: 12px; }
-    .zone-barre span { flex: 1; border-radius: 2px; }
-    .zone-ligne-note { font-size: 0.68rem; color: var(--text-muted); margin-top: 4px; }
-    .zones-legende { display: grid; gap: 8px; margin: 4px 0 16px; }
-    .zones-legende-item { background: var(--verre-creux); border-left: 3px solid; border-radius: 10px; padding: 8px 11px; font-size: 0.8rem; }
-    .zones-legende-item small { display: block; color: var(--text-muted); font-size: 0.7rem; margin-top: 2px; }
-    .zones-table-wrap { overflow-x: auto; margin: 0 0 16px; }
-    .zones-table { border-collapse: collapse; font-size: 0.66rem; min-width: 100%; }
-    .zones-table th, .zones-table td { padding: 4px 5px; text-align: center; white-space: nowrap; }
-    .zones-table th { color: var(--text-muted); font-weight: 700; }
-    .zones-table td:first-child, .zones-table th:first-child { text-align: left; position: sticky; left: 0; background: var(--bg); }
-    .zones-table td b { display: block; font-size: 0.62rem; }
-    /* Carte du corps */
-    .corps-carte { background: var(--verre-creux); border-radius: 16px; padding: 10px 12px; margin-bottom: 14px; }
-    .corps-carte summary { font-weight: 800; font-size: 0.8rem; cursor: pointer; }
-    .corps-svg { display: block; width: 100%; max-width: 300px; height: auto; margin: 8px auto 0; }
-    .corps-puces { display: flex; flex-wrap: wrap; gap: 5px; justify-content: center; margin-top: 6px; }
-    .corps-puces span { font-size: 0.68rem; background: var(--verre-fort); border-radius: 999px; padding: 2px 8px; }
-    .corps-puces b { color: var(--primary); }
-    /* Jauge de niveau de force */
-    .jauge-force { margin: 4px 0 6px; }
-    .jauge-force-barre { position: relative; display: flex; gap: 2px; height: 12px; margin: 8px 0 4px; }
-    .jauge-force-barre span { flex: 1; border-radius: 3px; opacity: 0.85; }
-    .jauge-force-marqueur {
-      position: absolute; top: -5px; width: 4px; height: 22px; margin-left: -2px; border-radius: 2px;
-      background: var(--text); box-shadow: 0 0 0 2px var(--bg);
-    }
-    .jauge-force-legende { display: grid; grid-template-columns: repeat(5, 1fr); text-align: center; margin-bottom: 8px; }
-    .jauge-force-legende b { display: block; font-size: 0.58rem; }
-    .jauge-force-legende small { font-size: 0.6rem; color: var(--text-muted); }
-    .jauge-force-texte { margin: 0 0 4px; font-size: 0.86rem; }
-    .mini-jauge { display: block; height: 5px; border-radius: 3px; background: var(--verre-fort); margin: 5px 0 3px; overflow: hidden; }
-    .mini-jauge span { display: block; height: 100%; border-radius: 3px; }
-    .badge-niveau {
-      display: inline-block; font-size: 0.6rem; font-weight: 800; padding: 1px 6px; border-radius: 999px;
-      color: var(--c); box-shadow: 0 0 0 1px var(--c) inset; margin-left: 4px; vertical-align: middle;
-    }
-    .force-carte { background: var(--verre-creux); border-radius: 14px; padding: 12px 13px; margin-bottom: 12px; }
-    .force-carte-titre { font-weight: 800; font-size: 0.86rem; cursor: pointer; }
     .serie-ligne-fenetre { position: relative; overflow: hidden; border-radius: 10px; }
     /* Révélée en glissant la ligne au-dessus vers la gauche ; en dessous
        tant qu'on ne glisse pas, jamais visible autrement. */
@@ -2068,12 +1958,11 @@
   <!-- ================= ÉCRAN 1 : REPAS ================= -->
   <section id="ecran-repas" class="ecran actif" role="region" aria-label="Repas">
     <h2 class="titre-ecran"><span class="ic" aria-hidden="true"><svg class="icone-ui" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 2v7c0 1.1.9 2 2 2h4a2 2 0 0 0 2-2V2" /><path d="M7 2v20" /><path d="M21 15V2a5 5 0 0 0-5 5v6c0 1.1.9 2 2 2h3Zm0 0v7" /></svg></span> Repas du jour</h2>
-    <div class="summary-card" role="button" tabindex="0" onclick="ouvrirModal('depense-modal')" onkeydown="if(event.key==='Enter')ouvrirModal('depense-modal')" style="cursor:pointer;" aria-label="Calories du jour — toucher pour voir la dépense estimée">
+    <div class="summary-card">
       <span class="libelle">Calories consommées</span>
       <h1 id="total-kcals">0</h1>
       <div class="target-kcal" id="target-kcals-display">Objectif : 0 kcal</div>
       <div class="reste-kcal" id="reste-kcals">—</div>
-      <div class="lien-depense" id="lien-depense">Dépense estimée ›</div>
       <div class="jauge"><i id="jauge-kcal"></i></div>
       <div class="macros-bar">
         <div class="macro-item">
@@ -2095,16 +1984,6 @@
           <div class="macro-pct" id="pct-f">0 %</div>
         </div>
       </div>
-    </div>
-
-    <!-- Ajout rapide : un seul jeu de boutons pour toute la journée (au lieu
-         d'un bouton « Ajouter un aliment » sous chaque repas) — le repas visé
-         est demandé juste après (voir choisirModeAjout). -->
-    <div class="ajout-rapide" role="group" aria-label="Ajouter à un repas">
-      <button type="button" onclick="choisirModeAjout('recette')"><svg class="icone-ui" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 11v8a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-8" /><path d="M12 19V9" /><path d="m8 13 4-4 4 4" /><path d="M3 11h18" /><path d="m3 11 2.447-4.894A2 2 0 0 1 7.236 5h9.528a2 2 0 0 1 1.789 1.106L21 11" /></svg><span>Recette</span></button>
-      <button type="button" onclick="choisirModeAjout('manuel')"><svg class="icone-ui" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M13 21h8" /><path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z" /></svg><span>Aliment</span></button>
-      <button type="button" onclick="choisirModeAjout('photo')"><svg class="icone-ui" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="18" height="18" x="3" y="3" rx="2" ry="2" /><circle cx="9" cy="9" r="2" /><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21" /></svg><span>Photo</span></button>
-      <button type="button" onclick="choisirModeAjout('barcode')"><svg class="icone-ui" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M13.997 4a2 2 0 0 1 1.76 1.05l.486.9A2 2 0 0 0 18.003 7H20a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2h1.997a2 2 0 0 0 1.759-1.048l.489-.904A2 2 0 0 1 10.004 4z" /><circle cx="12" cy="13" r="3" /></svg><span>Code-barres</span></button>
     </div>
 
     <div class="bloc-verre" id="bloc-eau" style="margin-bottom:16px;">
@@ -2186,6 +2065,43 @@
 
     <p class="note" id="note-poids" style="margin: -4px 2px 14px;"></p>
 
+    <div class="fitness-card">
+      <h3><svg class="icone-ui" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21.3 15.3a2.4 2.4 0 0 1 0 3.4l-2.6 2.6a2.4 2.4 0 0 1-3.4 0L2.7 8.7a2.41 2.41 0 0 1 0-3.4l2.6-2.6a2.41 2.41 0 0 1 3.4 0Z" /><path d="m14.5 12.5 2-2" /><path d="m11.5 9.5 2-2" /><path d="m8.5 6.5 2-2" /><path d="m17.5 15.5 2-2" /></svg> Mesures corporelles</h3>
+      <p class="note" id="resume-mesures" style="margin:0 0 12px;">Aucune mesure enregistrée pour l'instant.</p>
+      <button class="btn btn-secondaire" style="width:100%;" onclick="ouvrirMesuresModal()"><svg class="icone-ui" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14" /><path d="M12 5v14" /></svg> Ajouter une mesure</button>
+    </div>
+
+    <div class="bloc-verre" id="bloc-depense">
+      <h3 style="margin-top:0;margin-bottom:10px;font-size:0.85rem;text-transform:uppercase;letter-spacing:0.8px;"><svg class="icone-ui" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3q1 4 4 6.5t3 5.5a1 1 0 0 1-14 0 5 5 0 0 1 1-3 1 1 0 0 0 5 0c0-2-1.5-3-1.5-5q0-2 2.5-4" /></svg> Dépense estimée</h3>
+      <div id="detail-depense" class="note" style="margin:0;"></div>
+      <details style="margin-top:12px;">
+        <summary style="cursor:pointer;font-size:0.75rem;color:var(--text-muted);font-weight:700;">D'où viennent ces chiffres ?</summary>
+        <p class="note" style="margin:10px 0 0;">
+          Métabolisme de base : formule de Mifflin-St Jeor (poids, taille, âge, sexe).
+          Si un % de masse grasse est enregistré dans Mesures corporelles (saisi à
+          la main ou importé depuis la balance Withings), la formule Katch-McArdle
+          prend le relais et se base sur ta masse maigre plutôt que ton poids total
+          — plus précis pour les profils très musclés ou avec un taux de masse
+          grasse élevé. L'objectif de protéines se base aussi sur la masse maigre
+          dans ce cas (les lipides restent sur le poids total, leur plancher étant
+          hormonal, pas lié au tissu maigre). L'objectif "Recomposition" reprend
+          les calories du maintien mais des protéines au niveau d'une sèche : c'est
+          la combinaison qui permet de prendre du muscle et perdre du gras en même
+          temps, à condition de continuer à progresser en charge à l'entraînement.
+          Le facteur × 1,2 correspond à un mode de vie sédentaire — il inclut déjà
+          environ 4 000 pas, c'est pourquoi seuls les pas au-delà sont ajoutés.
+          Les séances utilisent les MET du <em>Compendium of Physical Activities</em>,
+          moins 1 MET : l'heure de sport remplace une heure de repos déjà comptée,
+          elle ne s'y ajoute pas.
+          Pour une séance de musculation trackée dans l'onglet Séance, le temps de
+          repos entre les séries n'est pas compté comme de l'effort (il se passe à
+          un rythme proche du repos, déjà compté ailleurs) : seul le nombre de
+          séries réellement faites compte, à raison d'environ 40 secondes d'effort
+          par série. Une séance de musculation ajoutée à la main dans Activité
+          (sans détail des séries) reste calculée sur sa durée totale déclarée.
+        </p>
+      </details>
+    </div>
   </section>
 
   <!-- ================= ÉCRAN : SÉANCE (musculation) ================= -->
@@ -2200,8 +2116,6 @@
         <button class="btn btn-secondaire" style="flex:1; min-height:auto; padding:10px 8px; font-size:0.78rem;" onclick="demarrerSeanceLibre()"><svg class="icone-ui" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15.914 4a1.5 1.5 0 00-2.474-1.561l-9 9A1.5 1.5 0 005.5 14h4.002a.5.5 0 01.471.666L8.086 20a1.5 1.5 0 002.475 1.56l9-9A1.5 1.5 0 0018.5 10h-3.997a.5.5 0 01-.472-.667z" /></svg> Séance libre</button>
       </div>
       <button class="btn btn-secondaire" style="width:100%; min-height:auto; padding:10px 8px; font-size:0.78rem; margin-bottom:6px;" onclick="ouvrirAssistantProgrammeIA()"><svg class="icone-ui" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9.937 15.5A2 2 0 0 0 8.5 14.063l-6.135-1.582a.5.5 0 0 1 0-.962L8.5 9.936A2 2 0 0 0 9.937 8.5l1.582-6.135a.5.5 0 0 1 .963 0L14.063 8.5A2 2 0 0 0 15.5 9.937l6.135 1.581a.5.5 0 0 1 0 .964L15.5 14.063a2 2 0 0 0-1.437 1.437l-1.582 6.135a.5.5 0 0 1-.963 0z" /><path d="M20 3v4" /><path d="M22 5h-4" /><path d="M4 17v2" /><path d="M5 18H3" /></svg> Créer un programme avec l'IA</button>
-      <button class="btn btn-secondaire" style="width:100%; min-height:auto; padding:10px 8px; font-size:0.78rem; margin-bottom:6px; background:transparent;" onclick="ouvrirModal('aide-routine-modal')"><svg class="icone-ui" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10" /><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" /><path d="M12 17h.01" /></svg> Comment créer une routine ?</button>
-      <button class="btn btn-secondaire" style="width:100%; min-height:auto; padding:10px 8px; font-size:0.78rem; margin-bottom:6px; background:transparent;" onclick="ouvrirGymbro()"><svg class="icone-ui" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M22 21v-2a4 4 0 0 0-3-3.87" /><path d="M16 3.13a4 4 0 0 1 0 7.75" /></svg> Gymbro : comparer mes séances</button>
       <p class="note note-explicative" style="margin:10px 2px 0;">Séance libre : choisis tes exercices au fil de l'eau, tu pourras l'enregistrer comme programme à la fin.</p>
 
       <div class="titre-section"><svg class="icone-ui" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v16" /><path d="M20.001 19A2 2 0 0022 17V5a2 2 0 00-1.999-2L16 3.002A5 5 0 0012 5a5 5 0 00-4-2H4a2 2 0 00-2 2v12a2 2 0 001.999 2H8a5 5 0 014 2 5 5 0 014-2z" /></svg> Bibliothèque d'exercices</div>
@@ -2219,10 +2133,6 @@
         <span style="font-size:0.78rem; font-weight:700; color:var(--danger); display:flex; align-items:center; gap:5px; white-space:nowrap;"><span class="bandeau-seance-flottant-pastille" aria-hidden="true"><svg class="icone-ui icone-pleine" viewBox="0 0 24 24" fill="currentColor" stroke="none" aria-hidden="true"><circle cx="12" cy="12" r="9"/></svg></span> En cours</span>
       </div>
       <p class="note" id="session-chrono" style="margin:2px 0 14px; font-weight:700;"></p>
-      <details class="corps-carte" open>
-        <summary>Répartition musculaire de la séance</summary>
-        <div id="session-corps"></div>
-      </details>
       <div id="session-exercices-container"></div>
       <button class="btn btn-secondaire" style="margin-bottom:14px;" onclick="ouvrirPickerExercices('session')"><svg class="icone-ui" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14" /><path d="M12 5v14" /></svg> Ajouter un exercice</button>
       <div class="input-group">
@@ -2243,10 +2153,7 @@
         <label for="programme-nom-input">Nom du programme</label>
         <input type="text" id="programme-nom-input" placeholder="ex : Push, Pull, Legs, Full body…" autocomplete="off" oninput="onSaisieNomProgramme(this.value)">
       </div>
-      <div style="display:flex; align-items:center; justify-content:space-between; gap:8px; margin-bottom:12px;">
-        <label style="display:block; font-weight:700; font-size:0.72rem; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.8px; margin:0;">Exercices</label>
-        <button type="button" class="btn-icone" style="font-size:0.72rem; font-weight:700;" onclick="ouvrirModal('aide-routine-modal')"><svg class="icone-ui" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10" /><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" /><path d="M12 17h.01" /></svg> Aide</button>
-      </div>
+      <label style="display:block; font-weight:700; font-size:0.72rem; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.8px; margin-bottom:12px;">Exercices</label>
       <div id="programme-exercices-container"></div>
       <p class="note" id="programme-exercices-vide" style="margin:0 0 12px;">Aucun exercice ajouté pour l'instant.</p>
       <button class="btn btn-secondaire" style="width:100%; margin-bottom:14px;" onclick="ouvrirPickerExercices('programme')"><svg class="icone-ui" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14" /><path d="M12 5v14" /></svg> Ajouter un exercice</button>
@@ -2367,63 +2274,30 @@
     <div class="stats-tab" data-tab="muscu">
       <div class="titre-section"><svg class="icone-ui" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17.596 12.768a2 2 0 1 0 2.829-2.829l-1.768-1.767a2 2 0 0 0 2.828-2.829l-2.828-2.828a2 2 0 0 0-2.829 2.828l-1.767-1.768a2 2 0 1 0-2.829 2.829z" /><path d="m2.5 21.5 1.4-1.4" /><path d="m20.1 3.9 1.4-1.4" /><path d="M5.343 21.485a2 2 0 1 0 2.829-2.828l1.767 1.768a2 2 0 1 0 2.829-2.829l-6.364-6.364a2 2 0 1 0-2.829 2.829l1.768 1.767a2 2 0 0 0-2.828 2.829z" /><path d="m9.6 14.4 4.8-4.8" /></svg> Musculation</div>
       <div class="stats-grille" id="muscu-stats-totaux"></div>
+      <div class="chart-container"><canvas id="muscuParMoisChart"></canvas></div>
 
-      <!-- Sous-onglets : les 4 sections ci-dessous (chacune déjà dense -- un
-           graphique + une liste) ne s'affichent plus toutes empilées, une
-           seule à la fois (voir choisirSousOngletMuscu). Même mécanique que
-           les onglets Poids/Nutrition/Muscu plus haut : jamais display:none
-           sur un conteneur de canvas, seul max-height/overflow varie, et le
-           .chart-container garde sa hauteur fixe propre quoi qu'il arrive. -->
-      <div class="segment muscu-soustabs-nav" id="muscu-soustabs-nav" role="group" aria-label="Détail musculation">
-        <button type="button" onclick="choisirSousOngletMuscu('apercu')" aria-pressed="true">Aperçu</button>
-        <button type="button" onclick="choisirSousOngletMuscu('zones')" aria-pressed="false">Zones</button>
-        <button type="button" onclick="choisirSousOngletMuscu('force')" aria-pressed="false">Force</button>
-        <button type="button" onclick="choisirSousOngletMuscu('progression')" aria-pressed="false">Progression</button>
-        <button type="button" onclick="choisirSousOngletMuscu('programmes')" aria-pressed="false">Programmes</button>
-        <button type="button" onclick="choisirSousOngletMuscu('historique')" aria-pressed="false">Historique</button>
+      <div class="titre-section"><svg class="icone-ui" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 7h6v6" /><path d="m22 7-8.5 8.5-5-5L2 17" /></svg> Progression par exercice</div>
+      <div class="input-group" style="margin-bottom:12px;">
+        <label for="muscu-exo-select">Exercice (tous ceux déjà pratiqués, ne serait-ce qu'une fois)</label>
+        <select id="muscu-exo-select" onchange="afficherProgressionExercice(this.value)"></select>
       </div>
+      <p class="note" id="muscu-progression-vide" style="margin:0 0 12px; display:none;">Aucun exercice pratiqué pour l'instant.</p>
+      <div class="chart-container" id="muscu-progression-conteneur"><canvas id="muscuProgressionChart"></canvas></div>
 
-      <div class="stats-soustab stats-soustab-actif" data-soustab="apercu">
-        <div class="titre-section"><svg class="icone-ui" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 3v16a2 2 0 0 0 2 2h16" /><path d="M18 17V9" /><path d="M13 17V5" /><path d="M8 17v-3" /></svg> Séances par mois</div>
-        <div class="chart-container"><canvas id="muscuParMoisChart"></canvas></div>
+      <div class="titre-section"><svg class="icone-ui" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 14.66V17a1 1 0 0 1-1 1 2 2 0 0 0-2 2v2" /><path d="M14 14.66V17a1 1 0 0 0 1 1 2 2 0 0 1 2 2v2" /><path d="M17.916 10H19.5A2.5 2.5 0 0 0 22 7.5V5a1 1 0 0 0-1-1h-3" /><path d="M4 22h16" /><path d="M6 9a6 6 0 0 0 12 0V3a1 1 0 0 0-1-1H7a1 1 0 0 0-1 1z" /><path d="M6.084 10H4.5A2.5 2.5 0 0 1 2 7.5V5a1 1 0 0 1 1-1h3" /></svg> Records personnels</div>
+      <div id="muscu-stats-records"></div>
 
-        <div class="titre-section"><svg class="icone-ui" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17.596 12.768a2 2 0 1 0 2.829-2.829l-1.768-1.767a2 2 0 0 0 2.828-2.829l-2.828-2.828a2 2 0 0 0-2.829 2.828l-1.767-1.768a2 2 0 1 0-2.829 2.829z" /><path d="m2.5 21.5 1.4-1.4" /><path d="m20.1 3.9 1.4-1.4" /><path d="M5.343 21.485a2 2 0 1 0 2.829-2.828l1.767 1.768a2 2 0 1 0 2.829-2.829l-6.364-6.364a2 2 0 1 0-2.829 2.829l1.768 1.767a2 2 0 0 0-2.828 2.829z" /><path d="m9.6 14.4 4.8-4.8" /></svg> Séances par groupe musculaire</div>
-        <div class="chart-container"><canvas id="muscuGroupeChart"></canvas></div>
-      </div>
+      <div class="titre-section"><svg class="icone-ui" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17.596 12.768a2 2 0 1 0 2.829-2.829l-1.768-1.767a2 2 0 0 0 2.828-2.829l-2.828-2.828a2 2 0 0 0-2.829 2.828l-1.767-1.768a2 2 0 1 0-2.829 2.829z" /><path d="m2.5 21.5 1.4-1.4" /><path d="m20.1 3.9 1.4-1.4" /><path d="M5.343 21.485a2 2 0 1 0 2.829-2.828l1.767 1.768a2 2 0 1 0 2.829-2.829l-6.364-6.364a2 2 0 1 0-2.829 2.829l1.768 1.767a2 2 0 0 0-2.828 2.829z" /><path d="m9.6 14.4 4.8-4.8" /></svg> Séances par groupe musculaire</div>
+      <div class="chart-container"><canvas id="muscuGroupeChart"></canvas></div>
 
-      <div class="stats-soustab" data-soustab="zones">
-        <div id="muscu-zones-container"></div>
-      </div>
-
-      <div class="stats-soustab" data-soustab="force">
-        <div id="muscu-force-container"></div>
-      </div>
-
-      <div class="stats-soustab" data-soustab="progression">
-        <div class="titre-section"><svg class="icone-ui" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 7h6v6" /><path d="m22 7-8.5 8.5-5-5L2 17" /></svg> Progression par exercice</div>
-        <div class="input-group" style="margin-bottom:12px;">
-          <label for="muscu-exo-select">Exercice (tous ceux déjà pratiqués, ne serait-ce qu'une fois)</label>
-          <select id="muscu-exo-select" onchange="afficherProgressionExercice(this.value)"></select>
-        </div>
-        <p class="note" id="muscu-progression-vide" style="margin:0 0 12px; display:none;">Aucun exercice pratiqué pour l'instant.</p>
-        <div class="chart-container" id="muscu-progression-conteneur"><canvas id="muscuProgressionChart"></canvas></div>
-
-        <div class="titre-section"><svg class="icone-ui" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 14.66V17a1 1 0 0 1-1 1 2 2 0 0 0-2 2v2" /><path d="M14 14.66V17a1 1 0 0 0 1 1 2 2 0 0 1 2 2v2" /><path d="M17.916 10H19.5A2.5 2.5 0 0 0 22 7.5V5a1 1 0 0 0-1-1h-3" /><path d="M4 22h16" /><path d="M6 9a6 6 0 0 0 12 0V3a1 1 0 0 0-1-1H7a1 1 0 0 0-1 1z" /><path d="M6.084 10H4.5A2.5 2.5 0 0 1 2 7.5V5a1 1 0 0 1 1-1h3" /></svg> Records personnels</div>
-        <div id="muscu-stats-records"></div>
-      </div>
-
-      <div class="stats-soustab" data-soustab="programmes">
-        <div class="titre-section"><svg class="icone-ui" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="8" height="4" x="8" y="2" rx="1" ry="1" /><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2" /><path d="M12 11h4" /><path d="M12 16h4" /><path d="M8 11h.01" /><path d="M8 16h.01" /></svg> Statistiques par programme</div>
-        <div id="muscu-stats-programmes"></div>
-      </div>
+      <div class="titre-section"><svg class="icone-ui" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="8" height="4" x="8" y="2" rx="1" ry="1" /><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2" /><path d="M12 11h4" /><path d="M12 16h4" /><path d="M8 11h.01" /><path d="M8 16h.01" /></svg> Statistiques par programme</div>
+      <div id="muscu-stats-programmes"></div>
 
       <!-- Plus de fenêtre fixe (30 j) dans le titre : la période affichée ici
            est désormais celle du curseur « Période analysée (séances) »
            ci-dessus, visible juste au-dessus (Du … au …). -->
-      <div class="stats-soustab" data-soustab="historique">
-        <div class="titre-section"><svg class="icone-ui" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 2v3" /><path d="M16 2v3" /><rect x="3" y="3" width="18" height="18" rx="2" /><path d="M3 9h18" /><path d="M8 13h.01" /><path d="M12 13h.01" /><path d="M16 13h.01" /><path d="M8 17h.01" /><path d="M12 17h.01" /><path d="M16 17h.01" /></svg> Historique des séances</div>
-        <div id="muscu-historique-container"></div>
-      </div>
+      <div class="titre-section"><svg class="icone-ui" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 2v3" /><path d="M16 2v3" /><rect x="3" y="3" width="18" height="18" rx="2" /><path d="M3 9h18" /><path d="M8 13h.01" /><path d="M12 13h.01" /><path d="M16 13h.01" /><path d="M8 17h.01" /><path d="M12 17h.01" /><path d="M16 17h.01" /></svg> Historique des séances</div>
+      <div id="muscu-historique-container"></div>
     </div>
   </section>
 
@@ -2573,11 +2447,8 @@
   </section>
 
   <!-- ================= ÉCRAN : RÉGLAGES ================= -->
-  <section id="ecran-reglages" class="ecran" role="region" aria-label="Profil">
-    <div class="profil-entete">
-      <h2 class="titre-ecran" style="margin:0;"><span class="ic" aria-hidden="true"><svg class="icone-ui" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="5" /><path d="M20 21a8 8 0 0 0-16 0" /></svg></span> Profil</h2>
-      <button type="button" class="btn-icone btn-engrenage" onclick="ouvrirModal('reglages-modal')" aria-label="Réglages" title="Réglages"><svg class="icone-ui" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9.671 4.136a2.34 2.34 0 0 1 4.659 0 2.34 2.34 0 0 0 3.319 1.915 2.34 2.34 0 0 1 2.33 4.033 2.34 2.34 0 0 0 0 3.831 2.34 2.34 0 0 1-2.33 4.033 2.34 2.34 0 0 0-3.319 1.915 2.34 2.34 0 0 1-4.659 0 2.34 2.34 0 0 0-3.32-1.915 2.34 2.34 0 0 1-2.33-4.033 2.34 2.34 0 0 0 0-3.831A2.34 2.34 0 0 1 6.35 6.051a2.34 2.34 0 0 0 3.319-1.915" /><circle cx="12" cy="12" r="3" /></svg></button>
-    </div>
+  <section id="ecran-reglages" class="ecran" role="region" aria-label="Réglages">
+    <h2 class="titre-ecran"><span class="ic" aria-hidden="true"><svg class="icone-ui" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9.671 4.136a2.34 2.34 0 0 1 4.659 0 2.34 2.34 0 0 0 3.319 1.915 2.34 2.34 0 0 1 2.33 4.033 2.34 2.34 0 0 0 0 3.831 2.34 2.34 0 0 1-2.33 4.033 2.34 2.34 0 0 0-3.319 1.915 2.34 2.34 0 0 1-4.659 0 2.34 2.34 0 0 0-3.32-1.915 2.34 2.34 0 0 1-2.33-4.033 2.34 2.34 0 0 0 0-3.831A2.34 2.34 0 0 1 6.35 6.051a2.34 2.34 0 0 0 3.319-1.915" /><circle cx="12" cy="12" r="3" /></svg></span> Profil &amp; réglages</h2>
 
     <div class="bloc-verre" style="padding:15px; margin-bottom:16px;">
       <div style="display:flex; align-items:center; justify-content:space-between; gap:12px;">
@@ -2593,20 +2464,42 @@
     <div class="bloc-verre" style="padding:15px; margin-bottom:16px;">
       <div style="display:flex; align-items:center; justify-content:space-between; gap:12px;">
         <div style="min-width:0;">
-          <div style="font-weight:700; font-size:0.72rem; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.8px;">Nom d'utilisateur</div>
-          <div id="profil-pseudo" style="font-weight:800; font-size:0.95rem; margin-top:4px; color:var(--primary);">—</div>
+          <div style="font-weight:700; font-size:0.72rem; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.8px;"><svg class="icone-ui" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10" /><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" /><path d="M12 17h.01" /></svg> Découverte</div>
+          <div style="font-weight:700; font-size:0.88rem; margin-top:4px;">Visite guidée de l'application</div>
         </div>
-        <button class="btn btn-secondaire" style="width:auto; flex:none; white-space:nowrap;" onclick="ouvrirPseudoModal()">Modifier</button>
+        <button class="btn btn-secondaire" id="btn-revoir-tutoriel" style="width:auto; flex:none; white-space:nowrap;" onclick="demarrerTourGuide()">Revoir</button>
       </div>
-      <p class="note" id="profil-pseudo-note" style="margin:8px 0 0;"></p>
-      <label class="hidden" style="display:flex; align-items:center; gap:8px; font-size:0.8rem; font-weight:600; margin:10px 0 0; cursor:pointer;">
-        <input type="checkbox" id="profil-partage" style="width:auto;" onchange="basculerPartageSeances(this.checked)">
-        Partager mes séances avec mes gymbros
-      </label>
-      <button class="btn btn-primary" style="margin-top:12px;" onclick="ouvrirGymbro()"><svg class="icone-ui" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M22 21v-2a4 4 0 0 0-3-3.87" /><path d="M16 3.13a4 4 0 0 1 0 7.75" /></svg> Gymbro : comparer avec un ami</button>
     </div>
 
-    <div class="titre-section">Infos personnelles</div>
+    <div class="bloc-verre hidden" id="bloc-installer-app" style="padding:15px; margin-bottom:16px;">
+      <div style="display:flex; align-items:center; justify-content:space-between; gap:12px;">
+        <div style="min-width:0;">
+          <div style="font-weight:700; font-size:0.72rem; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.8px;"><svg class="icone-ui" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="14" height="20" x="5" y="2" rx="2" ry="2" /><path d="M12 18h.01" /></svg> Application</div>
+          <div style="font-weight:700; font-size:0.88rem; margin-top:4px;">Pas encore sur ton écran d'accueil</div>
+        </div>
+        <button class="btn btn-secondaire" style="width:auto; flex:none; white-space:nowrap;" onclick="ouvrirInstallation()">Installer</button>
+      </div>
+    </div>
+
+    <div class="input-group">
+      <label><svg class="icone-ui" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 22a1 1 0 0 1 0-20 10 9 0 0 1 10 9 5 5 0 0 1-5 5h-2.25a1.75 1.75 0 0 0-1.4 2.8l.3.4a1.75 1.75 0 0 1-1.4 2.8z" /><circle cx="13.5" cy="6.5" r=".5" fill="currentColor" /><circle cx="17.5" cy="10.5" r=".5" fill="currentColor" /><circle cx="6.5" cy="12.5" r=".5" fill="currentColor" /><circle cx="8.5" cy="7.5" r=".5" fill="currentColor" /></svg> Thème</label>
+      <div class="segment" id="segment-theme">
+        <button type="button" onclick="choisirTheme('light')" aria-pressed="false">Clair</button>
+        <button type="button" onclick="choisirTheme('dark')" aria-pressed="false">Sombre</button>
+      </div>
+    </div>
+
+    <div class="slider-control">
+      <label><span><svg class="icone-ui" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="7" height="7" x="3" y="3" rx="1" /><rect width="7" height="7" x="14" y="3" rx="1" /><rect width="7" height="7" x="14" y="14" rx="1" /><rect width="7" height="7" x="3" y="14" rx="1" /></svg> Densité d'affichage</span><span id="densite-niveau-nom">Confort</span></label>
+      <input type="range" id="slider-densite" min="0" max="4" step="1" value="0" aria-label="Densité d'affichage" oninput="choisirDensite(this.value)">
+      <div style="display:flex; justify-content:space-between; margin-top:2px;">
+        <small class="note" style="margin:0;">Confort</small>
+        <small class="note" style="margin:0;">Compact</small>
+      </div>
+    </div>
+
+    <hr class="sep">
+
     <div class="input-group">
       <label for="base-gender">Sexe</label>
       <select id="base-gender" onchange="sauvegarderParametresGlobaux()">
@@ -2622,12 +2515,17 @@
       <label for="base-height">Taille (cm)</label>
       <input type="number" id="base-height" value="175" inputmode="numeric" onchange="sauvegarderParametresGlobaux()">
     </div>
+    <hr class="sep">
 
-    <div class="fitness-card">
-      <h3><svg class="icone-ui" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21.3 15.3a2.4 2.4 0 0 1 0 3.4l-2.6 2.6a2.4 2.4 0 0 1-3.4 0L2.7 8.7a2.41 2.41 0 0 1 0-3.4l2.6-2.6a2.41 2.41 0 0 1 3.4 0Z" /><path d="m14.5 12.5 2-2" /><path d="m11.5 9.5 2-2" /><path d="m8.5 6.5 2-2" /><path d="m17.5 15.5 2-2" /></svg> Mesures corporelles</h3>
-      <p class="note" id="resume-mesures" style="margin:0 0 12px;">Aucune mesure enregistrée pour l'instant.</p>
-      <button class="btn btn-secondaire" style="width:100%; margin-bottom:8px;" onclick="ouvrirPhotosProgression()"><svg class="icone-ui" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M13.997 4a2 2 0 0 1 1.76 1.05l.486.9A2 2 0 0 0 18.003 7H20a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2h1.997a2 2 0 0 0 1.759-1.048l.489-.904A2 2 0 0 1 10.004 4z" /><circle cx="12" cy="13" r="3" /></svg> Photos de progression</button>
-      <button class="btn btn-secondaire" style="width:100%;" onclick="ouvrirMesuresModal()"><svg class="icone-ui" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14" /><path d="M12 5v14" /></svg> Ajouter une mesure</button>
+    <div style="margin-bottom: 16px;">
+      <label style="display: block; font-weight: 700; font-size: 0.72rem; margin-bottom: 8px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.8px;"><svg class="icone-ui" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="18" height="18" x="3" y="3" rx="2" ry="2" /><circle cx="9" cy="9" r="2" /><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21" /></svg> Crédits</label>
+      <p class="note" style="margin:0;">
+        Photos et illustrations des exercices : <a href="https://github.com/bryllim/workout-guide" target="_blank" rel="noopener" style="color:var(--accent);">bryllim/workout-guide</a> (CC BY-SA 4.0),
+        <a href="https://github.com/yuhonas/free-exercise-db" target="_blank" rel="noopener" style="color:var(--accent);">yuhonas/free-exercise-db</a> (domaine public),
+        <a href="https://wger.de" target="_blank" rel="noopener" style="color:var(--accent);">wger.de</a> (CC BY-SA),
+        <a href="https://repdb.co" target="_blank" rel="noopener" style="color:var(--accent);">RepDB</a> (repdb.co) et
+        <a href="https://exercisedb.dev" target="_blank" rel="noopener" style="color:var(--accent);">ExerciseDB</a> par AscendAPI (exercisedb.dev, usage non commercial).
+      </p>
     </div>
   </section>
 </main>
@@ -2661,7 +2559,7 @@
   <div class="fab-actions">
     <!-- Tout en haut de la pile, le plus loin du bouton : c'est l'onglet le
          moins utilisé au quotidien. -->
-    <button class="fab-action" id="nav-reglages" onclick="allerA('reglages')"><span class="ic" aria-hidden="true"><svg class="icone-ui" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="5" /><path d="M20 21a8 8 0 0 0-16 0" /></svg></span> Profil</button>
+    <button class="fab-action" id="nav-reglages" onclick="allerA('reglages')"><span class="ic" aria-hidden="true"><svg class="icone-ui" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9.671 4.136a2.34 2.34 0 0 1 4.659 0 2.34 2.34 0 0 0 3.319 1.915 2.34 2.34 0 0 1 2.33 4.033 2.34 2.34 0 0 0 0 3.831 2.34 2.34 0 0 1-2.33 4.033 2.34 2.34 0 0 0-3.319 1.915 2.34 2.34 0 0 1-4.659 0 2.34 2.34 0 0 0-3.32-1.915 2.34 2.34 0 0 1-2.33-4.033 2.34 2.34 0 0 0 0-3.831A2.34 2.34 0 0 1 6.35 6.051a2.34 2.34 0 0 0 3.319-1.915" /><circle cx="12" cy="12" r="3" /></svg></span> Réglages</button>
     <button class="fab-action hidden" id="nav-admin" onclick="allerA('admin')"><span class="ic" aria-hidden="true"><svg class="icone-ui" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11.562 3.266a.5.5 0 0 1 .876 0L15.39 8.87a1 1 0 0 0 1.516.294L21.183 5.5a.5.5 0 0 1 .798.519l-2.834 10.246a1 1 0 0 1-.956.734H5.81a1 1 0 0 1-.957-.734L2.02 6.02a.5.5 0 0 1 .798-.519l4.276 3.664a1 1 0 0 0 1.516-.294z" /><path d="M5 21h14" /></svg></span> Administration</button>
     <button class="fab-action" id="nav-stats" onclick="allerA('stats')"><span class="ic" aria-hidden="true"><svg class="icone-ui" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 3v16a2 2 0 0 0 2 2h16" /><path d="M18 17V9" /><path d="M13 17V5" /><path d="M8 17v-3" /></svg></span> Statistiques</button>
     <button class="fab-action" id="nav-seance" onclick="allerA('seance')"><span class="ic" aria-hidden="true"><svg class="icone-ui" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17.596 12.768a2 2 0 1 0 2.829-2.829l-1.768-1.767a2 2 0 0 0 2.828-2.829l-2.828-2.828a2 2 0 0 0-2.829 2.828l-1.767-1.768a2 2 0 1 0-2.829 2.829z" /><path d="m2.5 21.5 1.4-1.4" /><path d="m20.1 3.9 1.4-1.4" /><path d="M5.343 21.485a2 2 0 1 0 2.829-2.828l1.767 1.768a2 2 0 1 0 2.829-2.829l-6.364-6.364a2 2 0 1 0-2.829 2.829l1.768 1.767a2 2 0 0 0-2.828 2.829z" /><path d="m9.6 14.4 4.8-4.8" /></svg></span> Séance</button>
@@ -2714,16 +2612,6 @@
       <span>Code-barres<span class="sous">Scanner ou saisir un code produit</span></span>
     </button>
     <button class="btn btn-secondaire" style="margin-top:6px;" onclick="fermerFeuilleRepas()">Annuler</button>
-  </div>
-</div>
-
-<!-- ============ FEUILLE : pour quel repas ? (après un bouton d'ajout rapide) ============ -->
-<div class="feuille" id="feuille-choix-repas" role="dialog" aria-modal="true" aria-labelledby="feuille-choix-repas-titre">
-  <div class="feuille-contenu">
-    <div class="feuille-poignee"></div>
-    <div class="feuille-titre" id="feuille-choix-repas-titre">Pour quel repas ?</div>
-    <div id="choix-repas-liste"></div>
-    <button class="btn btn-secondaire" style="margin-top:6px;" onclick="fermerFeuilles()">Annuler</button>
   </div>
 </div>
 
@@ -2982,13 +2870,6 @@
         <p class="note note-explicative" style="margin:10px 0 0;">Par défaut, la table est ouverte à quiconque possède la clé publique du projet (c'est ce qui permet à l'appli de fonctionner même sans compte). Une fois que toi et ta femme avez chacun créé un compte, exécute ce SQL une fois : chaque compte ne pourra plus lire ou modifier que ses propres journées.</p>
         <div class="bloc-sql" id="bloc-sql-rls"></div>
         <button class="btn btn-secondaire" style="margin-top:9px;" onclick="copierSqlRls()"><svg class="icone-ui" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="8" height="4" x="8" y="2" rx="1" ry="1" /><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2" /><path d="M12 11h4" /><path d="M12 16h4" /><path d="M8 11h.01" /><path d="M8 16h.01" /></svg> Copier le SQL</button>
-      </details>
-
-      <details style="margin-top:10px;">
-        <summary style="cursor:pointer;font-size:0.75rem;color:var(--text-muted);font-weight:700;">SQL : nom d'utilisateur, Gymbro et photos de progression</summary>
-        <p class="note note-explicative" style="margin:10px 0 0;">À exécuter une fois, après le SQL des politiques de sécurité : crée la table des noms d'utilisateur, la fonction de comparaison Gymbro (qui ne partage que les séances des comptes qui l'ont accepté) et l'espace privé des photos de progression.</p>
-        <div class="bloc-sql" id="bloc-sql-gymbro"></div>
-        <button class="btn btn-secondaire" style="margin-top:9px;" onclick="copierSqlGymbro()">Copier le SQL</button>
       </details>
     </div>
 
@@ -3393,11 +3274,6 @@
         <label for="compte-mdp-input">Mot de passe</label>
         <input type="password" id="compte-mdp-input" placeholder="6 caractères minimum" autocomplete="current-password">
       </div>
-      <div class="input-group hidden" id="compte-pseudo-wrap">
-        <label for="compte-pseudo-input">Nom d'utilisateur (nouveau compte)</label>
-        <input type="text" id="compte-pseudo-input" placeholder="ex : jamal.fit" autocomplete="username" autocapitalize="none" spellcheck="false" maxlength="20">
-        <small class="note" style="display:block; margin-top:6px;">3 à 20 caractères : minuscules, chiffres, point ou tiret bas. Tes gymbros te trouveront avec ce nom.</small>
-      </div>
       <label style="display:flex; align-items:center; gap:8px; font-size:0.82rem; font-weight:600; margin:-6px 0 14px; cursor:pointer;">
         <input type="checkbox" id="compte-souvenir" style="width:auto;">
         Se souvenir de moi sur cet appareil
@@ -3451,167 +3327,6 @@
     </div>
     <p class="note" id="confirm-suppr-note"></p>
     <button class="btn btn-primary" id="confirm-suppr-bouton" onclick="validerSuppressionDefinitive()" disabled>Confirmer dans 30s…</button>
-  </div>
-</div>
-
-<!-- ================= RÉGLAGES (engrenage en haut à droite du Profil) ================= -->
-<div id="reglages-modal" class="modal" role="dialog" aria-modal="true" aria-labelledby="titre-reglages">
-  <div class="modal-content" style="max-width:480px;">
-    <div class="modal-entete">
-      <h3 id="titre-reglages"><svg class="icone-ui" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9.671 4.136a2.34 2.34 0 0 1 4.659 0 2.34 2.34 0 0 0 3.319 1.915 2.34 2.34 0 0 1 2.33 4.033 2.34 2.34 0 0 0 0 3.831 2.34 2.34 0 0 1-2.33 4.033 2.34 2.34 0 0 0-3.319 1.915 2.34 2.34 0 0 1-4.659 0 2.34 2.34 0 0 0-3.32-1.915 2.34 2.34 0 0 1-2.33-4.033 2.34 2.34 0 0 0 0-3.831A2.34 2.34 0 0 1 6.35 6.051a2.34 2.34 0 0 0 3.319-1.915" /><circle cx="12" cy="12" r="3" /></svg> Réglages</h3>
-      <button class="close-modal" onclick="fermerModal('reglages-modal')" aria-label="Fermer">&times;</button>
-    </div>
-    <div class="bloc-verre" style="padding:15px; margin-bottom:16px;">
-      <div style="display:flex; align-items:center; justify-content:space-between; gap:12px;">
-        <div style="min-width:0;">
-          <div style="font-weight:700; font-size:0.72rem; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.8px;"><svg class="icone-ui" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10" /><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" /><path d="M12 17h.01" /></svg> Découverte</div>
-          <div style="font-weight:700; font-size:0.88rem; margin-top:4px;">Visite guidée de l'application</div>
-        </div>
-        <button class="btn btn-secondaire" id="btn-revoir-tutoriel" style="width:auto; flex:none; white-space:nowrap;" onclick="demarrerTourGuide()">Revoir</button>
-      </div>
-    </div>
-
-    <div class="bloc-verre hidden" id="bloc-installer-app" style="padding:15px; margin-bottom:16px;">
-      <div style="display:flex; align-items:center; justify-content:space-between; gap:12px;">
-        <div style="min-width:0;">
-          <div style="font-weight:700; font-size:0.72rem; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.8px;"><svg class="icone-ui" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="14" height="20" x="5" y="2" rx="2" ry="2" /><path d="M12 18h.01" /></svg> Application</div>
-          <div style="font-weight:700; font-size:0.88rem; margin-top:4px;">Pas encore sur ton écran d'accueil</div>
-        </div>
-        <button class="btn btn-secondaire" style="width:auto; flex:none; white-space:nowrap;" onclick="ouvrirInstallation()">Installer</button>
-      </div>
-    </div>
-
-    <div class="input-group">
-      <label><svg class="icone-ui" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 22a1 1 0 0 1 0-20 10 9 0 0 1 10 9 5 5 0 0 1-5 5h-2.25a1.75 1.75 0 0 0-1.4 2.8l.3.4a1.75 1.75 0 0 1-1.4 2.8z" /><circle cx="13.5" cy="6.5" r=".5" fill="currentColor" /><circle cx="17.5" cy="10.5" r=".5" fill="currentColor" /><circle cx="6.5" cy="12.5" r=".5" fill="currentColor" /><circle cx="8.5" cy="7.5" r=".5" fill="currentColor" /></svg> Thème</label>
-      <div class="segment" id="segment-theme">
-        <button type="button" onclick="choisirTheme('light')" aria-pressed="false">Clair</button>
-        <button type="button" onclick="choisirTheme('dark')" aria-pressed="false">Sombre</button>
-      </div>
-    </div>
-
-    <div class="slider-control">
-      <label><span><svg class="icone-ui" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="7" height="7" x="3" y="3" rx="1" /><rect width="7" height="7" x="14" y="3" rx="1" /><rect width="7" height="7" x="14" y="14" rx="1" /><rect width="7" height="7" x="3" y="14" rx="1" /></svg> Densité d'affichage</span><span id="densite-niveau-nom">Confort</span></label>
-      <input type="range" id="slider-densite" min="0" max="4" step="1" value="0" aria-label="Densité d'affichage" oninput="choisirDensite(this.value)">
-      <div style="display:flex; justify-content:space-between; margin-top:2px;">
-        <small class="note" style="margin:0;">Confort</small>
-        <small class="note" style="margin:0;">Compact</small>
-      </div>
-    </div>
-
-    <hr class="sep">
-    <div style="margin-bottom: 16px;">
-      <label style="display: block; font-weight: 700; font-size: 0.72rem; margin-bottom: 8px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.8px;"><svg class="icone-ui" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="18" height="18" x="3" y="3" rx="2" ry="2" /><circle cx="9" cy="9" r="2" /><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21" /></svg> Crédits</label>
-      <p class="note" style="margin:0;">
-        Photos et illustrations des exercices : <a href="https://github.com/bryllim/workout-guide" target="_blank" rel="noopener" style="color:var(--accent);">bryllim/workout-guide</a> (CC BY-SA 4.0),
-        <a href="https://github.com/yuhonas/free-exercise-db" target="_blank" rel="noopener" style="color:var(--accent);">yuhonas/free-exercise-db</a> (domaine public),
-        <a href="https://wger.de" target="_blank" rel="noopener" style="color:var(--accent);">wger.de</a> (CC BY-SA),
-        <a href="https://repdb.co" target="_blank" rel="noopener" style="color:var(--accent);">RepDB</a> (repdb.co) et
-        <a href="https://exercisedb.dev" target="_blank" rel="noopener" style="color:var(--accent);">ExerciseDB</a> par AscendAPI (exercisedb.dev, usage non commercial).
-      </p>
-    </div>
-  </div>
-</div>
-
-<!-- ================= DÉPENSE ESTIMÉE (tap sur les calories du jour) ================= -->
-<div id="depense-modal" class="modal" role="dialog" aria-modal="true" aria-labelledby="titre-depense">
-  <div class="modal-content" style="max-width:480px;">
-    <div class="modal-entete">
-      <h3 id="titre-depense">Calories estimées du jour</h3>
-      <button class="close-modal" onclick="fermerModal('depense-modal')" aria-label="Fermer">&times;</button>
-    </div>
-    <div class="bloc-verre" id="bloc-depense">
-      <h3 style="margin-top:0;margin-bottom:10px;font-size:0.85rem;text-transform:uppercase;letter-spacing:0.8px;"><svg class="icone-ui" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3q1 4 4 6.5t3 5.5a1 1 0 0 1-14 0 5 5 0 0 1 1-3 1 1 0 0 0 5 0c0-2-1.5-3-1.5-5q0-2 2.5-4" /></svg> Dépense estimée</h3>
-      <div id="detail-depense" class="note" style="margin:0;"></div>
-      <details style="margin-top:12px;">
-        <summary style="cursor:pointer;font-size:0.75rem;color:var(--text-muted);font-weight:700;">D'où viennent ces chiffres ?</summary>
-        <p class="note" style="margin:10px 0 0;">
-          Métabolisme de base : formule de Mifflin-St Jeor (poids, taille, âge, sexe).
-          Si un % de masse grasse est enregistré dans Mesures corporelles (saisi à
-          la main ou importé depuis la balance Withings), la formule Katch-McArdle
-          prend le relais et se base sur ta masse maigre plutôt que ton poids total
-          — plus précis pour les profils très musclés ou avec un taux de masse
-          grasse élevé. L'objectif de protéines se base aussi sur la masse maigre
-          dans ce cas (les lipides restent sur le poids total, leur plancher étant
-          hormonal, pas lié au tissu maigre). L'objectif "Recomposition" reprend
-          les calories du maintien mais des protéines au niveau d'une sèche : c'est
-          la combinaison qui permet de prendre du muscle et perdre du gras en même
-          temps, à condition de continuer à progresser en charge à l'entraînement.
-          Le facteur × 1,2 correspond à un mode de vie sédentaire — il inclut déjà
-          environ 4 000 pas, c'est pourquoi seuls les pas au-delà sont ajoutés.
-          Les séances utilisent les MET du <em>Compendium of Physical Activities</em>,
-          moins 1 MET : l'heure de sport remplace une heure de repos déjà comptée,
-          elle ne s'y ajoute pas.
-          Pour une séance de musculation trackée dans l'onglet Séance, le temps de
-          repos entre les séries n'est pas compté comme de l'effort (il se passe à
-          un rythme proche du repos, déjà compté ailleurs) : seul le nombre de
-          séries réellement faites compte, à raison d'environ 40 secondes d'effort
-          par série. Une séance de musculation ajoutée à la main dans Activité
-          (sans détail des séries) reste calculée sur sa durée totale déclarée.
-        </p>
-      </details>
-    </div>
-  </div>
-</div>
-
-<!-- ================= NOM D'UTILISATEUR ================= -->
-<div id="pseudo-modal" class="modal" role="dialog" aria-modal="true" aria-labelledby="titre-pseudo">
-  <div class="modal-content" style="max-width:420px;">
-    <div class="modal-entete">
-      <h3 id="titre-pseudo">Nom d'utilisateur</h3>
-      <button class="close-modal" onclick="fermerModal('pseudo-modal')" aria-label="Fermer">&times;</button>
-    </div>
-    <p class="note" id="pseudo-intro"></p>
-    <div class="input-group">
-      <label for="pseudo-input">Nom d'utilisateur</label>
-      <input type="text" id="pseudo-input" placeholder="ex : jamal.fit" autocomplete="username" autocapitalize="none" spellcheck="false" maxlength="20" onkeydown="if(event.key==='Enter')validerPseudoModal()">
-      <small class="note" style="display:block; margin-top:6px;">3 à 20 caractères : minuscules, chiffres, point ou tiret bas.</small>
-    </div>
-    <p class="note" id="pseudo-note" style="color:var(--danger);"></p>
-    <button class="btn btn-primary" onclick="validerPseudoModal()">Enregistrer</button>
-  </div>
-</div>
-
-<!-- ================= GYMBRO : comparer ses séances avec un ami ================= -->
-<div id="gymbro-modal" class="modal" role="dialog" aria-modal="true" aria-labelledby="titre-gymbro">
-  <div class="modal-content" style="max-width:520px;">
-    <div class="modal-entete">
-      <h3 id="titre-gymbro"><svg class="icone-ui" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M22 21v-2a4 4 0 0 0-3-3.87" /><path d="M16 3.13a4 4 0 0 1 0 7.75" /></svg> Gymbro</h3>
-      <button class="close-modal" onclick="fermerModal('gymbro-modal')" aria-label="Fermer">&times;</button>
-    </div>
-    <div id="gymbro-vue-recherche">
-      <p class="note" style="margin:0 0 10px;">Cherche un ami par son nom d'utilisateur pour comparer vos séances et vos charges.</p>
-      <div class="input-group">
-        <label for="gymbro-recherche" style="position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0 0 0 0);">Nom d'utilisateur</label>
-        <input type="text" id="gymbro-recherche" placeholder="@nom d'utilisateur" autocapitalize="none" spellcheck="false" autocomplete="off" oninput="rechercherGymbro(this.value)">
-      </div>
-      <div id="gymbro-favoris" style="margin-bottom:10px;"></div>
-      <div id="gymbro-resultats"></div>
-    </div>
-    <div id="gymbro-comparaison"></div>
-  </div>
-</div>
-
-<!-- ================= PHOTOS DE PROGRESSION (Mesures corporelles) ================= -->
-<div id="photos-modal" class="modal" role="dialog" aria-modal="true" aria-labelledby="titre-photos">
-  <div class="modal-content" style="max-width:560px;">
-    <div class="modal-entete">
-      <h3 id="titre-photos"><svg class="icone-ui" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M13.997 4a2 2 0 0 1 1.76 1.05l.486.9A2 2 0 0 0 18.003 7H20a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2h1.997a2 2 0 0 0 1.759-1.048l.489-.904A2 2 0 0 1 10.004 4z" /><circle cx="12" cy="13" r="3" /></svg> Photos de progression</h3>
-      <button class="close-modal" onclick="fermerModal('photos-modal')" aria-label="Fermer">&times;</button>
-    </div>
-    <div style="display:flex; gap:8px; align-items:flex-end; margin-bottom:10px;">
-      <div class="input-group" style="margin:0; flex:1;">
-        <label for="photos-date">Date des photos</label>
-        <input type="date" id="photos-date">
-      </div>
-      <label class="btn btn-primary" style="width:auto; flex:none; cursor:pointer; margin:0;">
-        + Ajouter
-        <input type="file" accept="image/*" multiple style="display:none;" onchange="ajouterPhotosProgression(this)">
-      </label>
-    </div>
-    <p class="note" id="photos-note"></p>
-    <div id="photos-comparaison"></div>
-    <div id="photos-grille"></div>
-    <p class="note note-explicative" style="margin:12px 0 0;">Photos privées : stockées dans ton espace, visibles par toi seul.</p>
   </div>
 </div>
 
@@ -3833,11 +3548,6 @@
       <h3 id="titre-picker-exercices"><svg class="icone-ui" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v16" /><path d="M20.001 19A2 2 0 0022 17V5a2 2 0 00-1.999-2L16 3.002A5 5 0 0012 5a5 5 0 00-4-2H4a2 2 0 00-2 2v12a2 2 0 001.999 2H8a5 5 0 014 2 5 5 0 014-2z" /></svg> Exercices</h3>
       <button class="close-modal" onclick="fermerModal('picker-exercices-modal')" aria-label="Fermer">&times;</button>
     </div>
-    <div class="segment" id="picker-onglets" role="group" aria-label="Liste affichée" style="margin-bottom:12px;">
-      <button type="button" onclick="choisirOngletPicker('tous')" aria-pressed="true">Tous</button>
-      <button type="button" onclick="choisirOngletPicker('pratiques')" aria-pressed="false">Déjà pratiqués</button>
-      <button type="button" onclick="choisirOngletPicker('niveau')" aria-pressed="false">Niveau de force</button>
-    </div>
     <div class="input-group" style="margin-bottom:12px;">
       <label for="picker-recherche" style="position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0 0 0 0);">Rechercher un exercice</label>
       <input type="text" id="picker-recherche" placeholder="Rechercher un exercice…" autocomplete="off" oninput="rendrePickerExercices()">
@@ -3883,36 +3593,6 @@
       <input type="url" id="perso-image" autocomplete="off" placeholder="https://…">
     </div>
     <button class="btn btn-primary" id="perso-valider-btn" style="margin-top:16px;" onclick="validerExercicePerso()">Ajouter à la base</button>
-  </div>
-</div>
-
-<!-- ================= SÉANCE — Aide à la création d'une routine ================= -->
-<div id="aide-routine-modal" class="modal" role="dialog" aria-modal="true" aria-labelledby="titre-aide-routine">
-  <div class="modal-content" style="max-width:520px;">
-    <div class="modal-entete">
-      <h3 id="titre-aide-routine"><svg class="icone-ui" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10" /><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" /><path d="M12 17h.01" /></svg> Créer une bonne routine</h3>
-      <button class="close-modal" onclick="fermerModal('aide-routine-modal')" aria-label="Fermer">&times;</button>
-    </div>
-    <ol class="aide-routine-etapes">
-      <li><b>Choisis ta répartition selon tes jours dispo.</b>
-        <span>2–3 jours : <i>Full body</i> (tout le corps à chaque séance). 4 jours : <i>Haut / Bas</i>. 5–6 jours : <i>Push / Pull / Legs</i>. Crée un programme par type de séance (ex. « Haut A », « Bas A »).</span></li>
-      <li><b>4 à 7 exercices par séance.</b>
-        <span>Commence par les gros mouvements polyarticulaires (squat, développé, rowing, soulevé de terre, tractions), quand tu es frais ; termine par l'isolation (curl, élévations latérales, extensions…).</span></li>
-      <li><b>Vise la zone de croissance pour chaque muscle.</b>
-        <span>Environ 10 à 20 séries par muscle et par semaine, réparties sur 2 séances ou plus ; 2 à 4 séries par exercice. Le suivi est automatique dans Statistiques › Muscu › Zones, et sous chaque exercice pendant la séance.</span></li>
-      <li><b>Choisis ta fourchette de répétitions.</b>
-        <span>5–8 pour la force sur les gros mouvements, 8–12 pour la prise de muscle, 12–20 pour l'isolation. Arrête chaque série à 1–3 répétitions de l'échec.</span></li>
-      <li><b>Repose-toi assez.</b>
-        <span>2–3 min sur les polyarticulaires, 1–2 min sur l'isolation : un repos trop court fait perdre des répétitions.</span></li>
-      <li><b>Progresse un peu à chaque fois.</b>
-        <span>Quand tu atteins le haut de ta fourchette sur toutes les séries, ajoute de la charge (+2,5 kg à la barre, +1 à 2 kg aux haltères). La colonne « Préc. » en séance te rappelle ce que tu as fait la dernière fois.</span></li>
-      <li><b>Garde la même routine 6 à 12 semaines.</b>
-        <span>C'est la répétition qui permet de mesurer ta progression ; change un exercice s'il te fait mal ou si tu stagnes plusieurs semaines.</span></li>
-    </ol>
-    <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-top:14px;">
-      <button class="btn btn-secondaire" onclick="fermerModal('aide-routine-modal'); if (!document.getElementById('seance-vue-programme') || document.getElementById('seance-vue-programme').classList.contains('hidden')) ouvrirCreationProgramme();">Créer moi-même</button>
-      <button class="btn btn-primary" onclick="fermerModal('aide-routine-modal'); ouvrirAssistantProgrammeIA();">Avec l'IA</button>
-    </div>
   </div>
 </div>
 
@@ -4654,6 +4334,7 @@ function renderMeals(day) {
           <span class="meal-kcals">${totalMeal} kcal</span>
         </div>
         <ul class="food-list">${rows}</ul>
+        <button class="btn-ajout-repas" onclick="ouvrirFeuilleRepas('${mealId}')">+ Ajouter un aliment</button>
       </div>`;
   }).join('');
 }
@@ -4795,8 +4476,6 @@ function quotaEauSuggere(dateStr) {
 /* Un objectif calorique sorti de nulle part n'inspire pas confiance : on montre
    d'ou viennent les chiffres, et surtout quand le poids est une estimation. */
 function majDetailDepense(day, t) {
-  const lien = document.getElementById('lien-depense');
-  if (lien && t && t.tdee) lien.textContent = 'Dépense estimée : ' + t.tdee + ' kcal ›';
   const el = document.getElementById('detail-depense');
   if (!el) return;
   const lignes = [
@@ -7298,15 +6977,6 @@ function choisirOngletStats(nom) {
   document.getElementById('periode-nutrition-bloc').classList.toggle('hidden', nom !== 'nutrition');
   document.getElementById('periode-muscu-bloc').classList.toggle('hidden', nom !== 'muscu');
 }
-// Deuxième niveau d'onglets, à l'intérieur de l'onglet Musculation (voir
-// commentaire sur .stats-soustab dans le CSS) : classe différente de
-// .stats-tab pour ne pas être recapturée par choisirOngletStats ci-dessus.
-function choisirSousOngletMuscu(nom) {
-  document.querySelectorAll('#ecran-stats .stats-soustab').forEach(t => {
-    t.classList.toggle('stats-soustab-actif', t.dataset.soustab === nom);
-  });
-  majSegment('muscu-soustabs-nav', ['apercu', 'zones', 'force', 'progression', 'programmes', 'historique'], nom);
-}
 
 /* Les curseurs émettent « input » à chaque pixel. Sans temporisation, glisser
    le doigt détruisait et recréait les 4 graphiques des centaines de fois :
@@ -7872,7 +7542,7 @@ async function importerDonneesUtilisateurAdmin(event) {
    ecrans, une barre basse, et chaque tache tient dans une hauteur d'ecran.
    ===================================================================== */
 const ECRANS = ['repas', 'activite', 'seance', 'stats', 'admin', 'reglages'];
-const ECRAN_ICONE = { repas: '<svg class="icone-ui" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 2v7c0 1.1.9 2 2 2h4a2 2 0 0 0 2-2V2" /><path d="M7 2v20" /><path d="M21 15V2a5 5 0 0 0-5 5v6c0 1.1.9 2 2 2h3Zm0 0v7" /></svg>', activite: '<svg class="icone-ui" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 16v-2.38C4 11.5 2.97 10.5 3 8c.03-2.72 1.49-6 4.5-6C9.37 2 10 3.8 10 5.5c0 3.11-2 5.66-2 8.68V16a2 2 0 1 1-4 0Z" /><path d="M20 20v-2.38c0-2.12 1.03-3.12 1-5.62-.03-2.72-1.49-6-4.5-6C14.63 6 14 7.8 14 9.5c0 3.11 2 5.66 2 8.68V20a2 2 0 1 0 4 0Z" /><path d="M16 17h4" /><path d="M4 13h4" /></svg>', seance: '<svg class="icone-ui" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17.596 12.768a2 2 0 1 0 2.829-2.829l-1.768-1.767a2 2 0 0 0 2.828-2.829l-2.828-2.828a2 2 0 0 0-2.829 2.828l-1.767-1.768a2 2 0 1 0-2.829 2.829z" /><path d="m2.5 21.5 1.4-1.4" /><path d="m20.1 3.9 1.4-1.4" /><path d="M5.343 21.485a2 2 0 1 0 2.829-2.828l1.767 1.768a2 2 0 1 0 2.829-2.829l-6.364-6.364a2 2 0 1 0-2.829 2.829l1.768 1.767a2 2 0 0 0-2.828 2.829z" /><path d="m9.6 14.4 4.8-4.8" /></svg>', stats: '<svg class="icone-ui" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 3v16a2 2 0 0 0 2 2h16" /><path d="M18 17V9" /><path d="M13 17V5" /><path d="M8 17v-3" /></svg>', admin: '<svg class="icone-ui" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11.562 3.266a.5.5 0 0 1 .876 0L15.39 8.87a1 1 0 0 0 1.516.294L21.183 5.5a.5.5 0 0 1 .798.519l-2.834 10.246a1 1 0 0 1-.956.734H5.81a1 1 0 0 1-.957-.734L2.02 6.02a.5.5 0 0 1 .798-.519l4.276 3.664a1 1 0 0 0 1.516-.294z" /><path d="M5 21h14" /></svg>', reglages: '<svg class="icone-ui" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="5" /><path d="M20 21a8 8 0 0 0-16 0" /></svg>' };
+const ECRAN_ICONE = { repas: '<svg class="icone-ui" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 2v7c0 1.1.9 2 2 2h4a2 2 0 0 0 2-2V2" /><path d="M7 2v20" /><path d="M21 15V2a5 5 0 0 0-5 5v6c0 1.1.9 2 2 2h3Zm0 0v7" /></svg>', activite: '<svg class="icone-ui" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 16v-2.38C4 11.5 2.97 10.5 3 8c.03-2.72 1.49-6 4.5-6C9.37 2 10 3.8 10 5.5c0 3.11-2 5.66-2 8.68V16a2 2 0 1 1-4 0Z" /><path d="M20 20v-2.38c0-2.12 1.03-3.12 1-5.62-.03-2.72-1.49-6-4.5-6C14.63 6 14 7.8 14 9.5c0 3.11 2 5.66 2 8.68V20a2 2 0 1 0 4 0Z" /><path d="M16 17h4" /><path d="M4 13h4" /></svg>', seance: '<svg class="icone-ui" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17.596 12.768a2 2 0 1 0 2.829-2.829l-1.768-1.767a2 2 0 0 0 2.828-2.829l-2.828-2.828a2 2 0 0 0-2.829 2.828l-1.767-1.768a2 2 0 1 0-2.829 2.829z" /><path d="m2.5 21.5 1.4-1.4" /><path d="m20.1 3.9 1.4-1.4" /><path d="M5.343 21.485a2 2 0 1 0 2.829-2.828l1.767 1.768a2 2 0 1 0 2.829-2.829l-6.364-6.364a2 2 0 1 0-2.829 2.829l1.768 1.767a2 2 0 0 0-2.828 2.829z" /><path d="m9.6 14.4 4.8-4.8" /></svg>', stats: '<svg class="icone-ui" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 3v16a2 2 0 0 0 2 2h16" /><path d="M18 17V9" /><path d="M13 17V5" /><path d="M8 17v-3" /></svg>', admin: '<svg class="icone-ui" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11.562 3.266a.5.5 0 0 1 .876 0L15.39 8.87a1 1 0 0 0 1.516.294L21.183 5.5a.5.5 0 0 1 .798.519l-2.834 10.246a1 1 0 0 1-.956.734H5.81a1 1 0 0 1-.957-.734L2.02 6.02a.5.5 0 0 1 .798-.519l4.276 3.664a1 1 0 0 0 1.516-.294z" /><path d="M5 21h14" /></svg>', reglages: '<svg class="icone-ui" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9.671 4.136a2.34 2.34 0 0 1 4.659 0 2.34 2.34 0 0 0 3.319 1.915 2.34 2.34 0 0 1 2.33 4.033 2.34 2.34 0 0 0 0 3.831 2.34 2.34 0 0 1-2.33 4.033 2.34 2.34 0 0 0-3.319 1.915 2.34 2.34 0 0 1-4.659 0 2.34 2.34 0 0 0-3.32-1.915 2.34 2.34 0 0 1-2.33-4.033 2.34 2.34 0 0 0 0-3.831A2.34 2.34 0 0 1 6.35 6.051a2.34 2.34 0 0 0 3.319-1.915" /><circle cx="12" cy="12" r="3" /></svg>' };
 let ecranActif = 'repas';
 
 function allerA(nom) {
@@ -8273,9 +7943,9 @@ function initFabDeplacable() {
    ce champ est synchronisé comme le reste du profil.
    ===================================================================== */
 const TOUR_ETAPES = [
-  { titre: 'Bienvenue sur Anqā', texte: "Un tour rapide pour découvrir l'essentiel. Tu peux le quitter à tout moment, et le revoir plus tard depuis Profil > Réglages (engrenage)." },
-  { ecran: 'repas', cible: '.summary-card', titre: 'Ton résumé du jour', texte: 'Calories consommées, objectif du jour, et répartition entre protéines, glucides et lipides. Touche la carte pour voir le détail de ta dépense estimée.' },
-  { ecran: 'repas', cible: '.ajout-rapide', titre: 'Ajouter à un repas', texte: "Recette, aliment, photo ou code-barres : choisis comment ajouter, puis pour quel repas. Les options sont détaillées juste après." },
+  { titre: 'Bienvenue sur Anqā', texte: "Un tour rapide pour découvrir l'essentiel. Tu peux le quitter à tout moment, et le revoir plus tard depuis Réglages." },
+  { ecran: 'repas', cible: '.summary-card', titre: 'Ton résumé du jour', texte: 'Calories consommées, objectif du jour, et répartition entre protéines, glucides et lipides.' },
+  { ecran: 'repas', cible: '#meals-container .btn-ajout-repas', titre: 'Ajouter un aliment', texte: "Touche ce bouton sur n'importe quel repas pour ouvrir les options d'ajout, détaillées juste après." },
   { ecran: 'repas', feuille: 'feuille-repas', cible: '#opt-recette', titre: 'Option 1 : Recette', texte: 'Une de tes recettes enregistrées, ajoutée en un tap avec ses macros déjà calculées.' },
   { ecran: 'repas', feuille: 'feuille-repas', cible: '#opt-manuel', titre: 'Option 2 : Saisie manuelle', texte: "Recherche dans la base d'aliments : CIQUAL, aliments ajoutés par la communauté, et en premier ce que tu manges le plus souvent." },
   { ecran: 'repas', feuille: 'feuille-repas', cible: '#opt-photo', titre: 'Option 3 : Photo ou description', texte: "Décris ou prends en photo ce que tu manges : l'IA estime les quantités et les macros à ta place." },
@@ -8283,16 +7953,17 @@ const TOUR_ETAPES = [
   { ecran: 'repas', cible: '#bloc-eau', titre: "Suivi de l'eau", texte: 'Touche +250 ml, +500 ml ou +1 L à chaque fois que tu bois.' },
   { ecran: 'repas', cible: '#carte-bilan-jour', titre: 'Bilan de la journée', texte: 'Une analyse IA de ta nutrition et de ton activité du jour.' },
   { ecran: 'repas', cible: '#fab', titre: 'Le bouton de navigation', texte: "Ce bouton flottant permet de changer d'écran à tout moment — il remplace la barre d'onglets classique." },
-  { fab: true, cible: '#nav-activite', titre: 'Onglet Activité', texte: 'Ton objectif, tes pas et tes séances annexes.' },
+  { fab: true, cible: '#nav-activite', titre: 'Onglet Activité', texte: 'Ton objectif, tes pas, tes séances annexes et tes mesures corporelles.' },
   { ecran: 'activite', cible: '#carte-objectif', titre: 'Ton objectif', texte: "Maintien, sèche, masse ou recomposition : change-le ici, l'historique passé n'est jamais réécrit." },
+  { ecran: 'activite', cible: '#bloc-depense', titre: "D'où viennent tes calories", texte: 'Le détail complet du calcul de ta dépense calorique estimée.' },
   { fab: true, cible: '#nav-seance', titre: 'Onglet Séance', texte: "Tes programmes de musculation, et le suivi d'une séance en cours." },
   { ecran: 'seance', cible: '[onclick="ouvrirCreationProgramme()"]', titre: 'Créer un programme', texte: "Construis un programme avec tes exercices, séries et charges cibles. Tu le relances ensuite en un tap à chaque séance, avec le suivi automatique de tes performances." },
   { ecran: 'seance', cible: '[onclick="demarrerSeanceLibre()"]', titre: 'Séance libre', texte: "Entraîne-toi sans programme préparé à l'avance : ajoute tes exercices au fil de la séance, tu pourras l'enregistrer comme programme à la fin." },
   { ecran: 'seance', cible: '[onclick="ouvrirBibliotheque()"]', titre: "Bibliothèque d'exercices", texte: "Parcours toute la base d'exercices, filtrée par groupe musculaire et par matériel, avec photo et instructions pour chacun." },
   { fab: true, cible: '#nav-stats', titre: 'Onglet Statistiques', texte: 'Ton poids, ta nutrition et tes progrès en musculation, dans le temps.' },
   { ecran: 'stats', cible: '#periode-poids-bloc', titre: 'Choisir une période', texte: 'Fais glisser ces curseurs pour analyser la période de ton choix.' },
-  { fab: true, cible: '#nav-reglages', titre: 'Onglet Profil', texte: 'Ton compte, tes infos et tes mesures corporelles. L\'engrenage en haut à droite ouvre les réglages (thème, densité, visite guidée).' },
-  { ecran: 'reglages', cible: '.btn-engrenage', titre: 'Réglages', texte: 'Thème, densité d\'affichage, installation et « Revoir la visite guidée » sont derrière cet engrenage.' },
+  { fab: true, cible: '#nav-reglages', titre: 'Onglet Réglages', texte: 'Ton compte, le thème, la synchronisation et l\'export de tes données.' },
+  { ecran: 'reglages', cible: '#btn-revoir-tutoriel', titre: 'Revoir ce tour', texte: 'Ce bouton relance ce tutoriel quand tu veux.' },
   { titre: "C'est tout !", texte: 'Explore le reste à ton rythme. Bonne utilisation 🙂' }
 ];
 let tourActif = false;
@@ -8551,28 +8222,6 @@ function renderChoixRecette() {
    utilisateur, admin aliments). fermerFeuilles() est défini plus bas ;
    les déclarations de fonction étant remontées, l'appel est sûr. */
 function fermerFeuilleRepas() { fermerFeuilles(); }
-/* Boutons d'ajout rapide de l'écran Repas : on choisit d'abord COMMENT
-   ajouter (recette, aliment, photo, code-barres), puis le repas visé — le
-   repas du moment est mis en avant mais tous restent proposés. */
-let modeAjoutEnAttente = null;
-function choisirModeAjout(mode) {
-  modeAjoutEnAttente = mode;
-  const libelles = { recette: 'Ajouter une recette', manuel: 'Ajouter un aliment', photo: 'Ajouter par photo', barcode: 'Scanner un code-barres' };
-  document.getElementById('feuille-choix-repas-titre').textContent = (libelles[mode] || 'Ajouter') + ' — pour quel repas ?';
-  const actuel = repasDuMoment();
-  const day = getDay(currentDate);
-  document.getElementById('choix-repas-liste').innerHTML = MEALS.map(m => `
-    <button class="feuille-action${m === actuel ? ' feuille-action--suggere' : ''}" onclick="choisirRepasAjout('${m}')">
-      <span class="ic" aria-hidden="true">${MEAL_ICONS[m]}</span>
-      <span>${MEAL_LABELS[m]}<span class="sous">${mealKcal(day, m)} kcal${m === actuel ? ' · repas du moment' : ''}</span></span>
-    </button>`).join('');
-  ouvrirFeuille('feuille-choix-repas');
-}
-function choisirRepasAjout(mealId) {
-  repasFeuille = mealId;
-  fermerFeuilles();
-  depuisFeuille(modeAjoutEnAttente || 'manuel');
-}
 function depuisFeuille(mode) {
   const mealId = repasFeuille || repasDuMoment();
   fermerFeuilleRepas();
@@ -8713,7 +8362,6 @@ function definirSessionUtilisateur(user) {
     connexionObligatoire = false;
     fermerModal('compte-modal');
     verifierStatutCompte();
-    chargerMonPseudo();
     // La gate de connexion vient de se refermer : c'est le bon moment pour
     // éventuellement proposer l'installation, jamais avant (elle empilerait
     // sa pop-up sur la modale de connexion, obligatoire tant qu'elle est ouverte).
@@ -8722,7 +8370,6 @@ function definirSessionUtilisateur(user) {
     // Déconnexion (ou aucune session au tout premier chargement) : l'appli
     // se reverrouille immédiatement, sans exception.
     connexionObligatoire = true;
-    monPseudo = null;
     ouvrirModal('compte-modal');
   }
   // Le changement d'identifiant ne rejoue pas automatiquement les données
@@ -8883,25 +8530,6 @@ async function connexionOuCreerCompte() {
     if (!/invalid login credentials/i.test(error.message || '')) throw error;
   } catch (e) { if (note) note.textContent = messageAuth(e); return; }
 
-  // Nouveau compte probable (identifiants inconnus) : un nom d'utilisateur
-  // est demandé AVANT la création — on ne peut pas savoir à coup sûr si
-  // c'est un nouveau compte ou un mot de passe faux, d'où le message.
-  const wrapPseudo = document.getElementById('compte-pseudo-wrap');
-  const pseudoSaisi = normaliserPseudo(document.getElementById('compte-pseudo-input').value);
-  if (!pseudoSaisi) {
-    wrapPseudo.classList.remove('hidden');
-    if (note) note.textContent = "Identifiants inconnus. Nouveau compte ? Choisis un nom d'utilisateur ci-dessus puis appuie à nouveau sur le bouton. Sinon, vérifie ton mot de passe.";
-    document.getElementById('compte-pseudo-input').focus();
-    return;
-  }
-  const errPseudo = erreurFormatPseudo(pseudoSaisi);
-  if (errPseudo) { if (note) note.textContent = errPseudo; return; }
-  try {
-    const { data: dispo, error: eDispo } = await supa.rpc('pseudo_disponible', { p: pseudoSaisi });
-    if (!eDispo && dispo === false) { if (note) note.textContent = 'Ce nom d\'utilisateur est déjà pris : choisis-en un autre.'; return; }
-  } catch (e) { /* SQL pas encore exécuté : le nom sera enregistré plus tard */ }
-  try { localStorage.setItem(PSEUDO_ATTENTE_LS, pseudoSaisi); } catch (e) {}
-
   if (note) note.textContent = 'Vérification…';
   let sonde;
   try {
@@ -8964,440 +8592,6 @@ async function deconnexionCompte() {
   // transférées, on ne laisse plus les repas/poids de cette personne
   // traîner sur l'appareil pour la suivante.
   viderDonneesLocales();
-}
-
-/* =====================================================================
-   NOM D'UTILISATEUR, GYMBRO ET PHOTOS DE PROGRESSION
-   Trois fonctions qui ont besoin de Supabase au-delà des tables de base :
-   la table `pseudos`, la fonction `gymbro_seances` et le bucket de
-   stockage `photos-progression` (voir SQL_GYMBRO_PHOTOS, à exécuter une
-   fois dans Supabase — copiable depuis Administration > Réglages
-   techniques). Tant que ce SQL n'est pas passé, l'appli le dit
-   clairement au lieu d'échouer en silence.
-   ===================================================================== */
-const SQL_GYMBRO_PHOTOS = `-- Nom d'utilisateur, Gymbro et photos de progression.
--- À exécuter une fois dans l'éditeur SQL de Supabase, APRÈS le SQL des
--- politiques de sécurité (RLS). Idempotent : relancer ne casse rien.
-
--- 1) Noms d'utilisateur : un par compte, uniques (sans tenir compte des
---    majuscules), lisibles par tout compte connecté pour la recherche.
-create table if not exists public.pseudos (
-  utilisateur     text primary key,
-  pseudo          text not null,
-  partage_seances boolean not null default true,
-  cree_le         timestamptz not null default now()
-);
-create unique index if not exists pseudos_pseudo_unique on public.pseudos (lower(pseudo));
-do $$ begin
-  alter table public.pseudos add constraint pseudo_format check (pseudo ~ '^[a-z0-9_.]{3,20}$');
-exception when duplicate_object then null; end $$;
-alter table public.pseudos enable row level security;
-drop policy if exists "pseudos lisibles" on public.pseudos;
-create policy "pseudos lisibles" on public.pseudos for select to authenticated using (true);
-drop policy if exists "pseudo perso ajout" on public.pseudos;
-create policy "pseudo perso ajout" on public.pseudos for insert to authenticated
-  with check (utilisateur = auth.uid()::text);
-drop policy if exists "pseudo perso modif" on public.pseudos;
-create policy "pseudo perso modif" on public.pseudos for update to authenticated
-  using (utilisateur = auth.uid()::text) with check (utilisateur = auth.uid()::text);
-drop policy if exists "pseudo perso suppr" on public.pseudos;
-create policy "pseudo perso suppr" on public.pseudos for delete to authenticated
-  using (utilisateur = auth.uid()::text);
-
--- Vérifie qu'un nom est libre AVANT la création du compte (appelable sans
--- être connecté ; ne renvoie qu'un oui/non, jamais la liste des noms).
-create or replace function public.pseudo_disponible(p text)
-returns boolean language sql stable security definer set search_path = public as $$
-  select not exists (select 1 from pseudos where lower(pseudo) = lower(p));
-$$;
-grant execute on function public.pseudo_disponible(text) to anon, authenticated;
-
--- 2) Gymbro : renvoie les séances (90 derniers jours par défaut) d'un
---    compte retrouvé par son nom d'utilisateur, SEULEMENT s'il a laissé
---    le partage activé. La table des séances reste protégée par RLS :
---    cette fonction n'en expose que ça, et seulement à un compte connecté.
-create or replace function public.gymbro_seances(p_pseudo text, p_depuis date default (current_date - 90))
-returns table(donnees jsonb) language sql stable security definer set search_path = public as $$
-  select s.donnees
-  from seances_musculation s
-  join pseudos p on p.utilisateur = s.utilisateur
-  where auth.uid() is not null
-    and lower(p.pseudo) = lower(p_pseudo)
-    and p.partage_seances
-    and not exists (select 1 from comptes_bloques b where b.utilisateur = p.utilisateur)
-    and coalesce(s.donnees->>'date', '') >= p_depuis::text
-  order by s.donnees->>'date' desc
-  limit 300;
-$$;
-grant execute on function public.gymbro_seances(text, date) to authenticated;
-
--- 3) Photos de progression : bucket privé, chaque compte ne voit et ne
---    gère que son propre dossier (<son id>/...).
-insert into storage.buckets (id, name, public)
-values ('photos-progression', 'photos-progression', false)
-on conflict (id) do nothing;
-drop policy if exists "photos progression lecture" on storage.objects;
-create policy "photos progression lecture" on storage.objects for select to authenticated
-  using (bucket_id = 'photos-progression' and (storage.foldername(name))[1] = auth.uid()::text);
-drop policy if exists "photos progression ajout" on storage.objects;
-create policy "photos progression ajout" on storage.objects for insert to authenticated
-  with check (bucket_id = 'photos-progression' and (storage.foldername(name))[1] = auth.uid()::text);
-drop policy if exists "photos progression suppr" on storage.objects;
-create policy "photos progression suppr" on storage.objects for delete to authenticated
-  using (bucket_id = 'photos-progression' and (storage.foldername(name))[1] = auth.uid()::text);`;
-
-function copierSqlGymbro() {
-  if (navigator.clipboard && navigator.clipboard.writeText) {
-    navigator.clipboard.writeText(SQL_GYMBRO_PHOTOS).catch(() => window.prompt('Copie ce SQL :', SQL_GYMBRO_PHOTOS));
-  } else {
-    window.prompt('Copie ce SQL :', SQL_GYMBRO_PHOTOS);
-  }
-}
-/* Table ou fonction absente : le SQL ci-dessus n'a pas encore été exécuté. */
-function estErreurSqlManquant(e) {
-  const m = ((e && (e.message || e.code)) || '') + ' ' + ((e && e.code) || '');
-  return /42P01|PGRST20[0-9]|42883|does not exist|could not find|schema cache|bucket not found/i.test(m);
-}
-const MESSAGE_SQL_MANQUANT = "Cette fonction n'est pas encore activée sur le serveur : l'administrateur doit exécuter le SQL « Nom d'utilisateur, Gymbro et photos » (Administration › Réglages techniques).";
-
-/* ---------------------------- Nom d'utilisateur ---------------------------- */
-const PSEUDO_ATTENTE_LS = 'mc_pseudo_en_attente';
-const PSEUDO_REGEX = /^[a-z0-9_.]{3,20}$/;
-let monPseudo = null;          // { pseudo, partage_seances } une fois chargé
-let monPseudoIndispo = false;  // SQL pas encore exécuté
-function normaliserPseudo(v) { return String(v || '').trim().toLowerCase().replace(/^@+/, ''); }
-function erreurFormatPseudo(p) {
-  if (!p) return "Choisis un nom d'utilisateur.";
-  if (!PSEUDO_REGEX.test(p)) return '3 à 20 caractères : lettres minuscules, chiffres, point ou tiret bas (sans espace ni accent).';
-  return '';
-}
-async function chargerMonPseudo() {
-  if (!supa || !sessionUtilisateur) return;
-  try {
-    const { data, error } = await supa.from('pseudos').select('pseudo,partage_seances').eq('utilisateur', sessionUtilisateur.id).maybeSingle();
-    if (error) throw error;
-    monPseudoIndispo = false;
-    if (data) { monPseudo = data; majUIPseudo(); return; }
-    monPseudo = null;
-    let attente = null;
-    try { attente = localStorage.getItem(PSEUDO_ATTENTE_LS); } catch (e) {}
-    if (attente && await enregistrerPseudo(attente)) return;
-    majUIPseudo();
-    // Compte sans nom d'utilisateur (créé avant cette fonction, ou nom
-    // déjà pris entre-temps) : on le demande une fois connecté — mais
-    // jamais par-dessus une autre fenêtre (questionnaire de départ…).
-    proposerPseudoQuandLibre(0);
-  } catch (e) {
-    if (estErreurSqlManquant(e)) monPseudoIndispo = true;
-    else console.warn('[Pseudo]', e);
-    majUIPseudo();
-  }
-}
-/* Renvoie '' si c'est bon, sinon le message d'erreur à afficher. */
-async function enregistrerPseudo(brut) {
-  const pseudo = normaliserPseudo(brut);
-  const err = erreurFormatPseudo(pseudo);
-  if (err) return err;
-  if (!supa || !sessionUtilisateur) return 'Connecte-toi d\'abord.';
-  try {
-    const { error } = await supa.from('pseudos').upsert({
-      utilisateur: sessionUtilisateur.id, pseudo,
-      partage_seances: monPseudo ? monPseudo.partage_seances : true
-    }, { onConflict: 'utilisateur' });
-    if (error) throw error;
-    monPseudo = { pseudo, partage_seances: monPseudo ? monPseudo.partage_seances : true };
-    try { localStorage.removeItem(PSEUDO_ATTENTE_LS); } catch (e) {}
-    majUIPseudo();
-    return '';
-  } catch (e) {
-    if (e && (e.code === '23505' || /duplicate|unique/i.test(e.message || ''))) return 'Ce nom d\'utilisateur est déjà pris.';
-    if (estErreurSqlManquant(e)) { monPseudoIndispo = true; majUIPseudo(); return MESSAGE_SQL_MANQUANT; }
-    return 'Erreur : ' + (e.message || e);
-  }
-}
-function proposerPseudoQuandLibre(essai) {
-  if (!sessionUtilisateur || monPseudo || monPseudoIndispo || essai > 40) return;
-  if (document.querySelector('.modal.show, .feuille.show') || (document.getElementById('tour-overlay') && !document.getElementById('tour-overlay').classList.contains('hidden'))) {
-    setTimeout(() => proposerPseudoQuandLibre(essai + 1), 3000);
-    return;
-  }
-  ouvrirPseudoModal();
-}
-function ouvrirPseudoModal() {
-  const champ = document.getElementById('pseudo-input');
-  champ.value = monPseudo ? monPseudo.pseudo : '';
-  document.getElementById('pseudo-note').textContent = '';
-  document.getElementById('pseudo-intro').textContent = monPseudo
-    ? 'Ton nom d\'utilisateur permet à tes gymbros de te retrouver.'
-    : 'Choisis ton nom d\'utilisateur : c\'est lui que tes gymbros chercheront pour comparer vos séances.';
-  ouvrirModal('pseudo-modal');
-  setTimeout(() => champ.focus(), 60);
-}
-async function validerPseudoModal() {
-  const note = document.getElementById('pseudo-note');
-  note.textContent = 'Enregistrement…';
-  const err = await enregistrerPseudo(document.getElementById('pseudo-input').value);
-  note.textContent = err;
-  if (!err) fermerModal('pseudo-modal');
-}
-async function basculerPartageSeances(actif) {
-  if (!supa || !sessionUtilisateur || !monPseudo) return;
-  const { error } = await supa.from('pseudos').update({ partage_seances: !!actif }).eq('utilisateur', sessionUtilisateur.id);
-  if (error) { alert('Impossible de changer le partage : ' + (error.message || error)); majUIPseudo(); return; }
-  monPseudo.partage_seances = !!actif;
-  majUIPseudo();
-}
-function majUIPseudo() {
-  const v = document.getElementById('profil-pseudo');
-  const partage = document.getElementById('profil-partage');
-  const note = document.getElementById('profil-pseudo-note');
-  if (!v) return;
-  if (!sessionUtilisateur) { v.textContent = 'Non connecté'; if (partage) partage.closest('label').classList.add('hidden'); return; }
-  if (monPseudoIndispo) {
-    v.textContent = '—';
-    if (note) note.textContent = MESSAGE_SQL_MANQUANT;
-    if (partage) partage.closest('label').classList.add('hidden');
-    return;
-  }
-  v.textContent = monPseudo ? '@' + monPseudo.pseudo : 'Pas encore choisi';
-  if (note) note.textContent = '';
-  if (partage) {
-    partage.closest('label').classList.toggle('hidden', !monPseudo);
-    partage.checked = !!(monPseudo && monPseudo.partage_seances);
-  }
-}
-
-/* --------------------------------- Gymbro ---------------------------------- */
-let gymbroRechercheTimer = null;
-function ouvrirGymbro() {
-  document.getElementById('gymbro-recherche').value = '';
-  document.getElementById('gymbro-resultats').innerHTML = '';
-  document.getElementById('gymbro-comparaison').innerHTML = '';
-  document.getElementById('gymbro-vue-recherche').classList.remove('hidden');
-  renderGymbrosFavoris();
-  ouvrirModal('gymbro-modal');
-  if (sessionUtilisateur && !monPseudo && !monPseudoIndispo) {
-    document.getElementById('gymbro-resultats').innerHTML = `<p class="note">Astuce : choisis aussi ton propre nom d'utilisateur pour que tes gymbros te trouvent. <button type="button" class="btn-icone" style="font-size:0.75rem;" onclick="ouvrirPseudoModal()">Choisir</button></p>`;
-  }
-}
-function renderGymbrosFavoris() {
-  const c = document.getElementById('gymbro-favoris');
-  const liste = (userProfile.gymbros || []);
-  c.innerHTML = liste.length
-    ? `<p class="note" style="margin:0 0 6px; font-weight:700;">Mes gymbros</p><div class="gymbro-puces">${liste.map(p => `<button type="button" onclick="comparerGymbro('${escapeHtml(p)}')">@${escapeHtml(p)}</button>`).join('')}</div>`
-    : '';
-}
-function rechercherGymbro(v) {
-  clearTimeout(gymbroRechercheTimer);
-  gymbroRechercheTimer = setTimeout(() => lancerRechercheGymbro(v), 250);
-}
-async function lancerRechercheGymbro(v) {
-  const c = document.getElementById('gymbro-resultats');
-  const q = normaliserPseudo(v);
-  if (q.length < 2) { c.innerHTML = ''; return; }
-  if (!supa || !sessionUtilisateur) { c.innerHTML = '<p class="note">Connecte-toi pour chercher un gymbro.</p>'; return; }
-  c.innerHTML = '<p class="note">Recherche…</p>';
-  try {
-    const motif = q.replace(/[\\%_]/g, m => '\\' + m) + '%';
-    const { data, error } = await supa.from('pseudos').select('pseudo,partage_seances')
-      .ilike('pseudo', motif).neq('utilisateur', sessionUtilisateur.id).order('pseudo').limit(12);
-    if (error) throw error;
-    c.innerHTML = (data && data.length)
-      ? data.map(r => `<button type="button" class="exo-ligne" onclick="comparerGymbro('${escapeHtml(r.pseudo)}')">
-          <span style="flex:1; min-width:0;"><span class="exo-ligne-nom">@${escapeHtml(r.pseudo)}</span>
-          <span class="exo-ligne-meta">${r.partage_seances ? 'Comparer nos séances et nos charges' : 'Séances non partagées'}</span></span></button>`).join('')
-      : '<p class="note">Aucun utilisateur ne commence par « ' + escapeHtml(q) + ' ».</p>';
-  } catch (e) {
-    c.innerHTML = `<div class="error-box">${escapeHtml(estErreurSqlManquant(e) ? MESSAGE_SQL_MANQUANT : 'Erreur : ' + (e.message || e))}</div>`;
-  }
-}
-function ajouterGymbroFavori(pseudo) {
-  userProfile.gymbros = userProfile.gymbros || [];
-  if (!userProfile.gymbros.includes(pseudo)) userProfile.gymbros.push(pseudo);
-  saveData();
-  comparerGymbro(pseudo);
-}
-function retirerGymbroFavori(pseudo) {
-  userProfile.gymbros = (userProfile.gymbros || []).filter(p => p !== pseudo);
-  saveData();
-  comparerGymbro(pseudo);
-}
-function statsPeriodeMuscu(historique, jours) {
-  const depuis = decalerJours(todayStr(), -jours);
-  const h = historique.filter(x => x.date >= depuis);
-  let series = 0, volume = 0;
-  h.forEach(s => s.exercices.forEach(e => e.series.forEach(x => {
-    if (!x.fait) return;
-    series++;
-    if (x.poids != null && x.reps != null) volume += Number(x.poids) * Number(x.reps);
-  })));
-  return { seances: h.length, series, volume: Math.round(volume) };
-}
-async function comparerGymbro(pseudo) {
-  const c = document.getElementById('gymbro-comparaison');
-  document.getElementById('gymbro-vue-recherche').classList.add('hidden');
-  c.innerHTML = '<div class="loader">Chargement des séances de @' + escapeHtml(pseudo) + '…</div>';
-  let siennes = [];
-  try {
-    const { data, error } = await supa.rpc('gymbro_seances', { p_pseudo: pseudo });
-    if (error) throw error;
-    siennes = (data || []).map(r => r.donnees).filter(d => d && Array.isArray(d.exercices));
-  } catch (e) {
-    c.innerHTML = `<button type="button" class="btn-icone" onclick="retourRechercheGymbro()">‹ Retour</button>
-      <div class="error-box" style="margin-top:10px;">${escapeHtml(estErreurSqlManquant(e) ? MESSAGE_SQL_MANQUANT : 'Erreur : ' + (e.message || e))}</div>`;
-    return;
-  }
-  const depuis90 = decalerJours(todayStr(), -90);
-  const miennes = musculationHistorique.filter(h => h.date >= depuis90);
-  const favori = (userProfile.gymbros || []).includes(pseudo);
-  const nomMoi = monPseudo ? '@' + monPseudo.pseudo : 'Moi';
-  const lui = '@' + pseudo;
-
-  let html = `<div style="display:flex; justify-content:space-between; align-items:center; gap:8px; margin-bottom:12px;">
-    <button type="button" class="btn-icone" onclick="retourRechercheGymbro()">‹ Retour</button>
-    <button type="button" class="btn-icone" onclick="${favori ? 'retirerGymbroFavori' : 'ajouterGymbroFavori'}('${escapeHtml(pseudo)}')">${favori ? 'Retirer de mes gymbros' : '+ Ajouter à mes gymbros'}</button>
-  </div>
-  <h4 style="margin:0 0 10px;">${escapeHtml(nomMoi)} vs ${escapeHtml(lui)}</h4>`;
-
-  if (!siennes.length) {
-    html += `<p class="note">@${escapeHtml(pseudo)} n'a aucune séance partagée sur les 90 derniers jours (ou a désactivé le partage).</p>`;
-    c.innerHTML = html;
-    return;
-  }
-  const a = statsPeriodeMuscu(miennes, 30), b = statsPeriodeMuscu(siennes, 30);
-  const ligneStat = (lib, x, y, unite) => `<tr><td>${lib}</td><td class="${x > y ? 'gymbro-gagne' : ''}">${x.toLocaleString('fr-FR')}${unite || ''}</td><td class="${y > x ? 'gymbro-gagne' : ''}">${y.toLocaleString('fr-FR')}${unite || ''}</td></tr>`;
-  html += `<div class="titre-section">30 derniers jours</div>
-    <table class="gymbro-table"><thead><tr><th></th><th>${escapeHtml(nomMoi)}</th><th>${escapeHtml(lui)}</th></tr></thead><tbody>
-    ${ligneStat('Séances', a.seances, b.seances)}${ligneStat('Séries faites', a.series, b.series)}${ligneStat('Volume soulevé', a.volume, b.volume, ' kg')}
-    </tbody></table>`;
-
-  // Exercices en commun : meilleur 1RM estimé de chacun sur 90 jours.
-  const idsMoi = new Set(miennes.flatMap(h => h.exercices.filter(e => e.series.some(s => s.fait)).map(e => e.exerciceId)));
-  const idsLui = new Set(siennes.flatMap(h => h.exercices.filter(e => e.series.some(s => s.fait)).map(e => e.exerciceId)));
-  const communs = [...idsMoi].filter(id => idsLui.has(id));
-  const nomExo = (id, hist) => { const exo = trouverExercice(id); if (exo) return libelleExercice(exo); for (const h of hist) { const e = h.exercices.find(x => x.exerciceId === id); if (e && e.nom) return e.nom; } return 'Exercice'; };
-  if (communs.length) {
-    const lignes = communs.map(id => ({ id, moi: meilleur1RM(id, miennes), lui: meilleur1RM(id, siennes) }))
-      .filter(o => o.moi && o.lui)
-      .sort((x, y) => (y.moi.valeur + y.lui.valeur) - (x.moi.valeur + x.lui.valeur));
-    html += `<div class="titre-section">Exercices en commun (1RM estimé, 90 j)</div>` + lignes.map(o => {
-      const max = Math.max(o.moi.valeur, o.lui.valeur) || 1;
-      return `<div class="gymbro-exo">
-        <div class="gymbro-exo-nom">${escapeHtml(nomExo(o.id, siennes))}</div>
-        <div class="gymbro-barre"><span class="gymbro-barre-lib">${escapeHtml(nomMoi)}</span><span class="gymbro-barre-piste"><i style="width:${(100 * o.moi.valeur / max).toFixed(0)}%;"></i></span><b>${Math.round(o.moi.valeur)} kg</b></div>
-        <div class="gymbro-barre gymbro-barre--lui"><span class="gymbro-barre-lib">${escapeHtml(lui)}</span><span class="gymbro-barre-piste"><i style="width:${(100 * o.lui.valeur / max).toFixed(0)}%;"></i></span><b>${Math.round(o.lui.valeur)} kg</b></div>
-        <div class="note" style="margin:2px 0 0; font-size:0.68rem;">Meilleures séries : ${o.moi.poids} kg × ${o.moi.reps} vs ${o.lui.poids} kg × ${o.lui.reps}</div>
-      </div>`;
-    }).join('');
-  } else {
-    html += '<p class="note">Aucun exercice en commun sur les 90 derniers jours.</p>';
-  }
-
-  html += `<div class="titre-section">Dernières séances de ${escapeHtml(lui)}</div>` + siennes.slice(0, 8).map(h => {
-    const faites = h.exercices.reduce((n, e) => n + e.series.filter(s => s.fait).length, 0);
-    const top = h.exercices.map(e => ({ e, b: meilleur1RM(e.exerciceId, [h]) })).filter(o => o.b).sort((x, y) => y.b.valeur - x.b.valeur)[0];
-    return `<div class="gymbro-seance"><div><b>${escapeHtml(h.programmeNom || 'Séance')}</b><small>${formatDateDisplay(h.date)} · ${h.exercices.length} exercice${h.exercices.length > 1 ? 's' : ''} · ${faites} séries</small></div>
-      ${top ? `<span class="note" style="margin:0; text-align:right;">${escapeHtml(nomExo(top.e.exerciceId, [h]))}<br>${top.b.poids} kg × ${top.b.reps}</span>` : ''}</div>`;
-  }).join('');
-  c.innerHTML = html;
-}
-function retourRechercheGymbro() {
-  document.getElementById('gymbro-comparaison').innerHTML = '';
-  document.getElementById('gymbro-vue-recherche').classList.remove('hidden');
-  renderGymbrosFavoris();
-}
-
-/* -------------------------- Photos de progression -------------------------- */
-const BUCKET_PHOTOS = 'photos-progression';
-let photosProgression = [];  // [{ chemin, date, url }]
-function ouvrirPhotosProgression() {
-  document.getElementById('photos-date').value = todayStr();
-  ouvrirModal('photos-modal');
-  chargerPhotosProgression();
-}
-async function chargerPhotosProgression() {
-  const c = document.getElementById('photos-grille');
-  const comp = document.getElementById('photos-comparaison');
-  comp.innerHTML = '';
-  if (!supa || !sessionUtilisateur) { c.innerHTML = '<p class="note">Connecte-toi pour enregistrer tes photos de progression.</p>'; return; }
-  c.innerHTML = '<p class="note">Chargement…</p>';
-  try {
-    const dossier = sessionUtilisateur.id;
-    const { data, error } = await supa.storage.from(BUCKET_PHOTOS).list(dossier, { limit: 500, sortBy: { column: 'name', order: 'desc' } });
-    if (error) throw error;
-    const fichiers = (data || []).filter(f => /\.(jpe?g|png|webp)$/i.test(f.name));
-    if (!fichiers.length) { photosProgression = []; c.innerHTML = '<p class="note">Aucune photo pour l\'instant. Prends-toi toujours dans la même pose, la même lumière et au même endroit pour bien voir l\'évolution.</p>'; return; }
-    const chemins = fichiers.map(f => dossier + '/' + f.name);
-    const { data: urls, error: e2 } = await supa.storage.from(BUCKET_PHOTOS).createSignedUrls(chemins, 3600);
-    if (e2) throw e2;
-    photosProgression = chemins.map((chemin, i) => ({ chemin, date: (chemin.split('/').pop().match(/^(\d{4}-\d{2}-\d{2})/) || [])[1] || '', url: urls[i] && urls[i].signedUrl }));
-    renderPhotosProgression();
-  } catch (e) {
-    c.innerHTML = `<div class="error-box">${escapeHtml(estErreurSqlManquant(e) ? MESSAGE_SQL_MANQUANT : 'Erreur : ' + (e.message || e))}</div>`;
-  }
-}
-function renderPhotosProgression() {
-  const c = document.getElementById('photos-grille');
-  const comp = document.getElementById('photos-comparaison');
-  c.innerHTML = `<div class="photos-grille">${photosProgression.map((p, i) => `
-    <figure>
-      <img src="${escapeHtml(p.url || '')}" alt="Photo du ${escapeHtml(p.date)}" loading="lazy" onclick="window.open(this.src, '_blank')">
-      <figcaption>${p.date ? formatDateDisplay(p.date) : ''}</figcaption>
-      <button type="button" class="photos-suppr" onclick="supprimerPhotoProgression(${i})" aria-label="Supprimer cette photo">&times;</button>
-    </figure>`).join('')}</div>`;
-  if (photosProgression.length >= 2) {
-    const recente = photosProgression[0], ancienne = photosProgression[photosProgression.length - 1];
-    comp.innerHTML = `<div class="titre-section">Avant / après</div><div class="photos-avant-apres">
-      <figure><img src="${escapeHtml(ancienne.url || '')}" alt="Avant"><figcaption>${ancienne.date ? formatDateDisplay(ancienne.date) : 'Avant'}</figcaption></figure>
-      <figure><img src="${escapeHtml(recente.url || '')}" alt="Après"><figcaption>${recente.date ? formatDateDisplay(recente.date) : 'Après'}</figcaption></figure>
-    </div>`;
-  }
-}
-/* Réduit la photo (1280 px max, JPEG) avant l'envoi : une photo de
-   téléphone brute pèse 3 à 8 Mo, inutile pour suivre sa progression. */
-function compresserImage(fichier, maxPx, qualite) {
-  return new Promise((resolve, reject) => {
-    const img = new Image();
-    const url = URL.createObjectURL(fichier);
-    img.onload = () => {
-      const r = Math.min(1, maxPx / Math.max(img.width, img.height));
-      const cv = document.createElement('canvas');
-      cv.width = Math.round(img.width * r); cv.height = Math.round(img.height * r);
-      cv.getContext('2d').drawImage(img, 0, 0, cv.width, cv.height);
-      URL.revokeObjectURL(url);
-      cv.toBlob(b => b ? resolve(b) : reject(new Error('Compression impossible')), 'image/jpeg', qualite);
-    };
-    img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('Image illisible')); };
-    img.src = url;
-  });
-}
-async function ajouterPhotosProgression(input) {
-  const fichiers = Array.from(input.files || []);
-  input.value = '';
-  if (!fichiers.length) return;
-  if (!supa || !sessionUtilisateur) { alert('Connecte-toi pour enregistrer tes photos.'); return; }
-  const note = document.getElementById('photos-note');
-  const date = document.getElementById('photos-date').value || todayStr();
-  try {
-    for (let i = 0; i < fichiers.length; i++) {
-      note.textContent = `Envoi de la photo ${i + 1} / ${fichiers.length}…`;
-      const blob = await compresserImage(fichiers[i], 1280, 0.82);
-      const chemin = `${sessionUtilisateur.id}/${date}_${Date.now().toString(36)}${i}.jpg`;
-      const { error } = await supa.storage.from(BUCKET_PHOTOS).upload(chemin, blob, { contentType: 'image/jpeg', upsert: false });
-      if (error) throw error;
-    }
-    note.textContent = '';
-    chargerPhotosProgression();
-  } catch (e) {
-    note.textContent = estErreurSqlManquant(e) ? MESSAGE_SQL_MANQUANT : 'Erreur : ' + (e.message || e);
-  }
-}
-async function supprimerPhotoProgression(i) {
-  const p = photosProgression[i];
-  if (!p || !confirm('Supprimer cette photo ?')) return;
-  const { error } = await supa.storage.from(BUCKET_PHOTOS).remove([p.chemin]);
-  if (error) { alert('Erreur : ' + (error.message || error)); return; }
-  chargerPhotosProgression();
 }
 
 /* =====================================================================
@@ -12839,77 +12033,6 @@ function renderStatsMuscu(dateDebut, dateFin) {
   // doit plus re-filtrer par-dessus (et encore moins par rapport à
   // aujourd'hui si la période choisie est dans le passé).
   renderHistoriqueSeances(historiqueFiltre, 'muscu-historique-container', 3650);
-  // Zones et niveau de force : indépendants du curseur de période (une
-  // zone est par définition hebdomadaire ; un niveau, le meilleur de tous
-  // les temps).
-  renderZonesMuscu('muscu-zones-container');
-  renderForceMuscu('muscu-force-container');
-}
-
-function renderZonesMuscu(idCible) {
-  const c = document.getElementById(idCible);
-  if (!c) return;
-  const lundi = lundiDeLaSemaine(todayStr());
-  const semaine = seriesSemaine(lundi, false);
-  const groupes = ORDRE_GROUPES.filter(g => ZONES_VOLUME[g]);
-  const actifs = groupes.filter(g => semaine[g] > 0).sort((a, b) => semaine[b] - semaine[a]);
-  const inactifs = groupes.filter(g => !(semaine[g] > 0));
-  const fmt = iso => { const d = dateLocale(iso); return d.getDate() + ' ' + d.toLocaleDateString('fr-FR', { month: 'short' }).replace('.', ''); };
-
-  let html = `<div class="titre-section">Cette semaine · ${fmt(lundi)} – ${fmt(decalerJours(lundi, 6))}</div>
-    <p class="note" style="margin:0 0 6px;">Chaque série faite compte 1 pour le muscle principal de l'exercice et 0,5 pour ses muscles secondaires.</p>
-    ${corpsSVG(couleursZones(semaine), 'Zone atteinte par chaque muscle cette semaine')}
-    <div style="height:12px;"></div>`;
-  html += actifs.length
-    ? actifs.map(g => ligneZoneHTML(g, semaine[g])).join('')
-    : '<p class="note">Aucune série faite cette semaine pour l\'instant.</p>';
-  if (inactifs.length) {
-    html += `<details style="margin:0 0 14px;"><summary class="note" style="cursor:pointer; font-weight:700;">Muscles pas encore travaillés cette semaine (${inactifs.length})</summary>
-      <div style="margin-top:10px;">${inactifs.map(g => ligneZoneHTML(g, 0)).join('')}</div></details>`;
-  }
-
-  html += `<div class="titre-section">Les 4 zones d'entraînement</div>
-    <p class="note" style="margin:0 0 8px;">Les zones indiquent si tu en fais trop peu, si tu t'entraînes efficacement ou si tu ajoutes des séries qui apportent de moins en moins. Mêmes repères pour tous : ce qui change avec l'expérience, c'est la vitesse de progression et les muscles que tu priorises.</p>
-    ${legendeZonesHTML()}`;
-
-  // Tableau des 8 dernières semaines : zone + nombre de séries par muscle.
-  const semaines = [];
-  for (let i = 0; i < 8; i++) semaines.push(decalerJours(lundi, -7 * i));
-  const parSemaine = semaines.map(l => seriesSemaine(l, false));
-  const lignes = groupes.filter(g => parSemaine.some(s => s[g] > 0));
-  if (lignes.length) {
-    html += `<div class="titre-section">Semaine par semaine</div><div class="zones-table-wrap"><table class="zones-table">
-      <thead><tr><th>Muscle</th>${semaines.map(l => `<th>${fmt(l)}</th>`).join('')}</tr></thead>
-      <tbody>${lignes.map(g => `<tr><td>${escapeHtml(GROUPES_MUSCULAIRES[g])}</td>${parSemaine.map(s => {
-        const n = s[g] || 0;
-        if (!n) return '<td style="opacity:0.35;">·</td>';
-        const info = ZONES_INFO[cleZoneVolume(g, n)];
-        return `<td style="color:${info.couleur};"><b>${info.abbr}</b>${formatSeries(n)}</td>`;
-      }).join('')}</tr>`).join('')}</tbody></table></div>`;
-  }
-  c.innerHTML = html;
-}
-
-function renderForceMuscu(idCible) {
-  const c = document.getElementById(idCible);
-  if (!c) return;
-  const ids = [...new Set(musculationHistorique.flatMap(h => h.exercices.filter(x => x.series.some(s => s.fait)).map(x => x.exerciceId)))]
-    .filter(id => STANDARD_PAR_EXERCICE[id]);
-  const pc = dernierPoidsConnu(todayStr());
-  let html = `<div class="titre-section">Niveau de force</div>
-    <p class="note" style="margin:0 0 12px;">Ton meilleur 1RM estimé (formule d'Epley) rapporté à ton poids de corps (${pc} kg, ${userProfile.gender === 'f' ? 'repères femmes' : 'repères hommes'}), comparé à des standards de force publiés. Pour les haltères, le poids compté est celui d'un seul haltère.</p>`;
-  if (!ids.length) {
-    c.innerHTML = html + '<p class="note">Aucun grand mouvement noté pour l\'instant (développé couché, squat, soulevé de terre, rowing, développé militaire, curl…). Fais-en au moins une série pour te situer.</p>';
-    return;
-  }
-  const niveaux = ids.map(id => ({ id, exo: trouverExercice(id), n: niveauForceExercice(id) }))
-    .filter(o => o.exo && o.n && o.n.best)
-    .sort((a, b) => b.n.position - a.n.position);
-  html += niveaux.map(o => `<div class="force-carte">
-      <div class="force-carte-titre" onclick="afficherFicheExerciceBiblio('${o.id}')">${escapeHtml(libelleExercice(o.exo))}</div>
-      ${jaugeForceHTML(o.n)}
-    </div>`).join('');
-  c.innerHTML = html;
 }
 
 /* Chaque fonction ci-dessous prend en paramètre l'historique à utiliser et
@@ -13183,8 +12306,7 @@ function renderListeExercicesDetail(liste) {
       const label = exoRef ? libelleExercice(exoRef) : e.nom;
       const series = e.series.map((s, si) => `<div style="display:flex; align-items:center; gap:8px; justify-content:space-between; font-size:0.82rem; padding:4px 0; border-bottom:1px solid var(--verre-brd);">
         <span style="display:flex; align-items:center; gap:8px;">${boutonNumeroSerie(si, s.technique)}</span><span>${s.poids ?? '—'} kg × ${s.reps ?? '—'}${s.fait ? ' <svg class="icone-ui" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10" /><path d="m16 9-5.5 5.5L8 12" /></svg>' : ''}</span></div>`).join('');
-      const note = e.notes ? `<p class="note" style="margin:6px 0 0; font-style:italic;">Note : ${escapeHtml(e.notes)}</p>` : '';
-      return `<div style="margin-bottom:14px;"><div style="font-weight:700; font-size:0.88rem; margin-bottom:6px;">${escapeHtml(label)}</div>${series}${note}</div>`;
+      return `<div style="margin-bottom:14px;"><div style="font-weight:700; font-size:0.88rem; margin-bottom:6px;">${escapeHtml(label)}</div>${series}</div>`;
     }).join('');
     return indices.length > 1
       ? `<div class="session-superset-bloc"><div class="session-superset-titre"><svg class="icone-ui" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" /><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" /></svg> Superset</div>${contenu}</div>`
@@ -13740,8 +12862,6 @@ function initFiltresPickerSiBesoin() {
 }
 function ouvrirPickerExercices(mode) {
   pickerMode = mode;
-  pickerOnglet = 'tous';
-  majSegment('picker-onglets', ['tous', 'pratiques', 'niveau'], 'tous');
   initFiltresPickerSiBesoin();
   document.getElementById('picker-recherche').value = '';
   document.getElementById('titre-picker-exercices').innerHTML =
@@ -13752,54 +12872,28 @@ function ouvrirPickerExercices(mode) {
   ouvrirModal('picker-exercices-modal');
 }
 function ouvrirBibliotheque() { ouvrirPickerExercices('bibliotheque'); }
-/* Onglets de la bibliothèque : tout le catalogue, seulement les exercices
-   déjà pratiqués, ou seulement ceux qui ont une jauge de niveau de force
-   (classés du plus fort au plus faible niveau atteint). */
-let pickerOnglet = 'tous';
-function choisirOngletPicker(nom) {
-  pickerOnglet = nom;
-  majSegment('picker-onglets', ['tous', 'pratiques', 'niveau'], nom);
-  rendrePickerExercices();
-}
 function rendrePickerExercices() {
   const q = normaliserRecherche(document.getElementById('picker-recherche').value || '');
   const groupeActif = document.getElementById('picker-filtre-groupe').value;
   const materielActif = document.getElementById('picker-filtre-materiel').value;
-  const pratiques = pickerOnglet === 'tous' ? null : new Set(musculationHistorique.flatMap(h => h.exercices.filter(x => x.series.some(s => s.fait)).map(x => x.exerciceId)));
-  let liste = toutesLesExercices().filter(e => {
-    if (pratiques && !pratiques.has(e.id)) return false;
-    if (pickerOnglet === 'niveau' && !STANDARD_PAR_EXERCICE[e.id]) return false;
+  const liste = toutesLesExercices().filter(e => {
     if (groupeActif && e.groupe !== groupeActif) return false;
     if (materielActif && e.materiel !== materielActif) return false;
     if (q && !normaliserRecherche(e.nom).includes(q) && !(e.nomEn && normaliserRecherche(e.nomEn).includes(q))) return false;
     return true;
   });
-  const niveaux = {};
-  if (pickerOnglet === 'niveau') {
-    liste.forEach(e => { niveaux[e.id] = niveauForceExercice(e.id); });
-    liste = liste.slice().sort((a, b) => ((niveaux[b.id] && niveaux[b.id].position) || -1) - ((niveaux[a.id] && niveaux[a.id].position) || -1));
-  }
   document.getElementById('picker-resultats-compte').textContent = liste.length + ' exercice(s)';
   const c = document.getElementById('picker-liste-exercices');
-  if (!liste.length) {
-    c.innerHTML = `<div class="vide">${pickerOnglet === 'tous' ? 'Aucun exercice ne correspond à ces filtres.' : 'Aucun exercice pratiqué ne correspond à ces filtres.'}</div>`;
-    return;
-  }
+  if (!liste.length) { c.innerHTML = '<div class="vide">Aucun exercice ne correspond à ces filtres.</div>'; return; }
   c.innerHTML = liste.map(e => {
     const derniere = dernierePerfExercice(e.id);
-    const m = musclesExerciceTexte(e);
-    const sousTitre = MATERIELS[e.materiel].label + (derniere ? ' · dernière fois ' + formatDateDisplay(derniere.date) : '');
-    const n = niveaux[e.id];
-    const jauge = n && n.best
-      ? `<span class="mini-jauge"><span style="width:${n.position.toFixed(0)}%; background:${COULEURS_NIVEAUX[Math.max(0, n.indexNiveau)]};"></span></span><span class="exo-ligne-meta">${n.niveau} · plus fort que ~${n.centile} %</span>`
-      : (n ? '<span class="exo-ligne-meta">Pas encore pratiqué : ouvre la fiche pour voir les repères</span>' : '');
+    const sousTitre = GROUPES_MUSCULAIRES[e.groupe] + ' · ' + MATERIELS[e.materiel].label +
+      (derniere ? ' · dernière fois ' + formatDateDisplay(derniere.date) : '');
     return `<button type="button" class="exo-ligne" onclick="choisirExercicePicker('${e.id}')">
       <span class="exo-ligne-vignette" aria-hidden="true">${medaillonExercice(e)}</span>
       <span style="flex:1; min-width:0;">
-        <span class="exo-ligne-nom">${escapeHtml(libelleExercice(e))}${pickerOnglet !== 'niveau' ? badgeNiveauHTML(e.id) : ''}</span>
-        <span class="exo-ligne-meta"><b style="color:var(--primary);">${escapeHtml(m.principal)}</b>${m.secondaires.length ? ' · ' + escapeHtml(m.secondaires.join(', ')) : ''}</span>
+        <span class="exo-ligne-nom">${escapeHtml(libelleExercice(e))}</span>
         <span class="exo-ligne-meta">${MATERIELS[e.materiel].ic} ${escapeHtml(sousTitre)}</span>
-        ${jauge}
       </span>
     </button>`;
   }).join('');
@@ -13834,12 +12928,7 @@ function afficherFicheExerciceBiblio(id) {
   const secondaires = (e.secondaires && e.secondaires.length) ? e.secondaires.map(g => GROUPES_MUSCULAIRES[g]).join(', ') : null;
   const media = mediaExercice(e);
 
-  let html = `<div class="segment" id="fiche-onglets" role="group" aria-label="Sections de la fiche" style="margin-bottom:12px;">
-    <button type="button" onclick="choisirOngletFiche('infos')" aria-pressed="true">Infos</button>
-    <button type="button" onclick="choisirOngletFiche('historique')" aria-pressed="false">Historique</button>
-    <button type="button" onclick="choisirOngletFiche('niveau')" aria-pressed="false">Niveau de force</button>
-  </div>
-  <div class="fiche-onglet" data-onglet="infos">`;
+  let html = '';
   if (media && media.img && media.img.length) {
     // Deux photos (départ/arrivée) qui alternent, comme Strong et la
     // plupart des applis du genre — ce n'est déjà pas un vrai GIF chez
@@ -13886,36 +12975,16 @@ function afficherFicheExerciceBiblio(id) {
     <ol class="fiche-exo-instructions">${media.ins.map(s => `<li>${escapeHtml(s)}</li>`).join('')}</ol>`;
   }
 
-  html += `</div><div class="fiche-onglet hidden" data-onglet="historique">`;
   if (derniere) {
     html += `<p class="note" style="margin:0 0 6px;">Dernière fois — ${formatDateDisplay(derniere.date)} :</p>`;
     html += derniere.series.map((s, i) => `<div style="display:flex; justify-content:space-between; font-size:0.82rem; padding:4px 0; border-bottom:1px solid var(--verre-brd);">
       <span>Série ${i + 1}</span><span>${s.poids ?? '—'} kg × ${s.reps ?? '—'}</span></div>`).join('');
-    const seances = musculationHistorique.map(h => ({ h, x: h.exercices.find(x => x.exerciceId === id) }))
-      .filter(o => o.x && o.x.series.some(s => s.fait));
-    if (seances.length > 1) {
-      html += `<p class="note" style="margin:14px 0 6px; font-weight:700; text-transform:uppercase; font-size:0.72rem; letter-spacing:0.8px;">Toutes les séances (${seances.length})</p>`;
-      html += seances.slice(0, 30).map(o => {
-        const faites = o.x.series.filter(s => s.fait);
-        const top = faites.reduce((b, s) => (unRmEstime(Number(s.poids), Number(s.reps)) > unRmEstime(Number(b.poids), Number(b.reps)) ? s : b), faites[0]);
-        return `<div style="display:flex; justify-content:space-between; gap:8px; font-size:0.8rem; padding:4px 0; border-bottom:1px solid var(--verre-brd);">
-          <span>${formatDateDisplay(o.h.date)}</span><span class="note" style="margin:0;">${faites.length} série${faites.length > 1 ? 's' : ''} · meilleure ${top.poids ?? '—'} kg × ${top.reps ?? '—'}</span></div>`;
-      }).join('');
-    }
   } else {
     html += '<p class="note">Pas encore pratiqué.</p>';
   }
-  html += `</div><div class="fiche-onglet hidden" data-onglet="niveau">
-    <p class="note" style="margin:0 0 4px;">Où tu te situes par rapport à la plupart des pratiquants, d'après ton meilleur 1RM estimé sur cet exercice et ton poids de corps.</p>
-    ${jaugeForceHTML(niveauForceExercice(id))}
-  </div>`;
   document.getElementById('fiche-exercice-container').innerHTML = html;
   ouvrirModal('fiche-exercice-modal');
   if (media && media.img && media.img.length > 1) demarrerAnimationFiche();
-}
-function choisirOngletFiche(nom) {
-  document.querySelectorAll('#fiche-exercice-container .fiche-onglet').forEach(o => o.classList.toggle('hidden', o.dataset.onglet !== nom));
-  majSegment('fiche-onglets', ['infos', 'historique', 'niveau'], nom);
 }
 let exercicePersoEnEdition = null;
 function remplirSelectsExercice(idGroupe, idMateriel) {
@@ -14028,318 +13097,6 @@ function apercuProgramme(programmeId) {
 }
 
 /* =====================================================================
-   ZONES DE VOLUME HEBDOMADAIRE (MV / MEV / MAV / MRV)
-   Chaque série faite dans la semaine (du lundi au dimanche) compte 1 pour
-   le groupe principal de l'exercice et 0,5 pour chacun de ses groupes
-   secondaires. Le total est situé dans l'une des 4 zones d'entraînement
-   décrites par la recherche sur le volume (repères de Renaissance
-   Periodization, Israetel et al.) : des repères moyens, identiques pour
-   tous les niveaux — ce qui change avec l'expérience, c'est la vitesse de
-   progression et les muscles qu'on choisit de prioriser.
-   ===================================================================== */
-const ZONES_VOLUME = {
-  pectoraux: { mv: 4, mev: 8, mav: 12, mrv: 22 },
-  dos: { mv: 6, mev: 10, mav: 14, mrv: 25 },
-  epaules: { mv: 6, mev: 8, mav: 16, mrv: 26 },
-  biceps: { mv: 4, mev: 8, mav: 14, mrv: 26 },
-  triceps: { mv: 4, mev: 6, mav: 10, mrv: 18 },
-  quadriceps: { mv: 6, mev: 8, mav: 12, mrv: 20 },
-  ischios: { mv: 3, mev: 6, mav: 10, mrv: 20 },
-  fessiers: { mv: 2, mev: 4, mav: 8, mrv: 16 },
-  adducteurs: { mv: 2, mev: 4, mav: 8, mrv: 16 },
-  mollets: { mv: 6, mev: 8, mav: 12, mrv: 20 },
-  abdos: { mv: 2, mev: 6, mav: 16, mrv: 25 },
-  lombaires: { mv: 2, mev: 4, mav: 8, mrv: 12 },
-  avant_bras: { mv: 2, mev: 4, mav: 10, mrv: 20 },
-  trapezes: { mv: 2, mev: 4, mav: 12, mrv: 26 }
-};
-const ZONES_INFO = {
-  sous: { abbr: 'Bas', nom: 'Sous le minimum', desc: "Pas assez pour entretenir le muscle", couleur: '#4f7cff' },
-  mv: { abbr: 'MV', nom: 'Zone de maintenance', desc: 'Suffit souvent à conserver ta masse musculaire', couleur: '#34c759' },
-  mev: { abbr: 'MEV', nom: 'Zone de croissance', desc: 'La croissance commence ici, avec le plus de gain par série', couleur: '#ffd60a' },
-  mav: { abbr: 'MAV', nom: 'Volume élevé', desc: 'Plus de croissance par semaine, moins de gain par série supplémentaire', couleur: '#ff9f0a' },
-  mrv: { abbr: 'MRV', nom: 'Volume très élevé', desc: 'La croissance reste possible, mais les séries en plus apportent peu', couleur: '#ff453a' }
-};
-const ORDRE_ZONES = ['mv', 'mev', 'mav', 'mrv'];
-
-function cleZoneVolume(groupe, series) {
-  const z = ZONES_VOLUME[groupe];
-  if (!z) return null;
-  if (series >= z.mrv) return 'mrv';
-  if (series >= z.mav) return 'mav';
-  if (series >= z.mev) return 'mev';
-  if (series >= z.mv) return 'mv';
-  return 'sous';
-}
-function arrondiSeries(n) { return Math.round(n * 2) / 2; }
-function formatSeries(n) { return String(arrondiSeries(n)).replace('.', ','); }
-
-/* Séries faites par groupe pour une liste d'exercices (séance en cours ou
-   entrée d'historique) : 1 pour le principal, 0,5 par secondaire. */
-function ajouterSeriesParGroupe(acc, exercices) {
-  (exercices || []).forEach(e => {
-    const exo = trouverExercice(e.exerciceId);
-    if (!exo) return;
-    const n = (e.series || []).filter(s => s.fait).length;
-    if (!n) return;
-    if (ZONES_VOLUME[exo.groupe]) acc[exo.groupe] = (acc[exo.groupe] || 0) + n;
-    (exo.secondaires || []).forEach(g => {
-      if (g !== exo.groupe && ZONES_VOLUME[g]) acc[g] = (acc[g] || 0) + n * 0.5;
-    });
-  });
-  return acc;
-}
-function dateLocale(iso) { const [a, m, j] = iso.split('-').map(Number); return new Date(a, m - 1, j); }
-function isoLocale(d) { return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); }
-function lundiDeLaSemaine(iso) {
-  const d = dateLocale(iso);
-  d.setDate(d.getDate() - ((d.getDay() + 6) % 7));
-  return isoLocale(d);
-}
-function decalerJours(iso, n) { const d = dateLocale(iso); d.setDate(d.getDate() + n); return isoLocale(d); }
-function seriesSemaine(lundi, inclureSessionActive, historique) {
-  const dimanche = decalerJours(lundi, 6);
-  const acc = {};
-  (historique || musculationHistorique).forEach(h => { if (h.date >= lundi && h.date <= dimanche) ajouterSeriesParGroupe(acc, h.exercices); });
-  if (inclureSessionActive && musculationSessionActive) ajouterSeriesParGroupe(acc, musculationSessionActive.exercices);
-  return acc;
-}
-
-/* Barre segmentée façon "jauge" : un segment par série jusqu'un peu au-delà
-   du MRV, chaque segment prenant la couleur de la zone qu'il représente ;
-   seuls les segments déjà atteints sont allumés. */
-function barreZoneHTML(groupe, series) {
-  const z = ZONES_VOLUME[groupe];
-  const total = z.mrv + 2;
-  let segs = '';
-  for (let i = 1; i <= total; i++) {
-    const cle = cleZoneVolume(groupe, i) || 'sous';
-    const allume = series + 1e-9 >= i;
-    segs += `<span style="background:${ZONES_INFO[cle].couleur};${allume ? '' : 'opacity:0.16;'}"></span>`;
-  }
-  return `<div class="zone-barre" aria-hidden="true">${segs}</div>`;
-}
-function phraseProchaineZone(groupe, series) {
-  const z = ZONES_VOLUME[groupe];
-  if (series < z.mev) {
-    const manque = Math.ceil(z.mev - series);
-    return manque + ' série' + (manque > 1 ? 's' : '') + ' pour atteindre la zone de croissance';
-  }
-  if (series < z.mav) return 'Zone de croissance atteinte — le meilleur gain par série';
-  if (series < z.mrv) return 'Volume élevé : encore ' + Math.ceil(z.mrv - series) + ' série(s) avant le volume très élevé';
-  return 'Au-delà du volume récupérable : surveille la fatigue';
-}
-function ligneZoneHTML(groupe, series, compacte) {
-  const cle = cleZoneVolume(groupe, series);
-  const info = ZONES_INFO[cle];
-  return `<div class="zone-ligne${compacte ? ' zone-ligne--compacte' : ''}">
-    <div class="zone-ligne-tete"><span>${escapeHtml(GROUPES_MUSCULAIRES[groupe])}</span>
-      <span style="color:${info.couleur};">${info.nom} · ${formatSeries(series)} série${series >= 2 ? 's' : ''}</span></div>
-    ${barreZoneHTML(groupe, series)}
-    <div class="zone-ligne-note">${escapeHtml(phraseProchaineZone(groupe, series))}</div>
-  </div>`;
-}
-function legendeZonesHTML() {
-  return `<div class="zones-legende">${ORDRE_ZONES.map(k => {
-    const i = ZONES_INFO[k];
-    return `<div class="zones-legende-item" style="border-left-color:${i.couleur};">
-      <div><b style="color:${i.couleur};">(${i.abbr})</b> ${i.nom}</div><small>${i.desc}</small></div>`;
-  }).join('')}</div>`;
-}
-
-/* =====================================================================
-   CARTE DU CORPS — face + dos, chaque groupe musculaire coloriable.
-   `couleurs` : { groupe: couleur CSS } ; un groupe absent reste neutre.
-   ===================================================================== */
-function figureCorpsSVG(cx, vue, c, base) {
-  const r = n => Math.round(n * 10) / 10;
-  const el = (x, y, rx, ry, rot, fill) => `<ellipse cx="${r(x)}" cy="${y}" rx="${rx}" ry="${ry}"${rot ? ` transform="rotate(${rot} ${r(x)} ${y})"` : ''} fill="${fill}"/>`;
-  const paire = (dx, y, rx, ry, rot, fill) => el(cx - dx, y, rx, ry, rot, fill) + el(cx + dx, y, rx, ry, -rot, fill);
-  const trait = (dx1, y1, dx2, y2, w) => [-1, 1].map(s => `<line x1="${cx + s * dx1}" y1="${y1}" x2="${cx + s * dx2}" y2="${y2}" stroke="${base}" stroke-width="${w}" stroke-linecap="round"/>`).join('');
-  const miroir = (f, fill) => [-1, 1].map(s => `<path d="${f(s)}" fill="${fill}"/>`).join('');
-  let h = `<circle cx="${cx}" cy="14" r="10" fill="${base}"/><rect x="${cx - 4}" y="21" width="8" height="9" fill="${base}"/>`;
-  h += `<path d="M${cx - 21},31 Q${cx},26 ${cx + 21},31 L${cx + 17},78 L${cx + 19},98 L${cx - 19},98 L${cx - 17},78 Z" fill="${base}"/>`;
-  h += trait(23, 35, 28, 70, 10) + trait(28, 72, 32, 104, 8) + trait(10, 98, 11, 146, 17) + trait(11, 148, 11, 192, 11);
-  h += `<circle cx="${cx - 33}" cy="110" r="4" fill="${base}"/><circle cx="${cx + 33}" cy="110" r="4" fill="${base}"/>`;
-  if (vue === 'face') {
-    h += miroir(s => `M${cx + s * 4},24 L${cx + s * 15},31 L${cx + s * 4},31 Z`, c('trapezes'));
-    h += miroir(s => `M${cx + s * 1},36 Q${cx + s * 15},31 ${cx + s * 19},40 Q${cx + s * 17},54 ${cx + s * 1},52 Z`, c('pectoraux'));
-    h += paire(22, 36, 6.5, 7.5, 0, c('epaules'));
-    h += paire(26, 56, 4.5, 11, 10, c('biceps'));
-    h += paire(30, 88, 4, 13, 7, c('avant_bras'));
-    h += `<rect x="${cx - 8}" y="55" width="16" height="27" rx="5" fill="${c('abdos')}"/>`;
-    h += paire(4.5, 113, 3, 11, 0, c('adducteurs'));
-    h += paire(12, 122, 6.5, 21, 3, c('quadriceps'));
-    h += paire(11, 168, 4.5, 14, 0, c('mollets'));
-  } else {
-    h += `<path d="M${cx},22 L${cx - 15},31 L${cx},58 L${cx + 15},31 Z" fill="${c('trapezes')}"/>`;
-    h += paire(22, 36, 6.5, 7.5, 0, c('epaules'));
-    h += miroir(s => `M${cx + s * 3},42 Q${cx + s * 19},36 ${cx + s * 19},47 Q${cx + s * 16},66 ${cx + s * 4},74 Z`, c('dos'));
-    h += paire(26, 56, 4.5, 11, 10, c('triceps'));
-    h += paire(30, 88, 4, 13, 7, c('avant_bras'));
-    h += `<rect x="${cx - 7}" y="66" width="14" height="13" rx="4" fill="${c('lombaires')}"/>`;
-    h += paire(9, 92, 9, 9, 0, c('fessiers'));
-    h += paire(11.5, 124, 6.5, 18, 2, c('ischios'));
-    h += paire(11, 166, 6, 14, 0, c('mollets'));
-  }
-  h += `<text x="${cx}" y="206" text-anchor="middle" font-size="9" fill="var(--text-muted)" font-weight="700">${vue === 'face' ? 'FACE' : 'DOS'}</text>`;
-  return h;
-}
-function corpsSVG(couleurs, libelle) {
-  const neutre = 'color-mix(in srgb, var(--text) 16%, transparent)';
-  const base = 'color-mix(in srgb, var(--text) 7%, transparent)';
-  const c = g => (couleurs && couleurs[g]) || neutre;
-  return `<svg class="corps-svg" viewBox="0 0 240 210" role="img" aria-label="${escapeHtml(libelle || 'Répartition musculaire')}">${figureCorpsSVG(60, 'face', c, base)}${figureCorpsSVG(180, 'dos', c, base)}</svg>`;
-}
-/* Couleurs "zones" : chaque groupe prend la couleur de sa zone de la
-   semaine (rien si aucune série). */
-function couleursZones(seriesParGroupe) {
-  const out = {};
-  Object.keys(seriesParGroupe).forEach(g => {
-    const cle = cleZoneVolume(g, seriesParGroupe[g]);
-    if (cle && seriesParGroupe[g] > 0) out[g] = ZONES_INFO[cle].couleur;
-  });
-  return out;
-}
-/* Couleurs "séance" : intensité de la couleur principale selon le nombre
-   de séries faites pendant la séance en cours. */
-function couleursSeance(seriesParGroupe) {
-  const out = {};
-  Object.keys(seriesParGroupe).forEach(g => {
-    const n = seriesParGroupe[g];
-    if (n > 0) out[g] = `color-mix(in srgb, var(--primary) ${Math.round(35 + 65 * Math.min(1, n / 6))}%, transparent)`;
-  });
-  return out;
-}
-
-/* =====================================================================
-   NIVEAU DE FORCE — 1RM estimé (Epley) rapporté au poids de corps, comparé
-   à des standards de force publiés (StrengthLevel / ExRx, arrondis) :
-   seuils Débutant / Novice / Intermédiaire / Avancé / Élite, soit environ
-   les 5e, 20e, 50e, 80e et 95e centiles des pratiquants. Pour les
-   exercices aux haltères, le poids saisi est celui d'UN haltère. Seuls les
-   exercices pour lesquels il existe un standard fiable sont notés.
-   ===================================================================== */
-const STANDARDS_FORCE = {
-  developpe_couche: { h: [0.5, 0.75, 1.0, 1.5, 2.0], f: [0.25, 0.5, 0.75, 1.0, 1.5] },
-  developpe_incline: { h: [0.4, 0.65, 0.9, 1.3, 1.7], f: [0.2, 0.4, 0.6, 0.85, 1.25] },
-  developpe_halteres: { h: [0.2, 0.35, 0.5, 0.75, 1.0], f: [0.1, 0.2, 0.3, 0.45, 0.6] },
-  presse_pecs_machine: { h: [0.5, 0.75, 1.1, 1.5, 2.0], f: [0.25, 0.4, 0.65, 0.95, 1.3] },
-  squat: { h: [0.75, 1.25, 1.5, 2.25, 2.75], f: [0.5, 0.75, 1.25, 1.5, 2.0] },
-  front_squat: { h: [0.6, 1.0, 1.25, 1.75, 2.25], f: [0.4, 0.6, 1.0, 1.25, 1.6] },
-  souleve_terre: { h: [1.0, 1.5, 2.0, 2.5, 3.0], f: [0.5, 1.0, 1.25, 1.75, 2.5] },
-  souleve_roumain: { h: [0.75, 1.0, 1.5, 2.0, 2.5], f: [0.4, 0.75, 1.0, 1.5, 2.0] },
-  developpe_militaire: { h: [0.35, 0.55, 0.8, 1.05, 1.35], f: [0.2, 0.35, 0.5, 0.75, 1.0] },
-  developpe_epaules_halteres: { h: [0.1, 0.2, 0.35, 0.5, 0.7], f: [0.05, 0.1, 0.2, 0.3, 0.45] },
-  developpe_epaules_machine: { h: [0.35, 0.55, 0.8, 1.1, 1.45], f: [0.2, 0.3, 0.5, 0.7, 1.0] },
-  elevations_laterales: { h: [0.05, 0.1, 0.2, 0.3, 0.4], f: [0.025, 0.05, 0.1, 0.17, 0.25] },
-  rowing_barre: { h: [0.5, 0.75, 1.0, 1.5, 1.75], f: [0.25, 0.4, 0.65, 0.9, 1.2] },
-  rowing_haltere: { h: [0.2, 0.35, 0.55, 0.8, 1.05], f: [0.1, 0.2, 0.3, 0.45, 0.65] },
-  tirage_vertical: { h: [0.5, 0.75, 1.0, 1.25, 1.75], f: [0.3, 0.45, 0.65, 0.9, 1.2] },
-  tirage_horizontal: { h: [0.5, 0.75, 1.0, 1.4, 1.75], f: [0.3, 0.45, 0.65, 0.9, 1.2] },
-  curl_barre: { h: [0.2, 0.4, 0.6, 0.85, 1.15], f: [0.1, 0.2, 0.4, 0.6, 0.85] },
-  curl_halteres: { h: [0.1, 0.15, 0.25, 0.4, 0.55], f: [0.05, 0.1, 0.15, 0.25, 0.35] },
-  extension_triceps_poulie: { h: [0.25, 0.4, 0.6, 0.85, 1.1], f: [0.1, 0.2, 0.35, 0.5, 0.7] },
-  barre_au_front: { h: [0.15, 0.3, 0.5, 0.75, 1.0], f: [0.1, 0.2, 0.3, 0.45, 0.6] },
-  presse_cuisses: { h: [1.0, 2.0, 3.0, 4.25, 5.5], f: [0.5, 1.0, 2.0, 3.0, 4.25] },
-  hip_thrust: { h: [0.5, 1.0, 1.5, 2.25, 3.0], f: [0.5, 1.0, 1.5, 2.25, 3.0] },
-  leg_extension: { h: [0.5, 0.75, 1.15, 1.6, 2.1], f: [0.3, 0.5, 0.8, 1.15, 1.55] },
-  leg_curl: { h: [0.4, 0.6, 0.9, 1.25, 1.65], f: [0.25, 0.4, 0.6, 0.85, 1.15] }
-};
-const STANDARD_PAR_EXERCICE = {
-  e1: 'developpe_couche', e147: 'developpe_couche', e141: 'developpe_couche', e17: 'developpe_couche',
-  e2: 'developpe_incline', e142: 'developpe_incline',
-  e4: 'developpe_halteres', e5: 'developpe_halteres', e6: 'developpe_halteres',
-  e10: 'presse_pecs_machine',
-  e79: 'squat', e181: 'squat', e186: 'squat', e179: 'squat', e254: 'squat', e265: 'squat',
-  e80: 'front_squat',
-  e29: 'souleve_terre', e156: 'souleve_terre', e31: 'souleve_terre',
-  e30: 'souleve_roumain', e95: 'souleve_roumain',
-  e39: 'developpe_militaire', e161: 'developpe_militaire', e261: 'developpe_militaire',
-  e40: 'developpe_epaules_halteres', e41: 'developpe_epaules_halteres',
-  e47: 'developpe_epaules_machine', e50: 'developpe_epaules_machine',
-  e42: 'elevations_laterales',
-  e24: 'rowing_barre', e149: 'rowing_barre', e32: 'rowing_barre', e37: 'rowing_barre', e26: 'rowing_barre',
-  e25: 'rowing_haltere',
-  e22: 'tirage_vertical', e23: 'tirage_vertical', e1266: 'tirage_vertical',
-  e27: 'tirage_horizontal', e28: 'tirage_horizontal', e151: 'tirage_horizontal', e159: 'tirage_horizontal',
-  e55: 'curl_barre', e56: 'curl_barre', e61: 'curl_barre',
-  e57: 'curl_halteres', e58: 'curl_halteres', e59: 'curl_halteres', e60: 'curl_halteres', e62: 'curl_halteres', e245: 'curl_halteres',
-  e68: 'extension_triceps_poulie', e69: 'extension_triceps_poulie',
-  e70: 'barre_au_front',
-  e82: 'presse_cuisses', e241: 'presse_cuisses',
-  e99: 'hip_thrust',
-  e87: 'leg_extension',
-  e93: 'leg_curl', e94: 'leg_curl'
-};
-const NIVEAUX_FORCE = ['Débutant', 'Novice', 'Intermédiaire', 'Avancé', 'Élite'];
-const CENTILES_FORCE = [5, 20, 50, 80, 95];
-
-function unRmEstime(poids, reps) {
-  if (!(poids > 0) || !(reps > 0)) return 0;
-  return reps === 1 ? poids : poids * (1 + Math.min(reps, 15) / 30);
-}
-function meilleur1RM(exerciceId, historique) {
-  let best = null;
-  (historique || musculationHistorique).forEach(h => (h.exercices || []).forEach(e => {
-    if (e.exerciceId !== exerciceId) return;
-    (e.series || []).forEach(s => {
-      if (!s.fait) return;
-      const v = unRmEstime(Number(s.poids), Number(s.reps));
-      if (v > 0 && (!best || v > best.valeur)) best = { valeur: v, poids: s.poids, reps: s.reps, date: h.date };
-    });
-  }));
-  return best;
-}
-function interpolerPalier(x, xs, ys) {
-  if (x <= xs[0]) return ys[0];
-  for (let i = 1; i < xs.length; i++) {
-    if (x <= xs[i]) return ys[i - 1] + (ys[i] - ys[i - 1]) * (x - xs[i - 1]) / (xs[i] - xs[i - 1]);
-  }
-  return ys[ys.length - 1];
-}
-function niveauForceExercice(exerciceId, historique, poidsCorps, genre) {
-  const cle = STANDARD_PAR_EXERCICE[exerciceId];
-  if (!cle) return null;
-  const pc = poidsCorps || dernierPoidsConnu(todayStr());
-  const seuils = STANDARDS_FORCE[cle][(genre || userProfile.gender) === 'f' ? 'f' : 'h'];
-  const best = meilleur1RM(exerciceId, historique);
-  const res = { seuilsKg: seuils.map(r => Math.round(r * pc * 2) / 2), poidsCorps: pc, best };
-  if (!best) return res;
-  const ratio = best.valeur / pc;
-  const xs = [0].concat(seuils, [seuils[4] * 1.25]);
-  res.ratio = ratio;
-  res.position = interpolerPalier(ratio, xs, [0, 10, 30, 50, 70, 90, 100]);
-  res.centile = Math.round(interpolerPalier(ratio, xs, [0].concat(CENTILES_FORCE, [99])));
-  let idx = -1;
-  seuils.forEach((t, i) => { if (ratio >= t) idx = i; });
-  res.indexNiveau = idx;
-  res.niveau = idx < 0 ? 'Pas encore débutant' : NIVEAUX_FORCE[idx];
-  return res;
-}
-const COULEURS_NIVEAUX = ['#8e8e93', '#4f7cff', '#34c759', '#ff9f0a', '#bf5af2'];
-function jaugeForceHTML(n) {
-  if (!n) return '<p class="note">Pas de standard de force fiable pour cet exercice : la jauge existe pour les grands mouvements (développé couché, squat, soulevé de terre, rowing, développé militaire, curl…).</p>';
-  const segs = COULEURS_NIVEAUX.map(c => `<span style="background:${c};"></span>`).join('');
-  const marqueur = n.best ? `<i class="jauge-force-marqueur" style="left:${n.position.toFixed(1)}%;"></i>` : '';
-  const legende = NIVEAUX_FORCE.map((nom, i) => `<div><b>${nom}</b><small>${n.seuilsKg[i]} kg</small></div>`).join('');
-  const texte = n.best
-    ? `<p class="jauge-force-texte"><b>${n.niveau}</b> · plus fort que ~${n.centile} % des pratiquants</p>
-       <p class="note" style="margin:0;">1RM estimé ${Math.round(n.best.valeur)} kg (${n.best.poids} kg × ${n.best.reps} le ${formatDateDisplay(n.best.date)}) · ${n.ratio.toFixed(2).replace('.', ',')} × ton poids de corps (${n.poidsCorps} kg)</p>`
-    : `<p class="note" style="margin:0;">Fais au moins une série de cet exercice pour te situer. Repères pour ton poids (${n.poidsCorps} kg), en charge maximale sur 1 répétition :</p>`;
-  return `<div class="jauge-force"><div class="jauge-force-barre">${segs}${marqueur}</div><div class="jauge-force-legende">${legende}</div>${texte}</div>`;
-}
-function badgeNiveauHTML(exerciceId) {
-  const n = niveauForceExercice(exerciceId);
-  if (!n || !n.best || n.indexNiveau < 0) return '';
-  return `<span class="badge-niveau" style="--c:${COULEURS_NIVEAUX[n.indexNiveau]};">${n.niveau}</span>`;
-}
-function musclesExerciceTexte(exo) {
-  const sec = (exo.secondaires || []).filter(g => g !== exo.groupe).map(g => GROUPES_MUSCULAIRES[g]).filter(Boolean);
-  return { principal: GROUPES_MUSCULAIRES[exo.groupe] || '', secondaires: sec };
-}
-
-/* =====================================================================
    Séance en cours
    ===================================================================== */
 function demarrerSeance(programmeId) {
@@ -14430,8 +13187,6 @@ function renderSessionModal() {
   const s = musculationSessionActive;
   if (!s) return;
   document.getElementById('titre-session-modal').innerHTML = '<svg class="icone-ui" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17.596 12.768a2 2 0 1 0 2.829-2.829l-1.768-1.767a2 2 0 0 0 2.828-2.829l-2.828-2.828a2 2 0 0 0-2.829 2.828l-1.767-1.768a2 2 0 1 0-2.829 2.829z" /><path d="m2.5 21.5 1.4-1.4" /><path d="m20.1 3.9 1.4-1.4" /><path d="M5.343 21.485a2 2 0 1 0 2.829-2.828l1.767 1.768a2 2 0 1 0 2.829-2.829l-6.364-6.364a2 2 0 1 0-2.829 2.829l1.768 1.767a2 2 0 0 0-2.828 2.829z" /><path d="m9.6 14.4 4.8-4.8" /></svg> ' + (s.programmeNom ? escapeHtml(s.programmeNom) : 'Séance libre');
-  zonesSemaineSession = seriesSemaine(lundiDeLaSemaine(todayStr()), true);
-  renderCorpsSession();
   const c = document.getElementById('session-exercices-container');
   if (!s.exercices.length) {
     c.innerHTML = '<div class="vide">Ajoute un premier exercice pour commencer.</div>';
@@ -14446,61 +13201,9 @@ function renderSessionModal() {
   document.getElementById('session-notes').value = s.notes || '';
   initSwipeSeries('session-exercices-container');
 }
-/* Carte du corps de la séance en cours : chaque série cochée colore le
-   muscle travaillé (plein pour le groupe principal, à moitié pour les
-   secondaires), de plus en plus intensément au fil des séries. */
-let zonesSemaineSession = {};
-function renderCorpsSession() {
-  const cible = document.getElementById('session-corps');
-  if (!cible || !musculationSessionActive) return;
-  const seance = ajouterSeriesParGroupe({}, musculationSessionActive.exercices);
-  const groupes = Object.keys(seance).sort((a, b) => seance[b] - seance[a]);
-  cible.innerHTML = corpsSVG(couleursSeance(seance), 'Muscles travaillés pendant cette séance') +
-    (groupes.length
-      ? `<div class="corps-puces">${groupes.map(g => `<span>${escapeHtml(GROUPES_MUSCULAIRES[g])} <b>${formatSeries(seance[g])}</b></span>`).join('')}</div>`
-      : '<p class="note" style="margin:6px 0 0; text-align:center;">Coche une série : le muscle travaillé se colore.</p>');
-}
-function basculerNoteExerciceSession(ei) {
-  const e = musculationSessionActive && musculationSessionActive.exercices[ei];
-  if (!e) return;
-  e.noteOuverte = !e.noteOuverte;
-  sauvegarderSessionActive();
-  renderSessionModal();
-  if (e.noteOuverte) { const z = document.getElementById('note-exo-' + ei); if (z) z.focus(); }
-}
-function modifierNoteExerciceSession(ei, v) {
-  const e = musculationSessionActive && musculationSessionActive.exercices[ei];
-  if (!e) return;
-  e.notes = v;
-  sauvegarderSessionActive();
-}
-function derniereNoteExercice(exerciceId) {
-  for (const h of musculationHistorique) {
-    const e = h.exercices.find(x => x.exerciceId === exerciceId && x.notes);
-    if (e) return { date: h.date, texte: e.notes };
-  }
-  return null;
-}
-/* Un tap sur la performance précédente la recopie dans la série. */
-function reprendrePrecedenteSession(ei, si) {
-  const e = musculationSessionActive && musculationSessionActive.exercices[ei];
-  if (!e || !e.series[si]) return;
-  const prec = dernierePerfExercice(e.exerciceId);
-  const ref = prec && prec.series[si];
-  if (!ref) return;
-  e.series[si].poids = ref.poids;
-  e.series[si].reps = ref.reps;
-  sauvegarderSessionActive();
-  renderSessionModal();
-}
 function renderSessionExerciceBlocHTML(exo, ei) {
   const exerciceComplet = trouverExercice(exo.exerciceId);
-  const precedente = dernierePerfExercice(exo.exerciceId);
   const lignesSeries = exo.series.map((set, si) => {
-    const ref = precedente && precedente.series[si];
-    const celluleFrec = ref && (ref.poids != null || ref.reps != null)
-      ? `<button type="button" class="serie-prec" onclick="reprendrePrecedenteSession(${ei},${si})" title="Reprendre ces valeurs">${ref.poids ?? '—'}<small>kg</small>×${ref.reps ?? '—'}</button>`
-      : '<span class="serie-prec serie-prec--vide">—</span>';
     const clefRepos = ei + '_' + si;
     const debutRepos = reposActifs[clefRepos];
     // Seulement entre une série et la suivante (pas après la dernière de
@@ -14517,9 +13220,8 @@ function renderSessionExerciceBlocHTML(exo, ei) {
     return `
     <div class="serie-ligne-fenetre">
       <button type="button" class="serie-ligne-suppr" onclick="retirerSerieSession(${ei},${si})" aria-label="Supprimer cette série"><svg class="icone-ui" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 11v6" /><path d="M14 11v6" /><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6" /><path d="M3 6h18" /><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" /></svg> Supprimer</button>
-      <div class="serie-ligne serie-ligne--5col">
+      <div class="serie-ligne serie-ligne--4col">
         ${boutonNumeroSerie(si, set.technique, `ouvrirMenuTechniqueSession(this,${ei},${si})`)}
-        ${celluleFrec}
         <input type="number" inputmode="decimal" step="0.5" value="${set.poids ?? ''}" placeholder="—" onchange="modifierSerieSession(${ei},${si},'poids',this.value)">
         <input type="number" inputmode="numeric" step="1" value="${set.reps ?? ''}" placeholder="—" onchange="modifierSerieSession(${ei},${si},'reps',this.value)">
         <button type="button" class="serie-check ${set.fait ? 'faite' : ''}" onclick="basculerSerieSession(${ei},${si})" aria-label="Marquer la série comme faite"><svg class="icone-ui" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5" /></svg></button>
@@ -14536,33 +13238,17 @@ function renderSessionExerciceBlocHTML(exo, ei) {
                     onclick="afficherFicheExerciceBiblio('${exo.exerciceId}')">${escapeHtml(exerciceComplet ? libelleExercice(exerciceComplet) : exo.nom)}</button>
           </div>
           <div style="display:flex; gap:4px; align-items:center;">
-            <button type="button" class="btn-icone${exo.notes ? ' btn-note-active' : ''}" onclick="basculerNoteExerciceSession(${ei})" aria-label="Note sur cet exercice" title="Note sur cet exercice"><svg class="icone-ui" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z" /><path d="M14 2v4a2 2 0 0 0 2 2h4" /><path d="M10 9H8" /><path d="M16 13H8" /><path d="M16 17H8" /></svg></button>
             <button type="button" class="btn-icone" onclick="remplacerExerciceSession(${ei})" aria-label="Remplacer cet exercice" title="Remplacer cet exercice (pour cette séance uniquement)"><svg class="icone-ui" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m17 2 4 4-4 4" /><path d="M3 11v-1a4 4 0 0 1 4-4h14" /><path d="m7 22-4-4 4-4" /><path d="M21 13v1a4 4 0 0 1-4 4H3" /></svg></button>
             <button class="btn-delete" onclick="retirerExerciceSession(${ei})" aria-label="Retirer l'exercice">&times;</button>
           </div>
         </div>
-        ${musclesLigneHTML(exerciceComplet)}
       </div>
     </div>
-    ${noteExerciceHTML(exo, ei)}
     <div class="serie-table">
-      <div class="serie-entete serie-entete--5col"><span>Série</span><span>Préc.</span><span>Kg</span><span>Reps</span><span><svg class="icone-ui" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5" /></svg></span></div>
+      <div class="serie-entete serie-entete--4col"><span>Série</span><span>Poids (kg)</span><span>Répétitions</span><span><svg class="icone-ui" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5" /></svg></span></div>
       ${lignesSeries}
     </div>
     <button type="button" class="btn-ajouter-serie" onclick="ajouterSerieSession(${ei})">Ajouter une série</button>
-    ${exerciceComplet && ZONES_VOLUME[exerciceComplet.groupe] ? ligneZoneHTML(exerciceComplet.groupe, zonesSemaineSession[exerciceComplet.groupe] || 0, true) : ''}
-  </div>`;
-}
-function musclesLigneHTML(exo) {
-  if (!exo) return '';
-  const m = musclesExerciceTexte(exo);
-  return `<div class="muscles-ligne"><span class="muscle-puce muscle-puce--principal">${escapeHtml(m.principal)}</span>${m.secondaires.map(s => `<span class="muscle-puce">${escapeHtml(s)}</span>`).join('')}</div>`;
-}
-function noteExerciceHTML(exo, ei) {
-  if (!exo.noteOuverte && !exo.notes) return '';
-  const prec = derniereNoteExercice(exo.exerciceId);
-  return `<div class="note-exo">
-    <textarea id="note-exo-${ei}" rows="2" placeholder="${escapeHtml(prec ? 'Dernière note (' + formatDateDisplay(prec.date) + ') : ' + prec.texte : 'Réglage machine, sensations, douleur…')}" oninput="modifierNoteExerciceSession(${ei}, this.value)">${escapeHtml(exo.notes || '')}</textarea>
   </div>`;
 }
 /* Paliers d'une série en dégressif (poids/reps de chaque baisse de charge
@@ -14920,7 +13606,7 @@ function terminerSeance() {
     date: todayStr(), debut: s.debut, fin, dureeMin, notes: s.notes || '', maj: fin,
     exercices: s.exercices.map(e => ({
       exerciceId: e.exerciceId, nom: e.nom, series: e.series.filter(x => x.fait || x.poids || x.reps),
-      supersetSuivant: !!e.supersetSuivant, ...(e.notes && e.notes.trim() ? { notes: e.notes.trim() } : {})
+      supersetSuivant: !!e.supersetSuivant
     })).filter(e => e.series.length)
   };
   // Construit AVANT d'ajouter cette séance à l'historique : dernierePerfExercice,
@@ -14978,7 +13664,7 @@ function construireContexteBilanSeance(entree, dureeMin) {
     const derniere = dernierePerfExercice(e.exerciceId);
     const avant = derniere ? derniere.series.filter(s => s.fait && s.poids != null).map(s => `${s.poids}kg×${s.reps}`).join(', ') : '';
     const comparaison = avant ? `dernière fois (${derniere.date}) : ${avant}` : "première fois sur cet exercice, ou pas d'historique chiffré";
-    return `- ${nom} : aujourd'hui ${detailAuj} | ${comparaison}${e.notes ? ` | note de la personne sur cet exercice : "${e.notes}"` : ''}`;
+    return `- ${nom} : aujourd'hui ${detailAuj} | ${comparaison}`;
   }).join('\n');
 
   const volume = h => h.exercices.reduce((n, e) => n + e.series
@@ -15199,7 +13885,6 @@ window.addEventListener('load', () => {
   document.getElementById('bloc-sql').textContent = SQL_SUPABASE;
   document.getElementById('bloc-sql-accents').textContent = sqlAccents();
   document.getElementById('bloc-sql-rls').textContent = sqlRls();
-  document.getElementById('bloc-sql-gymbro').textContent = SQL_GYMBRO_PHOTOS;
   // Pas de synchroniser('démarrage') ici : la vérification de session est
   // asynchrone, donc juste après initAuth() sessionUtilisateur est encore
   // null pendant un court instant. Une synchro lancée pile à ce moment-là
