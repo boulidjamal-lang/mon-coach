@@ -1409,7 +1409,7 @@
        Nutrition/Muscu). Sans ça, 7 sections s'empilaient d'un coup sur cet
        onglet (chiffres clés, 3 graphiques, records, stats par programme,
        historique) : beaucoup trop à digérer en un seul écran. */
-    .muscu-soustabs-nav { margin: 4px 0 16px; }
+    .muscu-soustabs-nav { margin: 4px 0 16px; display: grid; grid-template-columns: repeat(3, 1fr); }
     #ecran-stats .stats-soustab { max-height: 0; overflow: hidden; transition: max-height 0.28s ease; }
     #ecran-stats .stats-soustab.stats-soustab-actif { max-height: none; overflow: visible; }
 
@@ -1668,6 +1668,68 @@
     .serie-entete span { font-size: 0.6rem; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-muted); text-align: center; font-weight: 700; }
     .serie-entete--4col, .serie-ligne--4col { grid-template-columns: 34px 1fr 1fr 40px; }
     .serie-entete--3col, .serie-ligne--3col { grid-template-columns: 34px 1fr 1fr; }
+    .serie-entete--5col, .serie-ligne--5col { grid-template-columns: 30px minmax(0, 0.95fr) minmax(0, 1fr) minmax(0, 1fr) 38px; }
+    /* Performance de la même série la dernière fois (tap = la reprendre). */
+    .serie-prec {
+      border: 0; background: none; padding: 0; font-family: inherit; cursor: pointer;
+      font-size: 0.74rem; font-weight: 700; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .serie-prec small { font-size: 0.6rem; font-weight: 600; margin-right: 1px; }
+    .serie-prec--vide { cursor: default; opacity: 0.6; }
+    .muscles-ligne { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 2px; }
+    .muscle-puce {
+      font-size: 0.64rem; font-weight: 700; padding: 2px 7px; border-radius: 999px;
+      background: var(--verre-fort); color: var(--text-muted);
+    }
+    .muscle-puce--principal { color: var(--primary); box-shadow: 0 0 0 1px var(--primary) inset; background: transparent; }
+    .btn-note-active { color: var(--primary); }
+    .note-exo textarea {
+      width: 100%; resize: vertical; font-family: inherit; font-size: 0.8rem; margin: 0 0 8px;
+    }
+    /* Zones de volume (MV/MEV/MAV/MRV) */
+    .zone-ligne { margin: 0 0 14px; }
+    .zone-ligne--compacte { margin: 12px 0 0; }
+    .zone-ligne-tete { display: flex; justify-content: space-between; gap: 8px; font-size: 0.78rem; font-weight: 700; margin-bottom: 5px; }
+    .zone-ligne-tete span:last-child { text-align: right; }
+    .zone-barre { display: flex; gap: 2px; height: 12px; }
+    .zone-barre span { flex: 1; border-radius: 2px; }
+    .zone-ligne-note { font-size: 0.68rem; color: var(--text-muted); margin-top: 4px; }
+    .zones-legende { display: grid; gap: 8px; margin: 4px 0 16px; }
+    .zones-legende-item { background: var(--verre-creux); border-left: 3px solid; border-radius: 10px; padding: 8px 11px; font-size: 0.8rem; }
+    .zones-legende-item small { display: block; color: var(--text-muted); font-size: 0.7rem; margin-top: 2px; }
+    .zones-table-wrap { overflow-x: auto; margin: 0 0 16px; }
+    .zones-table { border-collapse: collapse; font-size: 0.66rem; min-width: 100%; }
+    .zones-table th, .zones-table td { padding: 4px 5px; text-align: center; white-space: nowrap; }
+    .zones-table th { color: var(--text-muted); font-weight: 700; }
+    .zones-table td:first-child, .zones-table th:first-child { text-align: left; position: sticky; left: 0; background: var(--bg); }
+    .zones-table td b { display: block; font-size: 0.62rem; }
+    /* Carte du corps */
+    .corps-carte { background: var(--verre-creux); border-radius: 16px; padding: 10px 12px; margin-bottom: 14px; }
+    .corps-carte summary { font-weight: 800; font-size: 0.8rem; cursor: pointer; }
+    .corps-svg { display: block; width: 100%; max-width: 300px; height: auto; margin: 8px auto 0; }
+    .corps-puces { display: flex; flex-wrap: wrap; gap: 5px; justify-content: center; margin-top: 6px; }
+    .corps-puces span { font-size: 0.68rem; background: var(--verre-fort); border-radius: 999px; padding: 2px 8px; }
+    .corps-puces b { color: var(--primary); }
+    /* Jauge de niveau de force */
+    .jauge-force { margin: 4px 0 6px; }
+    .jauge-force-barre { position: relative; display: flex; gap: 2px; height: 12px; margin: 8px 0 4px; }
+    .jauge-force-barre span { flex: 1; border-radius: 3px; opacity: 0.85; }
+    .jauge-force-marqueur {
+      position: absolute; top: -5px; width: 4px; height: 22px; margin-left: -2px; border-radius: 2px;
+      background: var(--text); box-shadow: 0 0 0 2px var(--bg);
+    }
+    .jauge-force-legende { display: grid; grid-template-columns: repeat(5, 1fr); text-align: center; margin-bottom: 8px; }
+    .jauge-force-legende b { display: block; font-size: 0.58rem; }
+    .jauge-force-legende small { font-size: 0.6rem; color: var(--text-muted); }
+    .jauge-force-texte { margin: 0 0 4px; font-size: 0.86rem; }
+    .mini-jauge { display: block; height: 5px; border-radius: 3px; background: var(--verre-fort); margin: 5px 0 3px; overflow: hidden; }
+    .mini-jauge span { display: block; height: 100%; border-radius: 3px; }
+    .badge-niveau {
+      display: inline-block; font-size: 0.6rem; font-weight: 800; padding: 1px 6px; border-radius: 999px;
+      color: var(--c); box-shadow: 0 0 0 1px var(--c) inset; margin-left: 4px; vertical-align: middle;
+    }
+    .force-carte { background: var(--verre-creux); border-radius: 14px; padding: 12px 13px; margin-bottom: 12px; }
+    .force-carte-titre { font-weight: 800; font-size: 0.86rem; cursor: pointer; }
     .serie-ligne-fenetre { position: relative; overflow: hidden; border-radius: 10px; }
     /* Révélée en glissant la ligne au-dessus vers la gauche ; en dessous
        tant qu'on ne glisse pas, jamais visible autrement. */
@@ -2143,6 +2205,10 @@
         <span style="font-size:0.78rem; font-weight:700; color:var(--danger); display:flex; align-items:center; gap:5px; white-space:nowrap;"><span class="bandeau-seance-flottant-pastille" aria-hidden="true"><svg class="icone-ui icone-pleine" viewBox="0 0 24 24" fill="currentColor" stroke="none" aria-hidden="true"><circle cx="12" cy="12" r="9"/></svg></span> En cours</span>
       </div>
       <p class="note" id="session-chrono" style="margin:2px 0 14px; font-weight:700;"></p>
+      <details class="corps-carte" open>
+        <summary>Répartition musculaire de la séance</summary>
+        <div id="session-corps"></div>
+      </details>
       <div id="session-exercices-container"></div>
       <button class="btn btn-secondaire" style="margin-bottom:14px;" onclick="ouvrirPickerExercices('session')"><svg class="icone-ui" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14" /><path d="M12 5v14" /></svg> Ajouter un exercice</button>
       <div class="input-group">
@@ -2293,6 +2359,8 @@
            .chart-container garde sa hauteur fixe propre quoi qu'il arrive. -->
       <div class="segment muscu-soustabs-nav" id="muscu-soustabs-nav" role="group" aria-label="Détail musculation">
         <button type="button" onclick="choisirSousOngletMuscu('apercu')" aria-pressed="true">Aperçu</button>
+        <button type="button" onclick="choisirSousOngletMuscu('zones')" aria-pressed="false">Zones</button>
+        <button type="button" onclick="choisirSousOngletMuscu('force')" aria-pressed="false">Force</button>
         <button type="button" onclick="choisirSousOngletMuscu('progression')" aria-pressed="false">Progression</button>
         <button type="button" onclick="choisirSousOngletMuscu('programmes')" aria-pressed="false">Programmes</button>
         <button type="button" onclick="choisirSousOngletMuscu('historique')" aria-pressed="false">Historique</button>
@@ -2304,6 +2372,14 @@
 
         <div class="titre-section"><svg class="icone-ui" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17.596 12.768a2 2 0 1 0 2.829-2.829l-1.768-1.767a2 2 0 0 0 2.828-2.829l-2.828-2.828a2 2 0 0 0-2.829 2.828l-1.767-1.768a2 2 0 1 0-2.829 2.829z" /><path d="m2.5 21.5 1.4-1.4" /><path d="m20.1 3.9 1.4-1.4" /><path d="M5.343 21.485a2 2 0 1 0 2.829-2.828l1.767 1.768a2 2 0 1 0 2.829-2.829l-6.364-6.364a2 2 0 1 0-2.829 2.829l1.768 1.767a2 2 0 0 0-2.828 2.829z" /><path d="m9.6 14.4 4.8-4.8" /></svg> Séances par groupe musculaire</div>
         <div class="chart-container"><canvas id="muscuGroupeChart"></canvas></div>
+      </div>
+
+      <div class="stats-soustab" data-soustab="zones">
+        <div id="muscu-zones-container"></div>
+      </div>
+
+      <div class="stats-soustab" data-soustab="force">
+        <div id="muscu-force-container"></div>
       </div>
 
       <div class="stats-soustab" data-soustab="progression">
@@ -3580,6 +3656,11 @@
     <div class="modal-entete">
       <h3 id="titre-picker-exercices"><svg class="icone-ui" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v16" /><path d="M20.001 19A2 2 0 0022 17V5a2 2 0 00-1.999-2L16 3.002A5 5 0 0012 5a5 5 0 00-4-2H4a2 2 0 00-2 2v12a2 2 0 001.999 2H8a5 5 0 014 2 5 5 0 014-2z" /></svg> Exercices</h3>
       <button class="close-modal" onclick="fermerModal('picker-exercices-modal')" aria-label="Fermer">&times;</button>
+    </div>
+    <div class="segment" id="picker-onglets" role="group" aria-label="Liste affichée" style="margin-bottom:12px;">
+      <button type="button" onclick="choisirOngletPicker('tous')" aria-pressed="true">Tous</button>
+      <button type="button" onclick="choisirOngletPicker('pratiques')" aria-pressed="false">Déjà pratiqués</button>
+      <button type="button" onclick="choisirOngletPicker('niveau')" aria-pressed="false">Niveau de force</button>
     </div>
     <div class="input-group" style="margin-bottom:12px;">
       <label for="picker-recherche" style="position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0 0 0 0);">Rechercher un exercice</label>
@@ -7017,7 +7098,7 @@ function choisirSousOngletMuscu(nom) {
   document.querySelectorAll('#ecran-stats .stats-soustab').forEach(t => {
     t.classList.toggle('stats-soustab-actif', t.dataset.soustab === nom);
   });
-  majSegment('muscu-soustabs-nav', ['apercu', 'progression', 'programmes', 'historique'], nom);
+  majSegment('muscu-soustabs-nav', ['apercu', 'zones', 'force', 'progression', 'programmes', 'historique'], nom);
 }
 
 /* Les curseurs émettent « input » à chaque pixel. Sans temporisation, glisser
@@ -12075,6 +12156,77 @@ function renderStatsMuscu(dateDebut, dateFin) {
   // doit plus re-filtrer par-dessus (et encore moins par rapport à
   // aujourd'hui si la période choisie est dans le passé).
   renderHistoriqueSeances(historiqueFiltre, 'muscu-historique-container', 3650);
+  // Zones et niveau de force : indépendants du curseur de période (une
+  // zone est par définition hebdomadaire ; un niveau, le meilleur de tous
+  // les temps).
+  renderZonesMuscu('muscu-zones-container');
+  renderForceMuscu('muscu-force-container');
+}
+
+function renderZonesMuscu(idCible) {
+  const c = document.getElementById(idCible);
+  if (!c) return;
+  const lundi = lundiDeLaSemaine(todayStr());
+  const semaine = seriesSemaine(lundi, false);
+  const groupes = ORDRE_GROUPES.filter(g => ZONES_VOLUME[g]);
+  const actifs = groupes.filter(g => semaine[g] > 0).sort((a, b) => semaine[b] - semaine[a]);
+  const inactifs = groupes.filter(g => !(semaine[g] > 0));
+  const fmt = iso => { const d = dateLocale(iso); return d.getDate() + ' ' + d.toLocaleDateString('fr-FR', { month: 'short' }).replace('.', ''); };
+
+  let html = `<div class="titre-section">Cette semaine · ${fmt(lundi)} – ${fmt(decalerJours(lundi, 6))}</div>
+    <p class="note" style="margin:0 0 6px;">Chaque série faite compte 1 pour le muscle principal de l'exercice et 0,5 pour ses muscles secondaires.</p>
+    ${corpsSVG(couleursZones(semaine), 'Zone atteinte par chaque muscle cette semaine')}
+    <div style="height:12px;"></div>`;
+  html += actifs.length
+    ? actifs.map(g => ligneZoneHTML(g, semaine[g])).join('')
+    : '<p class="note">Aucune série faite cette semaine pour l\'instant.</p>';
+  if (inactifs.length) {
+    html += `<details style="margin:0 0 14px;"><summary class="note" style="cursor:pointer; font-weight:700;">Muscles pas encore travaillés cette semaine (${inactifs.length})</summary>
+      <div style="margin-top:10px;">${inactifs.map(g => ligneZoneHTML(g, 0)).join('')}</div></details>`;
+  }
+
+  html += `<div class="titre-section">Les 4 zones d'entraînement</div>
+    <p class="note" style="margin:0 0 8px;">Les zones indiquent si tu en fais trop peu, si tu t'entraînes efficacement ou si tu ajoutes des séries qui apportent de moins en moins. Mêmes repères pour tous : ce qui change avec l'expérience, c'est la vitesse de progression et les muscles que tu priorises.</p>
+    ${legendeZonesHTML()}`;
+
+  // Tableau des 8 dernières semaines : zone + nombre de séries par muscle.
+  const semaines = [];
+  for (let i = 0; i < 8; i++) semaines.push(decalerJours(lundi, -7 * i));
+  const parSemaine = semaines.map(l => seriesSemaine(l, false));
+  const lignes = groupes.filter(g => parSemaine.some(s => s[g] > 0));
+  if (lignes.length) {
+    html += `<div class="titre-section">Semaine par semaine</div><div class="zones-table-wrap"><table class="zones-table">
+      <thead><tr><th>Muscle</th>${semaines.map(l => `<th>${fmt(l)}</th>`).join('')}</tr></thead>
+      <tbody>${lignes.map(g => `<tr><td>${escapeHtml(GROUPES_MUSCULAIRES[g])}</td>${parSemaine.map(s => {
+        const n = s[g] || 0;
+        if (!n) return '<td style="opacity:0.35;">·</td>';
+        const info = ZONES_INFO[cleZoneVolume(g, n)];
+        return `<td style="color:${info.couleur};"><b>${info.abbr}</b>${formatSeries(n)}</td>`;
+      }).join('')}</tr>`).join('')}</tbody></table></div>`;
+  }
+  c.innerHTML = html;
+}
+
+function renderForceMuscu(idCible) {
+  const c = document.getElementById(idCible);
+  if (!c) return;
+  const ids = [...new Set(musculationHistorique.flatMap(h => h.exercices.filter(x => x.series.some(s => s.fait)).map(x => x.exerciceId)))]
+    .filter(id => STANDARD_PAR_EXERCICE[id]);
+  const pc = dernierPoidsConnu(todayStr());
+  let html = `<div class="titre-section">Niveau de force</div>
+    <p class="note" style="margin:0 0 12px;">Ton meilleur 1RM estimé (formule d'Epley) rapporté à ton poids de corps (${pc} kg, ${userProfile.gender === 'f' ? 'repères femmes' : 'repères hommes'}), comparé à des standards de force publiés. Pour les haltères, le poids compté est celui d'un seul haltère.</p>`;
+  if (!ids.length) {
+    c.innerHTML = html + '<p class="note">Aucun grand mouvement noté pour l\'instant (développé couché, squat, soulevé de terre, rowing, développé militaire, curl…). Fais-en au moins une série pour te situer.</p>';
+    return;
+  }
+  const niveaux = ids.map(id => ({ id, exo: trouverExercice(id), n: niveauForceExercice(id) }))
+    .filter(o => o.exo && o.n && o.n.best)
+    .sort((a, b) => b.n.position - a.n.position);
+  html += niveaux.map(o => `<div class="force-carte">
+      <div class="force-carte-titre" onclick="afficherFicheExerciceBiblio('${o.id}')">${escapeHtml(libelleExercice(o.exo))}</div>
+      ${jaugeForceHTML(o.n)}
+    </div>`).join('');
+  c.innerHTML = html;
 }
 
 /* Chaque fonction ci-dessous prend en paramètre l'historique à utiliser et
@@ -12348,7 +12500,8 @@ function renderListeExercicesDetail(liste) {
       const label = exoRef ? libelleExercice(exoRef) : e.nom;
       const series = e.series.map((s, si) => `<div style="display:flex; align-items:center; gap:8px; justify-content:space-between; font-size:0.82rem; padding:4px 0; border-bottom:1px solid var(--verre-brd);">
         <span style="display:flex; align-items:center; gap:8px;">${boutonNumeroSerie(si, s.technique)}</span><span>${s.poids ?? '—'} kg × ${s.reps ?? '—'}${s.fait ? ' <svg class="icone-ui" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10" /><path d="m16 9-5.5 5.5L8 12" /></svg>' : ''}</span></div>`).join('');
-      return `<div style="margin-bottom:14px;"><div style="font-weight:700; font-size:0.88rem; margin-bottom:6px;">${escapeHtml(label)}</div>${series}</div>`;
+      const note = e.notes ? `<p class="note" style="margin:6px 0 0; font-style:italic;">Note : ${escapeHtml(e.notes)}</p>` : '';
+      return `<div style="margin-bottom:14px;"><div style="font-weight:700; font-size:0.88rem; margin-bottom:6px;">${escapeHtml(label)}</div>${series}${note}</div>`;
     }).join('');
     return indices.length > 1
       ? `<div class="session-superset-bloc"><div class="session-superset-titre"><svg class="icone-ui" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" /><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" /></svg> Superset</div>${contenu}</div>`
@@ -12904,6 +13057,8 @@ function initFiltresPickerSiBesoin() {
 }
 function ouvrirPickerExercices(mode) {
   pickerMode = mode;
+  pickerOnglet = 'tous';
+  majSegment('picker-onglets', ['tous', 'pratiques', 'niveau'], 'tous');
   initFiltresPickerSiBesoin();
   document.getElementById('picker-recherche').value = '';
   document.getElementById('titre-picker-exercices').innerHTML =
@@ -12914,28 +13069,54 @@ function ouvrirPickerExercices(mode) {
   ouvrirModal('picker-exercices-modal');
 }
 function ouvrirBibliotheque() { ouvrirPickerExercices('bibliotheque'); }
+/* Onglets de la bibliothèque : tout le catalogue, seulement les exercices
+   déjà pratiqués, ou seulement ceux qui ont une jauge de niveau de force
+   (classés du plus fort au plus faible niveau atteint). */
+let pickerOnglet = 'tous';
+function choisirOngletPicker(nom) {
+  pickerOnglet = nom;
+  majSegment('picker-onglets', ['tous', 'pratiques', 'niveau'], nom);
+  rendrePickerExercices();
+}
 function rendrePickerExercices() {
   const q = normaliserRecherche(document.getElementById('picker-recherche').value || '');
   const groupeActif = document.getElementById('picker-filtre-groupe').value;
   const materielActif = document.getElementById('picker-filtre-materiel').value;
-  const liste = toutesLesExercices().filter(e => {
+  const pratiques = pickerOnglet === 'tous' ? null : new Set(musculationHistorique.flatMap(h => h.exercices.filter(x => x.series.some(s => s.fait)).map(x => x.exerciceId)));
+  let liste = toutesLesExercices().filter(e => {
+    if (pratiques && !pratiques.has(e.id)) return false;
+    if (pickerOnglet === 'niveau' && !STANDARD_PAR_EXERCICE[e.id]) return false;
     if (groupeActif && e.groupe !== groupeActif) return false;
     if (materielActif && e.materiel !== materielActif) return false;
     if (q && !normaliserRecherche(e.nom).includes(q) && !(e.nomEn && normaliserRecherche(e.nomEn).includes(q))) return false;
     return true;
   });
+  const niveaux = {};
+  if (pickerOnglet === 'niveau') {
+    liste.forEach(e => { niveaux[e.id] = niveauForceExercice(e.id); });
+    liste = liste.slice().sort((a, b) => ((niveaux[b.id] && niveaux[b.id].position) || -1) - ((niveaux[a.id] && niveaux[a.id].position) || -1));
+  }
   document.getElementById('picker-resultats-compte').textContent = liste.length + ' exercice(s)';
   const c = document.getElementById('picker-liste-exercices');
-  if (!liste.length) { c.innerHTML = '<div class="vide">Aucun exercice ne correspond à ces filtres.</div>'; return; }
+  if (!liste.length) {
+    c.innerHTML = `<div class="vide">${pickerOnglet === 'tous' ? 'Aucun exercice ne correspond à ces filtres.' : 'Aucun exercice pratiqué ne correspond à ces filtres.'}</div>`;
+    return;
+  }
   c.innerHTML = liste.map(e => {
     const derniere = dernierePerfExercice(e.id);
-    const sousTitre = GROUPES_MUSCULAIRES[e.groupe] + ' · ' + MATERIELS[e.materiel].label +
-      (derniere ? ' · dernière fois ' + formatDateDisplay(derniere.date) : '');
+    const m = musclesExerciceTexte(e);
+    const sousTitre = MATERIELS[e.materiel].label + (derniere ? ' · dernière fois ' + formatDateDisplay(derniere.date) : '');
+    const n = niveaux[e.id];
+    const jauge = n && n.best
+      ? `<span class="mini-jauge"><span style="width:${n.position.toFixed(0)}%; background:${COULEURS_NIVEAUX[Math.max(0, n.indexNiveau)]};"></span></span><span class="exo-ligne-meta">${n.niveau} · plus fort que ~${n.centile} %</span>`
+      : (n ? '<span class="exo-ligne-meta">Pas encore pratiqué : ouvre la fiche pour voir les repères</span>' : '');
     return `<button type="button" class="exo-ligne" onclick="choisirExercicePicker('${e.id}')">
       <span class="exo-ligne-vignette" aria-hidden="true">${medaillonExercice(e)}</span>
       <span style="flex:1; min-width:0;">
-        <span class="exo-ligne-nom">${escapeHtml(libelleExercice(e))}</span>
+        <span class="exo-ligne-nom">${escapeHtml(libelleExercice(e))}${pickerOnglet !== 'niveau' ? badgeNiveauHTML(e.id) : ''}</span>
+        <span class="exo-ligne-meta"><b style="color:var(--primary);">${escapeHtml(m.principal)}</b>${m.secondaires.length ? ' · ' + escapeHtml(m.secondaires.join(', ')) : ''}</span>
         <span class="exo-ligne-meta">${MATERIELS[e.materiel].ic} ${escapeHtml(sousTitre)}</span>
+        ${jauge}
       </span>
     </button>`;
   }).join('');
@@ -12970,7 +13151,12 @@ function afficherFicheExerciceBiblio(id) {
   const secondaires = (e.secondaires && e.secondaires.length) ? e.secondaires.map(g => GROUPES_MUSCULAIRES[g]).join(', ') : null;
   const media = mediaExercice(e);
 
-  let html = '';
+  let html = `<div class="segment" id="fiche-onglets" role="group" aria-label="Sections de la fiche" style="margin-bottom:12px;">
+    <button type="button" onclick="choisirOngletFiche('infos')" aria-pressed="true">Infos</button>
+    <button type="button" onclick="choisirOngletFiche('historique')" aria-pressed="false">Historique</button>
+    <button type="button" onclick="choisirOngletFiche('niveau')" aria-pressed="false">Niveau de force</button>
+  </div>
+  <div class="fiche-onglet" data-onglet="infos">`;
   if (media && media.img && media.img.length) {
     // Deux photos (départ/arrivée) qui alternent, comme Strong et la
     // plupart des applis du genre — ce n'est déjà pas un vrai GIF chez
@@ -13017,16 +13203,36 @@ function afficherFicheExerciceBiblio(id) {
     <ol class="fiche-exo-instructions">${media.ins.map(s => `<li>${escapeHtml(s)}</li>`).join('')}</ol>`;
   }
 
+  html += `</div><div class="fiche-onglet hidden" data-onglet="historique">`;
   if (derniere) {
     html += `<p class="note" style="margin:0 0 6px;">Dernière fois — ${formatDateDisplay(derniere.date)} :</p>`;
     html += derniere.series.map((s, i) => `<div style="display:flex; justify-content:space-between; font-size:0.82rem; padding:4px 0; border-bottom:1px solid var(--verre-brd);">
       <span>Série ${i + 1}</span><span>${s.poids ?? '—'} kg × ${s.reps ?? '—'}</span></div>`).join('');
+    const seances = musculationHistorique.map(h => ({ h, x: h.exercices.find(x => x.exerciceId === id) }))
+      .filter(o => o.x && o.x.series.some(s => s.fait));
+    if (seances.length > 1) {
+      html += `<p class="note" style="margin:14px 0 6px; font-weight:700; text-transform:uppercase; font-size:0.72rem; letter-spacing:0.8px;">Toutes les séances (${seances.length})</p>`;
+      html += seances.slice(0, 30).map(o => {
+        const faites = o.x.series.filter(s => s.fait);
+        const top = faites.reduce((b, s) => (unRmEstime(Number(s.poids), Number(s.reps)) > unRmEstime(Number(b.poids), Number(b.reps)) ? s : b), faites[0]);
+        return `<div style="display:flex; justify-content:space-between; gap:8px; font-size:0.8rem; padding:4px 0; border-bottom:1px solid var(--verre-brd);">
+          <span>${formatDateDisplay(o.h.date)}</span><span class="note" style="margin:0;">${faites.length} série${faites.length > 1 ? 's' : ''} · meilleure ${top.poids ?? '—'} kg × ${top.reps ?? '—'}</span></div>`;
+      }).join('');
+    }
   } else {
     html += '<p class="note">Pas encore pratiqué.</p>';
   }
+  html += `</div><div class="fiche-onglet hidden" data-onglet="niveau">
+    <p class="note" style="margin:0 0 4px;">Où tu te situes par rapport à la plupart des pratiquants, d'après ton meilleur 1RM estimé sur cet exercice et ton poids de corps.</p>
+    ${jaugeForceHTML(niveauForceExercice(id))}
+  </div>`;
   document.getElementById('fiche-exercice-container').innerHTML = html;
   ouvrirModal('fiche-exercice-modal');
   if (media && media.img && media.img.length > 1) demarrerAnimationFiche();
+}
+function choisirOngletFiche(nom) {
+  document.querySelectorAll('#fiche-exercice-container .fiche-onglet').forEach(o => o.classList.toggle('hidden', o.dataset.onglet !== nom));
+  majSegment('fiche-onglets', ['infos', 'historique', 'niveau'], nom);
 }
 let exercicePersoEnEdition = null;
 function remplirSelectsExercice(idGroupe, idMateriel) {
@@ -13139,6 +13345,318 @@ function apercuProgramme(programmeId) {
 }
 
 /* =====================================================================
+   ZONES DE VOLUME HEBDOMADAIRE (MV / MEV / MAV / MRV)
+   Chaque série faite dans la semaine (du lundi au dimanche) compte 1 pour
+   le groupe principal de l'exercice et 0,5 pour chacun de ses groupes
+   secondaires. Le total est situé dans l'une des 4 zones d'entraînement
+   décrites par la recherche sur le volume (repères de Renaissance
+   Periodization, Israetel et al.) : des repères moyens, identiques pour
+   tous les niveaux — ce qui change avec l'expérience, c'est la vitesse de
+   progression et les muscles qu'on choisit de prioriser.
+   ===================================================================== */
+const ZONES_VOLUME = {
+  pectoraux: { mv: 4, mev: 8, mav: 12, mrv: 22 },
+  dos: { mv: 6, mev: 10, mav: 14, mrv: 25 },
+  epaules: { mv: 6, mev: 8, mav: 16, mrv: 26 },
+  biceps: { mv: 4, mev: 8, mav: 14, mrv: 26 },
+  triceps: { mv: 4, mev: 6, mav: 10, mrv: 18 },
+  quadriceps: { mv: 6, mev: 8, mav: 12, mrv: 20 },
+  ischios: { mv: 3, mev: 6, mav: 10, mrv: 20 },
+  fessiers: { mv: 2, mev: 4, mav: 8, mrv: 16 },
+  adducteurs: { mv: 2, mev: 4, mav: 8, mrv: 16 },
+  mollets: { mv: 6, mev: 8, mav: 12, mrv: 20 },
+  abdos: { mv: 2, mev: 6, mav: 16, mrv: 25 },
+  lombaires: { mv: 2, mev: 4, mav: 8, mrv: 12 },
+  avant_bras: { mv: 2, mev: 4, mav: 10, mrv: 20 },
+  trapezes: { mv: 2, mev: 4, mav: 12, mrv: 26 }
+};
+const ZONES_INFO = {
+  sous: { abbr: 'Bas', nom: 'Sous le minimum', desc: "Pas assez pour entretenir le muscle", couleur: '#4f7cff' },
+  mv: { abbr: 'MV', nom: 'Zone de maintenance', desc: 'Suffit souvent à conserver ta masse musculaire', couleur: '#34c759' },
+  mev: { abbr: 'MEV', nom: 'Zone de croissance', desc: 'La croissance commence ici, avec le plus de gain par série', couleur: '#ffd60a' },
+  mav: { abbr: 'MAV', nom: 'Volume élevé', desc: 'Plus de croissance par semaine, moins de gain par série supplémentaire', couleur: '#ff9f0a' },
+  mrv: { abbr: 'MRV', nom: 'Volume très élevé', desc: 'La croissance reste possible, mais les séries en plus apportent peu', couleur: '#ff453a' }
+};
+const ORDRE_ZONES = ['mv', 'mev', 'mav', 'mrv'];
+
+function cleZoneVolume(groupe, series) {
+  const z = ZONES_VOLUME[groupe];
+  if (!z) return null;
+  if (series >= z.mrv) return 'mrv';
+  if (series >= z.mav) return 'mav';
+  if (series >= z.mev) return 'mev';
+  if (series >= z.mv) return 'mv';
+  return 'sous';
+}
+function arrondiSeries(n) { return Math.round(n * 2) / 2; }
+function formatSeries(n) { return String(arrondiSeries(n)).replace('.', ','); }
+
+/* Séries faites par groupe pour une liste d'exercices (séance en cours ou
+   entrée d'historique) : 1 pour le principal, 0,5 par secondaire. */
+function ajouterSeriesParGroupe(acc, exercices) {
+  (exercices || []).forEach(e => {
+    const exo = trouverExercice(e.exerciceId);
+    if (!exo) return;
+    const n = (e.series || []).filter(s => s.fait).length;
+    if (!n) return;
+    if (ZONES_VOLUME[exo.groupe]) acc[exo.groupe] = (acc[exo.groupe] || 0) + n;
+    (exo.secondaires || []).forEach(g => {
+      if (g !== exo.groupe && ZONES_VOLUME[g]) acc[g] = (acc[g] || 0) + n * 0.5;
+    });
+  });
+  return acc;
+}
+function dateLocale(iso) { const [a, m, j] = iso.split('-').map(Number); return new Date(a, m - 1, j); }
+function isoLocale(d) { return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); }
+function lundiDeLaSemaine(iso) {
+  const d = dateLocale(iso);
+  d.setDate(d.getDate() - ((d.getDay() + 6) % 7));
+  return isoLocale(d);
+}
+function decalerJours(iso, n) { const d = dateLocale(iso); d.setDate(d.getDate() + n); return isoLocale(d); }
+function seriesSemaine(lundi, inclureSessionActive, historique) {
+  const dimanche = decalerJours(lundi, 6);
+  const acc = {};
+  (historique || musculationHistorique).forEach(h => { if (h.date >= lundi && h.date <= dimanche) ajouterSeriesParGroupe(acc, h.exercices); });
+  if (inclureSessionActive && musculationSessionActive) ajouterSeriesParGroupe(acc, musculationSessionActive.exercices);
+  return acc;
+}
+
+/* Barre segmentée façon "jauge" : un segment par série jusqu'un peu au-delà
+   du MRV, chaque segment prenant la couleur de la zone qu'il représente ;
+   seuls les segments déjà atteints sont allumés. */
+function barreZoneHTML(groupe, series) {
+  const z = ZONES_VOLUME[groupe];
+  const total = z.mrv + 2;
+  let segs = '';
+  for (let i = 1; i <= total; i++) {
+    const cle = cleZoneVolume(groupe, i) || 'sous';
+    const allume = series + 1e-9 >= i;
+    segs += `<span style="background:${ZONES_INFO[cle].couleur};${allume ? '' : 'opacity:0.16;'}"></span>`;
+  }
+  return `<div class="zone-barre" aria-hidden="true">${segs}</div>`;
+}
+function phraseProchaineZone(groupe, series) {
+  const z = ZONES_VOLUME[groupe];
+  if (series < z.mev) {
+    const manque = Math.ceil(z.mev - series);
+    return manque + ' série' + (manque > 1 ? 's' : '') + ' pour atteindre la zone de croissance';
+  }
+  if (series < z.mav) return 'Zone de croissance atteinte — le meilleur gain par série';
+  if (series < z.mrv) return 'Volume élevé : encore ' + Math.ceil(z.mrv - series) + ' série(s) avant le volume très élevé';
+  return 'Au-delà du volume récupérable : surveille la fatigue';
+}
+function ligneZoneHTML(groupe, series, compacte) {
+  const cle = cleZoneVolume(groupe, series);
+  const info = ZONES_INFO[cle];
+  return `<div class="zone-ligne${compacte ? ' zone-ligne--compacte' : ''}">
+    <div class="zone-ligne-tete"><span>${escapeHtml(GROUPES_MUSCULAIRES[groupe])}</span>
+      <span style="color:${info.couleur};">${info.nom} · ${formatSeries(series)} série${series >= 2 ? 's' : ''}</span></div>
+    ${barreZoneHTML(groupe, series)}
+    <div class="zone-ligne-note">${escapeHtml(phraseProchaineZone(groupe, series))}</div>
+  </div>`;
+}
+function legendeZonesHTML() {
+  return `<div class="zones-legende">${ORDRE_ZONES.map(k => {
+    const i = ZONES_INFO[k];
+    return `<div class="zones-legende-item" style="border-left-color:${i.couleur};">
+      <div><b style="color:${i.couleur};">(${i.abbr})</b> ${i.nom}</div><small>${i.desc}</small></div>`;
+  }).join('')}</div>`;
+}
+
+/* =====================================================================
+   CARTE DU CORPS — face + dos, chaque groupe musculaire coloriable.
+   `couleurs` : { groupe: couleur CSS } ; un groupe absent reste neutre.
+   ===================================================================== */
+function figureCorpsSVG(cx, vue, c, base) {
+  const r = n => Math.round(n * 10) / 10;
+  const el = (x, y, rx, ry, rot, fill) => `<ellipse cx="${r(x)}" cy="${y}" rx="${rx}" ry="${ry}"${rot ? ` transform="rotate(${rot} ${r(x)} ${y})"` : ''} fill="${fill}"/>`;
+  const paire = (dx, y, rx, ry, rot, fill) => el(cx - dx, y, rx, ry, rot, fill) + el(cx + dx, y, rx, ry, -rot, fill);
+  const trait = (dx1, y1, dx2, y2, w) => [-1, 1].map(s => `<line x1="${cx + s * dx1}" y1="${y1}" x2="${cx + s * dx2}" y2="${y2}" stroke="${base}" stroke-width="${w}" stroke-linecap="round"/>`).join('');
+  const miroir = (f, fill) => [-1, 1].map(s => `<path d="${f(s)}" fill="${fill}"/>`).join('');
+  let h = `<circle cx="${cx}" cy="14" r="10" fill="${base}"/><rect x="${cx - 4}" y="21" width="8" height="9" fill="${base}"/>`;
+  h += `<path d="M${cx - 21},31 Q${cx},26 ${cx + 21},31 L${cx + 17},78 L${cx + 19},98 L${cx - 19},98 L${cx - 17},78 Z" fill="${base}"/>`;
+  h += trait(23, 35, 28, 70, 10) + trait(28, 72, 32, 104, 8) + trait(10, 98, 11, 146, 17) + trait(11, 148, 11, 192, 11);
+  h += `<circle cx="${cx - 33}" cy="110" r="4" fill="${base}"/><circle cx="${cx + 33}" cy="110" r="4" fill="${base}"/>`;
+  if (vue === 'face') {
+    h += miroir(s => `M${cx + s * 4},24 L${cx + s * 15},31 L${cx + s * 4},31 Z`, c('trapezes'));
+    h += miroir(s => `M${cx + s * 1},36 Q${cx + s * 15},31 ${cx + s * 19},40 Q${cx + s * 17},54 ${cx + s * 1},52 Z`, c('pectoraux'));
+    h += paire(22, 36, 6.5, 7.5, 0, c('epaules'));
+    h += paire(26, 56, 4.5, 11, 10, c('biceps'));
+    h += paire(30, 88, 4, 13, 7, c('avant_bras'));
+    h += `<rect x="${cx - 8}" y="55" width="16" height="27" rx="5" fill="${c('abdos')}"/>`;
+    h += paire(4.5, 113, 3, 11, 0, c('adducteurs'));
+    h += paire(12, 122, 6.5, 21, 3, c('quadriceps'));
+    h += paire(11, 168, 4.5, 14, 0, c('mollets'));
+  } else {
+    h += `<path d="M${cx},22 L${cx - 15},31 L${cx},58 L${cx + 15},31 Z" fill="${c('trapezes')}"/>`;
+    h += paire(22, 36, 6.5, 7.5, 0, c('epaules'));
+    h += miroir(s => `M${cx + s * 3},42 Q${cx + s * 19},36 ${cx + s * 19},47 Q${cx + s * 16},66 ${cx + s * 4},74 Z`, c('dos'));
+    h += paire(26, 56, 4.5, 11, 10, c('triceps'));
+    h += paire(30, 88, 4, 13, 7, c('avant_bras'));
+    h += `<rect x="${cx - 7}" y="66" width="14" height="13" rx="4" fill="${c('lombaires')}"/>`;
+    h += paire(9, 92, 9, 9, 0, c('fessiers'));
+    h += paire(11.5, 124, 6.5, 18, 2, c('ischios'));
+    h += paire(11, 166, 6, 14, 0, c('mollets'));
+  }
+  h += `<text x="${cx}" y="206" text-anchor="middle" font-size="9" fill="var(--text-muted)" font-weight="700">${vue === 'face' ? 'FACE' : 'DOS'}</text>`;
+  return h;
+}
+function corpsSVG(couleurs, libelle) {
+  const neutre = 'color-mix(in srgb, var(--text) 16%, transparent)';
+  const base = 'color-mix(in srgb, var(--text) 7%, transparent)';
+  const c = g => (couleurs && couleurs[g]) || neutre;
+  return `<svg class="corps-svg" viewBox="0 0 240 210" role="img" aria-label="${escapeHtml(libelle || 'Répartition musculaire')}">${figureCorpsSVG(60, 'face', c, base)}${figureCorpsSVG(180, 'dos', c, base)}</svg>`;
+}
+/* Couleurs "zones" : chaque groupe prend la couleur de sa zone de la
+   semaine (rien si aucune série). */
+function couleursZones(seriesParGroupe) {
+  const out = {};
+  Object.keys(seriesParGroupe).forEach(g => {
+    const cle = cleZoneVolume(g, seriesParGroupe[g]);
+    if (cle && seriesParGroupe[g] > 0) out[g] = ZONES_INFO[cle].couleur;
+  });
+  return out;
+}
+/* Couleurs "séance" : intensité de la couleur principale selon le nombre
+   de séries faites pendant la séance en cours. */
+function couleursSeance(seriesParGroupe) {
+  const out = {};
+  Object.keys(seriesParGroupe).forEach(g => {
+    const n = seriesParGroupe[g];
+    if (n > 0) out[g] = `color-mix(in srgb, var(--primary) ${Math.round(35 + 65 * Math.min(1, n / 6))}%, transparent)`;
+  });
+  return out;
+}
+
+/* =====================================================================
+   NIVEAU DE FORCE — 1RM estimé (Epley) rapporté au poids de corps, comparé
+   à des standards de force publiés (StrengthLevel / ExRx, arrondis) :
+   seuils Débutant / Novice / Intermédiaire / Avancé / Élite, soit environ
+   les 5e, 20e, 50e, 80e et 95e centiles des pratiquants. Pour les
+   exercices aux haltères, le poids saisi est celui d'UN haltère. Seuls les
+   exercices pour lesquels il existe un standard fiable sont notés.
+   ===================================================================== */
+const STANDARDS_FORCE = {
+  developpe_couche: { h: [0.5, 0.75, 1.0, 1.5, 2.0], f: [0.25, 0.5, 0.75, 1.0, 1.5] },
+  developpe_incline: { h: [0.4, 0.65, 0.9, 1.3, 1.7], f: [0.2, 0.4, 0.6, 0.85, 1.25] },
+  developpe_halteres: { h: [0.2, 0.35, 0.5, 0.75, 1.0], f: [0.1, 0.2, 0.3, 0.45, 0.6] },
+  presse_pecs_machine: { h: [0.5, 0.75, 1.1, 1.5, 2.0], f: [0.25, 0.4, 0.65, 0.95, 1.3] },
+  squat: { h: [0.75, 1.25, 1.5, 2.25, 2.75], f: [0.5, 0.75, 1.25, 1.5, 2.0] },
+  front_squat: { h: [0.6, 1.0, 1.25, 1.75, 2.25], f: [0.4, 0.6, 1.0, 1.25, 1.6] },
+  souleve_terre: { h: [1.0, 1.5, 2.0, 2.5, 3.0], f: [0.5, 1.0, 1.25, 1.75, 2.5] },
+  souleve_roumain: { h: [0.75, 1.0, 1.5, 2.0, 2.5], f: [0.4, 0.75, 1.0, 1.5, 2.0] },
+  developpe_militaire: { h: [0.35, 0.55, 0.8, 1.05, 1.35], f: [0.2, 0.35, 0.5, 0.75, 1.0] },
+  developpe_epaules_halteres: { h: [0.1, 0.2, 0.35, 0.5, 0.7], f: [0.05, 0.1, 0.2, 0.3, 0.45] },
+  developpe_epaules_machine: { h: [0.35, 0.55, 0.8, 1.1, 1.45], f: [0.2, 0.3, 0.5, 0.7, 1.0] },
+  elevations_laterales: { h: [0.05, 0.1, 0.2, 0.3, 0.4], f: [0.025, 0.05, 0.1, 0.17, 0.25] },
+  rowing_barre: { h: [0.5, 0.75, 1.0, 1.5, 1.75], f: [0.25, 0.4, 0.65, 0.9, 1.2] },
+  rowing_haltere: { h: [0.2, 0.35, 0.55, 0.8, 1.05], f: [0.1, 0.2, 0.3, 0.45, 0.65] },
+  tirage_vertical: { h: [0.5, 0.75, 1.0, 1.25, 1.75], f: [0.3, 0.45, 0.65, 0.9, 1.2] },
+  tirage_horizontal: { h: [0.5, 0.75, 1.0, 1.4, 1.75], f: [0.3, 0.45, 0.65, 0.9, 1.2] },
+  curl_barre: { h: [0.2, 0.4, 0.6, 0.85, 1.15], f: [0.1, 0.2, 0.4, 0.6, 0.85] },
+  curl_halteres: { h: [0.1, 0.15, 0.25, 0.4, 0.55], f: [0.05, 0.1, 0.15, 0.25, 0.35] },
+  extension_triceps_poulie: { h: [0.25, 0.4, 0.6, 0.85, 1.1], f: [0.1, 0.2, 0.35, 0.5, 0.7] },
+  barre_au_front: { h: [0.15, 0.3, 0.5, 0.75, 1.0], f: [0.1, 0.2, 0.3, 0.45, 0.6] },
+  presse_cuisses: { h: [1.0, 2.0, 3.0, 4.25, 5.5], f: [0.5, 1.0, 2.0, 3.0, 4.25] },
+  hip_thrust: { h: [0.5, 1.0, 1.5, 2.25, 3.0], f: [0.5, 1.0, 1.5, 2.25, 3.0] },
+  leg_extension: { h: [0.5, 0.75, 1.15, 1.6, 2.1], f: [0.3, 0.5, 0.8, 1.15, 1.55] },
+  leg_curl: { h: [0.4, 0.6, 0.9, 1.25, 1.65], f: [0.25, 0.4, 0.6, 0.85, 1.15] }
+};
+const STANDARD_PAR_EXERCICE = {
+  e1: 'developpe_couche', e147: 'developpe_couche', e141: 'developpe_couche', e17: 'developpe_couche',
+  e2: 'developpe_incline', e142: 'developpe_incline',
+  e4: 'developpe_halteres', e5: 'developpe_halteres', e6: 'developpe_halteres',
+  e10: 'presse_pecs_machine',
+  e79: 'squat', e181: 'squat', e186: 'squat', e179: 'squat', e254: 'squat', e265: 'squat',
+  e80: 'front_squat',
+  e29: 'souleve_terre', e156: 'souleve_terre', e31: 'souleve_terre',
+  e30: 'souleve_roumain', e95: 'souleve_roumain',
+  e39: 'developpe_militaire', e161: 'developpe_militaire', e261: 'developpe_militaire',
+  e40: 'developpe_epaules_halteres', e41: 'developpe_epaules_halteres',
+  e47: 'developpe_epaules_machine', e50: 'developpe_epaules_machine',
+  e42: 'elevations_laterales',
+  e24: 'rowing_barre', e149: 'rowing_barre', e32: 'rowing_barre', e37: 'rowing_barre', e26: 'rowing_barre',
+  e25: 'rowing_haltere',
+  e22: 'tirage_vertical', e23: 'tirage_vertical', e1266: 'tirage_vertical',
+  e27: 'tirage_horizontal', e28: 'tirage_horizontal', e151: 'tirage_horizontal', e159: 'tirage_horizontal',
+  e55: 'curl_barre', e56: 'curl_barre', e61: 'curl_barre',
+  e57: 'curl_halteres', e58: 'curl_halteres', e59: 'curl_halteres', e60: 'curl_halteres', e62: 'curl_halteres', e245: 'curl_halteres',
+  e68: 'extension_triceps_poulie', e69: 'extension_triceps_poulie',
+  e70: 'barre_au_front',
+  e82: 'presse_cuisses', e241: 'presse_cuisses',
+  e99: 'hip_thrust',
+  e87: 'leg_extension',
+  e93: 'leg_curl', e94: 'leg_curl'
+};
+const NIVEAUX_FORCE = ['Débutant', 'Novice', 'Intermédiaire', 'Avancé', 'Élite'];
+const CENTILES_FORCE = [5, 20, 50, 80, 95];
+
+function unRmEstime(poids, reps) {
+  if (!(poids > 0) || !(reps > 0)) return 0;
+  return reps === 1 ? poids : poids * (1 + Math.min(reps, 15) / 30);
+}
+function meilleur1RM(exerciceId, historique) {
+  let best = null;
+  (historique || musculationHistorique).forEach(h => (h.exercices || []).forEach(e => {
+    if (e.exerciceId !== exerciceId) return;
+    (e.series || []).forEach(s => {
+      if (!s.fait) return;
+      const v = unRmEstime(Number(s.poids), Number(s.reps));
+      if (v > 0 && (!best || v > best.valeur)) best = { valeur: v, poids: s.poids, reps: s.reps, date: h.date };
+    });
+  }));
+  return best;
+}
+function interpolerPalier(x, xs, ys) {
+  if (x <= xs[0]) return ys[0];
+  for (let i = 1; i < xs.length; i++) {
+    if (x <= xs[i]) return ys[i - 1] + (ys[i] - ys[i - 1]) * (x - xs[i - 1]) / (xs[i] - xs[i - 1]);
+  }
+  return ys[ys.length - 1];
+}
+function niveauForceExercice(exerciceId, historique, poidsCorps, genre) {
+  const cle = STANDARD_PAR_EXERCICE[exerciceId];
+  if (!cle) return null;
+  const pc = poidsCorps || dernierPoidsConnu(todayStr());
+  const seuils = STANDARDS_FORCE[cle][(genre || userProfile.gender) === 'f' ? 'f' : 'h'];
+  const best = meilleur1RM(exerciceId, historique);
+  const res = { seuilsKg: seuils.map(r => Math.round(r * pc * 2) / 2), poidsCorps: pc, best };
+  if (!best) return res;
+  const ratio = best.valeur / pc;
+  const xs = [0].concat(seuils, [seuils[4] * 1.25]);
+  res.ratio = ratio;
+  res.position = interpolerPalier(ratio, xs, [0, 10, 30, 50, 70, 90, 100]);
+  res.centile = Math.round(interpolerPalier(ratio, xs, [0].concat(CENTILES_FORCE, [99])));
+  let idx = -1;
+  seuils.forEach((t, i) => { if (ratio >= t) idx = i; });
+  res.indexNiveau = idx;
+  res.niveau = idx < 0 ? 'Pas encore débutant' : NIVEAUX_FORCE[idx];
+  return res;
+}
+const COULEURS_NIVEAUX = ['#8e8e93', '#4f7cff', '#34c759', '#ff9f0a', '#bf5af2'];
+function jaugeForceHTML(n) {
+  if (!n) return '<p class="note">Pas de standard de force fiable pour cet exercice : la jauge existe pour les grands mouvements (développé couché, squat, soulevé de terre, rowing, développé militaire, curl…).</p>';
+  const segs = COULEURS_NIVEAUX.map(c => `<span style="background:${c};"></span>`).join('');
+  const marqueur = n.best ? `<i class="jauge-force-marqueur" style="left:${n.position.toFixed(1)}%;"></i>` : '';
+  const legende = NIVEAUX_FORCE.map((nom, i) => `<div><b>${nom}</b><small>${n.seuilsKg[i]} kg</small></div>`).join('');
+  const texte = n.best
+    ? `<p class="jauge-force-texte"><b>${n.niveau}</b> · plus fort que ~${n.centile} % des pratiquants</p>
+       <p class="note" style="margin:0;">1RM estimé ${Math.round(n.best.valeur)} kg (${n.best.poids} kg × ${n.best.reps} le ${formatDateDisplay(n.best.date)}) · ${n.ratio.toFixed(2).replace('.', ',')} × ton poids de corps (${n.poidsCorps} kg)</p>`
+    : `<p class="note" style="margin:0;">Fais au moins une série de cet exercice pour te situer. Repères pour ton poids (${n.poidsCorps} kg), en charge maximale sur 1 répétition :</p>`;
+  return `<div class="jauge-force"><div class="jauge-force-barre">${segs}${marqueur}</div><div class="jauge-force-legende">${legende}</div>${texte}</div>`;
+}
+function badgeNiveauHTML(exerciceId) {
+  const n = niveauForceExercice(exerciceId);
+  if (!n || !n.best || n.indexNiveau < 0) return '';
+  return `<span class="badge-niveau" style="--c:${COULEURS_NIVEAUX[n.indexNiveau]};">${n.niveau}</span>`;
+}
+function musclesExerciceTexte(exo) {
+  const sec = (exo.secondaires || []).filter(g => g !== exo.groupe).map(g => GROUPES_MUSCULAIRES[g]).filter(Boolean);
+  return { principal: GROUPES_MUSCULAIRES[exo.groupe] || '', secondaires: sec };
+}
+
+/* =====================================================================
    Séance en cours
    ===================================================================== */
 function demarrerSeance(programmeId) {
@@ -13229,6 +13747,8 @@ function renderSessionModal() {
   const s = musculationSessionActive;
   if (!s) return;
   document.getElementById('titre-session-modal').innerHTML = '<svg class="icone-ui" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17.596 12.768a2 2 0 1 0 2.829-2.829l-1.768-1.767a2 2 0 0 0 2.828-2.829l-2.828-2.828a2 2 0 0 0-2.829 2.828l-1.767-1.768a2 2 0 1 0-2.829 2.829z" /><path d="m2.5 21.5 1.4-1.4" /><path d="m20.1 3.9 1.4-1.4" /><path d="M5.343 21.485a2 2 0 1 0 2.829-2.828l1.767 1.768a2 2 0 1 0 2.829-2.829l-6.364-6.364a2 2 0 1 0-2.829 2.829l1.768 1.767a2 2 0 0 0-2.828 2.829z" /><path d="m9.6 14.4 4.8-4.8" /></svg> ' + (s.programmeNom ? escapeHtml(s.programmeNom) : 'Séance libre');
+  zonesSemaineSession = seriesSemaine(lundiDeLaSemaine(todayStr()), true);
+  renderCorpsSession();
   const c = document.getElementById('session-exercices-container');
   if (!s.exercices.length) {
     c.innerHTML = '<div class="vide">Ajoute un premier exercice pour commencer.</div>';
@@ -13243,9 +13763,61 @@ function renderSessionModal() {
   document.getElementById('session-notes').value = s.notes || '';
   initSwipeSeries('session-exercices-container');
 }
+/* Carte du corps de la séance en cours : chaque série cochée colore le
+   muscle travaillé (plein pour le groupe principal, à moitié pour les
+   secondaires), de plus en plus intensément au fil des séries. */
+let zonesSemaineSession = {};
+function renderCorpsSession() {
+  const cible = document.getElementById('session-corps');
+  if (!cible || !musculationSessionActive) return;
+  const seance = ajouterSeriesParGroupe({}, musculationSessionActive.exercices);
+  const groupes = Object.keys(seance).sort((a, b) => seance[b] - seance[a]);
+  cible.innerHTML = corpsSVG(couleursSeance(seance), 'Muscles travaillés pendant cette séance') +
+    (groupes.length
+      ? `<div class="corps-puces">${groupes.map(g => `<span>${escapeHtml(GROUPES_MUSCULAIRES[g])} <b>${formatSeries(seance[g])}</b></span>`).join('')}</div>`
+      : '<p class="note" style="margin:6px 0 0; text-align:center;">Coche une série : le muscle travaillé se colore.</p>');
+}
+function basculerNoteExerciceSession(ei) {
+  const e = musculationSessionActive && musculationSessionActive.exercices[ei];
+  if (!e) return;
+  e.noteOuverte = !e.noteOuverte;
+  sauvegarderSessionActive();
+  renderSessionModal();
+  if (e.noteOuverte) { const z = document.getElementById('note-exo-' + ei); if (z) z.focus(); }
+}
+function modifierNoteExerciceSession(ei, v) {
+  const e = musculationSessionActive && musculationSessionActive.exercices[ei];
+  if (!e) return;
+  e.notes = v;
+  sauvegarderSessionActive();
+}
+function derniereNoteExercice(exerciceId) {
+  for (const h of musculationHistorique) {
+    const e = h.exercices.find(x => x.exerciceId === exerciceId && x.notes);
+    if (e) return { date: h.date, texte: e.notes };
+  }
+  return null;
+}
+/* Un tap sur la performance précédente la recopie dans la série. */
+function reprendrePrecedenteSession(ei, si) {
+  const e = musculationSessionActive && musculationSessionActive.exercices[ei];
+  if (!e || !e.series[si]) return;
+  const prec = dernierePerfExercice(e.exerciceId);
+  const ref = prec && prec.series[si];
+  if (!ref) return;
+  e.series[si].poids = ref.poids;
+  e.series[si].reps = ref.reps;
+  sauvegarderSessionActive();
+  renderSessionModal();
+}
 function renderSessionExerciceBlocHTML(exo, ei) {
   const exerciceComplet = trouverExercice(exo.exerciceId);
+  const precedente = dernierePerfExercice(exo.exerciceId);
   const lignesSeries = exo.series.map((set, si) => {
+    const ref = precedente && precedente.series[si];
+    const celluleFrec = ref && (ref.poids != null || ref.reps != null)
+      ? `<button type="button" class="serie-prec" onclick="reprendrePrecedenteSession(${ei},${si})" title="Reprendre ces valeurs">${ref.poids ?? '—'}<small>kg</small>×${ref.reps ?? '—'}</button>`
+      : '<span class="serie-prec serie-prec--vide">—</span>';
     const clefRepos = ei + '_' + si;
     const debutRepos = reposActifs[clefRepos];
     // Seulement entre une série et la suivante (pas après la dernière de
@@ -13262,8 +13834,9 @@ function renderSessionExerciceBlocHTML(exo, ei) {
     return `
     <div class="serie-ligne-fenetre">
       <button type="button" class="serie-ligne-suppr" onclick="retirerSerieSession(${ei},${si})" aria-label="Supprimer cette série"><svg class="icone-ui" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 11v6" /><path d="M14 11v6" /><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6" /><path d="M3 6h18" /><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" /></svg> Supprimer</button>
-      <div class="serie-ligne serie-ligne--4col">
+      <div class="serie-ligne serie-ligne--5col">
         ${boutonNumeroSerie(si, set.technique, `ouvrirMenuTechniqueSession(this,${ei},${si})`)}
+        ${celluleFrec}
         <input type="number" inputmode="decimal" step="0.5" value="${set.poids ?? ''}" placeholder="—" onchange="modifierSerieSession(${ei},${si},'poids',this.value)">
         <input type="number" inputmode="numeric" step="1" value="${set.reps ?? ''}" placeholder="—" onchange="modifierSerieSession(${ei},${si},'reps',this.value)">
         <button type="button" class="serie-check ${set.fait ? 'faite' : ''}" onclick="basculerSerieSession(${ei},${si})" aria-label="Marquer la série comme faite"><svg class="icone-ui" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5" /></svg></button>
@@ -13280,17 +13853,33 @@ function renderSessionExerciceBlocHTML(exo, ei) {
                     onclick="afficherFicheExerciceBiblio('${exo.exerciceId}')">${escapeHtml(exerciceComplet ? libelleExercice(exerciceComplet) : exo.nom)}</button>
           </div>
           <div style="display:flex; gap:4px; align-items:center;">
+            <button type="button" class="btn-icone${exo.notes ? ' btn-note-active' : ''}" onclick="basculerNoteExerciceSession(${ei})" aria-label="Note sur cet exercice" title="Note sur cet exercice"><svg class="icone-ui" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z" /><path d="M14 2v4a2 2 0 0 0 2 2h4" /><path d="M10 9H8" /><path d="M16 13H8" /><path d="M16 17H8" /></svg></button>
             <button type="button" class="btn-icone" onclick="remplacerExerciceSession(${ei})" aria-label="Remplacer cet exercice" title="Remplacer cet exercice (pour cette séance uniquement)"><svg class="icone-ui" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m17 2 4 4-4 4" /><path d="M3 11v-1a4 4 0 0 1 4-4h14" /><path d="m7 22-4-4 4-4" /><path d="M21 13v1a4 4 0 0 1-4 4H3" /></svg></button>
             <button class="btn-delete" onclick="retirerExerciceSession(${ei})" aria-label="Retirer l'exercice">&times;</button>
           </div>
         </div>
+        ${musclesLigneHTML(exerciceComplet)}
       </div>
     </div>
+    ${noteExerciceHTML(exo, ei)}
     <div class="serie-table">
-      <div class="serie-entete serie-entete--4col"><span>Série</span><span>Poids (kg)</span><span>Répétitions</span><span><svg class="icone-ui" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5" /></svg></span></div>
+      <div class="serie-entete serie-entete--5col"><span>Série</span><span>Préc.</span><span>Kg</span><span>Reps</span><span><svg class="icone-ui" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5" /></svg></span></div>
       ${lignesSeries}
     </div>
     <button type="button" class="btn-ajouter-serie" onclick="ajouterSerieSession(${ei})">Ajouter une série</button>
+    ${exerciceComplet && ZONES_VOLUME[exerciceComplet.groupe] ? ligneZoneHTML(exerciceComplet.groupe, zonesSemaineSession[exerciceComplet.groupe] || 0, true) : ''}
+  </div>`;
+}
+function musclesLigneHTML(exo) {
+  if (!exo) return '';
+  const m = musclesExerciceTexte(exo);
+  return `<div class="muscles-ligne"><span class="muscle-puce muscle-puce--principal">${escapeHtml(m.principal)}</span>${m.secondaires.map(s => `<span class="muscle-puce">${escapeHtml(s)}</span>`).join('')}</div>`;
+}
+function noteExerciceHTML(exo, ei) {
+  if (!exo.noteOuverte && !exo.notes) return '';
+  const prec = derniereNoteExercice(exo.exerciceId);
+  return `<div class="note-exo">
+    <textarea id="note-exo-${ei}" rows="2" placeholder="${escapeHtml(prec ? 'Dernière note (' + formatDateDisplay(prec.date) + ') : ' + prec.texte : 'Réglage machine, sensations, douleur…')}" oninput="modifierNoteExerciceSession(${ei}, this.value)">${escapeHtml(exo.notes || '')}</textarea>
   </div>`;
 }
 /* Paliers d'une série en dégressif (poids/reps de chaque baisse de charge
@@ -13648,7 +14237,7 @@ function terminerSeance() {
     date: todayStr(), debut: s.debut, fin, dureeMin, notes: s.notes || '', maj: fin,
     exercices: s.exercices.map(e => ({
       exerciceId: e.exerciceId, nom: e.nom, series: e.series.filter(x => x.fait || x.poids || x.reps),
-      supersetSuivant: !!e.supersetSuivant
+      supersetSuivant: !!e.supersetSuivant, ...(e.notes && e.notes.trim() ? { notes: e.notes.trim() } : {})
     })).filter(e => e.series.length)
   };
   // Construit AVANT d'ajouter cette séance à l'historique : dernierePerfExercice,
@@ -13706,7 +14295,7 @@ function construireContexteBilanSeance(entree, dureeMin) {
     const derniere = dernierePerfExercice(e.exerciceId);
     const avant = derniere ? derniere.series.filter(s => s.fait && s.poids != null).map(s => `${s.poids}kg×${s.reps}`).join(', ') : '';
     const comparaison = avant ? `dernière fois (${derniere.date}) : ${avant}` : "première fois sur cet exercice, ou pas d'historique chiffré";
-    return `- ${nom} : aujourd'hui ${detailAuj} | ${comparaison}`;
+    return `- ${nom} : aujourd'hui ${detailAuj} | ${comparaison}${e.notes ? ` | note de la personne sur cet exercice : "${e.notes}"` : ''}`;
   }).join('\n');
 
   const volume = h => h.exercices.reduce((n, e) => n + e.series
