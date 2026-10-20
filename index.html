@@ -7960,8 +7960,8 @@ function validerAjoutManuel() {
   // Le code-barres suit l'aliment quand il vient d'OpenFoodFacts ou de
   // l'historique : c'est ce qui permet de retrouver le produit exact plus tard.
   if (codeCourant) item.code = codeCourant;
-  const dejaEnBase = !!sourceCourante && normaliserRecherche(name) === normaliserRecherche(nomSourceCourant);
-  addItemToMeal(activeMealId, item, { partager: !dejaEnBase });
+  const dejaEnBase = ['base', 'perso', 'partage'].includes(sourceCourante) && normaliserRecherche(name) === normaliserRecherche(nomSourceCourant);
+  addItemToMeal(activeMealId, item, { partager: !dejaEnBase, source: sourceCourante === 'usda' ? 'usda' : sourceCourante === 'historique' ? 'historique' : 'manuel' });
   if (item.unite === 'ml') ajouterEau(Math.round(g));
   fermerModal('manual-modal');
 }
@@ -7971,14 +7971,13 @@ function addItemToMeal(mealId, item, options) {
   day.meals[mealId || 'lunch'].push(item);
   saveData(currentDate);
   invaliderHistorique();
-  // Aliment pris tel quel dans une base existante (CIQUAL, USDA,
-  // OpenFoodFacts, aliments partagés, déjà mangé…) : il n'a rien à faire
-  // dans « Aliments partagés », qui ne doit recevoir que les aliments
-  // réellement créés par les utilisateurs.
+  // Aliment pris tel quel dans NOTRE base (base d'aliments, mes aliments,
+  // aliments partagés) ou portion de recette : rien à envoyer. Tout le reste
+  // (OpenFoodFacts, USDA, déjà mangé, saisie, photo) part en validation.
   if (options && options.partager === false) { renderMeals(day); updateSummary(day); return; }
   // Le repas est enregistré avant tout : l'envoi vers la base vient après et
   // ne peut ni ralentir ni faire échouer la saisie.
-  enregistrerAlimentDansBase(item);
+  enregistrerAlimentDansBase(item, options && options.source);
   renderMeals(day);
   updateSummary(day);
 }
@@ -8653,12 +8652,35 @@ async function corrigerUnitesTousComptes() {
   }
 }
 
+/* Un code-barres déjà dans NOTRE base (aliments partagés : validés, ou les
+   miens en attente ; l'admin les voit tous, hors retirés). */
+async function chercherPartageParCode(code) {
+  if (!supa) return null;
+  try {
+    const r = await supa.from('aliments_partages').select('nom,kcal100,p100,c100,f100,code_barre,valide,createur_id,supprime').eq('code_barre', String(code)).limit(10);
+    if (r.error || !r.data) return null;
+    const moi = sessionUtilisateur && sessionUtilisateur.id;
+    const lignes = r.data.filter(a => !a.supprime && (a.valide || String(a.createur_id) === String(moi) || estCompteAdmin()));
+    const a = lignes.find(x => x.valide) || lignes[0];
+    if (!a || !a.nom) return null;
+    return { name: a.nom, code: String(code), marque: '', kcal100: Math.round(Number(a.kcal100) || 0), p100: Number(a.p100) || 0, c100: Number(a.c100) || 0, f100: Number(a.f100) || 0,
+      unite: uniteProbableParNom(a.nom), sansDonneesNutrition: false, source: 'ta base', dansNotreBase: true };
+  } catch (e) { return null; }
+}
+
 async function chercherProduitOFFParCode(code) {
   code = String(code).trim();
   let trouve = null;
 
-  // 1) OpenFoodFacts en premier : la base la plus complète et la plus à jour.
-  try {
+  // 0) D'abord NOTRE base : un produit qu'on a déjà (renommé, corrigé,
+  //    validé dans Administration) s'affiche sous son nom à nous, jamais
+  //    sous celui d'OpenFoodFacts.
+  trouve = await chercherPartageParCode(code);
+  if (!trouve) { trouve = await chercherBaseParCode(code); if (trouve) trouve.dansNotreBase = true; }
+  if (trouve) retenirNomParCode(code, trouve.name);
+
+  // 1) Sinon OpenFoodFacts : la base publique la plus complète.
+  if (!trouve) try {
     const r = await fetch(`https://world.openfoodfacts.org/api/v0/product/${encodeURIComponent(code)}.json`);
     const j = await r.json();
     if (j.status === 1) {
@@ -8684,14 +8706,19 @@ async function chercherProduitOFFParCode(code) {
     }
   } catch (e) { /* réseau indisponible : on continue quand même vers ce qu'on a déjà */ }
 
+  // Trouvé dans OpenFoodFacts mais déjà connu sous un autre nom (renommé
+  // chez nous, hors ligne de la base au moment du scan) : notre nom gagne.
+  if (trouve && trouve.source === 'OpenFoodFacts') {
+    const h = chercherHistoriqueParCode(code);
+    const notreNom = nomsParCode[code] || (h && h.nom);
+    if (notreNom) { trouve.name = notreNom; trouve.marque = ''; }
+  }
+
   // 2) Sinon, ce qu'on a déjà mangé avec ce code-barres (le plus rapide, hors ligne).
   if (!trouve) {
     const h = chercherHistoriqueParCode(code);
     if (h) trouve = { name: h.nom, code, marque: '', kcal100: h.kcal100 || 0, p100: h.p100 || 0, c100: h.c100 || 0, f100: h.f100 || 0, unite: h.unite || 'g', sansDonneesNutrition: false, source: 'ton historique' };
   }
-
-  // 3) Sinon, la base perso synchronisée (utile si scanné depuis un autre appareil).
-  if (!trouve) trouve = await chercherBaseParCode(code);
 
   if (trouve) {
     currentScannedFood = trouve;
@@ -8870,7 +8897,7 @@ function ajouterAlimentBarcode() {
     code: currentScannedFood.code || undefined,
     kcal: currentScannedFood.kcal100 * f, p: currentScannedFood.p100 * f,
     c: currentScannedFood.c100 * f, f: currentScannedFood.f100 * f
-  }, { partager: false });
+  }, { partager: !currentScannedFood.dansNotreBase, source: 'scan' });
   // Un produit détecté en ml est une boisson : sa quantité compte aussi
   // pour l'hydratation du jour, sans geste en plus. Compte toute boisson
   // (pas seulement l'eau littérale) — soda, jus, lait apportent aussi de
@@ -9021,7 +9048,7 @@ function ajouterIngredientsGemini() {
       c: a.c100 * (a.grams / 100), f: a.f100 * (a.grams / 100)
     };
     day.meals[activeMealId || 'lunch'].push(item);
-    enregistrerAlimentDansBase(item);
+    enregistrerAlimentDansBase(item, 'photo');
   });
   saveData(currentDate);
   invaliderHistorique();
@@ -14095,6 +14122,7 @@ const LIBELLES_ACTION = {
   aliment_valide: '\u2705 Aliment valid\u00e9',
   aliment_devalide: '\u21a9 Validation d\u2019aliment retir\u00e9e',
   aliment_base_modifie: '\u270f Aliment de la base modifi\u00e9',
+  aliments_fusionnes: '\ud83d\udd17 Doublons d\u2019aliments fusionn\u00e9s',
   aliment_base_supprime: '\ud83d\uddd1 Aliment de la base supprim\u00e9',
   aliments_copies_ciqual_retires: '\ud83e\uddf9 Copies d\u2019aliments de la base retir\u00e9es',
   exercice_base_modifie: '\u270f Exercice de base modifi\u00e9',
@@ -15192,22 +15220,54 @@ function ficheDepuisItem(item) {
   };
 }
 
-function enregistrerAlimentDansBase(item) {
+/* Tout aliment ajouté à un repas rejoint la base (Aliments partagés), en
+   attente de validation par l'admin (valide = false, imposé côté serveur) :
+   saisi à la main, scanné, trouvé dans OpenFoodFacts ou USDA, détecté en
+   photo, ou repris de « Déjà mangé ». Sauf s'il y est déjà : même
+   code-barres ou même nom, dans les aliments partagés (refusés compris pour
+   l'admin, qui les voit tous) ou dans la base d'aliments. Vérifié une seule
+   fois par aliment et par session. */
+const alimentsDejaVerifies = new Set();
+function echapperIlike(t) { return String(t).replace(/[\\%_]/g, c => '\\' + c); }
+async function alimentDejaEnBase(nom, code) {
+  const nomExact = echapperIlike(nom);
+  const requetes = [supa.from('aliments_partages').select('id').ilike('nom', nomExact).limit(1)];
+  if (code) requetes.push(supa.from('aliments_partages').select('id').eq('code_barre', code).limit(1));
+  const sch = await detecterSchemaAliments().catch(() => null);
+  if (sch && !sch.vide && sch.nom) {
+    const table = confSupabase().table;
+    requetes.push(supa.from(table).select(sch.cle || sch.nom).ilike(sch.nom, nomExact).limit(1));
+    if (code && sch.codeBarre) requetes.push(supa.from(table).select(sch.cle || sch.nom).eq(sch.codeBarre, code).limit(1));
+  }
+  const reponses = await Promise.all(requetes);
+  if (reponses.some(r => r.error)) throw new Error('vérification impossible');
+  return reponses.some(r => r.data && r.data.length);
+}
+async function enregistrerAlimentDansBase(item, source) {
   // Un aliment issu d'une recette (structure en ingrédients) n'est pas un
   // aliment unique : il ne rejoint jamais la base partagée.
   if (item && Array.isArray(item.ingredients) && item.ingredients.length) return;
   const fiche = ficheDepuisItem(item);
-  if (!fiche) return;
-  // L'appel n'est pas attendu : un échec réseau ne doit pas retarder la
-  // saisie du repas (l'aliment reste de toute façon dans l'historique local).
-  enregistrerAlimentPartage({
+  if (!fiche || !supa || !sessionUtilisateur) return;
+  const cle = (fiche.code || '') + '|' + normaliserRecherche(fiche.nom);
+  if (alimentsDejaVerifies.has(cle)) return;
+  alimentsDejaVerifies.add(cle);
+  // Jamais attendu par l'appelant : un échec réseau ne doit pas retarder la
+  // saisie du repas (l'aliment reste de toute façon dans l'historique).
+  try {
+    if (await alimentDejaEnBase(fiche.nom, fiche.code)) return;
+  } catch (e) {
+    alimentsDejaVerifies.delete(cle);   // réessayé au prochain ajout
+    return;
+  }
+  await enregistrerAlimentPartage({
     nom: fiche.nom,
     kcal100: fiche.kcal,
     p100: fiche.prot,
     c100: fiche.gluc,
     f100: fiche.lip,
     code_barre: fiche.code,
-    source: 'manuel'
+    source: source || 'manuel'
   });
 }
 
@@ -22410,9 +22470,102 @@ function ouvrirFeuilleReglagesTechniques() {
 const adminAValider = { aliments: 0 };
 let adminAValiderDernier = 0;
 function estCompteAdmin() { return !!(sessionUtilisateur && sessionUtilisateur.email === ADMIN_EMAIL); }
+/* Doublons d'aliments à valider : un même produit ajouté par plusieurs
+   comptes avant validation (chacun ne voit pas l'ajout en attente des
+   autres), ou un produit déjà validé / déjà dans la base d'aliments.
+   Plutôt que de les présenter séparément, on les FUSIONNE : même
+   code-barres ou même nom = même aliment.
+   - déjà dans la base d'aliments ou déjà validé : les ajouts en attente
+     sont retirés (l'aliment existant reste, sous son nom) ;
+   - sinon : le plus ancien en attente est gardé (il récupère le code-barres
+     d'un doublon s'il n'en avait pas), les autres sont retirés.
+   Seuls des aliments EN ATTENTE sont retirés, jamais un validé. Réservé à
+   l'admin (lui seul voit les ajouts en attente de tout le monde) ; lancé à
+   l'ouverture de la liste et avant le comptage des pastilles. */
+let fusionAlimentsDerniere = 0;
+async function fusionnerDoublonsAliments(force) {
+  if (!supa || !estCompteAdmin()) return 0;
+  if (!force && Date.now() - fusionAlimentsDerniere < 5 * 60e3) return 0;
+  fusionAlimentsDerniere = Date.now();
+  try {
+    const champs = 'id,nom,code_barre,valide,cree_le';
+    const pasRetire = 'supprime.is.null,supprime.eq.false';
+    const att = await supa.from('aliments_partages').select(champs).eq('valide', false).or(pasRetire).limit(1000);
+    if (att.error) throw att.error;
+    const enAttente = (att.data || []).filter(a => a && a.id != null);
+    if (!enAttente.length) return 0;
+    const code = a => String(a.code_barre || '').trim();
+    const codes = [...new Set(enAttente.map(code).filter(Boolean))];
+    const noms = [...new Set(enAttente.map(a => String(a.nom || '').trim()).filter(Boolean))];
+    // Validés qui leur ressemblent (même code-barres ou même nom).
+    const valides = [];
+    const lireValides = async (col, vals) => {
+      if (!vals.length) return;
+      const r = await supa.from('aliments_partages').select(champs).eq('valide', true).or(pasRetire).in(col, vals);
+      if (!r.error) valides.push(...(r.data || []).filter(a => a && a.id != null));
+    };
+    await lireValides('code_barre', codes);
+    await lireValides('nom', noms);
+    // Base d'aliments : codes-barres et noms déjà présents.
+    const baseCodes = new Set(), baseNoms = new Set();
+    const sch = await detecterSchemaAliments().catch(() => null);
+    if (sch && !sch.vide && sch.nom) {
+      const table = confSupabase().table;
+      const lireBase = async (col, vals) => {
+        if (!col || !vals.length) return;
+        const r = await supa.from(table).select(sch.codeBarre ? sch.nom + ',' + sch.codeBarre : sch.nom).in(col, vals);
+        (r.data || []).forEach(x => {
+          if (sch.codeBarre && x[sch.codeBarre]) baseCodes.add(String(x[sch.codeBarre]).trim());
+          if (x[sch.nom]) baseNoms.add(normaliserRecherche(x[sch.nom]));
+        });
+      };
+      await lireBase(sch.codeBarre, codes);
+      await lireBase(sch.nom, noms);
+    }
+    // Groupes : union de tout ce qui partage un code-barres ou un nom.
+    const lignes = enAttente.concat(valides.filter(v => !enAttente.some(a => String(a.id) === String(v.id))));
+    const parent = lignes.map((_, i) => i);
+    const racine = i => parent[i] === i ? i : (parent[i] = racine(parent[i]));
+    const premier = new Map();
+    lignes.forEach((a, i) => {
+      [code(a) && 'c:' + code(a), a.nom && 'n:' + normaliserRecherche(a.nom)].filter(Boolean).forEach(k => {
+        if (premier.has(k)) parent[racine(i)] = racine(premier.get(k)); else premier.set(k, i);
+      });
+    });
+    const groupes = new Map();
+    lignes.forEach((a, i) => { const r = racine(i); if (!groupes.has(r)) groupes.set(r, []); groupes.get(r).push(a); });
+    const aRetirer = [], codesAGarder = [];
+    const date = a => String(a.cree_le || '');
+    groupes.forEach(g => {
+      const attente = g.filter(a => !a.valide).sort((x, y) => date(x) < date(y) ? -1 : 1);
+      if (!attente.length) return;
+      const dansBase = g.some(a => (code(a) && baseCodes.has(code(a))) || baseNoms.has(normaliserRecherche(a.nom || '')));
+      if (dansBase || g.some(a => a.valide)) { aRetirer.push(...attente); return; }
+      if (attente.length < 2) return;
+      const garde = attente[0];
+      aRetirer.push(...attente.slice(1));
+      const codeDoublon = attente.slice(1).map(code).find(Boolean);
+      if (!code(garde) && codeDoublon) codesAGarder.push([garde.id, codeDoublon]);
+    });
+    if (!aRetirer.length) return 0;
+    const qui = 'fusion (' + (sessionUtilisateur ? sessionUtilisateur.email : 'admin') + ')';
+    const { error } = await supa.from('aliments_partages')
+      .update({ supprime: true, supprime_par: qui, supprime_le: new Date().toISOString() })
+      .in('id', aRetirer.map(a => a.id));
+    if (error) throw error;
+    for (const [id, c] of codesAGarder) await supa.from('aliments_partages').update({ code_barre: c }).eq('id', id);
+    cacheVider();
+    consignerAction('aliments_fusionnes', null, aRetirer.length + ' doublon(s) fusionné(s)', null, aRetirer.map(a => a.nom).join(', '));
+    return aRetirer.length;
+  } catch (e) {
+    console.warn('[Admin] fusion des doublons impossible :', e.message || e);
+    return 0;
+  }
+}
 async function compterAValiderAdmin() {
   if (!supa || !estCompteAdmin()) return;
   adminAValiderDernier = Date.now();
+  await fusionnerDoublonsAliments();
   try {
     const { count, error } = await supa.from('aliments_partages').select('id', { count: 'exact', head: true })
       .eq('valide', false).or('supprime.is.null,supprime.eq.false');
@@ -22468,6 +22621,7 @@ async function chargerAlimentsAdmin() {
 
   if (!supa) { attente.textContent = 'Pas de connexion à Supabase.'; return; }
 
+  await fusionnerDoublonsAliments(true);
   try {
     const { data, error } = await supa.rpc('admin_aliments', {
       p_createur: lire('aliments-filter-createur'),
