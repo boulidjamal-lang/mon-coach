@@ -3577,6 +3577,47 @@
     html:root .modal-content .fen-enregistrer { position: sticky; bottom: 8px; z-index: 5;
       box-shadow: 0 -16px 18px 8px var(--carte-plein), 0 12px 26px -12px rgba(6,182,212,.75); }
 
+    /* =====================================================================
+       DÉMÉNAGEMENT vers anqa.netlify.app (ancienne adresse seulement)
+       ===================================================================== */
+    #demenagement { position: fixed; inset: 0; z-index: 3500; display: none; }
+    #demenagement.show { display: block; }
+    .dm-voile { position: absolute; inset: 0; background: rgba(4,6,10,.6); -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px); }
+    :root[data-theme="light"] .dm-voile { background: rgba(180,195,220,.55); }
+    .dm-feuille { position: absolute; left: 0; right: 0; bottom: 0; max-width: 560px; margin: 0 auto; max-height: 100%; overflow-y: auto;
+      padding: 10px 18px calc(22px + env(safe-area-inset-bottom, 0px)); border-radius: 28px 28px 0 0; background: var(--carte-plein); color: var(--text);
+      box-shadow: 0 -20px 60px -20px rgba(0,0,0,.45); animation: feuilleIn .34s cubic-bezier(.16,1,.3,1); }
+    #demenagement.plein .dm-feuille { top: 0; display: flex; flex-direction: column; justify-content: center; border-radius: 0; text-align: center;
+      padding-top: calc(24px + env(safe-area-inset-top, 0px));
+      background: radial-gradient(70% 40% at 50% 10%, rgba(99,102,241,.25), transparent 70%), var(--carte-plein); }
+    .dm-poignee { width: 44px; height: 5px; margin: 0 auto 14px; border-radius: 99px; background: var(--trait); }
+    #demenagement.plein .dm-poignee { display: none; }
+    .dm-tete { display: flex; align-items: center; gap: 12px; margin-bottom: 10px; text-align: left; }
+    #demenagement.plein .dm-tete { flex-direction: column; text-align: center; gap: 14px; }
+    .dm-ic { width: 46px; height: 46px; flex: none; display: grid; place-items: center; border-radius: 15px; color: #fff;
+      background: linear-gradient(135deg, #22d3ee, #6366f1); box-shadow: 0 10px 20px -10px rgba(99,102,241,.8); }
+    #demenagement.plein .dm-ic { width: 72px; height: 72px; border-radius: 22px; }
+    .dm-ic svg { width: 24px; height: 24px; } #demenagement.plein .dm-ic svg { width: 36px; height: 36px; }
+    .dm-tete b { display: block; font: 800 1.2rem 'Manrope', 'Inter', sans-serif; letter-spacing: -.03em; }
+    #demenagement.plein .dm-tete b { font-size: 1.6rem; }
+    .dm-tete small { font-size: .8rem; color: var(--text-muted); }
+    .dm-adr { font-weight: 800; color: #2563eb; word-break: break-all; } :root[data-theme="dark"] .dm-adr { color: #7dd3fc; }
+    .dm-rassure { display: flex; gap: 8px; align-items: center; margin: 4px 0 0; font-size: .78rem; color: var(--text-muted); text-align: left; }
+    .dm-rassure i { width: 18px; height: 18px; flex: none; display: grid; place-items: center; border-radius: 50%; background: #10b981; color: #fff; font-style: normal; font-size: .7rem; font-weight: 900; }
+    .dm-etapes { display: grid; gap: 8px; margin: 14px 0; text-align: left; }
+    .dm-etape { display: grid; grid-template-columns: 26px 1fr 108px; gap: 10px; align-items: center; padding: 10px; border-radius: 16px; background: var(--piste); }
+    .dm-etape > i { width: 26px; height: 26px; display: grid; place-items: center; border-radius: 50%; background: #6366f1; color: #fff; font: 800 .75rem 'Inter', sans-serif; font-style: normal; }
+    .dm-etape b { display: block; font-size: .85rem; } .dm-etape span { font-size: .72rem; color: var(--text-muted); }
+    .dm-ill { height: 52px; display: flex; align-items: center; justify-content: center; gap: 6px; border-radius: 12px; background: var(--carte-plein); box-shadow: inset 0 0 0 1px var(--trait); overflow: hidden; }
+    .dm-ill svg { width: 24px; height: 24px; color: #2563eb; } :root[data-theme="dark"] .dm-ill svg { color: #7dd3fc; }
+    .dm-menu { white-space: nowrap; padding: 4px 6px; border-radius: 7px; background: var(--piste); font-size: .56rem; font-weight: 800; }
+    .dm-menu.rouge { color: #ef4444; }
+    .dm-app { width: 28px; height: 28px; flex: none; display: grid; place-items: center; border-radius: 8px; background: linear-gradient(135deg, #0f766e, #1d4ed8); color: #fff; font: 900 .8rem 'Manrope', sans-serif; }
+    .dm-ouvrir { display: grid; place-items: center; height: 50px; border-radius: 16px; color: #fff; text-decoration: none; font: 800 .95rem 'Inter', sans-serif;
+      background: linear-gradient(135deg, #10b981, #06b6d4); box-shadow: 0 12px 26px -12px rgba(6,182,212,.75); }
+    .dm-plus-tard { display: block; width: 100%; margin-top: 10px; padding: 10px; border: 0; background: none; color: var(--text-muted); font: 700 .82rem 'Inter', sans-serif; cursor: pointer; }
+    .dm-texte { margin: 0 0 4px; font-size: .9rem; line-height: 1.45; color: var(--text-muted); }
+
     /* Apparition */
     .vitrine > *, #seance-cardio > * { animation: monte .55s cubic-bezier(.2,.8,.2,1) both; }
     .vitrine > :nth-child(2), #seance-cardio > :nth-child(2) { animation-delay: .05s; }
@@ -26076,5 +26117,68 @@ function fermerFeuilles() {
     </div>
   </div>
 </div>
+<!-- Déménagement : l'appli a une nouvelle adresse (anqa.netlify.app).
+     Une feuille au lancement (au plus une fois par jour) les deux premières
+     semaines, puis en plein écran à chaque lancement. -->
+<div id="demenagement" role="dialog" aria-modal="true" aria-labelledby="dm-titre">
+  <div class="dm-voile"></div>
+  <div class="dm-feuille">
+    <div class="dm-poignee"></div>
+    <div class="dm-tete"><span class="dm-ic" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9.5 12 3l9 6.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/><path d="m15 8 3 2.5"/></svg></span>
+      <div><b id="dm-titre">Anqā déménage</b><small>Nouvelle adresse : <span class="dm-adr">anqa.netlify.app</span></small></div></div>
+    <p class="dm-texte" id="dm-texte" hidden>Cette adresse va bientôt fermer. Ça prend 30 secondes, et tu retrouves tout en te connectant.</p>
+    <div class="dm-rassure"><i aria-hidden="true">✓</i><span>Tes repas, séances et pesées te suivent : connecte-toi avec le même compte.</span></div>
+    <div class="dm-etapes">
+      <div class="dm-etape"><i>1</i><div><b>Ouvre la nouvelle adresse dans Safari</b><span>avec le bouton ci-dessous</span></div><div class="dm-ill"><span class="dm-adr" style="font-size:.62rem">anqa.netlify.app</span></div></div>
+      <div class="dm-etape"><i>2</i><div><b>Partager › Sur l'écran d'accueil</b><span>en bas de Safari</span></div><div class="dm-ill" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><path d="m8 7 4-4 4 4"/><path d="M5 11v8a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-8"/></svg><span class="dm-menu">+ Accueil</span></div></div>
+      <div class="dm-etape"><i>3</i><div><b>Supprime l'ancienne icône</b><span>appui long sur l'icône › Supprimer l'app</span></div><div class="dm-ill" aria-hidden="true"><span class="dm-app">A</span><span class="dm-menu rouge">Supprimer</span></div></div>
+    </div>
+    <a class="dm-ouvrir" id="dm-ouvrir" href="https://anqa.netlify.app/" target="_blank" rel="noopener">Ouvrir anqa.netlify.app dans Safari</a>
+    <button type="button" class="dm-plus-tard" id="dm-plus-tard">Plus tard</button>
+  </div>
+</div>
+<script>
+/* Déménagement vers https://anqa.netlify.app/ : seulement sur cette
+   ancienne adresse. Les 14 premiers jours, une feuille au plus une fois par
+   jour (« Plus tard ») ; ensuite en plein écran à chaque lancement
+   (« Me le rappeler demain » reporte d'un jour). */
+(function () {
+  const NOUVELLE = 'https://anqa.netlify.app/';
+  const DEBUT = '2026-10-22', JOURS_DISCRETS = 14;
+  if (location.href.indexOf(NOUVELLE) === 0) return;
+  const lire = k => { try { return localStorage.getItem(k); } catch (e) { return null; } };
+  const ecrire = (k, v) => { try { localStorage.setItem(k, v); } catch (e) {} };
+  const aujourdhui = () => { const d = new Date(); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); };
+  function fermer(cle) {
+    if (cle) ecrire(cle, aujourdhui());
+    document.getElementById('demenagement').classList.remove('show');
+  }
+  function afficher() {
+    const auj = aujourdhui();
+    const insistant = (Date.parse(auj) - Date.parse(DEBUT)) / 864e5 >= JOURS_DISCRETS;
+    const cle = insistant ? 'mc_demenagement_reporte' : 'mc_demenagement_vu';
+    if (lire(cle) === auj) return;
+    const z = document.getElementById('demenagement');
+    z.classList.toggle('plein', insistant);
+    document.getElementById('dm-titre').textContent = insistant ? 'Passe à la nouvelle adresse' : 'Anqā déménage';
+    document.getElementById('dm-texte').hidden = !insistant;
+    const bouton = document.getElementById('dm-plus-tard');
+    bouton.textContent = insistant ? 'Me le rappeler demain' : 'Plus tard';
+    bouton.onclick = () => fermer(cle);
+    z.querySelector('.dm-voile').onclick = insistant ? null : () => fermer(cle);
+    document.getElementById('dm-ouvrir').onclick = () => { ecrire(cle, auj); setTimeout(() => fermer(), 400); };
+    z.classList.add('show');
+  }
+  // Après l'écran de démarrage.
+  window.addEventListener('load', () => {
+    const attendre = () => {
+      const sp = document.getElementById('splash-screen');
+      if (sp && getComputedStyle(sp).display !== 'none') { setTimeout(attendre, 300); return; }
+      setTimeout(afficher, 400);
+    };
+    attendre();
+  });
+})();
+</script>
 </body>
 </html>
