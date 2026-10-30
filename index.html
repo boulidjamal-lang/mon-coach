@@ -4187,11 +4187,28 @@
 
     /* Coach du jour */
     html:root body .coach-carte small { background: none !important; -webkit-text-fill-color: var(--text-muted) !important; }
+    /* Recettes : sections, bibliothèque, fiche (valeurs par portion, ingrédients, étapes). */
+    html:root body .recette-section { margin: 18px 2px 8px; font-size: .78rem; font-weight: 700; letter-spacing: .02em; color: var(--text-muted); }
+    html:root body .recette-recherche { margin-bottom: 10px; }
+    html:root body .recette-categories { margin: 0 0 8px; padding: 2px 2px 4px; }
+    html:root body .recette-compte { margin: 0 2px 8px; font-size: .74rem; }
+    html:root body #choix-recette-askesis { max-height: 46vh; overflow-y: auto; }
+    html:root body .recette-macros { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin: 4px 0 10px; }
+    html:root body .recette-macros > div { padding: 10px 6px; border-radius: 14px; background: var(--s2); text-align: center; }
+    html:root body .recette-macros b { display: block; font-size: 1rem; }
+    html:root body .recette-macros small { display: block; margin-top: 2px; font-size: .7rem; color: var(--text-muted); }
+    html:root body .recette-liste, html:root body .recette-etapes { margin: 0; padding-left: 20px; font-size: .86rem; line-height: 1.45; }
+    html:root body .recette-liste li + li, html:root body .recette-etapes li + li { margin-top: 6px; }
+    html:root body .recette-source { margin-top: 16px; font-size: .74rem; }
+    html:root body .recette-source a { color: inherit; text-decoration: underline; }
+    html:root body .recette-ajouter { width: 100%; margin-top: 14px; }
+    /* Fiche posée sur la liste des recettes : la liste reste visible derrière, sans second flou. */
+    #feuille-choix-recette.show ~ #feuille-fiche-recette { background: rgba(4, 6, 10, 0.3); -webkit-backdrop-filter: none; backdrop-filter: none; }
     /* Coach : le message qui s'écrit, ses actions et l'analyse complète. */
     html:root body .coach-corps { flex: 1; min-width: 0; }
     html:root body .coach-texte { min-height: 1.42em; }
     html:root body .coach-texte .cm { opacity: 0; animation: coach-mot .35s ease-out forwards; }
-    @keyframes coach-mot { from { opacity: 0; filter: blur(4px); } to { opacity: 1; filter: none; } }
+    @keyframes coach-mot { from { opacity: 0; } to { opacity: 1; } }
     html:root body .coach-pense { display: inline-flex; gap: 5px; height: 1.42em; align-items: center; }
     html:root body .coach-pense i { width: 6px; height: 6px; border-radius: 50%; background: var(--text-muted); animation: coach-pense 1s ease-in-out infinite; }
     html:root body .coach-pense i:nth-child(2) { animation-delay: .15s; }
@@ -5477,9 +5494,29 @@
       <div id="recette-loader" class="loader hidden"><svg class="icone-ui" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 18V5" /><path d="M15 13a4.17 4.17 0 0 1-3-4 4.17 4.17 0 0 1-3 4" /><path d="M17.598 6.5A3 3 0 1 0 12 5a3 3 0 1 0-5.598 1.5" /><path d="M17.997 5.125a4 4 0 0 1 2.526 5.77" /><path d="M18 18a4 4 0 0 0 2-7.464" /><path d="M19.967 17.483A4 4 0 1 1 12 18a4 4 0 1 1-7.967-.517" /><path d="M6 18a4 4 0 0 1-2-7.464" /><path d="M6.003 5.125a4 4 0 0 0-2.526 5.77" /></svg> Recherche de recettes…</div>
       <div id="recette-box" class="analysis-output hidden"></div>
     </div>
+    <h4 class="recette-section">Tes recettes</h4>
     <div id="choix-recette-liste"></div>
     <p class="note hidden" id="choix-recette-vide">Aucune recette enregistrée pour l'instant.</p>
     <button class="btn btn-secondaire" style="width:100%; margin-top:10px;" type="button" onclick="fermerFeuilles(); ouvrirCreationRecettePerso();"><svg class="icone-ui" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14" /><path d="M12 5v14" /></svg> Créer une recette</button>
+    <!-- Recettes livrées avec l'appli (voir recettesAskesis) : plats de
+         Wikilivres et recettes protéinées, valeurs CIQUAL. -->
+    <h4 class="recette-section">Recettes Askēsis</h4>
+    <label class="adm-recherche recette-recherche"><svg class="icone-ui" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="8" /><path d="m21 21-4.3-4.3" /></svg><input type="search" id="choix-recette-recherche" placeholder="Chercher une recette…" autocomplete="off" oninput="renderBibliothequeRecettes()" aria-label="Chercher une recette"></label>
+    <div class="adm-filtres recette-categories" id="choix-recette-categories" role="group" aria-label="Catégories de recettes"></div>
+    <p class="note recette-compte" id="choix-recette-compte" aria-live="polite"></p>
+    <div id="choix-recette-askesis" class="carte-liste"></div>
+  </div>
+</div>
+
+<!-- Fiche d'une recette : valeurs par portion, ingrédients, étapes, source. -->
+<div class="feuille" id="feuille-fiche-recette" role="dialog" aria-modal="true" aria-labelledby="fiche-recette-titre">
+  <div class="feuille-contenu">
+    <div class="feuille-poignee"></div>
+    <div class="feuille-entete">
+      <div class="feuille-titre" id="fiche-recette-titre">Recette</div>
+      <button class="feuille-fermer" type="button" onclick="fermerFicheRecette()" aria-label="Fermer">&times;</button>
+    </div>
+    <div id="fiche-recette"></div>
   </div>
 </div>
 
@@ -7316,6 +7353,8 @@
 
 <!-- Données lourdes (exercices, vidéos, silhouettes) : fichier à part, mis en cache. -->
 <script src="assets/donnees.js"></script>
+<!-- Recettes Askēsis (Wikilivres et Askēsis, valeurs CIQUAL) : à part elles aussi. -->
+<script src="assets/recettes.js"></script>
 <script>
 
 const STORAGE_KEY = 'elite_fitness_data_v1';
@@ -7402,7 +7441,7 @@ const URL_SITE_WEB = 'https://boulidjamal-lang.github.io/mon-coach/';
      encore envoyé (au plus toutes les 10 min, après une synchro réussie).
    Variables en var : ces fonctions peuvent servir avant la fin du chargement.
    ===================================================================== */
-const VERSION_APPLI = '2026-10-30.2';  // date de mise en ligne (.2 : deuxième du jour)
+const VERSION_APPLI = '2026-10-30.3';  // date de mise en ligne (.3 : troisième du jour)
 var DERNIERE_SYNCHRO_LS = 'mc_derniere_synchro';
 function libelleVersion(v, court) {
   const d = new Date(String(v || VERSION_APPLI).slice(0, 10) + 'T12:00:00');
@@ -8507,7 +8546,12 @@ function ideesProteines(day, repas, reste, manque) {
   // Tes aliments riches en protéines (8 g pour 100 kcal), déjà mangés à ce repas, le plus mangé d'abord.
   historique().forEach(e => {
     connues.add(familleAliment(e.nom));
-    if (!(e.kcal100 > 0) || e.p100 / e.kcal100 * 100 < 8 || e.fois < 2 || e.dernierJour < recent || !(e.repas && e.repas[repas])) return;
+    if (!(e.kcal100 > 0) || e.p100 / e.kcal100 * 100 < 8 || e.fois < 2 || e.dernierJour < recent) return;
+    // Mangé à ce repas au moins 2 fois et un tiers du temps ; un plat (volaille,
+    // poisson, viande…) au petit-déjeuner ou en collation, seulement si c'est l'habitude.
+    const ici = (e.repas && e.repas[repas]) || 0;
+    const plat = ['🍗', '🐟', '🥩', '🦐', '🫘'].includes(familleAliment(e.nom));
+    if (ici < 2 || ici / e.fois < (plat && (repas === 'breakfast' || repas === 'snack') ? 0.5 : 0.3)) return;
     const g = Number(e.grammes) || 0, f = familleAliment(e.nom) || 'perso:' + e.cle;
     const idee = { nom: e.nom, portion: fr(g) + (e.unite === 'ml' ? ' ml' : ' g'), kcal: e.kcal100 * g / 100, p: e.p100 * g / 100, famille: f };
     if (idee.p >= 8 && !parFamille.has(f)) parFamille.set(f, idee);
@@ -8529,6 +8573,74 @@ function ideesProteines(day, repas, reste, manque) {
     if (i.kcal <= reste - idees[0].kcal) { idees.push(i); break; }
   }
   return idees;
+}
+/* Une recette pour le repas à venir : une portion qui tient dans les kcal qui
+   restent et apporte de vraies protéines ; une autre chaque jour, jamais une
+   recette notée ces 3 derniers jours. Jamais de viande, de poisson, de fruits
+   de mer, de porc, d'alcool ou de whey à qui n'en note jamais, ni la même
+   viande ou le même poisson qu'aujourd'hui (du poisson à midi : pas de
+   poisson ce soir). La portion tient dans ce qu'il reste pour ce repas : un
+   tiers du reste au petit-déjeuner, la moitié à midi, le tout ce soir ; ses
+   protéines font au moins un cinquième de ses kcal. Tes propres recettes en
+   font partie. */
+const FAMILLES_ANIMALES = ['🍗', '🐟', '🥩', '🦐', '🦪', '🥓'];
+const FAMILLES_HABITUELLES = FAMILLES_ANIMALES.concat(['🍺', '🍷', '🍸', 'whey']);
+function estPorc(nom) {
+  const n = normaliserRecherche(nom);
+  return /\b(porc|jambons?|jambonneau|lardons?|bacon|saucisses?|saucissons?|chorizo|rillettes|chipolatas?|andouilles?|andouillettes?|boudin|lard|saindoux|poitrine|pancetta|guanciale|coppa|speck|mortadelle|salami|rosette)\b/.test(n)
+    && !/\b(dinde|poulet|volaille|boeuf|veau|agneau|halal)\b/.test(n);
+}
+function familleProteines(r) {
+  let meilleure = null, max = 0;
+  (r.ingredients || []).forEach(i => { const f = familleAliment(i.nom), q = (Number(i.grammes) || 0) * (Number(i.p100) || 0); if (f && q > max) { max = q; meilleure = f; } });
+  return meilleure;
+}
+function recetteProposee(day, repas, reste, manque) {
+  const hist = historique();
+  const connues = new Set(hist.map(e => familleAliment(e.nom)));
+  if (hist.some(e => estPorc(e.nom))) connues.add('porc');
+  const deja = new Set();
+  Object.values(day.meals || {}).forEach(l => Array.isArray(l) && l.forEach(it => { const f = familleAliment(it && it.name); if (f) deja.add(f); }));
+  const recentes = new Set();
+  for (let k = 0; k <= 3; k++) {
+    const j = appData[shiftDate(currentDate, -k)];
+    if (j && j.meals) Object.values(j.meals).forEach(l => Array.isArray(l) && l.forEach(it => { if (it && it.name) recentes.add(String(it.name).toLowerCase()); }));
+  }
+  const budget = reste * ({ breakfast: 0.35, lunch: 0.5, snack: 0.3 }[repas] || 1);
+  const miennes = recettesPerso.map(r => Object.assign({ repas: ['lunch', 'dinner'] }, r));
+  const liste = recettesAskesis().concat(miennes)
+    .filter(r => (r.repas || []).includes(repas) && !recentes.has(String(r.nom).toLowerCase()))
+    .map(r => ({ r, t: totauxRecettePerso(r) }))
+    .filter(({ r, t }) => {
+      if (t.parPortionKcal < 150 || t.parPortionKcal > budget * 1.05 || t.parPortionP < Math.min(repas === 'snack' ? 15 : 20, manque * 0.5) || t.parPortionP * 4 / t.parPortionKcal < 0.2) return false;
+      const refus = (r.ingredients || []).some(i => {
+        const f = familleAliment(i.nom);
+        return (FAMILLES_HABITUELLES.includes(f) && !connues.has(f)) || (FAMILLES_ANIMALES.includes(f) && deja.has(f)) || (estPorc(i.nom) && !connues.has('porc'));
+      });
+      // Des laitages deux fois dans la journée, oui ; deux fois des œufs ou du poulet, non.
+      const fp = familleProteines(r);
+      return !refus && !(deja.has(fp) && fp !== '🥣' && fp !== '🧀');
+    });
+  if (!liste.length) return null;
+  // Un ordre mélangé, toujours le même, parcouru d'un cran par jour : jamais deux
+  // jours de suite la même, ni trois recettes de thon voisines dans l'alphabet.
+  const cle = c => hachage(c.r.id + '|' + repas);
+  liste.sort((a, b) => cle(a) - cle(b));
+  return liste[(numeroJour(currentDate) + MEALS.indexOf(repas)) % liste.length];
+}
+// Empreinte FNV-1a d'un texte, pour mélanger sans hasard.
+function hachage(s) {
+  let x = 2166136261;
+  for (let i = 0; i < s.length; i++) { x ^= s.charCodeAt(i); x = Math.imul(x, 16777619) >>> 0; }
+  return x;
+}
+// « Poulet basquaise (1 portion, 368 kcal, +43 g) », la parenthèse insécable.
+function texteRecette(c) {
+  const fr = n => Math.round(n).toLocaleString('fr-FR');
+  return `<b>${escapeHtml(c.r.nom)}</b> (${('1 portion, ' + fr(c.t.parPortionKcal) + ' kcal, +' + fr(c.t.parPortionP) + ' g').replace(/ /g, '\u00a0')})`;
+}
+function actionRecette(c, repas) {
+  return { libelle: 'Voir la recette', faire: `ouvrirFicheRecette(${JSON.stringify(c.r.id)}, '${repas}')` };
 }
 // « Skyr nature (150 g, +16 g) », la parenthèse insécable.
 function texteIdeesProteines(idees) {
@@ -8579,7 +8691,8 @@ function analyseCoach(day, totals, t) {
   const qui = sessionUtilisateur && monPseudo && monPseudo.pseudo ? monPseudo.pseudo.charAt(0).toUpperCase() + monPseudo.pseudo.slice(1) : '';
   const objectif = t.goal;
   const constats = [];
-  const ajouter = c => constats.push(c);
+  // Typographie française : une espace insécable avant « : ; ! ? », jamais un deux-points en début de ligne.
+  const ajouter = c => { c.texte = c.texte.replace(/ ([:;!?])/g, '\u00a0$1'); constats.push(c); };
   // Chaque règle à part : une donnée inattendue n'empêche jamais les autres de parler.
   const regle = f => { try { f(); } catch (e) { if (typeof noterErreur === 'function') noterErreur('js', 'Coach : ' + (e && e.message), e && e.stack); } };
 
@@ -8608,11 +8721,12 @@ function analyseCoach(day, totals, t) {
     if (totals.kcal > 0) return;
     if (!auj) { ajouter({ cle: 'vide', prio: 100, icone: 'repas', texte: 'Aucun repas noté ce jour-là.' }); return; }
     if (h < 11) {
-      const idees = ideesProteines(day, 'breakfast', t.target, t.protein);
+      const rec = recetteProposee(day, 'breakfast', t.target, t.protein);
+      const idees = rec ? [] : ideesProteines(day, 'breakfast', t.target, t.protein);
       const seance = prochaine && !aEntraine ? `, et ta séance <b>${escapeHtml(prochaine.p.nom)}</b> (${escapeHtml(liste(libGroupes(groupesProgramme(prochaine.p))))})` : '';
       const salut = variante('salut', [`Bonjour${qui ? ' ' + escapeHtml(qui) : ''}.`, `Bien dormi${qui ? ' ' + escapeHtml(qui) : ''} ?`, `C'est parti${qui ? ' ' + escapeHtml(qui) : ''}.`]);
-      ajouter({ cle: 'vide', prio: 100, icone: 'repas', action: { libelle: 'Ajouter mon petit-déjeuner', faire: "ouvrirFeuilleRepas('breakfast')" },
-        texte: `${salut} Au programme aujourd'hui : <b>${fr(t.target)}\u00a0kcal</b> dont <b>${fr(t.protein)}\u00a0g de protéines</b>${seance}. Commence ta journée avec un petit-déjeuner protéiné${idees.length ? ' : ' + texteIdeesProteines(idees.slice(0, 1)) : ''}.` });
+      ajouter({ cle: 'vide', prio: 100, icone: 'repas', action: rec ? actionRecette(rec, 'breakfast') : { libelle: 'Ajouter mon petit-déjeuner', faire: "ouvrirFeuilleRepas('breakfast')" },
+        texte: `${salut} Au programme aujourd'hui : <b>${fr(t.target)}\u00a0kcal</b> dont <b>${fr(t.protein)}\u00a0g de protéines</b>${seance}. Commence ta journée avec un petit-déjeuner protéiné${rec ? ' : ' + texteRecette(rec) : idees.length ? ' : ' + texteIdeesProteines(idees.slice(0, 1)) : ''}.` });
     } else {
       ajouter({ cle: 'vide', prio: 100, icone: 'repas', action: { libelle: 'Ajouter un repas', faire: `ouvrirFeuilleRepas('${repasAVenir(day, h)}')` },
         texte: `Rien de noté pour l'instant : ajoute ton premier repas, je m'occupe du reste. Il te reste <b>${fr(t.target)}\u00a0kcal</b> et <b>${fr(t.protein)}\u00a0g de protéines</b> pour la journée.` });
@@ -8640,12 +8754,14 @@ function analyseCoach(day, totals, t) {
   regle(() => {
     if (!(totals.kcal > 0) || !(manqueP > 20 && reste > 150 && retardP > 10)) return;
     const repas = auj ? repasAVenir(day, h) : null;
-    const idees = repas ? ideesProteines(day, repas, reste, manqueP) : [];
+    const rec = repas ? recetteProposee(day, repas, reste, manqueP) : null;
+    const idees = repas && !rec ? ideesProteines(day, repas, reste, manqueP) : [];
     const pourquoi = !auj ? '' : aEntraine ? ' Après ta séance, ce sont elles qui reconstruisent tes muscles.'
       : objectif === 'seche' ? variante('pq-seche', [' En sèche, ce sont elles qui protègent ton muscle.', ' En sèche, elles gardent ton muscle tout en calmant la faim.'])
       : objectif === 'masse' ? ' Pour prendre du muscle, c\'est la priorité.' : '';
-    ajouter({ cle: 'proteines', prio: 80, icone: 'proteines', action: repas ? { libelle: 'Ajouter à ' + (MEAL_LABELS[repas] || 'un repas').toLowerCase(), faire: `ouvrirFeuilleRepas('${repas}')` } : null,
-      texte: `Il te manque <b>${fr(manqueP)}\u00a0g de protéines</b>, il te reste ${fr(reste)}\u00a0kcal.` + (idees.length ? ` Pour ${MOMENT_REPAS[repas]} : ${texteIdeesProteines(idees)}.` : '') + pourquoi });
+    ajouter({ cle: 'proteines', prio: 80, icone: 'proteines', action: rec ? actionRecette(rec, repas) : repas ? { libelle: 'Ajouter ' + AU_REPAS[repas], faire: `ouvrirFeuilleRepas('${repas}')` } : null,
+      texte: `Il te manque <b>${fr(manqueP)}\u00a0g de protéines</b>, il te reste ${fr(reste)}\u00a0kcal.`
+        + (rec ? ` Pour ${MOMENT_REPAS[repas]} : ${texteRecette(rec)}.` : idees.length ? ` Pour ${MOMENT_REPAS[repas]} : ${texteIdeesProteines(idees)}.` : '') + pourquoi });
   });
 
   // 4. Fin de journée très en dessous de l'objectif.
@@ -8910,6 +9026,9 @@ function ecrireCoach(p, texte) {
       marcher(cible);
       const pas = Math.max(14, Math.min(45, 1100 / Math.max(1, mots.length)));
       mots.forEach((sp, i) => { sp.style.animationDelay = Math.round(i * pas) + 'ms'; });
+      // L'écriture finie, le texte redevient un texte simple : aucun mot ne
+      // peut rester à mi-chemin (Safari ne repeint pas toujours la fin).
+      e.minuteur = setTimeout(() => { if (cible.isConnected && e.texte === texte) cible.innerHTML = texte; }, Math.round(mots.length * pas) + 450);
     }, 520);
   };
   lancer();
@@ -11059,7 +11178,7 @@ function renderRecettesPerso() {
     nomEl.textContent = r.nom;
     const metaEl = document.createElement('div');
     metaEl.style.cssText = 'font-size:0.78rem; color:var(--text-muted);';
-    metaEl.textContent = `${Math.round(t.parPortionKcal)} kcal · P ${Math.round(t.parPortionP)}g · G ${Math.round(t.parPortionC)}g · L ${Math.round(t.parPortionF)}g — par portion`;
+    metaEl.textContent = `${Math.round(t.parPortionKcal)} kcal · P ${Math.round(t.parPortionP)} g · G ${Math.round(t.parPortionC)} g · L ${Math.round(t.parPortionF)} g — par portion`;
     btnNom.appendChild(nomEl);
     btnNom.appendChild(metaEl);
     btnNom.addEventListener('click', () => ouvrirCreationRecettePerso(r.id));
@@ -11082,7 +11201,7 @@ function renderRecettesPerso() {
 // Ajoute une portion de la recette directement au repas actif, sans ouvrir
 // aucune feuille — « reloguer en un clic », comme demandé.
 function loguerPortionRecettePerso(id, mealIdCible) {
-  const r = recettesPerso.find(x => x.id === id) || recettesPartagees.find(x => x.id === id);
+  const r = trouverRecette(id);
   if (!r) return;
   const t = totauxRecettePerso(r);
   const item = { name: r.nom, unite: 'g' };
@@ -11106,6 +11225,111 @@ function loguerPortionRecettePerso(id, mealIdCible) {
     item.kcal = t.parPortionKcal; item.p = t.parPortionP; item.c = t.parPortionC; item.f = t.parPortionF;
   }
   addItemToMeal(mealIdCible || activeMealId || repasDuMoment(), item, { partager: false });
+}
+
+/* =====================================================================
+   RECETTES ASKĒSIS — livrées avec l'appli dans assets/recettes.js : des
+   plats du « Livre de cuisine » de Wikilivres (licence CC BY-SA 4.0, source
+   citée sur chaque fiche) et des recettes protéinées écrites pour Askēsis,
+   rangées par catégorie (plats, entrées et soupes, petit-déjeuner,
+   collations, desserts, accompagnements). Valeurs calculées ingrédient par
+   ingrédient avec la table CIQUAL 2020 de l'Anses (licence CC BY 4.0). Le
+   coach propose celles d'un repas (champ repas, jamais un dessert) ;
+   « Recette » les liste toutes.
+   ===================================================================== */
+let recettesAskesisCache = null;
+function recettesAskesis() {
+  if (!recettesAskesisCache) recettesAskesisCache = Array.isArray(window.RECETTES_ASKESIS) ? window.RECETTES_ASKESIS : [];
+  return recettesAskesisCache;
+}
+function trouverRecette(id) {
+  return recettesPerso.find(x => x.id === id) || recettesPartagees.find(x => x.id === id) || recettesAskesis().find(x => x.id === id) || null;
+}
+const AU_REPAS = { breakfast: 'au petit-déjeuner', lunch: 'au déjeuner', snack: 'à la collation', dinner: 'au dîner' };
+let ficheRecette = null;
+function ouvrirFicheRecette(id, repas) {
+  const r = trouverRecette(id);
+  if (!r) return;
+  ficheRecette = { id, repas: repas || repasFeuille || repasDuMoment() };
+  const t = totauxRecettePerso(r), fr = n => Math.round(n).toLocaleString('fr-FR');
+  document.getElementById('fiche-recette-titre').textContent = r.nom;
+  const lignes = r.lignes && r.lignes.length ? r.lignes : (r.ingredients || []).map(i => `${fr(i.grammes)} g ${String(i.nom || '').toLowerCase()}`);
+  const page = r.source ? 'https://fr.wikibooks.org/wiki/Livre_de_cuisine/' + encodeURIComponent(String(r.source).replace(/ /g, '_')) : '';
+  const source = r.source ? `Recette « <a href="${escapeHtml(page)}" target="_blank" rel="noopener">${escapeHtml(r.source)}</a> » des contributeurs du Livre de cuisine de Wikilivres, licence <a href="https://creativecommons.org/licenses/by-sa/4.0/deed.fr" target="_blank" rel="noopener">CC BY-SA 4.0</a>, texte adapté. `
+    : String(r.id).startsWith('ak-') ? 'Recette Askēsis. ' : '';
+  document.getElementById('fiche-recette').innerHTML = `
+    <div class="recette-macros">${[[fr(t.parPortionKcal), 'kcal'], [fr(t.parPortionP) + ' g', 'Protéines'], [fr(t.parPortionC) + ' g', 'Glucides'], [fr(t.parPortionF) + ' g', 'Lipides']]
+      .map(([v, l]) => `<div><b>${v}</b><small>${l}</small></div>`).join('')}</div>
+    <p class="note">${r.estime ? `Environ ${t.portions} portions (estimé d'après la recette)` : `Pour ${t.portions} portion${t.portions > 1 ? 's' : ''}`} : valeurs pour une portion.</p>
+    <h4 class="recette-section">Ingrédients</h4>
+    <ul class="recette-liste">${lignes.map(l => `<li>${escapeHtml(l)}</li>`).join('')}</ul>
+    ${r.etapes && r.etapes.length ? `<h4 class="recette-section">Préparation</h4><ol class="recette-etapes">${r.etapes.map(e => `<li>${escapeHtml(e)}</li>`).join('')}</ol>` : ''}
+    <p class="note recette-source">${source}Valeurs nutritionnelles calculées avec la table CIQUAL 2020 (Anses).</p>
+    <button type="button" class="btn btn-primary recette-ajouter" onclick="ajouterFicheRecette()">Ajouter une portion ${AU_REPAS[ficheRecette.repas] || ''}</button>`;
+  ouvrirFeuille('feuille-fiche-recette');
+}
+// Ouverte depuis la liste des recettes : la refermer ramène à la liste.
+function fermerFicheRecette() {
+  document.getElementById('feuille-fiche-recette').classList.remove('show');
+  majCoucheOuverte();
+}
+function ajouterFicheRecette() {
+  if (!ficheRecette) return;
+  loguerPortionRecettePerso(ficheRecette.id, ficheRecette.repas);
+  fermerFeuilles();
+}
+// « Recettes Askēsis » dans la feuille Recette : une catégorie à la fois
+// (celle du repas visé en ouvrant), une recherche porte sur toutes.
+const CATEGORIES_RECETTES = [['plat', 'Plats', 'plat'], ['entree', 'Entrées et soupes', 'entrée ou soupe'], ['petit-dej', 'Petit-déjeuner', 'petit-déjeuner'],
+  ['collation', 'Collations', 'collation'], ['dessert', 'Desserts', 'dessert'], ['accompagnement', 'Accompagnements', 'accompagnement']];
+let categorieRecettes = 'plat';
+function categorieDuRepas(repas) { return { breakfast: 'petit-dej', snack: 'collation' }[repas] || 'plat'; }
+// À chaque ouverture de la feuille : la catégorie du repas, sans recherche.
+function preparerBibliothequeRecettes(repas) {
+  categorieRecettes = categorieDuRepas(repas);
+  const champ = document.getElementById('choix-recette-recherche');
+  if (champ) champ.value = '';
+  const c = document.getElementById('choix-recette-askesis');
+  if (c) c.scrollTop = 0;
+}
+function choisirCategorieRecettes(cat) {
+  categorieRecettes = cat;
+  const champ = document.getElementById('choix-recette-recherche');
+  if (champ) champ.value = '';
+  const c = document.getElementById('choix-recette-askesis');
+  if (c) c.scrollTop = 0;
+  renderBibliothequeRecettes();
+}
+function renderBibliothequeRecettes() {
+  const c = document.getElementById('choix-recette-askesis');
+  if (!c) return;
+  const champ = document.getElementById('choix-recette-recherche');
+  const q = normaliserRecherche(champ ? champ.value : '');
+  const repas = repasFeuille || repasDuMoment();
+  const toutes = recettesAskesis();
+  const puces = document.getElementById('choix-recette-categories');
+  if (puces) puces.innerHTML = CATEGORIES_RECETTES.filter(([k]) => toutes.some(r => r.categorie === k))
+    .map(([k, l]) => `<button type="button" aria-pressed="${!q && k === categorieRecettes}" onclick="choisirCategorieRecettes('${k}')">${l}</button>`).join('');
+  const liste = toutes.filter(r => q ? q.split(' ').every(m => normaliserRecherche(r.nom).includes(m)) : r.categorie === categorieRecettes)
+    .sort((a, b) => a.nom.localeCompare(b.nom, 'fr'));
+  const compte = document.getElementById('choix-recette-compte');
+  if (compte) compte.textContent = `${liste.length}\u00a0recette${liste.length > 1 ? 's' : ''}` + (q ? ' trouvée' + (liste.length > 1 ? 's' : '') : '');
+  c.innerHTML = '';
+  if (!liste.length) { c.innerHTML = '<p class="note" style="padding:10px 14px; margin:0;">Aucune recette ne correspond.</p>'; return; }
+  const libelle = Object.fromEntries(CATEGORIES_RECETTES.map(([k, , l]) => [k, l]));
+  liste.forEach(r => {
+    const t = totauxRecettePerso(r);
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'off-suggestion';
+    b.innerHTML = '<div class="off-nom"></div><div class="off-meta"></div>';
+    b.querySelector('.off-nom').textContent = r.nom;
+    // Pendant une recherche, toutes catégories mêlées : la sienne en tête.
+    const cat = q && libelle[r.categorie] ? libelle[r.categorie].charAt(0).toUpperCase() + libelle[r.categorie].slice(1) + ' · ' : '';
+    b.querySelector('.off-meta').textContent = `${cat}${Math.round(t.parPortionKcal)} kcal · P ${Math.round(t.parPortionP)} g · G ${Math.round(t.parPortionC)} g · L ${Math.round(t.parPortionF)} g — par portion`;
+    b.addEventListener('click', () => ouvrirFicheRecette(r.id, repas));
+    c.appendChild(b);
+  });
 }
 
 // Recalcule le poids total et les macros d'un aliment à partir de ses
@@ -14155,6 +14379,7 @@ function renderChoixRecette() {
   const vide = document.getElementById('choix-recette-vide');
   if (!container || !vide) return;
   container.innerHTML = '';
+  renderBibliothequeRecettes();
   // Les siennes d'abord, puis celles que l'admin a rendues accessibles à
   // tous — distinguées par un badge, ajoutées au repas exactement pareil.
   const toutes = recettesPerso.concat(recettesPartagees);
@@ -14176,7 +14401,7 @@ function renderChoixRecette() {
     nomEl.textContent = r.nom + (r.partageePar ? ' · partagée' : '');
     const metaEl = document.createElement('div');
     metaEl.className = 'off-meta';
-    metaEl.textContent = `${Math.round(t.parPortionKcal)} kcal · P ${Math.round(t.parPortionP)}g · G ${Math.round(t.parPortionC)}g · L ${Math.round(t.parPortionF)}g — par portion`;
+    metaEl.textContent = `${Math.round(t.parPortionKcal)} kcal · P ${Math.round(t.parPortionP)} g · G ${Math.round(t.parPortionC)} g · L ${Math.round(t.parPortionF)} g — par portion`;
     btn.appendChild(nomEl);
     btn.appendChild(metaEl);
     btn.addEventListener('click', () => {
@@ -14249,7 +14474,7 @@ function depuisFeuille(mode) {
   if (mode === 'manuel') ouvrirManuel(mealId);
   else if (mode === 'photo') ouvrirPhoto(mealId);
   else if (mode === 'recette') {
-    repasFeuille = mealId; renderChoixRecette(); ouvrirFeuille('feuille-choix-recette');
+    repasFeuille = mealId; preparerBibliothequeRecettes(mealId); renderChoixRecette(); ouvrirFeuille('feuille-choix-recette');
     // Rechargées à chaque ouverture : une recette que l'admin vient de
     // partager apparaît tout de suite, sans attendre la prochaine synchro.
     chargerRecettesPartagees();
@@ -26999,7 +27224,7 @@ function basculerAlimentFavori(cle) {
    « pain ». Repli : une assiette, plutôt qu'une lettre seule. */
 const ICONES_ALIMENTS = [
   [/\b(whey|caseine|shaker|proteines? en poudre|poudre de proteines?|barres? proteinees?|boissons? proteinees?)\b|^proteines?\b/, '💪'],
-  [/\b(bieres?|panache)\b/, '🍺'], [/\b(vins?|champagne|cidre|sangria)\b/, '🍷'], [/\b(whisky|rhum|vodka|gin|pastis|tequila|cognac|liqueur|cocktail|spritz|mojito)\b/, '🍸'],
+  [/\bvinaigres?\b/, '🥫'], [/\b(bieres?|panache)\b/, '🍺'], [/\b(vins?|champagne|cidre|sangria)\b/, '🍷'], [/\b(whisky|rhum|vodka|gin|pastis|tequila|cognac|liqueur|cocktail|spritz|mojito)\b/, '🍸'],
   [/\b(cafes?|expresso|espresso|cappuccino|latte|ristretto)\b/, '☕'], [/\b(the|tisane|infusion|matcha|rooibos)\b/, '🍵'],
   [/\b(coca|cola|sodas?|limonade|sprite|fanta|orangina|ice tea|red bull|monster|boissons? energisantes?)\b/, '🥤'], [/\b(jus|smoothie|nectar|sirop)\b/, '🧃'],
   [/\b(eaux?|water|evian|vittel|cristaline|volvic|perrier|badoit|contrex|hepar)\b/, '💧'],
@@ -29132,6 +29357,7 @@ function fermerBackdropSiCible(target) {
     majCoucheOuverte();
     return true;
   }
+  if (target.id === 'feuille-fiche-recette') { fermerFicheRecette(); return true; }
   if (target.classList.contains('feuille')) { fermerFeuilleRepas(); return true; }
   return false;
 }
@@ -29259,7 +29485,7 @@ function proposerMiseAJour() {
    worker garde ces copies fraîches), puis la page se recharge. */
 async function mettreAJourAppli(bouton) {
   if (bouton) { bouton.disabled = true; bouton.textContent = 'Mise à jour…'; }
-  const fichiers = Promise.all(['./', 'index.html', 'assets/donnees.js'].map(u => fetch(u, { cache: 'reload' }).catch(() => null)));
+  const fichiers = Promise.all(['./', 'index.html', 'assets/donnees.js', 'assets/recettes.js'].map(u => fetch(u, { cache: 'reload' }).catch(() => null)));
   await Promise.race([fichiers, new Promise(ok => setTimeout(ok, 8000))]);
   rechargerPage();
 }
