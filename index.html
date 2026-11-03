@@ -4214,6 +4214,17 @@
     html:root body .recette-recherche { margin-bottom: 10px; }
     html:root body .recette-categories { margin: 0 0 8px; padding: 2px 2px 4px; }
     html:root body .recette-compte { margin: 0 2px 8px; font-size: .74rem; }
+    /* Affinages cumulables : des puces au contour, pleines quand elles sont actives. */
+    html:root body .recette-affinages { flex-wrap: wrap; overflow: visible; margin: -2px 0 8px; padding: 2px 2px 4px; }
+    html:root body .recette-affinages button { display: inline-flex; align-items: center; gap: 6px; background: transparent; box-shadow: inset 0 0 0 1.5px var(--verre-brd); }
+    html:root body .recette-affinages button[aria-pressed="true"] { background: var(--inv); color: var(--sur-inv); box-shadow: none; }
+    html:root body .recette-affinages button:disabled { opacity: .45; }
+    html:root body .recette-affinages .icone-ui { width: 14px; height: 14px; flex: none; color: currentColor; }
+    html:root body .recette-compte-ligne { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin: 0 2px 8px; }
+    html:root body .recette-compte-ligne .recette-compte { margin: 0; min-width: 0; }
+    html:root body .recette-tri { display: inline-flex; flex: none; padding: 3px; gap: 2px; border-radius: 99px; background: var(--s1); box-shadow: var(--ombre-carte); }
+    html:root body .recette-tri button { border: 0; border-radius: 99px; padding: 6px 10px; background: transparent; color: var(--text-muted); font: inherit; font-size: .74rem; font-weight: 700; cursor: pointer; }
+    html:root body .recette-tri button[aria-pressed="true"] { background: var(--inv); color: var(--sur-inv); }
     html:root body #choix-recette-askesis { max-height: 46vh; overflow-y: auto; }
     html:root body .recette-macros { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin: 4px 0 10px; }
     html:root body .recette-macros > div { padding: 10px 6px; border-radius: 14px; background: var(--s2); text-align: center; }
@@ -5525,9 +5536,14 @@
     <!-- Recettes livrées avec l'appli (voir recettesAskesis) : plats de
          Wikilivres et recettes protéinées, valeurs CIQUAL. -->
     <h4 class="recette-section">Recettes Askēsis</h4>
-    <label class="adm-recherche recette-recherche"><svg class="icone-ui" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="8" /><path d="m21 21-4.3-4.3" /></svg><input type="search" id="choix-recette-recherche" placeholder="Chercher une recette…" autocomplete="off" oninput="renderBibliothequeRecettes()" aria-label="Chercher une recette"></label>
+    <label class="adm-recherche recette-recherche"><svg class="icone-ui" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="8" /><path d="m21 21-4.3-4.3" /></svg><input type="search" id="choix-recette-recherche" placeholder="Une recette, un ingrédient…" autocomplete="off" oninput="renderBibliothequeRecettes()" aria-label="Chercher une recette ou un ingrédient"></label>
     <div class="adm-filtres recette-categories" id="choix-recette-categories" role="group" aria-label="Catégories de recettes"></div>
-    <p class="note recette-compte" id="choix-recette-compte" aria-live="polite"></p>
+    <!-- Affinages cumulables (voir AFFINAGES_RECETTES) et tri de la liste. -->
+    <div class="adm-filtres recette-affinages" id="choix-recette-affinages" role="group" aria-label="Affiner les recettes"></div>
+    <div class="recette-compte-ligne">
+      <p class="note recette-compte" id="choix-recette-compte" aria-live="polite"></p>
+      <div class="recette-tri" id="choix-recette-tri" role="group" aria-label="Trier les recettes"><button type="button" onclick="choisirTriRecettes('nom')" aria-label="Trier par nom">A–Z</button><button type="button" onclick="choisirTriRecettes('proteines')" aria-label="Les plus protéinées d'abord">Protéines</button><button type="button" onclick="choisirTriRecettes('kcal')" aria-label="Les moins caloriques d'abord">kcal</button></div>
+    </div>
     <div id="choix-recette-askesis" class="carte-liste"></div>
   </div>
 </div>
@@ -7473,7 +7489,7 @@ const URL_SITE_WEB = 'https://boulidjamal-lang.github.io/mon-coach/';
      encore envoyé (au plus toutes les 10 min, après une synchro réussie).
    Variables en var : ces fonctions peuvent servir avant la fin du chargement.
    ===================================================================== */
-const VERSION_APPLI = '2026-11-03.3';  // date de mise en ligne (.3 : troisième du jour)
+const VERSION_APPLI = '2026-11-03.4';  // date de mise en ligne (.4 : quatrième du jour)
 var DERNIERE_SYNCHRO_LS = 'mc_derniere_synchro';
 function libelleVersion(v, court) {
   const d = new Date(String(v || VERSION_APPLI).slice(0, 10) + 'T12:00:00');
@@ -8154,14 +8170,104 @@ function habitudesSeance() {
   cacheHabitudesSeance = res;
   return res;
 }
+/* Le programme d'une séance passée, parmi tes programmes actuels : par son
+   identifiant, sinon par son nom (un programme recréé garde son historique),
+   sinon par ses exercices (une séance libre qui reprend au moins la moitié
+   des exercices d'un programme, et pas d'autres, compte comme ce programme). */
+function programmeDeSeance(h, progs) {
+  if (!h || !progs.length) return null;
+  const parId = h.programmeId ? progs.find(p => p.id === h.programmeId) : null;
+  if (parId) return parId;
+  const nom = h.programmeNom ? normaliserRecherche(h.programmeNom) : '';
+  const parNom = nom && nom !== normaliserRecherche('Séance libre') ? progs.find(p => normaliserRecherche(p.nom) === nom) : null;
+  if (parNom) return parNom;
+  const exos = new Set((h.exercices || []).map(e => e && e.exerciceId).filter(Boolean));
+  if (!exos.size) return null;
+  let meilleur = null, score = 0;
+  progs.forEach(p => {
+    const ep = new Set((p.exercices || []).map(e => e && e.exerciceId).filter(Boolean));
+    if (!ep.size) return;
+    let commun = 0;
+    exos.forEach(x => { if (ep.has(x)) commun++; });
+    const sc = commun / (exos.size + ep.size - commun);
+    if (sc > score) { score = sc; meilleur = p; }
+  });
+  return score >= 0.5 ? meilleur : null;
+}
+/* Ce que tes séances passées disent de tes programmes :
+   - le programme de chaque jour de la semaine : le même les deux dernières
+     fois (un changement de programme se voit en deux semaines), sinon celui
+     d'au moins deux séances et de plus d'une séance sur deux de ce jour-là
+     sur les 8 dernières semaines ;
+   - celui qui suit d'habitude chaque programme (au moins deux fois) : ton
+     ordre réel, qui n'est pas forcément celui de ta liste ;
+   - le dernier programme fait.
+   Mis en cache jusqu'à la prochaine séance, un changement de programme ou
+   le lendemain. */
+let cacheHabitudesProgrammes = null;
+function habitudesProgrammes() {
+  const auj = todayStr(), histo = historiqueMuscu(), progs = programmesMuscu();
+  const cle = auj + '|' + histo.length + '|' + (histo[0] ? histo[0].id + '/' + (histo[0].maj || histo[0].fin || '') : '')
+    + '|' + progs.map(p => p.id + ':' + (p.maj || '') + ':' + (p.nom || '') + ':' + (p.exercices || []).length).join(',');
+  if (cacheHabitudesProgrammes && cacheHabitudesProgrammes.cle === cle) return cacheHabitudesProgrammes;
+  const res = { cle, jour: {}, suivant: {}, derniere: null, programmeDe: new Map() };
+  cacheHabitudesProgrammes = res;
+  if (!progs.length) return res;
+  const seances = [];
+  histo.forEach(h => {
+    if (!h || !h.date || h.date > auj) return;
+    const p = programmeDeSeance(h, progs);
+    if (!p) return;
+    res.programmeDe.set(cleSeanceMuscu(h), p.id);
+    seances.push({ date: h.date, fin: Number(h.fin) || 0, p });
+  });
+  seances.sort((a, b) => a.date < b.date ? -1 : a.date > b.date ? 1 : a.fin - b.fin);
+  res.derniere = seances.length ? seances[seances.length - 1].p : null;
+  const debut = shiftDate(auj, -7 * PREVUES_SEMAINES), parJour = {};
+  seances.forEach(x => {
+    if (x.date < debut) return;
+    const w = dateLocale(x.date).getDay();
+    (parJour[w] = parJour[w] || []).push(x.p);
+  });
+  Object.keys(parJour).forEach(w => {
+    const l = parJour[w], n = l.length;
+    if (n >= 2 && l[n - 1].id === l[n - 2].id) { res.jour[w] = l[n - 1]; return; }
+    const compte = {};
+    l.forEach(p => { compte[p.id] = (compte[p.id] || 0) + 1; });
+    const [id, c] = Object.entries(compte).sort((a, b) => b[1] - a[1])[0];
+    if (c >= 2 && c * 2 > n) res.jour[w] = progs.find(p => p.id === id);
+  });
+  const suite = {};
+  seances.slice(-60).forEach((x, i, l) => {
+    if (!i) return;
+    const a = l[i - 1].p.id;
+    suite[a] = suite[a] || {};
+    suite[a][x.p.id] = (suite[a][x.p.id] || 0) + 1;
+  });
+  Object.keys(suite).forEach(a => {
+    const [id, c] = Object.entries(suite[a]).sort((x, y) => y[1] - x[1])[0];
+    if (c >= 2) res.suivant[a] = progs.find(p => p.id === id);
+  });
+  return res;
+}
+// Une séance de l'historique, même rechargée depuis le compte (objet neuf).
+function cleSeanceMuscu(h) { return h.id || h.date + '|' + (h.fin || h.debut || ''); }
+// Le programme qui vient après `p` : ton ordre habituel, sinon celui de ta liste.
+function programmeApres(p, hab, progs) {
+  if (p && hab.suivant[p.id]) return hab.suivant[p.id];
+  const i = p ? progs.findIndex(x => x.id === p.id) : -1;
+  return progs[(i + 1) % progs.length];
+}
 /* Ce que coûtera la séance `p` (un programme, ou null pour une séance sans
    programme) le jour `date` : les séries réellement faites lors de tes 3
-   dernières séances de ce programme (à défaut, celles qu'il prévoit), la
-   durée de ces séances, et la même formule que la vraie séance. */
+   dernières séances de ce programme (séances libres reconnues comprises ; à
+   défaut, celles qu'il prévoit), la durée de ces séances, et la même
+   formule que la vraie séance. */
 function estimationSeance(p, date) {
   const histo = historiqueMuscu();
   const faites = histo.filter(h => seriesFaitesSeance(h) > 0);
-  let base = p ? faites.filter(h => h.programmeId === p.id).slice(0, 3) : faites.slice(0, 5);
+  const de = p ? habitudesProgrammes().programmeDe : null;
+  let base = p ? faites.filter(h => de.get(cleSeanceMuscu(h)) === p.id).slice(0, 3) : faites.slice(0, 5);
   let origine = base.length ? 'historique' : null;
   let series = base.length ? mediane(base.map(seriesFaitesSeance)) : null;
   if (!(series > 0) && p) {
@@ -8173,8 +8279,13 @@ function estimationSeance(p, date) {
   const duree = Math.round((base.length && mediane(base.map(h => Number(h.dureeMin)).filter(x => x > 0))) || series * 3);
   const poids = Number(appData[date] && appData[date].weight) || dernierPoidsConnu(date);
   const kcal = Math.round(kcalSeance('musculation', duree, poids, series, null, { bmr: metabolismeDeBase(poids, date) }));
-  // L'heure habituelle : la médiane des débuts de tes dernières séances.
-  const heures = histo.slice(0, 8).filter(h => Number(h.debut) > 0).map(h => { const d = new Date(Number(h.debut)); return d.getHours() + d.getMinutes() / 60; });
+  // L'heure habituelle : la médiane des débuts de tes séances de ce jour de la
+  // semaine (au moins deux), sinon de tes dernières séances.
+  const w = dateLocale(date).getDay();
+  const heureDe = h => { const d = new Date(Number(h.debut)); return d.getHours() + d.getMinutes() / 60; };
+  const avecDebut = histo.filter(h => Number(h.debut) > 0);
+  const memeJour = avecDebut.filter(h => h.date && dateLocale(h.date).getDay() === w).slice(0, 6).map(heureDe);
+  const heures = memeJour.length >= 2 ? memeJour : avecDebut.slice(0, 8).map(heureDe);
   return {
     programme: p ? { id: p.id, nom: p.nom } : null, nom: p ? p.nom : 'Séance',
     series, duree, kcal, origine, nbBase: base.length,
@@ -8182,15 +8293,14 @@ function estimationSeance(p, date) {
   };
 }
 /* Les séances prévues d'aujourd'hui à dans `nbJours` - 1 jours, dans
-   l'ordre ; chacune avec son programme (le suivant dans la liste à partir
-   de la « Séance du jour ») et sa dépense estimée. La séance d'aujourd'hui
-   n'y est plus dès qu'elle est faite : c'est sa vraie dépense qui compte. */
+   l'ordre ; chacune avec son programme (celui que tu fais d'habitude ce jour
+   de la semaine, sinon celui qui suit le précédent dans ton ordre habituel)
+   et sa dépense estimée. La séance d'aujourd'hui n'y est plus dès qu'elle
+   est faite : c'est sa vraie dépense qui compte. */
 function prochainesSeances(nbJours) {
   const auj = todayStr(), r = reglageSeancesPrevues(), progs = programmesMuscu();
-  let sug = null;
-  try { sug = progs.length ? programmeSuggere() : null; } catch (e) {}
-  const i0 = sug ? progs.findIndex(p => p.id === sug.p.id) : -1;
-  let hab = null, rang = 0;
+  const habP = progs.length ? habitudesProgrammes() : null;
+  let precedent = habP ? habP.derniere : null, hab = null;
   const res = [];
   for (let k = 0; k < nbJours; k++) {
     const date = shiftDate(auj, k), w = dateLocale(date).getDay();
@@ -8203,9 +8313,9 @@ function prochainesSeances(nbJours) {
     else if (r.mode === 'jours') { if (r.jours.includes(w)) source = 'jours'; }
     else { hab = hab || habitudesSeance(); if (hab.jours.includes(w)) source = 'habitude'; }
     if (!source) continue;
-    const p = i0 >= 0 ? progs[(i0 + rang) % progs.length] : null;
-    rang++;
-    res.push(Object.assign({ date, source }, estimationSeance(p, date)));
+    const p = habP ? (habP.jour[w] || programmeApres(precedent, habP, progs)) : null;
+    if (p) precedent = p;
+    res.push(Object.assign({ date, source, programmeDuJour: !!(habP && habP.jour[w]) }, estimationSeance(p, date)));
   }
   return res;
 }
@@ -8234,7 +8344,8 @@ function momentSeance(s) {
 function heureSeanceTexte(h) {
   if (h == null) return '';
   const q = Math.round(h * 4) / 4, hh = Math.floor(q) % 24, mm = Math.round((q - Math.floor(q)) * 60);
-  return 'vers ' + hh + ' h' + (mm ? String(mm).padStart(2, '0') : '');
+  // « vers 19 h », « vers 10 h 30 » : des espaces insécables, comme pour les durées.
+  return 'vers ' + hh + '\u00a0h' + (mm ? '\u00a0' + String(mm).padStart(2, '0') : '');
 }
 function computeTargets(day, dateStr) {
   const weight = Number(day.weight) || dernierPoidsConnu(dateStr || todayStr());
@@ -9043,7 +9154,9 @@ function analyseCoach(day, totals, t) {
     const fatigues = Object.keys(g).filter(k => (hierG[k] || 0) >= 6);
     // boutonCoachHTML échappe tout l'attribut : l'argument n'a besoin que de JSON.stringify.
     const action = { libelle: 'Voir la séance ' + p.nom, faire: `apercuProgramme(${JSON.stringify(p.id)})` };
-    if (fatigues.length) {
+    // Un jour de repos repéré, aucune séance à repousser : pas de conseil de récupération.
+    const reposConnu = !t.seancePrevue && seancesPrevuesConnues();
+    if (fatigues.length && !reposConnu) {
       ajouter({ cle: 'recuperation', prio: 45, icone: 'repos', action,
         texte: (m => `${m.pluriel ? 'Tes' : 'Ton'} <b>${m.noms}</b> ${m.pluriel ? 'ont' : 'a'} beaucoup travaillé hier. Si tu ${m.pron} sens encore, ta séance <b>${escapeHtml(p.nom)}</b> peut attendre demain : le muscle grandit pendant le repos.`)(muscles(fatigues)) });
       return;
@@ -10028,11 +10141,12 @@ function renderSeancesPrevues() {
       <button type="button" onclick="choisirModeSeances('auto')">Repérés</button><button type="button" onclick="choisirModeSeances('jours')">Choisis</button><button type="button" onclick="choisirModeSeances('off')">Aucun</button>
     </div>`;
   if (r.mode === 'auto') {
-    const hab = habitudesSeance();
-    const noms = hab.jours.map(w => NOMS_JOURS[w]);
+    const hab = habitudesSeance(), habP = programmesMuscu().length ? habitudesProgrammes() : null;
+    // « lundi (Pecs Triceps) » : le jour et le programme que tu y fais d'habitude.
+    const noms = hab.jours.map(w => `<b>${NOMS_JOURS[w]}</b>${habP && habP.jour[w] ? ' (' + escapeHtml(habP.jour[w].nom) + ')' : ''}`);
     const enTexte = noms.length > 1 ? noms.slice(0, -1).join(', ') + ' et ' + noms[noms.length - 1] : noms.join('');
     html += `<p class="sp-note">${hab.pause ? 'Pas de séance depuis plus de 10 jours : rien n\'est prévu tant que tu n\'as pas repris.'
-      : noms.length ? `Repérés sur tes ${Math.min(hab.semaines, PREVUES_SEMAINES)} dernières semaines : <b>${enTexte}</b>.`
+      : noms.length ? `Repérés sur tes ${Math.min(hab.semaines, PREVUES_SEMAINES)} dernières semaines : ${enTexte}.`
       : hab.semaines >= 2 ? 'Pas encore de jour régulier repéré dans tes séances : choisis tes jours si tu en as.'
       : 'Après deux semaines de séances, tes jours habituels seront repérés tout seuls. Tu peux aussi les choisir.'}</p>`;
   } else if (r.mode === 'jours') {
@@ -11648,11 +11762,58 @@ function ajouterFicheRecette() {
   fermerFeuilles();
 }
 // « Recettes Askēsis » dans la feuille Recette : une catégorie à la fois
-// (celle du repas visé en ouvrant), une recherche porte sur toutes.
-const CATEGORIES_RECETTES = [['plat', 'Plats', 'plat'], ['entree', 'Entrées et soupes', 'entrée ou soupe'], ['petit-dej', 'Petit-déjeuner', 'petit-déjeuner'],
-  ['collation', 'Collations', 'collation'], ['dessert', 'Desserts', 'dessert'], ['accompagnement', 'Accompagnements', 'accompagnement']];
+// (celle du repas visé en ouvrant, ou toutes), des affinages qui se cumulent
+// et un tri ; une recherche porte sur toutes les catégories, sur le nom et
+// sur les ingrédients.
+const CATEGORIES_RECETTES = [['toutes', 'Toutes', ''], ['plat', 'Plats', 'plat'], ['entree', 'Entrées et soupes', 'entrée ou soupe'],
+  ['petit-dej', 'Petit-déjeuner', 'petit-déjeuner'], ['collation', 'Collations', 'collation'], ['dessert', 'Desserts', 'dessert'],
+  ['accompagnement', 'Accompagnements', 'accompagnement'], ['pain', 'Pains', 'pain'], ['sauce', 'Sauces et tartinades', 'sauce ou tartinade'],
+  ['boisson', 'Boissons', 'boisson']];
 let categorieRecettes = 'plat';
 function categorieDuRepas(repas) { return { breakfast: 'petit-dej', snack: 'collation' }[repas] || 'plat'; }
+/* Les affinages, cumulables, et le tri : gardés d'une ouverture à l'autre
+   (sur cet appareil). « Protéinées » : au moins 20 g par portion ; « Dans
+   mon reste » : une portion qui tient dans les calories qui restent
+   aujourd'hui ; « Végétariennes » : ni viande, ni poisson, ni fruits de mer. */
+const PROTEINES_RECETTE_MIN = 20;
+const AFFINAGES_RECETTES = ['proteinees', 'reste', 'vege'];
+let affinagesRecettes = { proteinees: false, reste: false, vege: false }, triRecettes = 'nom';
+try {
+  const memo = JSON.parse(localStorage.getItem('recettesFiltres') || 'null');
+  if (memo && typeof memo === 'object') {
+    AFFINAGES_RECETTES.forEach(k => { affinagesRecettes[k] = memo[k] === true; });
+    if (['nom', 'proteines', 'kcal'].includes(memo.tri)) triRecettes = memo.tri;
+  }
+} catch (e) {}
+function memoriserFiltresRecettes() {
+  try { localStorage.setItem('recettesFiltres', JSON.stringify(Object.assign({ tri: triRecettes }, affinagesRecettes))); } catch (e) {}
+}
+// Viande, poisson ou fruits de mer parmi les ingrédients ; et, dans la recette
+// écrite, un bouillon, un fond ou une sauce qui en contiennent.
+const RE_VIANDE_POISSON = /\b(boeuf|porc|veau|agneau|mouton|poulet|poule|coq|dinde|canard|magrets?|oie|caille|pintade|lapin|bison|gibier|chevreuil|sanglier|jambon|lard|lardons?|bacon|saindoux|pancetta|guanciale|prosciutto|coppa|chorizo|salami|pepperoni|saucisses?|saucisson|merguez|andouille|boudin|rillettes|viandes?|steak|hachis|paleron|macreuse|faux filet|entrecote|escalope|cuisses? de poulet|ailes de poulet|haut de cuisse|pilons?|foie|gesiers?|rognons?|corned|pansettes?|graisse de (poulet|canard|boeuf)|poissons?|saumon|thon|cabillaud|morue|colin|merlu|lieu|sole|bar|dorade|daurade|rouget|vivaneau|fletan|haddock|hareng|maquereau|sardines?|anchois|truite|tilapia|rascasse|loup|espadon|crevettes?|gambas|crabe|homard|langouste|langoustines?|moules?|huitres?|palourdes?|coques|calamars?|encornets?|poulpe|seiche|saint jacques|petoncles?|surimi|ecrevisses?|gelatine|chair)\b/;
+const RE_VIANDE_POISSON_TEXTE = /(bouillon de (volaille|poulet|boeuf|viande)|fond de (veau|volaille)|jus de viande|sauce (de )?poisson|nuoc|worcestershire|pate de crevettes|anchois|gelatine)/;
+// Ce qu'on calcule une fois par recette : valeurs par portion, végétarienne ou
+// non, textes de recherche (nom, ingrédients).
+const infosRecettes = new Map();
+function infosRecette(r) {
+  let x = infosRecettes.get(r);
+  if (!x) {
+    const ingredients = (r.ingredients || []).map(i => normaliserRecherche(i.nom));
+    const lignes = (r.lignes || []).map(l => normaliserRecherche(l));
+    x = { t: totauxRecettePerso(r), nom: normaliserRecherche(r.nom),
+      vege: !ingredients.some(n => RE_VIANDE_POISSON.test(n)) && !lignes.some(l => RE_VIANDE_POISSON_TEXTE.test(l)),
+      ingredients: ingredients.concat(lignes).join(' | ') };
+    infosRecettes.set(r, x);
+  }
+  return x;
+}
+// Les calories qui restent aujourd'hui (le jour affiché), pour « Dans mon reste ».
+function resteKcalRecettes() {
+  try {
+    const j = getDay(currentDate);
+    return Math.round(computeTargets(j, currentDate).target - sumMeals(j).kcal);
+  } catch (e) { return 0; }
+}
 // À chaque ouverture de la feuille : la catégorie du repas, sans recherche.
 function preparerBibliothequeRecettes(repas) {
   categorieRecettes = categorieDuRepas(repas);
@@ -11669,32 +11830,89 @@ function choisirCategorieRecettes(cat) {
   if (c) c.scrollTop = 0;
   renderBibliothequeRecettes();
 }
+function basculerAffinageRecettes(k) {
+  if (!AFFINAGES_RECETTES.includes(k)) return;
+  affinagesRecettes[k] = !affinagesRecettes[k];
+  memoriserFiltresRecettes();
+  const c = document.getElementById('choix-recette-askesis');
+  if (c) c.scrollTop = 0;
+  renderBibliothequeRecettes();
+}
+function choisirTriRecettes(tri) {
+  if (!['nom', 'proteines', 'kcal'].includes(tri)) return;
+  triRecettes = tri;
+  memoriserFiltresRecettes();
+  const c = document.getElementById('choix-recette-askesis');
+  if (c) c.scrollTop = 0;
+  renderBibliothequeRecettes();
+}
+const ICONE_COCHE = '<svg class="icone-ui" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5" /></svg>';
 function renderBibliothequeRecettes() {
   const c = document.getElementById('choix-recette-askesis');
   if (!c) return;
   const champ = document.getElementById('choix-recette-recherche');
   const q = normaliserRecherche(champ ? champ.value : '');
+  const mots = q ? q.split(' ') : [];
   const repas = repasFeuille || repasDuMoment();
   const toutes = recettesAskesis();
+  const fr = n => Math.round(n).toLocaleString('fr-FR');
   const puces = document.getElementById('choix-recette-categories');
-  if (puces) puces.innerHTML = CATEGORIES_RECETTES.filter(([k]) => toutes.some(r => r.categorie === k))
+  if (puces) puces.innerHTML = CATEGORIES_RECETTES.filter(([k]) => k === 'toutes' || toutes.some(r => r.categorie === k))
     .map(([k, l]) => `<button type="button" aria-pressed="${!q && k === categorieRecettes}" onclick="choisirCategorieRecettes('${k}')">${l}</button>`).join('');
-  const liste = toutes.filter(r => q ? q.split(' ').every(m => normaliserRecherche(r.nom).includes(m)) : r.categorie === categorieRecettes)
-    .sort((a, b) => a.nom.localeCompare(b.nom, 'fr'));
+  // Les affinages : leur critère exact dans leur libellé.
+  const reste = resteKcalRecettes();
+  const resteActif = affinagesRecettes.reste && reste > 0;
+  const affinages = document.getElementById('choix-recette-affinages');
+  if (affinages) affinages.innerHTML = [
+    ['proteinees', `Protéinées ≥\u00a0${PROTEINES_RECETTE_MIN}\u00a0g`, false],
+    ['reste', reste > 0 ? `Mon reste ≤\u00a0${fr(reste)}\u00a0kcal` : 'Mon reste\u00a0: 0\u00a0kcal', !(reste > 0)],
+    ['vege', 'Végétariennes', false]
+  ].map(([k, l, off]) => {
+    const actif = k === 'reste' ? resteActif : affinagesRecettes[k];
+    return `<button type="button" aria-pressed="${actif}"${off ? ' disabled' : ''} onclick="basculerAffinageRecettes('${k}')">${actif ? ICONE_COCHE : ''}${l}</button>`;
+  }).join('');
+  const tri = document.getElementById('choix-recette-tri');
+  if (tri) [...tri.querySelectorAll('button')].forEach((b, i) => b.setAttribute('aria-pressed', String(['nom', 'proteines', 'kcal'][i] === triRecettes)));
+  // Une recherche : le nom d'abord, puis les ingrédients (« poulet » trouve aussi le poulet basquaise et le riz cantonais au poulet).
+  const rang = r => {
+    const x = infosRecette(r);
+    if (!mots.length) return 0;
+    if (mots.every(m => x.nom.includes(m))) return 1;
+    if (mots.every(m => x.nom.includes(m) || x.ingredients.includes(m))) return 2;
+    return 0;
+  };
+  const ordre = {
+    nom: (a, b) => a.nom.localeCompare(b.nom, 'fr'),
+    proteines: (a, b) => infosRecette(b).t.parPortionP - infosRecette(a).t.parPortionP || a.nom.localeCompare(b.nom, 'fr'),
+    kcal: (a, b) => infosRecette(a).t.parPortionKcal - infosRecette(b).t.parPortionKcal || a.nom.localeCompare(b.nom, 'fr')
+  }[triRecettes];
+  const liste = toutes.filter(r => {
+    const x = infosRecette(r);
+    if (q ? !rang(r) : (categorieRecettes !== 'toutes' && r.categorie !== categorieRecettes)) return false;
+    if (affinagesRecettes.proteinees && !(x.t.parPortionP >= PROTEINES_RECETTE_MIN)) return false;
+    if (resteActif && !(x.t.parPortionKcal <= reste)) return false;
+    if (affinagesRecettes.vege && !x.vege) return false;
+    return true;
+  }).sort((a, b) => (rang(a) - rang(b)) || ordre(a, b));
   const compte = document.getElementById('choix-recette-compte');
   if (compte) compte.textContent = `${liste.length}\u00a0recette${liste.length > 1 ? 's' : ''}` + (q ? ' trouvée' + (liste.length > 1 ? 's' : '') : '');
   c.innerHTML = '';
-  if (!liste.length) { c.innerHTML = '<p class="note" style="padding:10px 14px; margin:0;">Aucune recette ne correspond.</p>'; return; }
+  if (!liste.length) {
+    const filtres = AFFINAGES_RECETTES.some(k => k === 'reste' ? resteActif : affinagesRecettes[k]);
+    c.innerHTML = `<p class="note" style="padding:10px 14px; margin:0;">Aucune recette ne correspond${filtres ? ' : retire un filtre pour en voir plus' : ''}.</p>`;
+    return;
+  }
   const libelle = Object.fromEntries(CATEGORIES_RECETTES.map(([k, , l]) => [k, l]));
+  const avecCategorie = q || categorieRecettes === 'toutes';
   liste.forEach(r => {
-    const t = totauxRecettePerso(r);
+    const t = infosRecette(r).t;
     const b = document.createElement('button');
     b.type = 'button';
     b.className = 'off-suggestion';
     b.innerHTML = '<div class="off-nom"></div><div class="off-meta"></div>';
     b.querySelector('.off-nom').textContent = r.nom;
-    // Pendant une recherche, toutes catégories mêlées : la sienne en tête.
-    const cat = q && libelle[r.categorie] ? libelle[r.categorie].charAt(0).toUpperCase() + libelle[r.categorie].slice(1) + ' · ' : '';
+    // Toutes catégories mêlées (recherche, « Toutes ») : la sienne en tête.
+    const cat = avecCategorie && libelle[r.categorie] ? libelle[r.categorie].charAt(0).toUpperCase() + libelle[r.categorie].slice(1) + ' · ' : '';
     b.querySelector('.off-meta').textContent = `${cat}${Math.round(t.parPortionKcal)} kcal · P ${Math.round(t.parPortionP)} g · G ${Math.round(t.parPortionC)} g · L ${Math.round(t.parPortionF)} g — par portion`;
     b.addEventListener('click', () => ouvrirFicheRecette(r.id, repas));
     c.appendChild(b);
@@ -25960,15 +26178,21 @@ function groupesProgramme(p) {
 // Le programme à faire : le suivant, dans l'ordre de la liste, de celui de
 // la dernière séance faite avec un programme (après le dernier, retour au
 // premier). Aucune séance avec un programme encore : le premier de la liste.
+/* La séance du jour : un jour de séance prévue (pas encore faite), le
+   programme prévu, celui que tu fais d'habitude ce jour de la semaine ;
+   sinon celui qui suit ta dernière séance dans ton ordre habituel, et à
+   défaut dans l'ordre de ta liste (voir habitudesProgrammes). */
 function programmeSuggere() {
   if (!musculationProgrammes.length) return null;
-  let derniere = null;
-  musculationHistorique.forEach(h => {
-    if (!musculationProgrammes.some(p => p.id === h.programmeId)) return;
-    if (!derniere || h.date > derniere.date || (h.date === derniere.date && (h.fin || 0) > (derniere.fin || 0))) derniere = h;
-  });
-  const i = derniere ? musculationProgrammes.findIndex(p => p.id === derniere.programmeId) : -1;
-  const p = musculationProgrammes[(i + 1) % musculationProgrammes.length];
+  let p = null;
+  try {
+    const s = seancePrevueDuJour(todayStr());
+    p = s && s.programme ? musculationProgrammes.find(x => x.id === s.programme.id) || null : null;
+  } catch (e) {}
+  if (!p) {
+    const hab = habitudesProgrammes();
+    p = programmeApres(hab.derniere, hab, musculationProgrammes);
+  }
   return { p, d: (dernierePerfProgramme(p.id) || {}).date || '' };
 }
 const TEINTES_PROGRAMMES = ['linear-gradient(160deg,#be185d,#7c3aed)', 'linear-gradient(160deg,#1d4ed8,#0891b2)', 'linear-gradient(160deg,#ea580c,#ca8a04)', 'linear-gradient(160deg,#047857,#0e7490)', 'linear-gradient(160deg,#6d28d9,#db2777)', 'linear-gradient(160deg,#334155,#0f766e)'];
