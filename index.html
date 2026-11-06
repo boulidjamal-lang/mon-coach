@@ -2516,44 +2516,11 @@
     #carte-stats-poids .carte-stats-ligne { color: #0ea5e9; background: rgba(56,189,248,.14); }
     .tuile-graph { display: block; width: calc(100% + 30px) !important; height: 46px !important; margin: auto -15px 0; color: var(--text-muted); }
 
-    /* Eau : la gourde */
+    /* Eau : la gourde, dessinée image par image (voir moteurGourde). La toile
+       déborde : au-dessus pour le filet qui coule, autour pour l'ombre. */
     #ecran-repas #bloc-eau { display: flex !important; align-items: center; gap: 14px; }
     .gourde { position: relative; width: 60px; height: 86px; flex: none; }
-    .gourde > svg { display: block; width: 100%; height: 100%; overflow: visible; }
-    .gourde-verre { fill: rgba(56,189,248,.10); stroke: rgba(56,189,248,.45); stroke-width: 1.5; transition: stroke .4s; }
-    .gourde-bouchon { fill: #38bdf8; } :root[data-theme="dark"] .gourde-bouchon { fill: #0ea5e9; }
-    .gourde-niveau { transition: transform 1.1s cubic-bezier(.34,1.45,.5,1); }
-    /* Au repos : deux vagues de longueurs différentes qui glissent en sens
-       contraires ; un liseré clair marque la surface. */
-    .gourde-v1 { animation: gourde-vague1 6s linear infinite reverse; opacity: .45; }
-    .gourde-v2 { animation: gourde-vague2 3.6s linear infinite; stroke: rgba(255,255,255,.65); stroke-width: .7; }
-    @keyframes gourde-vague1 { to { transform: translateX(-64px); } }
-    @keyframes gourde-vague2 { to { transform: translateX(-48px); } }
-    .gourde-bulle { fill: rgba(255,255,255,.75); opacity: 0; animation: gourde-bulle 3s ease-in infinite; }
-    .gourde-bulle:nth-of-type(2) { animation-delay: 1s; } .gourde-bulle:nth-of-type(3) { animation-delay: 2s; }
-    @keyframes gourde-bulle { 0% { transform: translateY(0); opacity: 0; } 15% { opacity: 1; } 100% { transform: translateY(-46px); opacity: 0; } }
-    .gourde.vide .gourde-bulle { display: none; }
-    /* Versement (voir verserGourde) : bouchon qui bascule, filet, gouttes,
-       ronds et bulles dessinés image par image le temps de l'animation. */
-    .gourde-capuchon { transform-box: view-box; transform-origin: 42px 14px; transition: transform .32s cubic-bezier(.34,1.5,.6,1); }
-    .gourde.ouverte .gourde-capuchon { transform: rotate(100deg); }
-    .gourde-filet-eau { fill: url(#gourde-filet-grad); }
-    .gourde-filet-lumiere { fill: none; stroke: rgba(255,255,255,.85); stroke-width: .55; stroke-linecap: round; stroke-dasharray: 2.5 4; }
-    .gourde-goutte { fill: #38bdf8; } :root[data-theme="dark"] .gourde-goutte { fill: #7dd3fc; }
-    .gourde-rond { fill: none; stroke: rgba(255,255,255,.9); stroke-width: .6; }
-    .gourde-bulle-v { fill: rgba(255,255,255,.82); }
-    .gourde-reflet { fill: none; stroke: rgba(255,255,255,.6); stroke-width: 2.2; stroke-linecap: round; }
-    .gourde-reflet--petit { stroke-width: 1.6; stroke: rgba(255,255,255,.45); }
-    :root[data-theme="dark"] .gourde-reflet { stroke: rgba(255,255,255,.28); }
-    /* Objectif atteint : un éclat de lumière traverse la gourde. */
-    .gourde-eclat { opacity: 0; transform: skewX(-18deg); }
-    .gourde.brille .gourde-eclat { animation: gourde-eclat 1.1s .1s ease-in-out; }
-    @keyframes gourde-eclat { 0% { opacity: 0; transform: skewX(-18deg) translateX(0); } 20% { opacity: 1; } 100% { opacity: 0; transform: skewX(-18deg) translateX(118px); } }
-    .gourde-grad { stroke: rgba(2,132,199,.35); stroke-width: 1.4; stroke-linecap: round; }
-    :root[data-theme="dark"] .gourde-grad { stroke: rgba(255,255,255,.5); }
-    .gourde-ok { opacity: 0; transform: scale(.4); transform-origin: 54px 84px; transition: opacity .3s, transform .45s cubic-bezier(.34,1.6,.5,1); }
-    .gourde.atteint .gourde-ok { opacity: 1; transform: none; }
-    .gourde.atteint .gourde-verre { stroke: #10b981; }
+    .gourde > canvas { position: absolute; left: -8px; top: -24px; width: 76px; height: 118px; pointer-events: none; }
     .eau-corps { position: relative; flex: 1; min-width: 0; }
     /* « +250 ml » à droite du titre, le temps que l'eau coule. */
     .eau-ajout { position: absolute; right: 0; top: -3px; padding: 3px 9px; border-radius: 99px; background: rgba(56,189,248,.16); color: #0369a1;
@@ -3926,11 +3893,17 @@
     html.spl-actif .bord-haut { background: #fff; }
     html.spl-actif[data-theme="dark"] .bord-haut { background: #0a0a0b; }
     /* App iPhone : ce flou sous l'heure est celui de Safari (appli web
-       installée), pas celui de l'app : la grille monte jusqu'en haut, bande
-       comprise (toujours opaque : ce qui défile passe dessous). */
+       installée), pas celui de l'app : la grille monte jusqu'en haut, et plus
+       de bande. Au repos, rien sous l'heure ; quand la page a défilé, ce qui
+       passe dessous s'efface en douceur (flou et fondu progressifs, sans bord
+       net), comme le bord des apps d'iOS 26 : l'heure reste lisible. */
     html.app-ios:root body::before { -webkit-mask-image: none; mask-image: none; }
-    html.app-ios:not(.spl-actif) .bord-haut {
-      background: linear-gradient(var(--grille) 1px, transparent 1px) 0 0/100% 32px, linear-gradient(90deg, var(--grille) 1px, transparent 1px) 0 0/32px 100%, var(--bg); }
+    html.app-ios:not(.spl-actif) .bord-haut { height: calc(env(safe-area-inset-top, 0px) + 28px);
+      background: linear-gradient(var(--bg) 0%, color-mix(in srgb, var(--bg) 75%, transparent) 45%, transparent 100%);
+      -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px);
+      -webkit-mask-image: linear-gradient(#000 40%, transparent); mask-image: linear-gradient(#000 40%, transparent);
+      opacity: 0; transition: opacity .25s ease; }
+    html.app-ios.page-defilee:not(.spl-actif) .bord-haut { opacity: 1; }
     /* App iPhone : pas de sélection de texte ni de loupe au toucher long
        sur l'interface, comme dans une app ; les champs restent sélectionnables. */
     html.app-ios body { -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
@@ -5146,31 +5119,7 @@
     <!-- Hydratation : une gourde qui se remplit (vague animée), la quantité
          et les boutons d'ajout. Voir majJaugeEau. -->
     <div class="bloc-verre" id="bloc-eau">
-      <div class="gourde" id="gourde" aria-hidden="true">
-        <svg viewBox="0 0 64 92">
-          <defs><clipPath id="gourde-forme"><path d="M20 14 h24 v6 q14 4 14 18 v40 q0 12 -12 12 h-28 q-12 0 -12 -12 v-40 q0 -14 14 -18z"/></clipPath>
-            <!-- Plus claire en surface, plus profonde au fond : le dégradé suit le niveau. -->
-            <linearGradient id="gourde-eau" gradientUnits="userSpaceOnUse" x1="0" y1="16" x2="0" y2="96"><stop offset="0" stop-color="#9ee1fd"/><stop offset=".42" stop-color="#38bdf8"/><stop offset="1" stop-color="#0369a1"/></linearGradient>
-            <linearGradient id="gourde-filet-grad" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#bae6fd" stop-opacity="0"/><stop offset=".22" stop-color="#7dd3fc"/><stop offset="1" stop-color="#38bdf8"/></linearGradient>
-            <linearGradient id="gourde-eclat-grad" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#fff" stop-opacity="0"/><stop offset=".5" stop-color="#fff" stop-opacity=".75"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></linearGradient></defs>
-          <path class="gourde-verre" d="M20 14 h24 v6 q14 4 14 18 v40 q0 12 -12 12 h-28 q-12 0 -12 -12 v-40 q0 -14 14 -18z"/>
-          <g clip-path="url(#gourde-forme)">
-            <g class="gourde-niveau" id="eau-vague">
-              <g id="gourde-surface">
-                <path class="gourde-v1" d="M-64 19 q8 -4 16 0 t16 0 t16 0 t16 0 t16 0 t16 0 t16 0 t16 0 t16 0 t16 0 t16 0 t16 0 t16 0 t16 0 t16 0 t16 0 V200 H-64Z" fill="url(#gourde-eau)"/>
-                <path class="gourde-v2" d="M-48 20 q6 -3.4 12 0 t12 0 t12 0 t12 0 t12 0 t12 0 t12 0 t12 0 t12 0 t12 0 t12 0 t12 0 t12 0 t12 0 t12 0 t12 0 t12 0 t12 0 t12 0 t12 0 V200 H-48Z" fill="url(#gourde-eau)"/>
-              </g>
-              <circle class="gourde-bulle" cx="22" cy="80" r="1.8"/><circle class="gourde-bulle" cx="38" cy="84" r="1.3"/><circle class="gourde-bulle" cx="30" cy="82" r="1.5"/>
-            </g>
-            <g id="gourde-particules"></g>
-            <rect class="gourde-eclat" x="-26" y="-6" width="16" height="104" fill="url(#gourde-eclat-grad)"/>
-            <line class="gourde-grad" x1="50" x2="54" y1="38" y2="38"/><line class="gourde-grad" x1="50" x2="54" y1="56" y2="56"/><line class="gourde-grad" x1="50" x2="54" y1="74" y2="74"/>
-          </g>
-          <path class="gourde-filet-eau" id="gourde-filet-eau" d=""/><path class="gourde-filet-lumiere" id="gourde-filet-lumiere" d=""/>
-          <path class="gourde-reflet" d="M11.5 46 V72"/><path class="gourde-reflet gourde-reflet--petit" d="M15 33.5 q2 -3.5 5.5 -5"/>
-          <g class="gourde-capuchon"><rect class="gourde-bouchon" x="22" y="4" width="20" height="10" rx="4"/></g>
-          <g class="gourde-ok"><circle cx="54" cy="84" r="8" fill="#10b981"/><path d="M50.5 84 l2.5 2.5 5 -5" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></g>
-        </svg></div>
+      <div class="gourde" id="gourde" aria-hidden="true"><canvas id="gourde-toile"></canvas></div>
       <div class="eau-corps">
         <h3>Hydratation</h3>
         <div class="eau-texte" id="eau-texte">0 / 2,0 L</div>
@@ -10900,40 +10849,387 @@ function majJaugeEau(day) {
   const texte = document.getElementById('eau-texte');
   if (texte) texte.innerHTML = `${texteLitres(bu)}<em> / ${texteLitres(quota)} L</em>`;
   // L'eau monte avec ce qui a été bu (un fond reste visible à vide).
-  const niveau = document.getElementById('eau-vague');
-  if (niveau) niveau.style.transform = `translateY(${((1 - partGourde(bu, quota)) * GOURDE_COURSE).toFixed(1)}px)`;
+  niveauGourde(partGourde(bu, quota));
   const gourde = document.getElementById('gourde');
   if (gourde) { gourde.classList.toggle('atteint', bu >= quota); gourde.classList.toggle('vide', bu <= 0); }
   const bloc = document.getElementById('bloc-eau');
   if (bloc) bloc.classList.toggle('atteint', bu >= quota);
+  dessinerGourdeFixe();
 }
 
-/* ---------- Gourde : l'eau qu'on verse ----------
-   Ajout : le bouchon bascule, un filet tombe en accélérant et touche la
-   surface (gouttes, ronds, bulles qui plongent puis remontent) ; le niveau
-   monte et le total défile tant que l'eau coule, puis la surface se balance
-   et s'apaise, et le bouchon se referme. Retrait : le niveau baisse et la
-   surface se balance. Le calcul image par image ne tourne que pendant
-   l'animation (au repos, les vagues sont en CSS). Un nouvel appui pendant
-   que l'eau coule prolonge le même filet. Coordonnées : celles du dessin
-   (viewBox 64 × 92). */
-const GOURDE_SURFACE = 19, GOURDE_COURSE = 72, GOURDE_X = 32, GOURDE_SOURCE = -12, GOURDE_G = 0.0016, GOURDE_FOND = 87;
+/* ---------- Gourde : une bouteille en verre, dessinée image par image ----------
+   Une toile dessine la bouteille à chaque image, comme dans un jeu : verre
+   épais (ses bords accrochent la lumière, de longs reflets suivent sa forme,
+   fond épais, ombre douce), bouchon à vis mat (blanc, graphite en sombre)
+   avec son moletage, et l'eau : claire en surface, profonde au fond, plus
+   sombre contre les parois (la bouteille est ronde), des reflets de lumière
+   qui dansent au fond, quelques bulles.
+   La surface est une vraie simulation : une rangée de ressorts dont chacun
+   tire ses voisins. Une éclaboussure y fait des ondes qui se propagent,
+   rebondissent sur les parois et s'amortissent ; par-dessus, une houle lente
+   et l'inclinaison de l'eau, qui tangue quand la page défile vite.
+   Versement : le bouchon se dévisse et se pose de côté, un filet tombe en
+   accélérant et frappe la surface (ondes, gouttes qui retombent, bulles) ;
+   le niveau monte et le total défile tant que l'eau coule, puis le bouchon
+   revient. Retrait : le niveau baisse et l'eau tangue.
+   La toile ne s'anime que si la gourde est à l'écran : 30 images par seconde
+   au repos, 60 quand l'eau bouge ; en mouvement réduit, une image fixe.
+   Repère : le coin haut gauche de la gourde (60 × 86 px) ; la toile déborde
+   au-dessus (le filet) et autour (l'ombre). */
+const GOURDE_PLEIN = 38.6, GOURDE_VIDE = 80.8, GOURDE_X = 30, GOURDE_SOURCE = -22, GOURDE_G = 0.0016;
+const GOURDE_MARGES = { haut: 24, cote: 8, bas: 8 }, GOURDE_N = 36, GOURDE_XG = 12.6, GOURDE_XD = 47.4;
 let gourdeAnim = null;
+const moteurGourde = {
+  toile: null, ctx: null, dpr: 1, raf: 0, dernier: 0, reste: 0, visible: true, sombre: false, chemins: null,
+  part: 0.04, cible: 0.04, vPart: 0, h: new Float32Array(GOURDE_N + 1), v: new Float32Array(GOURDE_N + 1),
+  gauche: new Float32Array(GOURDE_N + 1), droite: new Float32Array(GOURDE_N + 1),
+  incl: 0, vIncl: 0, gouttes: [], bulles: [], bouchon: 0, eclat: 0, ok: 0, vOk: 0, t: 0, etat: '', elt: null
+};
+function ecranRepasGourde() { try { return ecranActif === 'repas'; } catch (e) { return false; } }
+function cibleOkGourde() { const g = moteurGourde.elt; return g && g.classList.contains('atteint') ? 1 : 0; }
 function partGourde(ml, quota) { return Math.max(0.04, Math.min(1, pourcent(ml, quota) / 100)); }
 function texteLitres(ml) { return (Math.round(ml / 10) / 100).toLocaleString('fr-FR', { maximumFractionDigits: 2 }); }
 function texteQuantiteEau(ml) { const v = Math.abs(ml); return (ml < 0 ? '−' : '+') + (v >= 1000 && v % 1000 === 0 ? v / 1000 + ' L' : v + ' ml'); }
 function dureeVersement(ml) { return Math.min(1400, 380 + 0.75 * Math.abs(ml)); }
 function adoucirGourde(x) { x = Math.max(0, Math.min(1, x)); return x < .5 ? 2 * x * x : 1 - Math.pow(2 - 2 * x, 2) / 2; }
+function mouvementReduitGourde() { return !!(window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches); }
 function etiquetteGourde(ml) {
   const e = document.getElementById('eau-ajout');
   if (!e) return;
   e.textContent = texteQuantiteEau(ml);
   e.classList.remove('visible'); void e.offsetWidth; e.classList.add('visible');
 }
+function ySurfaceGourde(part) { return GOURDE_VIDE - part * (GOURDE_VIDE - GOURDE_PLEIN); }
+
+/* La forme : le col, l'épaule, le corps aux coins arrondis ; l'intérieur
+   suit, 1,6 px plus loin (les parois) et 3,2 px plus haut (le fond épais). */
+function cheminsGourde() {
+  const ext = new Path2D(), int = new Path2D(), bordInt = new Path2D();
+  ext.moveTo(22.5, 19.5); ext.lineTo(22.5, 23); ext.bezierCurveTo(22.5, 29, 11, 28.5, 11, 38);
+  ext.lineTo(11, 77); ext.arcTo(11, 84, 18, 84, 7); ext.lineTo(42, 84); ext.arcTo(49, 84, 49, 77, 7);
+  ext.lineTo(49, 38); ext.bezierCurveTo(49, 28.5, 37.5, 29, 37.5, 23); ext.lineTo(37.5, 19.5); ext.closePath();
+  const interieur = p => {
+    p.moveTo(24.1, 19.5); p.lineTo(24.1, 23.4); p.bezierCurveTo(24.1, 29.6, 12.6, 29.4, 12.6, 38.6);
+    p.lineTo(12.6, 75.4); p.arcTo(12.6, 80.8, 18, 80.8, 5.4); p.lineTo(42, 80.8); p.arcTo(47.4, 80.8, 47.4, 75.4, 5.4);
+    p.lineTo(47.4, 38.6); p.bezierCurveTo(47.4, 29.4, 35.9, 29.6, 35.9, 23.4); p.lineTo(35.9, 19.5);
+  };
+  interieur(int); int.closePath();
+  interieur(bordInt);
+  return { ext, int, bordInt };
+}
+function couleursGourde(sombre, atteint) {
+  const c = sombre ? {
+    ombre: 'rgba(0,0,0,.6)', verreHaut: 'rgba(255,255,255,.075)', verreBas: 'rgba(255,255,255,.035)', paroi: 'rgba(0,0,0,.28)',
+    eau: ['#93ddff', '#3fb2f2', '#1a7ed4', '#0a3f86'], bordEau: 'rgba(0,8,26,.42)', plan: 'rgba(170,226,255,.24)',
+    trait: 'rgba(255,255,255,.36)', traitInt: 'rgba(255,255,255,.2)', lumiere: .55,
+    bouchon: ['#121418', '#383d44', '#565c64', '#2a2e34', '#101215'], bague: ['#17191d', '#3a3e45', '#1e2125'],
+    strie: 'rgba(0,0,0,.4)', biseau: 'rgba(255,255,255,.2)', refletBouchon: 'rgba(255,255,255,.18)'
+  } : {
+    ombre: 'rgba(16,52,92,.24)', verreHaut: 'rgba(255,255,255,.7)', verreBas: 'rgba(228,240,249,.6)', paroi: 'rgba(38,78,118,.12)',
+    eau: ['#a3e6ff', '#52c0f7', '#2290e2', '#0d58ad'], bordEau: 'rgba(3,32,74,.32)', plan: 'rgba(255,255,255,.34)',
+    trait: 'rgba(22,58,96,.32)', traitInt: 'rgba(255,255,255,.8)', lumiere: .95,
+    bouchon: ['#bfc5ce', '#eceff3', '#ffffff', '#dde1e6', '#adb4be'], bague: ['#b4bbc5', '#e7ebef', '#bec5ce'],
+    strie: 'rgba(40,52,70,.11)', biseau: 'rgba(255,255,255,.95)', refletBouchon: 'rgba(255,255,255,.75)'
+  };
+  if (atteint) c.trait = sombre ? 'rgba(52,211,153,.75)' : 'rgba(16,185,129,.7)';
+  return c;
+}
+/* La ligne de la surface : le niveau, l'inclinaison, les ondes simulées, la
+   houle lente (trois vagues qui glissent) et le ménisque contre le verre. */
+function surfaceGourde(ySurf) {
+  const m = moteurGourde, pts = [], t = m.t / 1000;
+  for (let i = 0; i <= GOURDE_N; i++) {
+    const x = GOURDE_XG + (GOURDE_XD - GOURDE_XG) * i / GOURDE_N;
+    const houle = 0.42 * Math.sin(x * 0.21 + t * 1.6) + 0.26 * Math.sin(x * 0.47 - t * 2.3 + 1.3) + 0.12 * Math.sin(x * 0.93 + t * 3.1);
+    const menisque = -0.75 * (Math.exp(-(x - GOURDE_XG) / 1.3) + Math.exp(-(GOURDE_XD - x) / 1.3));
+    pts.push([x, ySurf + m.incl * (x - GOURDE_X) + m.h[i] + houle + menisque]);
+  }
+  return pts;
+}
+function courbeGourde(p, pts) {
+  for (let i = 1; i < pts.length - 1; i++) p.quadraticCurveTo(pts[i][0], pts[i][1], (pts[i][0] + pts[i + 1][0]) / 2, (pts[i][1] + pts[i + 1][1]) / 2);
+  p.lineTo(pts[pts.length - 1][0], pts[pts.length - 1][1]);
+}
+function surfaceEnX(pts, x) {
+  const i = Math.max(0, Math.min(GOURDE_N, Math.round((x - GOURDE_XG) / (GOURDE_XD - GOURDE_XG) * GOURDE_N)));
+  return pts[i][1];
+}
+
+function dessinerGourde(now) {
+  const m = moteurGourde, ctx = m.ctx;
+  if (!ctx || !m.chemins) return;
+  const g0 = document.getElementById('gourde'), atteint = !!(g0 && g0.classList.contains('atteint'));
+  const C = couleursGourde(m.sombre, atteint), { ext, int, bordInt } = m.chemins, k = C.lumiere;
+  const blanc = a => `rgba(255,255,255,${(a * k).toFixed(3)})`;
+  ctx.setTransform(m.dpr, 0, 0, m.dpr, 0, 0);
+  ctx.clearRect(-1, -1, 62 + 2 * GOURDE_MARGES.cote, 88 + GOURDE_MARGES.haut + GOURDE_MARGES.bas);
+  ctx.translate(GOURDE_MARGES.cote, GOURDE_MARGES.haut);
+  ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+  let g;
+  // 1. Ombre portée, douce et aplatie.
+  ctx.save(); ctx.translate(30, 85.2); ctx.scale(1, .17);
+  g = ctx.createRadialGradient(0, 0, 0, 0, 0, 21); g.addColorStop(0, C.ombre); g.addColorStop(1, 'rgba(0,0,0,0)');
+  ctx.fillStyle = g; ctx.beginPath(); ctx.arc(0, 0, 21, 0, 7); ctx.fill(); ctx.restore();
+  // 2. Le verre, derrière l'eau : la paroi du fond, plus dense sur les côtés.
+  g = ctx.createLinearGradient(0, 19, 0, 84); g.addColorStop(0, C.verreHaut); g.addColorStop(1, C.verreBas);
+  ctx.fillStyle = g; ctx.fill(ext);
+  g = ctx.createLinearGradient(11, 0, 49, 0);
+  g.addColorStop(0, C.paroi); g.addColorStop(.16, 'rgba(0,0,0,0)'); g.addColorStop(.84, 'rgba(0,0,0,0)'); g.addColorStop(1, C.paroi);
+  ctx.fillStyle = g; ctx.fill(ext);
+  // 3. L'eau.
+  const ySurf = ySurfaceGourde(m.part), pts = surfaceGourde(ySurf), haut = Math.min(...pts.map(p => p[1]));
+  ctx.save(); ctx.clip(int);
+  const eau = new Path2D();
+  eau.moveTo(GOURDE_XG - 2, 92); eau.lineTo(GOURDE_XG - 2, pts[0][1]); eau.lineTo(pts[0][0], pts[0][1]);
+  courbeGourde(eau, pts); eau.lineTo(GOURDE_XD + 2, pts[GOURDE_N][1]); eau.lineTo(GOURDE_XD + 2, 92); eau.closePath();
+  g = ctx.createLinearGradient(0, haut - 1, 0, 82);
+  [0, .13, .55, 1].forEach((o, i) => g.addColorStop(o, C.eau[i]));
+  ctx.fillStyle = g; ctx.fill(eau);
+  ctx.save(); ctx.clip(eau);
+  // La bouteille est ronde : l'eau s'assombrit contre les parois, s'éclaire au milieu.
+  g = ctx.createLinearGradient(GOURDE_XG, 0, GOURDE_XD, 0);
+  g.addColorStop(0, C.bordEau); g.addColorStop(.24, 'rgba(0,0,0,0)'); g.addColorStop(.46, 'rgba(255,255,255,.08)');
+  g.addColorStop(.7, 'rgba(0,0,0,0)'); g.addColorStop(1, C.bordEau);
+  ctx.fillStyle = g; ctx.fillRect(0, haut - 3, 60, 92);
+  // Des reflets de lumière qui dansent au fond (caustiques).
+  const t = m.t / 1000;
+  for (let i = 0; i < 5; i++) {
+    const cx = 16 + i * 7 + 2.2 * Math.sin(t * (0.55 + i * 0.12) + i * 1.7);
+    const cy = 77.5 - (i % 2) * 2.4 + 0.7 * Math.sin(t * 0.8 + i * 2.1);
+    if (cy < haut + 5) continue;
+    const r = 3.6 + 1.4 * Math.sin(t * 0.7 + i);
+    ctx.save(); ctx.translate(cx, cy); ctx.scale(1, .3);
+    g = ctx.createRadialGradient(0, 0, 0, 0, 0, r); g.addColorStop(0, 'rgba(255,255,255,.26)'); g.addColorStop(1, 'rgba(255,255,255,0)');
+    ctx.fillStyle = g; ctx.beginPath(); ctx.arc(0, 0, r, 0, 7); ctx.fill(); ctx.restore();
+  }
+  // Des rais de lumière qui descendent de la surface, très doux.
+  for (let i = 0; i < 3; i++) {
+    const x = 20 + i * 10 + 2.4 * Math.sin(t * 0.4 + i * 2);
+    g = ctx.createLinearGradient(0, haut, 0, haut + 26);
+    g.addColorStop(0, 'rgba(255,255,255,.10)'); g.addColorStop(1, 'rgba(255,255,255,0)');
+    ctx.fillStyle = g; ctx.beginPath(); ctx.moveTo(x - 1.6, haut); ctx.lineTo(x + 1.6, haut); ctx.lineTo(x + 4.5, haut + 26); ctx.lineTo(x - 0.5, haut + 26); ctx.fill();
+  }
+  // Les bulles : un fin cercle clair, un point de lumière en haut à gauche.
+  m.bulles.forEach(b => {
+    ctx.beginPath(); ctx.arc(b.x, b.y, b.r, 0, 7); ctx.fillStyle = 'rgba(255,255,255,.13)'; ctx.fill();
+    ctx.lineWidth = .35; ctx.strokeStyle = 'rgba(255,255,255,.65)'; ctx.stroke();
+    ctx.beginPath(); ctx.arc(b.x - b.r * .35, b.y - b.r * .38, b.r * .26, 0, 7); ctx.fillStyle = 'rgba(255,255,255,.85)'; ctx.fill();
+  });
+  ctx.restore();
+  // La surface vue un peu d'en haut (une bande claire), puis le liseré du ménisque.
+  const ligne = new Path2D(); ligne.moveTo(pts[0][0], pts[0][1]); courbeGourde(ligne, pts);
+  ctx.save(); ctx.translate(0, 1.3); ctx.lineWidth = 2.5; ctx.strokeStyle = C.plan; ctx.stroke(ligne); ctx.restore();
+  g = ctx.createLinearGradient(GOURDE_XG, 0, GOURDE_XD, 0);
+  g.addColorStop(0, 'rgba(255,255,255,.25)'); g.addColorStop(.16, 'rgba(255,255,255,.95)'); g.addColorStop(.84, 'rgba(255,255,255,.95)'); g.addColorStop(1, 'rgba(255,255,255,.25)');
+  ctx.lineWidth = .75; ctx.strokeStyle = g; ctx.stroke(ligne);
+  // Les gouttes lancées par le filet, au-dessus de la surface.
+  m.gouttes.forEach(d => {
+    g = ctx.createRadialGradient(d.x - d.r * .3, d.y - d.r * .3, 0, d.x, d.y, d.r);
+    g.addColorStop(0, '#ffffff'); g.addColorStop(.35, C.eau[1]); g.addColorStop(1, C.eau[2]);
+    ctx.fillStyle = g; ctx.beginPath(); ctx.arc(d.x, d.y, d.r, 0, 7); ctx.fill();
+  });
+  ctx.restore();
+  // 4. Le filet qui coule, du haut jusqu'à la surface.
+  const a = gourdeAnim;
+  if (a && a.ajout && now - a.t0 >= 140 && a.finQueue == null) {
+    const haute = a.queue != null ? a.queue : GOURDE_SOURCE;
+    const basse = Math.min(a.impact != null ? Infinity : a.tete, ySurf + 1.2);
+    if (basse - haute > 0.6) {
+      const larg = y => 3.3 - 1.1 * Math.min(1, Math.max(0, (y - GOURDE_SOURCE) / 95));
+      const centre = y => GOURDE_X + 0.32 * Math.sin(now / 60 + y * 0.4) * Math.min(1, Math.max(0, (y - GOURDE_SOURCE) / 30));
+      const gauche = [], droite = [];
+      for (let y = haute; y < basse; y += 2.5) { gauche.push([centre(y) - larg(y) / 2, y]); droite.unshift([centre(y) + larg(y) / 2, y]); }
+      const lb = larg(basse), xb = centre(basse);
+      ctx.beginPath(); ctx.moveTo(gauche[0][0], gauche[0][1]);
+      gauche.forEach(p => ctx.lineTo(p[0], p[1]));
+      ctx.lineTo(xb - lb / 2, basse); ctx.quadraticCurveTo(xb, basse + lb * .7, xb + lb / 2, basse);
+      droite.forEach(p => ctx.lineTo(p[0], p[1])); ctx.closePath();
+      g = ctx.createLinearGradient(0, GOURDE_SOURCE, 0, ySurf);
+      g.addColorStop(0, 'rgba(150,220,255,0)'); g.addColorStop(.18, 'rgba(120,208,255,.85)'); g.addColorStop(1, C.eau[1]);
+      ctx.fillStyle = g; ctx.fill();
+      ctx.save(); ctx.setLineDash([2.4, 3.6]); ctx.lineDashOffset = -(now - a.t0) * 0.06;
+      ctx.beginPath(); for (let y = haute + 1.5; y < basse - 1; y += 2.5) ctx.lineTo(centre(y) - larg(y) * 0.2, y);
+      ctx.lineWidth = .55; ctx.strokeStyle = 'rgba(255,255,255,.9)'; ctx.stroke(); ctx.restore();
+    }
+  }
+  // 5. Le verre, devant : ses bords accrochent la lumière, de longs reflets.
+  ctx.save(); ctx.clip(ext);
+  g = ctx.createLinearGradient(11, 0, 49, 0);
+  g.addColorStop(0, blanc(.6)); g.addColorStop(.06, blanc(.15)); g.addColorStop(.13, 'rgba(255,255,255,0)');
+  g.addColorStop(.87, 'rgba(255,255,255,0)'); g.addColorStop(.94, blanc(.13)); g.addColorStop(1, blanc(.5));
+  ctx.fillStyle = g; ctx.fillRect(0, 17, 60, 70);
+  // Objectif atteint : un éclat de lumière traverse la bouteille.
+  const eclat = now - m.eclat;
+  if (m.eclat && eclat < 1100) {
+    const x = -20 + 100 * adoucirGourde(eclat / 1100);
+    ctx.save(); ctx.translate(x, 0); ctx.transform(1, 0, -0.35, 1, 0, 0);
+    g = ctx.createLinearGradient(-8, 0, 8, 0);
+    g.addColorStop(0, 'rgba(255,255,255,0)'); g.addColorStop(.5, 'rgba(255,255,255,.75)'); g.addColorStop(1, 'rgba(255,255,255,0)');
+    ctx.fillStyle = g; ctx.fillRect(-8, 0, 16, 100); ctx.restore();
+  }
+  ctx.restore();
+  ctx.lineWidth = .9; ctx.strokeStyle = C.trait; ctx.stroke(ext);
+  ctx.lineWidth = .55; ctx.strokeStyle = C.traitInt; ctx.stroke(bordInt);
+  const reflet = (x1, y1, x2, y2, l, opacite) => {
+    g = ctx.createLinearGradient(x1, y1, x2, y2);
+    g.addColorStop(0, 'rgba(255,255,255,0)'); g.addColorStop(.2, blanc(opacite)); g.addColorStop(.75, blanc(opacite * .8)); g.addColorStop(1, 'rgba(255,255,255,0)');
+    ctx.strokeStyle = g; ctx.lineWidth = l; ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke();
+  };
+  reflet(15.6, 40, 15.6, 79, 4, .22);     // le halo du grand reflet
+  reflet(15.6, 40, 15.6, 79, 1.8, .9);    // le grand reflet, à gauche
+  reflet(45.4, 43, 45.4, 76, .9, .5);     // le liseré, à droite
+  reflet(25.3, 20.2, 25.3, 23.8, .8, .7); // le col
+  g = ctx.createLinearGradient(14, 37, 25, 27); g.addColorStop(0, blanc(.05)); g.addColorStop(.5, blanc(.75)); g.addColorStop(1, blanc(.1));
+  ctx.strokeStyle = g; ctx.lineWidth = 1.1; ctx.beginPath(); ctx.moveTo(14.4, 37); ctx.bezierCurveTo(14.8, 32.2, 19.2, 30, 24.6, 27.4); ctx.stroke();
+  ctx.strokeStyle = blanc(.4); ctx.lineWidth = .8; ctx.beginPath(); ctx.moveTo(17, 82.1); ctx.quadraticCurveTo(30, 83.2, 43, 82.1); ctx.stroke();
+  // 6. La bague du col, puis le bouchon (dévissé et posé de côté pendant le versement).
+  const cylindre = (x0, x1, couleurs) => {
+    const d = ctx.createLinearGradient(x0, 0, x1, 0);
+    couleurs.forEach((c, i) => d.addColorStop(i / (couleurs.length - 1), c));
+    return d;
+  };
+  ctx.fillStyle = cylindre(21.5, 38.5, C.bague);
+  ctx.beginPath(); ctx.moveTo(22.3, 17.5); ctx.lineTo(37.7, 17.5); ctx.quadraticCurveTo(38.5, 17.5, 38.5, 18.3); ctx.lineTo(38.5, 19.1);
+  ctx.quadraticCurveTo(38.5, 19.9, 37.7, 19.9); ctx.lineTo(22.3, 19.9); ctx.quadraticCurveTo(21.5, 19.9, 21.5, 19.1); ctx.lineTo(21.5, 18.3);
+  ctx.quadraticCurveTo(21.5, 17.5, 22.3, 17.5); ctx.fill();
+  const e = adoucirGourde(m.bouchon);
+  ctx.save();
+  ctx.translate(30 + 15 * e, 10.75 - 12 * e); ctx.rotate(0.55 * e);
+  const bouchon = new Path2D();
+  bouchon.moveTo(-7.6, -6.75); bouchon.lineTo(7.6, -6.75); bouchon.quadraticCurveTo(9.9, -6.75, 9.9, -4.45); bouchon.lineTo(9.9, 5.55);
+  bouchon.quadraticCurveTo(9.9, 6.75, 8.7, 6.75); bouchon.lineTo(-8.7, 6.75); bouchon.quadraticCurveTo(-9.9, 6.75, -9.9, 5.55); bouchon.lineTo(-9.9, -4.45);
+  bouchon.quadraticCurveTo(-9.9, -6.75, -7.6, -6.75); bouchon.closePath();
+  ctx.fillStyle = cylindre(-9.9, 9.9, C.bouchon); ctx.fill(bouchon);
+  ctx.save(); ctx.clip(bouchon);
+  // Le moletage : de fines stries, qui défilent quand on le dévisse.
+  ctx.strokeStyle = C.strie; ctx.lineWidth = .45;
+  const decalage = (e * 9) % 1.15;
+  for (let x = -9.9 + decalage; x <= 9.9; x += 1.15) { ctx.beginPath(); ctx.moveTo(x, -4.2); ctx.lineTo(x, 6.1); ctx.stroke(); }
+  ctx.strokeStyle = C.refletBouchon; ctx.lineWidth = 1.1; ctx.beginPath(); ctx.moveTo(-6.4, -5); ctx.lineTo(-6.4, 5.9); ctx.stroke();
+  ctx.restore();
+  ctx.strokeStyle = C.biseau; ctx.lineWidth = .7; ctx.beginPath(); ctx.moveTo(-7.8, -6.1); ctx.lineTo(7.8, -6.1); ctx.stroke();
+  ctx.strokeStyle = 'rgba(0,0,0,.18)'; ctx.lineWidth = .7; ctx.beginPath(); ctx.moveTo(-9.2, 6.4); ctx.lineTo(9.2, 6.4); ctx.stroke();
+  ctx.restore();
+  // 7. Objectif atteint : la pastille verte, qui apparaît en rebondissant.
+  if (m.ok > 0.02) {
+    ctx.save(); ctx.translate(47.5, 79.5); ctx.scale(m.ok, m.ok);
+    ctx.beginPath(); ctx.arc(0, 0, 7.4, 0, 7); ctx.fillStyle = m.sombre ? '#1c1c1e' : '#ffffff'; ctx.fill();
+    ctx.beginPath(); ctx.arc(0, 0, 6.2, 0, 7); ctx.fillStyle = '#10b981'; ctx.fill();
+    ctx.strokeStyle = '#fff'; ctx.lineWidth = 1.6; ctx.beginPath(); ctx.moveTo(-2.7, 0); ctx.lineTo(-0.6, 2.1); ctx.lineTo(3, -1.8); ctx.stroke();
+    ctx.restore();
+  }
+}
+
+/* Un pas de 1/60 s : les ressorts de la surface (chacun tire ses voisins :
+   les ondes se propagent et rebondissent sur les parois), l'inclinaison, le
+   niveau hors versement, les gouttes et les bulles. */
+function pasGourde() {
+  const m = moteurGourde, h = m.h, v = m.v, n = GOURDE_N, gauche = m.gauche, droite = m.droite;
+  for (let i = 0; i <= n; i++) { v[i] += -0.025 * h[i] - 0.03 * v[i]; h[i] = Math.max(-7, Math.min(7, h[i] + v[i])); }
+  for (let passe = 0; passe < 6; passe++) {
+    for (let i = 0; i <= n; i++) {
+      if (i > 0) { gauche[i] = 0.24 * (h[i] - h[i - 1]); v[i - 1] += gauche[i]; }
+      if (i < n) { droite[i] = 0.24 * (h[i] - h[i + 1]); v[i + 1] += droite[i]; }
+    }
+    for (let i = 0; i <= n; i++) { if (i > 0) h[i - 1] += gauche[i]; if (i < n) h[i + 1] += droite[i]; }
+  }
+  m.vIncl += -0.006 * m.incl - 0.035 * m.vIncl; m.incl += m.vIncl;
+  if (!gourdeAnim) { m.vPart += (m.cible - m.part) * 0.02 - m.vPart * 0.2; m.part += m.vPart; }
+  const cibleOk = cibleOkGourde();
+  m.vOk += (cibleOk - m.ok) * 0.09 - m.vOk * 0.28; m.ok += m.vOk;
+  if (Math.abs(cibleOk - m.ok) < 0.003 && Math.abs(m.vOk) < 0.003) { m.ok = cibleOk; m.vOk = 0; }
+  const pts = surfaceGourde(ySurfaceGourde(m.part));
+  m.gouttes = m.gouttes.filter(d => {
+    d.vy += 0.055; d.x += d.vx; d.y += d.vy;
+    if (d.vy > 0 && d.y > surfaceEnX(pts, d.x)) { impulsionGourde(d.x, 0.35 * d.r); return false; }
+    return d.y < 95;
+  });
+  m.bulles = m.bulles.filter(b => {
+    b.vy = Math.max(-0.42, b.vy - 0.012); b.y += b.vy; b.x += 0.12 * Math.sin(m.t / 180 + b.phase);
+    return b.y > surfaceEnX(pts, b.x) + b.r + 0.3;
+  });
+}
+function impulsionGourde(x, force) {
+  const m = moteurGourde, i = Math.round((x - GOURDE_XG) / (GOURDE_XD - GOURDE_XG) * GOURDE_N);
+  for (let j = -1; j <= 1; j++) { const k = i + j; if (k >= 0 && k <= GOURDE_N) m.v[k] += force * (j ? 0.5 : 1); }
+}
+function energieGourde() {
+  const m = moteurGourde;
+  let e = 0;
+  for (let i = 0; i <= GOURDE_N; i++) e += Math.abs(m.h[i]) + Math.abs(m.v[i]);
+  return e + Math.abs(m.incl) * 60 + Math.abs(m.vIncl) * 600 + Math.abs(m.cible - m.part) * 80 + Math.abs(m.vPart) * 400
+    + (m.gouttes.length + m.bulles.length) + Math.abs(cibleOkGourde() - m.ok) * 10 + Math.abs(m.vOk) * 50 + (m.bouchon > 0 ? 1 : 0);
+}
+
+/* Le versement, image par image (même déroulé qu'avant : filet qui tombe en
+   accélérant, niveau et total qui montent tant que l'eau coule). */
+function etapeVersementGourde(now) {
+  const a = gourdeAnim, m = moteurGourde;
+  if (!a) return;
+  let ySurf = ySurfaceGourde(a.part);
+  if (a.ajout) {
+    if (a.finQueue == null) m.bouchon = Math.min(1, m.bouchon + 0.09);
+    if (a.impact == null) {
+      const t = Math.max(0, now - a.t0 - 140);
+      a.tete = GOURDE_SOURCE + 0.5 * GOURDE_G * t * t;
+      if (a.tete >= ySurf) {
+        a.impact = a.debutMontee = now;
+        a.finVersement = now + dureeVersement(a.cumul);
+        impulsionGourde(GOURDE_X, 2.4);
+        gouttesGourde(ySurf, 5);
+      }
+    }
+    if (a.finVersement != null && now >= a.finVersement && a.queue == null) { a.queue = GOURDE_SOURCE; a.debutQueue = now; }
+    if (a.queue != null && a.finQueue == null) {
+      const t = now - a.debutQueue;
+      a.queue = GOURDE_SOURCE + 0.5 * GOURDE_G * t * t;
+      if (a.queue >= ySurf) {
+        a.finQueue = now;
+        const g = document.getElementById('gourde');
+        if (g) g.classList.remove('ouverte');
+        recompenseGourde(a);
+      }
+    }
+  } else if (now - a.t0 < 80) {
+    m.vIncl += 0.004;
+  }
+  if (a.finQueue != null || !a.ajout) m.bouchon = Math.max(0, m.bouchon - 0.07);
+  if (a.debutMontee != null) {
+    const k = adoucirGourde((now - a.debutMontee) / Math.max(1, a.finVersement - a.debutMontee));
+    a.part = a.depuis + (a.vers - a.depuis) * k;
+    a.mlAffiche = a.mlDepuis + (a.mlVers - a.mlDepuis) * k;
+  }
+  if (!a.ajout && now >= a.finVersement) recompenseGourde(a);
+  m.part = a.part; m.vPart = 0; m.cible = a.vers;
+  ySurf = ySurfaceGourde(a.part);
+  const total = texteLitres(a.mlAffiche);
+  if (total !== a.texte) {
+    a.texte = total;
+    const t = document.getElementById('eau-texte');
+    if (t) t.innerHTML = `${total}<em> / ${texteLitres(a.quota)} L</em>`;
+  }
+  // Sous le filet : la surface frappée, des gouttes, des bulles qui plongent puis remontent.
+  if (a.ajout && a.impact != null && a.finQueue == null) {
+    if (now >= a.prochain.choc) { impulsionGourde(GOURDE_X + (Math.random() - .5) * 2, 0.7); a.prochain.choc = now + 90; }
+    if (now >= a.prochain.goutte) { gouttesGourde(ySurf, 1); a.prochain.goutte = now + 110; }
+    if (now >= a.prochain.bulle) {
+      m.bulles.push({ x: GOURDE_X + (Math.random() - .5) * 5, y: ySurf + 2, r: 0.5 + Math.random() * 0.8, vy: 0.5 + Math.random() * 0.5, phase: Math.random() * 6 });
+      a.prochain.bulle = now + 70;
+    }
+  }
+  // Fin : l'eau ne coule plus, la surface est calme, plus rien ne bouge.
+  // L'eau ne coule plus et le bouchon est revenu : fini (la surface finit de s'apaiser seule).
+  if ((!a.ajout || a.finQueue != null) && m.bouchon === 0 && now - (a.finQueue || a.finVersement) > 900) terminerGourde();
+}
+function gouttesGourde(ySurf, n) {
+  for (let i = 0; i < n; i++) {
+    moteurGourde.gouttes.push({ x: GOURDE_X + (Math.random() - .5) * 2.5, y: ySurf - 0.8, vx: (Math.random() - .5) * 0.7, vy: -(0.9 + Math.random() * 0.8), r: 0.55 + Math.random() * 0.55 });
+  }
+}
 function verserGourde(avantMl, apresMl) {
   const g = document.getElementById('gourde');
-  if (!g || avantMl === apresMl || !g.getClientRects().length) return;
-  if (window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  if (!g || avantMl === apresMl || !g.getClientRects().length || mouvementReduitGourde()) return;
+  initGourde();
   const quota = quotaEauSuggere(currentDate), now = performance.now(), ajout = apresMl > avantMl;
   const a = gourdeAnim;
   if (a && a.ajout && ajout && a.date === currentDate && a.queue == null) {
@@ -10947,166 +11243,28 @@ function verserGourde(avantMl, apresMl) {
     etiquetteGourde(a.cumul);
     return;
   }
-  const depuis = a ? a.part : partGourde(avantMl, quota), mlDepuis = a ? a.mlAffiche : avantMl;
+  const depuis = a ? a.part : moteurGourde.part, mlDepuis = a ? a.mlAffiche : avantMl;
   if (a) arreterGourde();
   gourdeAnim = {
     date: currentDate, ajout, t0: now, quota, atteintAvant: avantMl >= quota,
     depuis, vers: partGourde(apresMl, quota), part: depuis, mlDepuis, mlVers: apresMl, mlAffiche: mlDepuis, cumul: apresMl - avantMl,
     impact: ajout ? null : now, debutMontee: ajout ? null : now, finVersement: ajout ? null : now + 560,
-    tete: GOURDE_SOURCE, queue: null, finQueue: null, balance: ajout ? null : now,
-    amplitude: ajout ? 2 + Math.min(3, (apresMl - avantMl) / 250) : 3.2,
-    particules: [], prochain: { rond: 0, goutte: 0, bulle: 0 }, texte: '', dernier: 0, raf: 0
+    tete: GOURDE_SOURCE, queue: null, finQueue: null, prochain: { choc: 0, goutte: 0, bulle: 0 }, texte: ''
   };
-  const niveau = document.getElementById('eau-vague');
-  if (niveau) niveau.style.transition = 'none';
   g.classList.remove('brille');
   g.classList.toggle('ouverte', ajout);
   etiquetteGourde(apresMl - avantMl);
-  gourdeAnim.raf = requestAnimationFrame(etapeGourde);
-}
-function etapeGourde(now) {
-  const a = gourdeAnim;
-  if (!a) return;
-  const g = document.getElementById('gourde'), niveau = document.getElementById('eau-vague'), surface = document.getElementById('gourde-surface');
-  if (!g || !niveau || !surface) { arreterGourde(); return; }
-  let ySurf = GOURDE_SURFACE + (1 - a.part) * GOURDE_COURSE;
-  // 1. Le filet : sa tête tombe en accélérant jusqu'à la surface ; quand
-  //    l'eau s'arrête, sa queue tombe à son tour.
-  if (a.ajout) {
-    if (a.impact == null) {
-      const t = Math.max(0, now - a.t0 - 140);
-      a.tete = GOURDE_SOURCE + 0.5 * GOURDE_G * t * t;
-      if (a.tete >= ySurf) {
-        a.impact = a.debutMontee = now;
-        a.finVersement = now + dureeVersement(a.cumul);
-        eclabousserGourde(a, ySurf, 5, now);
-      }
-    }
-    if (a.finVersement != null && now >= a.finVersement && a.queue == null) { a.queue = GOURDE_SOURCE; a.debutQueue = now; }
-    if (a.queue != null && a.finQueue == null) {
-      const t = now - a.debutQueue;
-      a.queue = GOURDE_SOURCE + 0.5 * GOURDE_G * t * t;
-      if (a.queue >= ySurf) { a.finQueue = a.balance = now; g.classList.remove('ouverte'); recompenseGourde(a); }
-    }
-  }
-  // 2. Le niveau suit l'eau versée (ou retirée), et le total défile avec.
-  if (a.debutMontee != null) {
-    const k = adoucirGourde((now - a.debutMontee) / Math.max(1, a.finVersement - a.debutMontee));
-    a.part = a.depuis + (a.vers - a.depuis) * k;
-    a.mlAffiche = a.mlDepuis + (a.mlVers - a.mlDepuis) * k;
-  }
-  if (!a.ajout && now >= a.finVersement) recompenseGourde(a);
-  ySurf = GOURDE_SURFACE + (1 - a.part) * GOURDE_COURSE;
-  niveau.style.transform = `translateY(${((1 - a.part) * GOURDE_COURSE).toFixed(2)}px)`;
-  const total = texteLitres(a.mlAffiche);
-  if (total !== a.texte) {
-    a.texte = total;
-    const t = document.getElementById('eau-texte');
-    if (t) t.innerHTML = `${total}<em> / ${texteLitres(a.quota)} L</em>`;
-  }
-  // 3. La surface : agitée sous le filet, puis un balancement qui s'amortit.
-  const coule = a.ajout && a.impact != null && a.finQueue == null;
-  let angle = 0, houle = 1;
-  if (coule) { angle = 0.8 * Math.sin((now - a.impact) / 70); houle = 1.45; }
-  if (a.balance != null) {
-    const t = now - a.balance;
-    angle += a.amplitude * Math.exp(-t / 650) * Math.sin(t / 1000 * 2 * Math.PI * 1.25);
-    houle = Math.max(houle, 1 + 0.45 * Math.exp(-t / 500));
-  }
-  surface.setAttribute('transform', `rotate(${angle.toFixed(2)} ${GOURDE_X} ${GOURDE_SURFACE}) translate(0 ${GOURDE_SURFACE}) scale(1 ${houle.toFixed(3)}) translate(0 ${-GOURDE_SURFACE})`);
-  // 4. Sous le filet : ronds, gouttes qui rebondissent, bulles.
-  if (coule) {
-    if (now >= a.prochain.rond) { particuleGourde(a, 'ellipse', 'gourde-rond', { type: 'rond', x: GOURDE_X + (Math.random() - .5) * 1.5, t: now, vie: 620 }); a.prochain.rond = now + 170; }
-    if (now >= a.prochain.goutte) { eclabousserGourde(a, ySurf, 1, now); a.prochain.goutte = now + 95; }
-    if (now >= a.prochain.bulle) {
-      particuleGourde(a, 'circle', 'gourde-bulle-v', { type: 'bulle', r: 0.6 + Math.random() * 0.9, x: GOURDE_X + (Math.random() - .5) * 5, y: ySurf + 1.5, vy: 0.035 + Math.random() * 0.03, t: now, vie: 2600, phase: Math.random() * 6 });
-      a.prochain.bulle = now + 75;
-    }
-  }
-  animerParticulesGourde(a, ySurf, now);
-  dessinerFiletGourde(a, ySurf, now);
-  // 5. Fin : l'eau ne coule plus, la surface est calme, plus rien ne bouge.
-  if (a.balance != null && now - a.balance > 1900 && !a.particules.length && (!a.ajout || a.finQueue != null)) { terminerGourde(); return; }
-  a.raf = requestAnimationFrame(etapeGourde);
-}
-function particuleGourde(a, balise, classe, p) {
-  const zone = document.getElementById('gourde-particules');
-  if (!zone) return;
-  p.el = document.createElementNS('http://www.w3.org/2000/svg', balise);
-  p.el.setAttribute('class', classe);
-  if (p.r) p.el.setAttribute('r', p.r.toFixed(2));
-  zone.appendChild(p.el);
-  a.particules.push(p);
-}
-function eclabousserGourde(a, ySurf, n, now) {
-  for (let i = 0; i < n; i++) {
-    particuleGourde(a, 'circle', 'gourde-goutte', { type: 'goutte', r: 0.7 + Math.random() * 0.7, x: GOURDE_X + (Math.random() - .5) * 2, y: ySurf - 0.5,
-      vx: (Math.random() - .5) * 0.05, vy: -(0.045 + Math.random() * 0.035), t: now, vie: 800 });
-  }
-}
-function animerParticulesGourde(a, ySurf, now) {
-  const dt = a.dernier ? Math.min(40, now - a.dernier) : 16;
-  a.dernier = now;
-  a.particules = a.particules.filter(p => {
-    const age = now - p.t;
-    if (p.type === 'goutte') {
-      // Lancée vers le haut, retombe (pesanteur) et disparaît dans l'eau.
-      p.vy += 0.00028 * dt; p.x += p.vx * dt; p.y += p.vy * dt;
-      if ((p.vy > 0 && p.y > ySurf) || age > p.vie) { p.el.remove(); return false; }
-      p.el.setAttribute('cx', p.x.toFixed(2)); p.el.setAttribute('cy', p.y.toFixed(2));
-    } else if (p.type === 'rond') {
-      const k = age / p.vie;
-      if (k >= 1) { p.el.remove(); return false; }
-      p.el.setAttribute('cx', p.x.toFixed(2)); p.el.setAttribute('cy', (ySurf + 0.6).toFixed(2));
-      p.el.setAttribute('rx', (1.5 + 10 * k).toFixed(2)); p.el.setAttribute('ry', (0.5 + 1.6 * k).toFixed(2));
-      p.el.style.opacity = (1 - k).toFixed(2);
-    } else {
-      // Bulle : plonge sous le choc, freine, puis remonte en ondulant.
-      p.vy = Math.max(-0.03, p.vy - 0.00009 * dt); p.y += p.vy * dt;
-      if (p.y > GOURDE_FOND) { p.y = GOURDE_FOND; p.vy = Math.min(p.vy, 0); }
-      if ((p.vy < 0 && p.y < ySurf + 0.4) || age > p.vie) { p.el.remove(); return false; }
-      p.el.setAttribute('cx', (p.x + 0.6 * Math.sin(age / 160 + p.phase)).toFixed(2)); p.el.setAttribute('cy', p.y.toFixed(2));
-    }
-    return true;
-  });
-}
-function dessinerFiletGourde(a, ySurf, now) {
-  const eau = document.getElementById('gourde-filet-eau'), lumiere = document.getElementById('gourde-filet-lumiere');
-  if (!eau || !lumiere) return;
-  const haut = a.queue != null ? a.queue : GOURDE_SOURCE;
-  const bas = Math.min(a.impact != null ? Infinity : a.tete, ySurf + 1.2);
-  if (!a.ajout || now - a.t0 < 140 || a.finQueue != null || bas - haut < 0.6) { eau.setAttribute('d', ''); lumiere.setAttribute('d', ''); return; }
-  // Plus fin en bas (il accélère), et il ondule un peu en tombant.
-  const largeur = y => 3.4 - 1.1 * Math.min(1, Math.max(0, (y - GOURDE_SOURCE) / 90));
-  const centre = y => GOURDE_X + 0.35 * Math.sin(now / 60 + y * 0.4) * Math.min(1, Math.max(0, (y - GOURDE_SOURCE) / 30));
-  const gauche = [], droite = [], reflet = [];
-  for (let y = haut; y < bas; y += 3) {
-    gauche.push(`${(centre(y) - largeur(y) / 2).toFixed(2)} ${y.toFixed(2)}`);
-    droite.unshift(`${(centre(y) + largeur(y) / 2).toFixed(2)} ${y.toFixed(2)}`);
-    if (y > haut + 1.5 && y < bas - 1) reflet.push(`${(centre(y) - largeur(y) * 0.18).toFixed(2)} ${y.toFixed(2)}`);
-  }
-  const lb = largeur(bas), xb = centre(bas);
-  eau.setAttribute('d', `M${gauche.join(' L')} L${(xb - lb / 2).toFixed(2)} ${bas.toFixed(2)} Q${xb.toFixed(2)} ${(bas + lb * 0.75).toFixed(2)} ${(xb + lb / 2).toFixed(2)} ${bas.toFixed(2)} L${droite.join(' L')}Z`);
-  lumiere.setAttribute('d', reflet.length > 1 ? 'M' + reflet.join(' L') : '');
-  lumiere.style.strokeDashoffset = (-(now - a.t0) * 0.05).toFixed(2);
+  lancerGourde();
 }
 function arreterGourde() {
   const a = gourdeAnim;
   if (!a) return;
-  cancelAnimationFrame(a.raf);
-  a.particules.forEach(p => p.el.remove());
   gourdeAnim = null;
+  const m = moteurGourde;
+  m.part = a.part; m.vPart = 0; m.bouchon = 0;
   const g = document.getElementById('gourde');
   if (g) g.classList.remove('ouverte');
-  const surface = document.getElementById('gourde-surface');
-  if (surface) surface.removeAttribute('transform');
-  ['gourde-filet-eau', 'gourde-filet-lumiere'].forEach(id => { const e = document.getElementById(id); if (e) e.setAttribute('d', ''); });
-  const niveau = document.getElementById('eau-vague');
-  if (niveau) {
-    niveau.style.transform = `translateY(${((1 - a.part) * GOURDE_COURSE).toFixed(2)}px)`;
-    void niveau.getBoundingClientRect();
-    niveau.style.transition = '';
-  }
+  majEtatGourde();
 }
 /* Dès que l'eau a fini de couler (sans attendre que la surface se calme) :
    couleurs de l'objectif, et un éclat qui traverse la gourde s'il vient
@@ -11118,11 +11276,96 @@ function recompenseGourde(a) {
   const g = document.getElementById('gourde'), bloc = document.getElementById('bloc-eau');
   if (g) { g.classList.toggle('atteint', atteint); g.classList.toggle('vide', a.mlVers <= 0); }
   if (bloc) bloc.classList.toggle('atteint', atteint);
-  if (g && atteint && !a.atteintAvant) { g.classList.remove('brille'); void g.offsetWidth; g.classList.add('brille'); }
+  if (g && atteint && !a.atteintAvant) { g.classList.remove('brille'); void g.offsetWidth; g.classList.add('brille'); moteurGourde.eclat = performance.now(); }
 }
 function terminerGourde() {
   arreterGourde();
   majJaugeEau();
+}
+
+/* L'état lisible de la gourde (pour les vérifications) : niveau affiché,
+   filet visible, gouttes et bulles en vol, eau au calme. */
+function majEtatGourde() {
+  const m = moteurGourde, g = document.getElementById('gourde');
+  if (!g) return;
+  const a = gourdeAnim;
+  const filet = !!(a && a.ajout && a.finQueue == null && performance.now() - a.t0 >= 140);
+  const etat = [m.part.toFixed(3), filet ? '1' : '', String(m.gouttes.length + m.bulles.length), energieGourde() < 1.2 ? '1' : '0'];
+  const cle = etat.join('|');
+  if (cle === m.etat) return;
+  m.etat = cle;
+  g.dataset.niveau = etat[0]; g.dataset.filet = etat[1]; g.dataset.particules = etat[2]; g.dataset.calme = etat[3];
+}
+function niveauGourde(part) {
+  initGourde();
+  const m = moteurGourde;
+  if (!m.dernier || mouvementReduitGourde()) { m.part = part; m.vPart = 0; }
+  m.cible = part;
+  majEtatGourde();
+  lancerGourde();
+}
+function dessinerGourdeFixe() {
+  const m = moteurGourde;
+  if (!m.ctx) return;
+  if (mouvementReduitGourde()) { m.t = 0; m.part = m.cible; m.ok = cibleOkGourde(); m.vOk = 0; }
+  dessinerGourde(performance.now());
+  majEtatGourde();
+}
+function gourdeAnimee() {
+  const m = moteurGourde;
+  return !!gourdeAnim || (m.visible && !document.hidden && !mouvementReduitGourde() && ecranRepasGourde());
+}
+function lancerGourde() {
+  const m = moteurGourde;
+  if (!m.ctx || m.raf || !gourdeAnimee()) return;
+  m.raf = requestAnimationFrame(boucleGourde);
+}
+function boucleGourde(now) {
+  const m = moteurGourde;
+  m.raf = 0;
+  if (!m.toile || !m.toile.isConnected) return;
+  const agitee = !!gourdeAnim || energieGourde() > 0.6;
+  // Au repos, 30 images par seconde suffisent à la houle.
+  if (agitee || !m.dernier || now - m.dernier >= 31) {
+    const dt = m.dernier ? Math.min(100, now - m.dernier) : 16.7;
+    m.dernier = now; m.t = now;
+    if (gourdeAnim) etapeVersementGourde(now);
+    m.reste += dt;
+    let pas = 0;
+    while (m.reste >= 16.67 && pas < 6) { m.reste -= 16.67; pas++; pasGourde(); }
+    if (pas === 6) m.reste = 0;
+    if (m.visible) dessinerGourde(now);
+    majEtatGourde();
+  }
+  if (gourdeAnimee()) m.raf = requestAnimationFrame(boucleGourde);
+}
+/* L'eau tangue quand la page défile vite (sur Repas, la gourde à l'écran). */
+function tangageGourde() {
+  const m = moteurGourde, now = performance.now(), y = window.scrollY || 0;
+  const vitesse = (y - (m.yDefil || 0)) / Math.max(8, now - (m.tDefil || 0));
+  m.yDefil = y; m.tDefil = now;
+  if (gourdeAnim || !m.visible || mouvementReduitGourde() || !ecranRepasGourde() || Math.abs(vitesse) < 0.3) return;
+  m.vIncl += Math.max(-0.016, Math.min(0.016, vitesse * 0.0055));
+  impulsionGourde(vitesse > 0 ? GOURDE_XG + 2 : GOURDE_XD - 2, Math.max(-1.2, Math.min(1.2, vitesse * 0.5)));
+  lancerGourde();
+}
+function initGourde() {
+  const m = moteurGourde, toile = document.getElementById('gourde-toile');
+  if (!toile || m.toile === toile) return;
+  m.toile = toile; m.ctx = toile.getContext('2d'); m.elt = document.getElementById('gourde');
+  m.dpr = Math.min(3, window.devicePixelRatio || 1);
+  toile.width = Math.round((60 + 2 * GOURDE_MARGES.cote) * m.dpr);
+  toile.height = Math.round((86 + GOURDE_MARGES.haut + GOURDE_MARGES.bas) * m.dpr);
+  m.chemins = cheminsGourde();
+  const theme = () => { m.sombre = document.documentElement.getAttribute('data-theme') === 'dark'; dessinerGourdeFixe(); };
+  m.sombre = document.documentElement.getAttribute('data-theme') === 'dark';
+  new MutationObserver(theme).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+  if ('IntersectionObserver' in window) {
+    new IntersectionObserver(entrees => { m.visible = entrees.some(e => e.isIntersecting); if (m.visible) { dessinerGourdeFixe(); lancerGourde(); } })
+      .observe(document.getElementById('gourde'));
+  }
+  window.addEventListener('scroll', tangageGourde, { passive: true });
+  document.addEventListener('visibilitychange', lancerGourde);
 }
 
 function ajouterEau(ml) {
@@ -13032,28 +13275,42 @@ async function rechercherCodeBarreManuel() {
    sans verrou, plusieurs requêtes OpenFoodFacts partaient en parallèle et
    deux alertes « Produit introuvable » pouvaient s'empiler. */
 let scanTraite = false;
-/* App iOS : le scanner plein écran du téléphone (reconnaissance d'Apple,
-   instantanée), puis la même recherche qu'après un scan web. Fermé sans
-   code : la fenêtre reste ouverte pour la saisie manuelle. */
+/* App iOS : le scanner plein écran de l'app (module « Scanner » : caméra qui
+   passe seule en macro, mise au point rapide de près, lecture d'Apple),
+   puis la même recherche qu'après un scan web. Une version de l'app sans ce
+   module garde le scanner tout fait d'avant. Fermé sans code : la fenêtre
+   reste ouverte pour la saisie manuelle. */
 async function scannerNatif() {
   if (scannerEnDemarrage) return;
   scannerEnDemarrage = true;
   try {
-    // Le module natif exige tous ses réglages (sans scanOrientation, il
-    // refusait le scan sans rien ouvrir) : ceux que sa couche JS remplit
-    // d'habitude. hint 17 : tous les formats (EAN, UPC, Code 128…) ;
-    // caméra arrière (1) ; portrait (1), comme l'app.
-    const r = await NATIF.CapacitorBarcodeScanner.scanBarcode({ hint: 17, scanInstructions: 'Vise le code-barres du produit',
-      scanButton: false, scanText: ' ', cameraDirection: 1, scanOrientation: 1 });
-    const code = r && String(r.ScanResult || '').trim();
+    let code = '', ancien = !NATIF.Scanner;
+    if (!ancien) {
+      try {
+        const r = await NATIF.Scanner.scanner({ consigne: 'Vise le code-barres du produit' });
+        code = r && !r.annule ? String(r.code || '').trim() : '';
+      } catch (e) {
+        if (!(e && (e.code === 'UNIMPLEMENTED' || /not implemented|unimplemented/i.test(String(e.message || ''))))) throw e;
+        ancien = true;
+      }
+    }
+    if (ancien) {
+      // Le module tout fait exige tous ses réglages (sans scanOrientation, il
+      // refusait le scan sans rien ouvrir) : ceux que sa couche JS remplit
+      // d'habitude. hint 17 : tous les formats (EAN, UPC, Code 128…) ;
+      // caméra arrière (1) ; portrait (1), comme l'app.
+      const r = await NATIF.CapacitorBarcodeScanner.scanBarcode({ hint: 17, scanInstructions: 'Vise le code-barres du produit',
+        scanButton: false, scanText: ' ', cameraDirection: 1, scanOrientation: 1 });
+      code = r && String(r.ScanResult || '').trim();
+    }
     scannerEnDemarrage = false;
     if (code) await onScanSuccess(code);
   } catch (e) {
     const code = String((e && e.code) || ''), texte = String((e && e.message) || '');
-    // Fermé par la personne (OS-PLUG-BARC-0006) : rien à dire.
+    // Fermé par la personne (OS-PLUG-BARC-0006, scanner d'avant) : rien à dire.
     if (/0006$/.test(code) || /cancel/i.test(texte)) return;
-    if (/0007$/.test(code) || /permission|denied|access|autoris|refus/i.test(texte)) informer("L'appareil photo est refusé à Askēsis : autorise-le dans Réglages › Askēsis › Appareil photo, puis réessaie.");
-    else informer("Le scanner n'a pas pu s'ouvrir. Tape le code-barres à la main en attendant." + (code ? ` (${code})` : ''));
+    if (code === 'refus' || /0007$/.test(code) || /permission|denied|access|autoris|refus/i.test(texte)) informer("L'appareil photo est refusé à Askēsis : autorise-le dans Réglages › Askēsis › Appareil photo, puis réessaie.");
+    else informer("Le scanner n'a pas pu s'ouvrir. Tape le code-barres à la main en attendant." + (code && code !== 'indisponible' ? ` (${code})` : ''));
   } finally {
     scannerEnDemarrage = false;
   }
@@ -15319,6 +15576,16 @@ window.addEventListener('scroll', () => {
   appBarScrollEnAttente = true;
   requestAnimationFrame(onScrollAppBar);
 }, { passive: true });
+
+/* App iPhone : le bord du haut ne s'estompe que quand la page a défilé
+   (voir .bord-haut) ; au repos, rien sous l'heure. */
+(function bordHautAuDefilement() {
+  if (!NATIF) return;
+  let prevu = false;
+  const maj = () => { prevu = false; document.documentElement.classList.toggle('page-defilee', (window.scrollY || 0) > 4); };
+  window.addEventListener('scroll', () => { if (!prevu) { prevu = true; requestAnimationFrame(maj); } }, { passive: true });
+  maj();
+})();
 
 /* App iPhone : dans chaque sélecteur (.segment), une bulle glisse d'un choix
    à l'autre, comme dans les barres d'iOS. Elle se cale sur le bouton choisi

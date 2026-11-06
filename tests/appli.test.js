@@ -3946,23 +3946,23 @@ test("eau : l'eau versée coule, monte avec le total, puis tout revient au calme
   await page.waitForTimeout(1300);
   // Deux appuis rapprochés : un seul filet, la pastille cumule.
   await page.evaluate(() => { ajouterEau(250); ajouterEau(250); });
-  await page.waitForFunction(() => document.getElementById('gourde-filet-eau').getAttribute('d'), null, { timeout: 3000 });
+  await page.waitForFunction(() => document.getElementById('gourde').dataset.filet === '1', null, { timeout: 3000 });
   const pendant = await page.evaluate(() => ({ anime: !!gourdeAnim, pastille: document.getElementById('eau-ajout').textContent,
     ouverte: document.getElementById('gourde').classList.contains('ouverte'), donnee: getDay(currentDate).eauMl }));
   assert.deepEqual(pendant, { anime: true, pastille: '+500 ml', ouverte: true, donnee: 1500 });
   await page.waitForFunction(() => !gourdeAnim, null, { timeout: 8000 });
+  await page.waitForFunction(() => document.getElementById('gourde').dataset.calme === '1' && document.getElementById('gourde').dataset.particules === '0', null, { timeout: 9000 });
   const fin = await page.evaluate(() => {
-    const quota = quotaEauSuggere(currentDate);
+    const quota = quotaEauSuggere(currentDate), g = document.getElementById('gourde');
     return { texte: document.getElementById('eau-texte').textContent === `${texteLitres(1500)} / ${texteLitres(quota)} L`,
-      niveau: document.getElementById('eau-vague').style.transform === `translateY(${((1 - partGourde(1500, quota)) * GOURDE_COURSE).toFixed(1)}px)`,
-      particules: document.getElementById('gourde-particules').childElementCount, filet: document.getElementById('gourde-filet-eau').getAttribute('d'),
-      calme: document.getElementById('gourde-surface').getAttribute('transform'), ouverte: document.getElementById('gourde').classList.contains('ouverte') };
+      niveau: g.dataset.niveau === partGourde(1500, quota).toFixed(3), particules: g.dataset.particules, filet: g.dataset.filet,
+      calme: g.dataset.calme, ouverte: g.classList.contains('ouverte') };
   });
-  assert.deepEqual(fin, { texte: true, niveau: true, particules: 0, filet: '', calme: null, ouverte: false });
+  assert.deepEqual(fin, { texte: true, niveau: true, particules: '0', filet: '', calme: '1', ouverte: false });
   // Retrait : le niveau baisse sans filet, et l'animation s'arrête aussi.
   await page.evaluate(() => retirerEau());
   assert.equal(await page.evaluate(() => !!gourdeAnim && !document.getElementById('gourde').classList.contains('ouverte')), true);
-  await page.waitForFunction(() => !gourdeAnim, null, { timeout: 5000 });
+  await page.waitForFunction(() => !gourdeAnim, null, { timeout: 8000 });
   assert.match(await page.textContent('#eau-texte'), /^1,25 \//);
 }));
 
@@ -4553,9 +4553,27 @@ test('app iOS : Apple Santé remplit les pas et les pesées, sans jamais écrase
   assert.equal(await page.evaluate(() => localStorage.getItem('mc_sante_apple')), null);
 }));
 
-test('app iOS : le scanner du téléphone remplace la caméra du navigateur', () => avecAppli({ natif: true }, async ({ page }) => {
+test("gourde : une bouteille dessinée image par image ; un défilement rapide fait tanguer l'eau, qui s'apaise ensuite", () => avecAppli({ animations: true }, async ({ page }) => {
   await page.evaluate(() => {
-    window.__reponsesNatives['CapacitorBarcodeScanner.scanBarcode'] = { ScanResult: '3017620422003', format: 9 };
+    document.body.style.minHeight = '4000px'; allerA('repas'); renderApp();
+    getDay(currentDate).eauMl = 1000; majJaugeEau();
+    document.getElementById('bloc-eau').scrollIntoView({ block: 'center' });
+  });
+  await page.waitForFunction(() => document.getElementById('gourde').dataset.calme === '1', null, { timeout: 4000 });
+  // La toile est bien dessinée (pas vide).
+  assert.equal(await page.evaluate(() => {
+    const c = document.getElementById('gourde-toile'), d = c.getContext('2d').getImageData(0, 0, c.width, c.height).data;
+    let n = 0; for (let i = 3; i < d.length; i += 4) if (d[i] > 0) n++;
+    return n > c.width * c.height * 0.2;
+  }), true);
+  await page.evaluate(() => { const y = window.scrollY; window.scrollTo(0, y + 4); setTimeout(() => window.scrollTo(0, y + 150), 20); });
+  await page.waitForFunction(() => document.getElementById('gourde').dataset.calme === '0', null, { timeout: 2000 });
+  await page.waitForFunction(() => document.getElementById('gourde').dataset.calme === '1', null, { timeout: 8000 });
+}));
+
+test("app iOS : le scanner de l'app (macro, mise au point rapide) remplace la caméra du navigateur ; l'ancien module reste en secours", () => avecAppli({ natif: true }, async ({ page }) => {
+  await page.evaluate(() => {
+    window.__reponsesNatives['Scanner.scanner'] = { code: '3017620422003' };
     chercherProduitOFFParCode = async code => { window.__codeCherche = code; };
     ouvrirBarcode('lunch');
   });
@@ -4563,10 +4581,31 @@ test('app iOS : le scanner du téléphone remplace la caméra du navigateur', ()
   const r = await page.evaluate(() => ({ code: window.__codeCherche, champ: document.getElementById('manual-barcode-input').value,
     lecteur: getComputedStyle(document.getElementById('reader')).display, fenetre: document.getElementById('barcode-modal').classList.contains('show') }));
   assert.deepEqual(r, { code: '3017620422003', champ: '3017620422003', lecteur: 'none', fenetre: true });
-  // Tous les réglages que le module natif exige (sans scanOrientation, il refusait le scan).
+  assert.deepEqual((await appelsDe(page, 'Scanner', 'scanner'))[0].o, { consigne: 'Vise le code-barres du produit' });
+  assert.equal((await appelsDe(page, 'CapacitorBarcodeScanner', 'scanBarcode')).length, 0);
+  // Fermé sans code : rien ; caméra refusée ; pas de caméra (dit, jamais silencieux).
+  const essai = reponse => page.evaluate(async rep => {
+    const dits = [];
+    window.__codeCherche = null;
+    informer = t => { dits.push(t); return Promise.resolve(true); };
+    window.__reponsesNatives['Scanner.scanner'] = rep.erreur ? () => { throw Object.assign(new Error(rep.erreur[1]), { code: rep.erreur[0] }); } : rep;
+    await scannerNatif();
+    return { dits, cherche: window.__codeCherche };
+  }, reponse);
+  assert.deepEqual(await essai({ annule: true }), { dits: [], cherche: null });
+  assert.match((await essai({ erreur: ['refus', 'Appareil photo refusé'] })).dits[0], /refusé à Askēsis : autorise-le dans Réglages › Askēsis › Appareil photo/);
+  assert.deepEqual((await essai({ erreur: ['indisponible', "Pas d'appareil photo"] })).dits, ["Le scanner n'a pas pu s'ouvrir. Tape le code-barres à la main en attendant."]);
+  // Une version de l'app sans ce module : l'ancien scanner, avec tous les réglages qu'il exige.
+  await page.evaluate(() => {
+    window.__reponsesNatives['Scanner.scanner'] = () => { throw Object.assign(new Error('"Scanner" plugin is not implemented on ios'), { code: 'UNIMPLEMENTED' }); };
+    window.__reponsesNatives['CapacitorBarcodeScanner.scanBarcode'] = { ScanResult: '5449000000996', format: 9 };
+    window.__codeCherche = null;
+    scannerNatif();
+  });
+  await page.waitForFunction(() => window.__codeCherche === '5449000000996');
   assert.deepEqual((await appelsDe(page, 'CapacitorBarcodeScanner', 'scanBarcode'))[0].o,
     { hint: 17, scanInstructions: 'Vise le code-barres du produit', scanButton: false, scanText: ' ', cameraDirection: 1, scanOrientation: 1 });
-  // Refus du module : fermé (rien), caméra refusée, autre erreur (dite, jamais silencieuse).
+  // Ses refus : fermé (rien), caméra refusée, autre erreur (dite, avec son code).
   const messages = [];
   for (const [codeErreur, message] of [['OS-PLUG-BARC-0006', 'Couldn’t scan because the process was cancelled.'],
     ['OS-PLUG-BARC-0007', 'Couldn’t scan because camera access wasn’t provided.'], ['OS-PLUG-BARC-0008', 'Scanning parameters are invalid.']]) {
