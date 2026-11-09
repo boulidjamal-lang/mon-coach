@@ -4000,8 +4000,13 @@
       -webkit-mask-image: linear-gradient(#000 40%, transparent); mask-image: linear-gradient(#000 40%, transparent);
       opacity: 0; transition: opacity .25s ease; }
     html.app-ios.page-defilee:not(.spl-actif) .bord-haut { opacity: 1; }
-    /* App iPhone, en sombre : la grille du fond se voit (elle était presque noire sur noir). */
-    html.app-ios:root[data-theme="dark"] { --grille: rgba(255,255,255,.085); }
+    /* App iPhone : la grille du fond rend pareil en clair et en sombre. Sur
+       le noir de l’écran OLED, des lignes de même écart qu’en clair
+       paraissent bien plus faibles (presque invisibles le soir, luminosité
+       basse) : le sombre est plus marqué en valeur pour paraître pareil à
+       l’œil. Les deux réglages sont côte à côte. */
+    html.app-ios:root[data-theme="light"] { --grille: rgba(0,0,0,.045); }
+    html.app-ios:root[data-theme="dark"] { --grille: rgba(255,255,255,.12); }
     /* App iPhone : pas de sélection de texte ni de loupe au toucher long
        sur l'interface, comme dans une app ; les champs restent sélectionnables. */
     html.app-ios body { -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
