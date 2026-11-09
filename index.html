@@ -240,14 +240,14 @@
 
     * { box-sizing: border-box; -webkit-font-smoothing: antialiased; }
 
-    /* Certains navigateurs (Safari iOS récent, notamment) ignorent
-       user-scalable=no par souci d'accessibilité : ce filet en plus bloque
-       le geste de pincement pour zoomer, sans empêcher le défilement normal. */
     /* Tout le dessin est en rem : cette seule ligne recalibre typographie,
        espacements et hauteurs sur la largeur réelle de l'écran — ~14.6px sur
-       un iPhone SE, ~17.5px sur un Max ou un grand Android. */
+       un iPhone SE, ~17.5px sur un Max ou un grand Android — puis sur la
+       taille de texte choisie dans les réglages du téléphone (--echelle-texte,
+       voir appliquerTailleTexteSysteme : Dynamic Type sur iPhone et iPad). Le
+       pincement pour zoomer reste permis partout (voir la balise viewport). */
     html {
-      font-size: clamp(14.5px, 4.05vw, 17.5px);
+      font-size: calc(clamp(14.5px, 4.05vw, 17.5px) * var(--echelle-texte, 1));
       -webkit-text-size-adjust: 100%;
       text-size-adjust: 100%;
       /* Sans ça, la zone sous l'encoche/l'île dynamique (viewport-fit=cover)
@@ -32978,6 +32978,40 @@ async function mettreAJourAppli(bouton) {
 }
 function rechargerPage() { location.reload(); }
 
+/* =====================================================================
+   TAILLE DE TEXTE DU SYSTÈME (A11Y-01)
+   Sur iPhone et iPad, WebKit expose la taille « corps » choisie dans
+   Réglages › Luminosité et affichage › Taille du texte par la police
+   -apple-system-body : on la mesure (17 px au réglage par défaut) et on
+   recalibre la racine, puisque tout le dessin est en rem. Bornée pour que
+   la mise en page tienne (au-delà, le pincement pour zoomer reste là) ;
+   remesurée à chaque retour dans l'appli, le réglage pouvant avoir changé.
+   Ailleurs (Android, ordinateur), le mot-clé n'existe pas : rien ne bouge.
+   ===================================================================== */
+const ECHELLE_TEXTE_MIN = 0.85, ECHELLE_TEXTE_MAX = 1.35;
+let echelleTexteSysteme = 1;
+function mesurerTailleTexteSysteme() {
+  if (typeof CSS === 'undefined' || !CSS.supports || !CSS.supports('font', '-apple-system-body')) return null;
+  const sonde = document.createElement('span');
+  sonde.style.cssText = 'position:absolute; left:-9999px; visibility:hidden; font:-apple-system-body;';
+  sonde.textContent = 'Askēsis';
+  document.body.appendChild(sonde);
+  const px = parseFloat(getComputedStyle(sonde).fontSize);
+  sonde.remove();
+  return px > 0 ? px : null;
+}
+function appliquerTailleTexteSysteme() {
+  const px = mesurerTailleTexteSysteme();
+  if (!px) return 1;
+  const echelle = Math.round(Math.min(ECHELLE_TEXTE_MAX, Math.max(ECHELLE_TEXTE_MIN, px / 17)) * 100) / 100;
+  if (echelle !== echelleTexteSysteme) {
+    echelleTexteSysteme = echelle;
+    document.documentElement.style.setProperty('--echelle-texte', String(echelle));
+    document.documentElement.classList.toggle('texte-agrandi', echelle > 1.15);
+  }
+  return echelle;
+}
+
 window.addEventListener('load', async () => {
   // IndexedDB s'ouvre en asynchrone : tout le démarrage attend ses blocs.
   await chargerStockage();
@@ -32994,6 +33028,9 @@ window.addEventListener('load', async () => {
   verifierSupportVerre();
   if (navigator.deviceMemory && navigator.deviceMemory <= 2) document.documentElement.classList.add('flou-leger');
   appliquerTheme(themeActuel());
+  appliquerTailleTexteSysteme();
+  document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') appliquerTailleTexteSysteme(); });
+  window.addEventListener('pageshow', appliquerTailleTexteSysteme);
   // App iPhone : thème des éléments d'iOS, et barre d'onglets native (iOS 26 et plus).
   apparenceNative();
   initOngletsNatifs();
