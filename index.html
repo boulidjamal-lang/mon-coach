@@ -7827,6 +7827,89 @@
 
 const STORAGE_KEY = 'elite_fitness_data_v1';
 const PROFILE_KEY = 'elite_fitness_profile_v1';
+
+/* =====================================================================
+   STOCKAGE LOCAL (DATA-01)
+   Les cinq gros blocs (journées, profil, programmes, historique des
+   séances, exercices perso) vivent dans IndexedDB, sans la limite de ~5 Mo
+   de localStorage. localStorage en garde une copie tant qu'il a la place
+   (anciennes versions de l'appli, lecture de secours), mais l'échec de cette
+   copie n'est plus une erreur : IndexedDB a tout. Au démarrage, IndexedDB
+   fait foi s'il a quelque chose ; sinon ce que localStorage avait est repris
+   et rangé dans IndexedDB (première ouverture après la mise à jour).
+   ===================================================================== */
+const STOCKAGE_IDB = { nom: 'askesis', magasin: 'blocs' };
+let baseIDB = null;             // la base ouverte, ou null si IndexedDB est indisponible
+let blocsIDB = null;            // ce qu'IndexedDB contenait au démarrage ({ clé: valeur })
+let copieLocaleSaturee = false; // localStorage plein : on n'y recopie plus, IndexedDB a tout
+
+function ouvrirStockage() {
+  return new Promise(resolve => {
+    try {
+      if (typeof indexedDB === 'undefined' || !indexedDB) return resolve(null);
+      const demande = indexedDB.open(STOCKAGE_IDB.nom, 1);
+      demande.onupgradeneeded = () => { demande.result.createObjectStore(STOCKAGE_IDB.magasin); };
+      demande.onsuccess = () => resolve(demande.result);
+      demande.onerror = () => resolve(null);
+      demande.onblocked = () => resolve(null);
+    } catch (e) { resolve(null); }
+  });
+}
+function lireTousIDB(base) {
+  return new Promise(resolve => {
+    try {
+      const tx = base.transaction(STOCKAGE_IDB.magasin, 'readonly');
+      const magasin = tx.objectStore(STOCKAGE_IDB.magasin);
+      const cles = magasin.getAllKeys(), valeurs = magasin.getAll();
+      tx.oncomplete = () => { const r = {}; (cles.result || []).forEach((k, i) => { r[k] = valeurs.result[i]; }); resolve(r); };
+      tx.onerror = () => resolve({});
+      tx.onabort = () => resolve({});
+    } catch (e) { resolve({}); }
+  });
+}
+/* Avant loadData() et chargerMuscu() : ouvre la base et lit ce qu'elle a. */
+async function chargerStockage() {
+  baseIDB = await ouvrirStockage();
+  blocsIDB = baseIDB ? await lireTousIDB(baseIDB) : {};
+}
+/* Un bloc au démarrage : IndexedDB s'il l'a ; sinon localStorage (anciennes
+   versions), aussitôt recopié dans IndexedDB. */
+function lireBloc(cle, defaut) {
+  if (blocsIDB && blocsIDB[cle] !== undefined && blocsIDB[cle] !== null) return blocsIDB[cle];
+  let v = null;
+  try { v = JSON.parse(localStorage.getItem(cle)); } catch (e) { v = null; }
+  if (v === null || v === undefined) return defaut;
+  ecrireIDB(cle, v);
+  return v;
+}
+function ecrireIDB(cle, valeur) {
+  if (blocsIDB) blocsIDB[cle] = valeur;
+  if (!baseIDB) return;
+  try {
+    const tx = baseIDB.transaction(STOCKAGE_IDB.magasin, 'readwrite');
+    tx.objectStore(STOCKAGE_IDB.magasin).put(valeur, cle);
+    tx.onerror = () => console.warn('[Stockage] IndexedDB :', tx.error && tx.error.message);
+  } catch (e) { console.warn('[Stockage] IndexedDB :', e.message); }
+}
+/* Écrit un bloc : IndexedDB, plus une copie dans localStorage tant qu'il a
+   la place. Renvoie false seulement si rien n'a pu être gardé nulle part. */
+function ecrireBloc(cle, valeur) {
+  ecrireIDB(cle, valeur);
+  if (!copieLocaleSaturee || !baseIDB) {
+    try { localStorage.setItem(cle, JSON.stringify(valeur)); }
+    catch (e) {
+      if (!baseIDB) return false;
+      copieLocaleSaturee = true;
+    }
+  }
+  return true;
+}
+function effacerBloc(cle) {
+  try { localStorage.removeItem(cle); } catch (e) {}
+  if (blocsIDB) delete blocsIDB[cle];
+  if (!baseIDB) return;
+  try { baseIDB.transaction(STOCKAGE_IDB.magasin, 'readwrite').objectStore(STOCKAGE_IDB.magasin).delete(cle); } catch (e) {}
+}
 const GEMINI_KEY_LS = 'gemini_key_v43';
 const GEMINI_MODEL = 'gemini-3.5-flash';
 // À quel compte appartiennent les données actuellement en localStorage.
@@ -8525,9 +8608,11 @@ function formatDateDisplay(dateStr) {
 }
 
 function loadData() {
-  try { appData = JSON.parse(localStorage.getItem(STORAGE_KEY)) || {}; } catch (e) { appData = {}; }
+  appData = lireBloc(STORAGE_KEY, null);
+  if (!appData || typeof appData !== 'object' || Array.isArray(appData)) appData = {};
   invaliderAjustement();
-  try { userProfile = Object.assign(userProfile, JSON.parse(localStorage.getItem(PROFILE_KEY)) || {}); } catch (e) {}
+  const profilLu = lireBloc(PROFILE_KEY, null);
+  if (profilLu && typeof profilLu === 'object' && !Array.isArray(profilLu)) userProfile = Object.assign(userProfile, profilLu);
   appliquerGeminiKeyEffective();
   majUIWithings();
 }
@@ -8544,8 +8629,8 @@ function saveData(jourModifie) {
   // L'ajustement de la semaine ne dépend que des jours d'avant lundi (et du profil).
   if (!jourModifie || jourModifie < lundiDe(todayStr())) invaliderAjustement();
   try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(appData));
-    localStorage.setItem(PROFILE_KEY, JSON.stringify(userProfile));
+    const garde = ecrireBloc(STORAGE_KEY, appData) && ecrireBloc(PROFILE_KEY, userProfile);
+    if (!garde) throw new Error('stockage plein');
     planifierSync();
     return true;
   } catch (e) {
@@ -11863,7 +11948,7 @@ function noterAjustementSemaine() {
   if (!change) return;
   userProfile.ajustements = h.slice(-AJUST_HISTO_MAX);
   userProfile.maj = Date.now();
-  try { localStorage.setItem(PROFILE_KEY, JSON.stringify(userProfile)); } catch (e) {}
+  try { ecrireBloc(PROFILE_KEY, userProfile); } catch (e) {}
   if (typeof planifierSync === 'function') planifierSync();
 }
 function dateCourteAjustement(l) { return dateLocale(l).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' }); }
@@ -12581,7 +12666,7 @@ function masquerDejaMange(cle) {
   if (!cle) return;
   userProfile.dejaMangeMasques = Object.assign({}, userProfile.dejaMangeMasques, { [cle]: todayStr() });
   userProfile.maj = Date.now();
-  try { localStorage.setItem(PROFILE_KEY, JSON.stringify(userProfile)); } catch (e) {}
+  try { ecrireBloc(PROFILE_KEY, userProfile); } catch (e) {}
   if (typeof planifierSync === 'function') planifierSync();
   invaliderHistorique();
   const champ = document.getElementById('man-name');
@@ -16569,7 +16654,7 @@ function fermerTourGuide() {
   if (!userProfile.tutorielVu) {
     userProfile.tutorielVu = true;
     userProfile.maj = Date.now();
-    try { localStorage.setItem(PROFILE_KEY, JSON.stringify(userProfile)); } catch (e) {}
+    try { ecrireBloc(PROFILE_KEY, userProfile); } catch (e) {}
     planifierSync();
   }
 }
@@ -16897,11 +16982,11 @@ function viderDonneesLocales() {
   userProfile = { height: 175, age: 25, gender: 'm', weight: 70 };
   musculationProgrammes = []; musculationHistorique = []; musculationExosPerso = [];
   try {
-    localStorage.removeItem(STORAGE_KEY);
-    localStorage.removeItem(PROFILE_KEY);
-    localStorage.removeItem(MUSCU_PROGRAMMES_KEY);
-    localStorage.removeItem(MUSCU_HISTORIQUE_KEY);
-    localStorage.removeItem(MUSCU_EXOS_PERSO_KEY);
+    effacerBloc(STORAGE_KEY);
+    effacerBloc(PROFILE_KEY);
+    effacerBloc(MUSCU_PROGRAMMES_KEY);
+    effacerBloc(MUSCU_HISTORIQUE_KEY);
+    effacerBloc(MUSCU_EXOS_PERSO_KEY);
     localStorage.removeItem(MUSCU_COMPTE_LOCAL_LS);
     localStorage.removeItem(JOURS_MODIFIES_LS);
     // L'état de synchro (versions déjà vues, bases de fusion) part avec les
@@ -20157,7 +20242,7 @@ async function onbTerminer() {
   jour.weight = poids;
   jour.goal = onbReponses.goal;
 
-  try { localStorage.setItem(PROFILE_KEY, JSON.stringify(userProfile)); } catch (e) {}
+  try { ecrireBloc(PROFILE_KEY, userProfile); } catch (e) {}
   saveData(todayStr());
 
   bilanForce = false;
@@ -21438,7 +21523,7 @@ function basesSync(id) {
 }
 function enregistrerBasesSync(id, bases) {
   const limite = shiftDate(todayStr(), -JOURS_BASES_SYNC);
-  Object.keys(bases).forEach(j => { if (j < limite) delete bases[j]; });
+  Object.keys(bases).forEach(j => { if (/^\d{4}-\d{2}-\d{2}$/.test(j) && j < limite) delete bases[j]; });
   try { localStorage.setItem('mc_sync_bases_' + id, JSON.stringify(bases)); } catch (e) {}
 }
 /* Écriture canonique, clés triées à toutes les profondeurs : le serveur
@@ -21523,6 +21608,49 @@ function fusionnerSansBase(local, distant, localPlusRecent) {
 }
 const memeJournee = (a, b) => canonique(Object.assign({}, a, { maj: undefined })) === canonique(Object.assign({}, b, { maj: undefined }));
 
+/* Le profil, à trois versions (DATA-02) : la dernière version commune aux
+   deux côtés (bases.profil), celle de l'appareil, celle du serveur. Chaque
+   champ changé d'un seul côté prend cette valeur (une suppression comprise) ;
+   changé des deux côtés, le plus récent l'emporte. Les dictionnaires
+   (pesées par date, réglages par exercice…) se fusionnent clé par clé : une
+   pesée faite ici et une autre là-bas sont toutes les deux gardées. Sans
+   base (première synchro de cette version), rien n'est perdu : la valeur la
+   plus récente, ou la seule connue. */
+function choisirVersion(b, l, d, avecBase, localPlusRecent) {
+  if (!avecBase) {
+    const recent = localPlusRecent ? l : d, ancien = localPlusRecent ? d : l;
+    return recent !== undefined && recent !== null ? recent : ancien;
+  }
+  const lChange = canonique(l) !== canonique(b), dChange = canonique(d) !== canonique(b);
+  if (lChange && !dChange) return l;
+  if (dChange && !lChange) return d;
+  return localPlusRecent ? l : d;
+}
+function fusionnerProfil(base, local, distant, localPlusRecent) {
+  const estDico = v => !!v && typeof v === 'object' && !Array.isArray(v);
+  base = estDico(base) ? base : null; local = local || {}; distant = distant || {};
+  const sortie = {};
+  new Set([...Object.keys(base || {}), ...Object.keys(local), ...Object.keys(distant)]).forEach(k => {
+    if (k === 'maj') return;
+    const b = base ? base[k] : undefined, l = local[k], d = distant[k];
+    if (k === 'mesures' || (estDico(l) && estDico(d))) {
+      const bo = estDico(b) ? b : {}, lo = estDico(l) ? l : {}, dso = estDico(d) ? d : {};
+      const fusion = {};
+      new Set([...Object.keys(bo), ...Object.keys(lo), ...Object.keys(dso)]).forEach(c => {
+        const v = choisirVersion(bo[c], lo[c], dso[c], !!base, localPlusRecent);
+        if (v !== undefined) fusion[c] = v;
+      });
+      sortie[k] = fusion;
+      return;
+    }
+    const v = choisirVersion(b, l, d, !!base, localPlusRecent);
+    if (v !== undefined) sortie[k] = v;
+  });
+  return sortie;
+}
+const sansMaj = p => Object.assign({}, p, { maj: undefined });
+const memeProfil = (a, b) => canonique(sansMaj(a)) === canonique(sansMaj(b));
+
 async function synchroniser(raison) {
   if (!supa) {
     if (raison === 'manuel') majEtatSync('attente', "Renseigne l'URL et la clé du projet pour activer la synchronisation.");
@@ -21565,11 +21693,11 @@ async function synchroniser(raison) {
       userProfile = { height: 175, age: 25, gender: 'm', weight: 70 };
       musculationProgrammes = []; musculationHistorique = []; musculationExosPerso = [];
       try {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(appData));
-        localStorage.setItem(PROFILE_KEY, JSON.stringify(userProfile));
-        localStorage.setItem(MUSCU_PROGRAMMES_KEY, JSON.stringify(musculationProgrammes));
-        localStorage.setItem(MUSCU_HISTORIQUE_KEY, JSON.stringify(musculationHistorique));
-        localStorage.setItem(MUSCU_EXOS_PERSO_KEY, JSON.stringify(musculationExosPerso));
+        ecrireBloc(STORAGE_KEY, appData);
+        ecrireBloc(PROFILE_KEY, userProfile);
+        ecrireBloc(MUSCU_PROGRAMMES_KEY, musculationProgrammes);
+        ecrireBloc(MUSCU_HISTORIQUE_KEY, musculationHistorique);
+        ecrireBloc(MUSCU_EXOS_PERSO_KEY, musculationExosPerso);
         localStorage.removeItem(MUSCU_SUPPR_LS);
         localStorage.removeItem(JOURS_MODIFIES_LS);
         localStorage.removeItem('mc_sync_etat_' + id);
@@ -21661,26 +21789,45 @@ async function synchroniser(raison) {
     enregistrerBasesSync(id, bases);
     enregistrerEtatSync(id, etat);
     if (changementLocal || aPousser.length) {
-      try { localStorage.setItem(STORAGE_KEY, JSON.stringify(appData)); } catch (e) {}
+      ecrireBloc(STORAGE_KEY, appData);
     }
 
     // ---------- 3. Le profil ----------
+    // Deux appareils peuvent l'avoir changé chacun de leur côté (une pesée
+    // ici, un objectif là) : plutôt que « le dernier qui écrit gagne », les
+    // deux versions sont fusionnées champ par champ depuis la dernière
+    // version commune (bases.profil, voir fusionnerProfil), puis le résultat
+    // repart au serveur s'il diffère de ce qu'il avait.
     const majProfilLocal = Number(userProfile.maj) || 0;
-    if (rp.data && (Number(rp.data.maj) || 0) > majProfilLocal) {
-      userProfile = Object.assign(userProfile, rp.data.donnees, { maj: Number(rp.data.maj) || 0 });
+    const majProfilDistant = rp.data ? Number(rp.data.maj) || 0 : 0;
+    const profilDistant = rp.data && rp.data.donnees && typeof rp.data.donnees === 'object' ? rp.data.donnees : null;
+    if (profilDistant && !memeProfil(userProfile, profilDistant)) {
+      const fusion = fusionnerProfil(bases.profil, userProfile, profilDistant, majProfilLocal >= majProfilDistant);
+      const commeDistant = memeProfil(fusion, profilDistant);
+      userProfile = Object.assign(fusion, { maj: commeDistant ? majProfilDistant : Math.max(Date.now(), majProfilDistant + 1, majProfilLocal + 1) });
       appliquerGeminiKeyEffective();
       majUIWithings();
       changementLocal = true;
-    } else if (!rp.data || majProfilLocal > (Number(rp.data.maj) || 0)) {
+      if (!commeDistant) {
+        const { error: e3 } = await supa.from('profil')
+          .upsert([{ utilisateur: id, donnees: userProfile, maj: userProfile.maj }], { onConflict: 'utilisateur' });
+        if (e3) throw e3;
+      }
+    } else if (!profilDistant) {
       const { error: e3 } = await supa.from('profil')
         .upsert([{ utilisateur: id, donnees: userProfile, maj: majProfilLocal || 1 }], { onConflict: 'utilisateur' });
       if (e3) throw e3;
+    } else if (majProfilLocal !== majProfilDistant) {
+      userProfile.maj = Math.max(majProfilLocal, majProfilDistant);
     }
+    // Ce que les deux côtés partagent désormais : la base de la prochaine fusion.
+    bases.profil = JSON.parse(JSON.stringify(sansMaj(userProfile)));
+    enregistrerBasesSync(id, bases);
 
     if (changementLocal) {
       try {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(appData));
-        localStorage.setItem(PROFILE_KEY, JSON.stringify(userProfile));
+        ecrireBloc(STORAGE_KEY, appData);
+        ecrireBloc(PROFILE_KEY, userProfile);
       } catch (e) {}
       invaliderHistorique();
       renderApp();
@@ -23823,9 +23970,10 @@ function basculerPauseFiche() {
 }
 
 function chargerMuscu() {
-  try { musculationProgrammes = JSON.parse(localStorage.getItem(MUSCU_PROGRAMMES_KEY)) || []; } catch (e) { musculationProgrammes = []; }
-  try { musculationHistorique = JSON.parse(localStorage.getItem(MUSCU_HISTORIQUE_KEY)) || []; } catch (e) { musculationHistorique = []; }
-  try { musculationExosPerso = JSON.parse(localStorage.getItem(MUSCU_EXOS_PERSO_KEY)) || []; } catch (e) { musculationExosPerso = []; }
+  const liste = cle => { const v = lireBloc(cle, null); return Array.isArray(v) ? v : []; };
+  musculationProgrammes = liste(MUSCU_PROGRAMMES_KEY);
+  musculationHistorique = liste(MUSCU_HISTORIQUE_KEY);
+  musculationExosPerso = liste(MUSCU_EXOS_PERSO_KEY);
   try { exercicesCommunaute = JSON.parse(localStorage.getItem(MUSCU_EXOS_COMMUNAUTE_KEY)) || []; } catch (e) { exercicesCommunaute = []; }
   try { musculationSessionActive = JSON.parse(localStorage.getItem(MUSCU_SESSION_KEY)) || null; } catch (e) { musculationSessionActive = null; }
   if (musculationSessionActive && musculationSessionActive.demo) musculationSessionActive = null;
@@ -23930,15 +24078,15 @@ function appliquerRedirectionsExercices() {
   }
 }
 function sauvegarderProgrammes() {
-  try { localStorage.setItem(MUSCU_PROGRAMMES_KEY, JSON.stringify(musculationProgrammes)); planifierSync(); }
-  catch (e) { alert("Impossible d'enregistrer le programme : espace de stockage plein ou navigation privée."); }
+  if (ecrireBloc(MUSCU_PROGRAMMES_KEY, musculationProgrammes)) planifierSync();
+  else alert("Impossible d'enregistrer le programme : espace de stockage plein ou navigation privée.");
 }
 function sauvegarderHistorique() {
-  try { localStorage.setItem(MUSCU_HISTORIQUE_KEY, JSON.stringify(musculationHistorique)); planifierSync(); }
-  catch (e) { alert("Impossible d'enregistrer la séance : espace de stockage plein ou navigation privée."); }
+  if (ecrireBloc(MUSCU_HISTORIQUE_KEY, musculationHistorique)) planifierSync();
+  else alert("Impossible d'enregistrer la séance : espace de stockage plein ou navigation privée.");
 }
 function sauvegarderExosPerso() {
-  try { localStorage.setItem(MUSCU_EXOS_PERSO_KEY, JSON.stringify(musculationExosPerso)); planifierSync(); } catch (e) {}
+  if (ecrireBloc(MUSCU_EXOS_PERSO_KEY, musculationExosPerso)) planifierSync();
 }
 function sauvegarderSessionActive() {
   // La séance en cours reste volontairement locale : elle change à chaque
@@ -24137,9 +24285,9 @@ async function synchroniserMuscu(utilisateurId, complete = true) {
     // en tête comme si elle venait d'être faite.
     musculationHistorique.sort((a, b) => String(b.date || '').localeCompare(String(a.date || '')) || (Number(b.fin) || Number(b.maj) || 0) - (Number(a.fin) || Number(a.maj) || 0));
     try {
-      localStorage.setItem(MUSCU_PROGRAMMES_KEY, JSON.stringify(musculationProgrammes));
-      localStorage.setItem(MUSCU_HISTORIQUE_KEY, JSON.stringify(musculationHistorique));
-      localStorage.setItem(MUSCU_EXOS_PERSO_KEY, JSON.stringify(musculationExosPerso));
+      ecrireBloc(MUSCU_PROGRAMMES_KEY, musculationProgrammes);
+      ecrireBloc(MUSCU_HISTORIQUE_KEY, musculationHistorique);
+      ecrireBloc(MUSCU_EXOS_PERSO_KEY, musculationExosPerso);
     } catch (e) {}
     if (ecranActif === 'seance') renderSeance();
     if (ecranActif === 'stats') renderStatsMuscu();
@@ -27514,7 +27662,7 @@ function enregistrerImagePartage() {
 /* --- Réglages musculation : zones de volume et incréments de charge --- */
 function enregistrerProfilMuscu() {
   userProfile.maj = Date.now();
-  try { localStorage.setItem(PROFILE_KEY, JSON.stringify(userProfile)); } catch (e) {}
+  try { ecrireBloc(PROFILE_KEY, userProfile); } catch (e) {}
   if (typeof planifierSync === 'function') planifierSync();
   // Tout ce qui affiche des jauges se redessine avec les nouveaux seuils.
   if (musculationSessionActive) renderSessionModal();
@@ -32830,7 +32978,9 @@ async function mettreAJourAppli(bouton) {
 }
 function rechargerPage() { location.reload(); }
 
-window.addEventListener('load', () => {
+window.addEventListener('load', async () => {
+  // IndexedDB s'ouvre en asynchrone : tout le démarrage attend ses blocs.
+  await chargerStockage();
   loadData();
   majCouleurBarreStyle();
   chargerMuscu();

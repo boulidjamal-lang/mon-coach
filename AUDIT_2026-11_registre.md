@@ -22,7 +22,7 @@ Branche de travail : `corrections-audit` (dépôt mon-coach). Rien n'est mis en 
 | SEC-08 | P2 | 6 | Fonction Withings hors dépôt, sans authentification | Tests réussis | `supabase/functions/withings/index.ts` versionnée : session exigée, origines de l'appli, URL de retour imposée, Pro exigé ; 2 tests de fonction, 1 test SQL, 1 test d'appli ; à déployer (actions côté production) |
 | TECH-01 | P2 | 14 | Monolithe d'un seul fichier | À corriger | Par étapes |
 | PERF-01 | P2 | 11 | Premier chargement lourd | Tests réussis | `assets/recettes.js` (424 Ko gzip) chargé après le premier affichage ou à la demande, plus en bloquant la page ; toujours préchargé hors ligne par le service worker |
-| DATA-01 | P2 | 12 | Tout dans localStorage | À corriger | IndexedDB retenu par défaut (décision 6) |
+| DATA-01 | P2 | 12 | Tout dans localStorage | Tests réussis | Couche de stockage : les 5 gros blocs (journées, profil, programmes, historique, exercices perso) dans IndexedDB (`askesis/blocs`), localStorage en simple copie ; un stockage plein n'empêche plus d'enregistrer ; reprise automatique des données d'une ancienne version ; `viderDonneesLocales` vide aussi IndexedDB |
 | A11Y-01 | P2 | 13 | Zoom bloqué, taille de texte iOS ignorée | À corriger | |
 | A11Y-02 | P2 | 10 | 18 champs sans libellé, textes < 12 px | Tests réussis | `aria-label` sur les 18 champs ; plus aucun texte sous 12 px (règles 11 px et < 0,76 rem relevées) ; `--text-muted` clair #5f5f67 (contraste ≥ 5:1) |
 | MET-01 | P2 | 9 | Protéines surestimées (IMC élevé) | Tests réussis | Masse maigre estimée (Deurenberg) au-delà d'un IMC de 30 : 120 kg → ~170 g au lieu de 264 g |
@@ -40,7 +40,7 @@ Branche de travail : `corrections-audit` (dépôt mon-coach). Rien n'est mis en 
 | QA-02 | P3 | 4 | Captures du simulateur blanches | Tests réussis | Annonce après peinture, image presque vide reprise une fois ; CI #34 : 14 captures, aucune vide |
 | PERF-02 | P3 | 11 | Rendu complet à chaque action | À analyser | 19-30 ms par écran mesurés sur poste ; décision sur mesure réelle iPhone (non faite ici) ; traité au lot 14 si nécessaire |
 | SEC-09 | P3 | 5 | `est_bloque()` exécutable par tous | Non corrigible tel que proposé (faux positif de l'audit) | Le test SQL a montré que les règles l'évaluent avec les droits du compte : la révoquer coupe l'accès de chacun à ses propres lignes. Elle reste exécutable, commentée ; portée limitée (entrée UUID) |
-| DATA-02 | P3 | 12 | Profil : le dernier qui écrit gagne | À corriger | |
+| DATA-02 | P3 | 12 | Profil : le dernier qui écrit gagne | Tests réussis | `fusionnerProfil` à trois versions (base `bases.profil`, appareil, serveur) : champ changé d'un seul côté → passe ; des deux → le plus récent ; dictionnaires (pesées par date…) fusionnés clé par clé ; suppressions respectées ; la fusion repart au serveur si elle diffère |
 | RESP-01 | P3 | 10 | Animation d'entrée non réduite | Tests réussis | `.ecran` dans le bloc animations réduites ; `html { overflow-x: clip }` |
 
 ## Lots
@@ -110,6 +110,13 @@ Branche de travail : `corrections-audit` (dépôt mon-coach). Rien n'est mis en 
 - Décision levée : plus besoin que l'utilisateur fournisse son identifiant (décision 5) : l'éditeur SQL le retrouve lui-même dans `auth.users`.
 - Tests : SQL 6/6, fonctions 10/10, appli 161/161 (suite complète après le lot).
 - Risque résiduel : tant que les scripts 2 à 8 ne sont pas rejoués en production, les règles existantes comparent encore l'e-mail (elles continuent de fonctionner) ; l'accès administrateur direct aux tables de données (RLS) reste total, seulement tracé (phase 2 = décision 6).
+
+### Lot 12 — DATA-01, DATA-02
+
+- Fichiers : `index.html` (couche `ouvrirStockage`/`chargerStockage`/`lireBloc`/`ecrireBloc`/`effacerBloc` ; `loadData`, `chargerMuscu`, `saveData`, `sauvegarder*`, les écritures de la synchro et du reset, `viderDonneesLocales` passent par elle ; démarrage `async` qui attend IndexedDB ; `choisirVersion`/`fusionnerProfil`/`memeProfil` et l'étape 3 de `synchroniser` réécrite ; `enregistrerBasesSync` ne purge que les clés-dates), `tests/appli.test.js` (tests « stockage local (lot 12) » et « profil fusionné (lot 12) » ; test « téléphone vidé » adapté).
+- Décisions prises : IndexedDB par blocs (mêmes cinq blocs qu'avant, aucune migration de format) plutôt qu'un magasin par journée — pas de changement d'architecture, les lectures restent synchrones après l'ouverture ; localStorage reste écrit tant qu'il a la place pour qu'une ancienne version de l'appli retrouve ses données.
+- Tests : « stockage local (lot 12) », « profil fusionné (lot 12) » ; suite complète 163/163.
+- Risque résiduel : la copie localStorage peut devenir ancienne une fois saturée (une version antérieure de l'appli la lirait telle quelle) ; la fusion du profil sans base (première synchro après la mise à jour) garde tout mais ne peut pas distinguer une suppression d'un ajout.
 
 ## Actions côté production (à faire par le propriétaire, dans l'éditeur SQL de Supabase)
 
