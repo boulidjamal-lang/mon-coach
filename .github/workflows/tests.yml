@@ -1,0 +1,68 @@
+# Tests de l'appli à chaque changement : fonctions serveur (Node), scripts SQL
+# sur un vrai Postgres (isolation entre comptes), puis l'appli dans Chromium.
+# Le dossier supabase/migrations doit être à jour vis-à-vis d'index.html
+# (scripts/exporter-sql.mjs), sinon le job échoue.
+name: Tests
+
+on:
+  push:
+    branches: [main, corrections-audit]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    env:
+      # tests/outils.js cherche Chromium ici (comme dans l'environnement de développement).
+      PLAYWRIGHT_BROWSERS_PATH: /opt/pw-browsers
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Chromium pour Playwright
+        run: sudo mkdir -p /opt/pw-browsers && sudo chown "$USER" /opt/pw-browsers && npx playwright-core install --with-deps chromium
+      - name: Migrations à jour
+        run: |
+          node scripts/exporter-sql.mjs
+          git diff --exit-code -- supabase/migrations || { echo "::error::supabase/migrations n'est pas à jour : lance node scripts/exporter-sql.mjs et engage le résultat"; exit 1; }
+      - name: Tests
+        run: npm test
+
+  # Appliquer les migrations à la base de production, seulement sur main et
+  # seulement si les secrets sont renseignés (SUPABASE_ACCESS_TOKEN,
+  # SUPABASE_PROJECT_REF, SUPABASE_DB_PASSWORD). Sans eux, le job est sauté :
+  # les scripts restent copiables depuis Administration › Serveur et SQL.
+  base:
+    needs: tests
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Secrets présents ?
+        id: secrets
+        env:
+          JETON: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          REF: ${{ secrets.SUPABASE_PROJECT_REF }}
+          MDP: ${{ secrets.SUPABASE_DB_PASSWORD }}
+        run: |
+          if [ -n "$JETON" ] && [ -n "$REF" ] && [ -n "$MDP" ]; then echo "ok=true" >> "$GITHUB_OUTPUT"; else echo "::notice::Secrets Supabase absents : migrations non appliquées automatiquement"; echo "ok=false" >> "$GITHUB_OUTPUT"; fi
+      - uses: supabase/setup-cli@v1
+        if: steps.secrets.outputs.ok == 'true'
+        with:
+          version: latest
+      - name: Appliquer les migrations
+        if: steps.secrets.outputs.ok == 'true'
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+        run: |
+          supabase link --project-ref "${{ secrets.SUPABASE_PROJECT_REF }}"
+          supabase db push --include-all

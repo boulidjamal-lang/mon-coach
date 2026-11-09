@@ -11,6 +11,12 @@
   <meta http-equiv="Pragma" content="no-cache">
   <meta http-equiv="Expires" content="0">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, interactive-widget=resizes-content">
+<!-- Politique de sécurité du contenu (audit SEC-02, phase 1) : scripts depuis la
+     page et les deux CDN seulement (les gestionnaires onclick= imposent encore
+     'unsafe-inline' ; la phase 2 les remplace), connexions vers les seuls
+     services utilisés, aucun cadre tiers ni plugin. Retirée dans l'app iPhone
+     par preparer-www.mjs (tout y est local). -->
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://unpkg.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: blob: https:; media-src 'self' blob: data: https:; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://world.openfoodfacts.org https://api.nal.usda.gov https://wbsapi.withings.net https://generativelanguage.googleapis.com https://boulidjamal-lang.github.io; worker-src 'self' blob:; frame-src 'none'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'">
   <!-- Le pincement pour zoomer reste permis (accessibilité : texte trop
        petit, vue fatiguée). Seul le zoom par double appui est retiré, en CSS
        (touch-action: manipulation, voir html, body) : taper deux fois vite
@@ -43,15 +49,15 @@
        toute dernière — une future mise à jour de la bibliothèque pourrait
        casser le scanner du jour au lendemain, sans aucun changement de
        notre côté. -->
-  <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js" type="text/javascript"></script>
+  <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js" type="text/javascript" integrity="sha384-c9d8RFSL+u3exBOJ4Yp3HUJXS4znl9f+z66d1y54ig+ea249SpqR+w1wyvXz/lk+" crossorigin="anonymous"></script>
   <!-- Chart.js et Supabase figés eux aussi, pour la même raison : sans
        version exacte, le CDN sert la dernière parue, et une nouvelle version
        majeure (ou une mineure mal testée) pouvait casser tous les graphiques
        ou la synchronisation sans aucun changement de notre côté. Pour mettre
        à jour : changer le numéro ici, puis lancer les tests (tests/). -->
-  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.5.1/dist/chart.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.5.1/dist/chart.umd.min.js" integrity="sha384-jb8JQMbMoBUzgWatfe6COACi2ljcDdZQ2OxczGA3bGNeWe+6DChMTBJemed7ZnvJ" crossorigin="anonymous"></script>
   <!-- Synchronisation facultative : l'application fonctionne entièrement sans. -->
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.3"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.3/dist/umd/supabase.js" integrity="sha384-BWcjm9OdFth9TbhCxZPdm+gAOUMAzQy9nmTs12ioXdCcbVnJaPMn+fMUoQCLt60R" crossorigin="anonymous"></script>
 
   <style>
     /* =====================================================================
@@ -7806,8 +7812,9 @@
 
 <!-- Données lourdes (exercices, vidéos, silhouettes) : fichier à part, mis en cache. -->
 <script src="assets/donnees.js"></script>
-<!-- Recettes Askēsis (Wikilivres et Askēsis, valeurs CIQUAL) : à part elles aussi. -->
-<script src="assets/recettes.js"></script>
+<!-- Recettes Askēsis (Wikilivres et Askēsis, valeurs CIQUAL) : assets/recettes.js,
+     2,2 Mo chargés après le premier affichage ou dès qu'un écran en a besoin
+     (voir chargerRecettesAskesis), plus en bloquant la page. -->
 <script>
 
 const STORAGE_KEY = 'elite_fitness_data_v1';
@@ -12963,8 +12970,34 @@ function loguerPortionRecettePerso(id, mealIdCible, nbPortions) {
    « Recette » les liste toutes.
    ===================================================================== */
 let recettesAskesisCache = null;
+/* Les recettes (2,2 Mo) ne bloquent plus le premier affichage : le fichier
+   est demandé une fois la page chargée, ou avant si un écran en a besoin.
+   Tant qu'il n'est pas là, la liste est vide et se redessine à son arrivée.
+   Hors ligne, le service worker le garde en cache (A_PRECHARGER) ; dans
+   l'app iPhone, il est local. */
+let chargementRecettes = null;
+function recettesChargees() { return Array.isArray(window.RECETTES_ASKESIS); }
+function chargerRecettesAskesis() {
+  if (recettesChargees()) return Promise.resolve();
+  if (!chargementRecettes) {
+    chargementRecettes = new Promise((ok, ko) => {
+      const s = document.createElement('script');
+      s.src = 'assets/recettes.js';
+      s.onload = () => { recettesAskesisCache = null; ok(); };
+      s.onerror = () => { chargementRecettes = null; s.remove(); ko(new Error('Recettes indisponibles pour le moment.')); };
+      document.head.appendChild(s);
+    }).then(() => {
+      // Ce qui s'était affiché sans elles se redessine.
+      if (document.getElementById('choix-recette-askesis')) renderBibliothequeRecettes();
+      if (typeof rafraichirCoach === 'function') rafraichirCoach();
+    });
+  }
+  return chargementRecettes;
+}
+window.addEventListener('load', () => { setTimeout(() => { chargerRecettesAskesis().catch(() => {}); }, 1200); });
 function recettesAskesis() {
-  if (!recettesAskesisCache) recettesAskesisCache = Array.isArray(window.RECETTES_ASKESIS) ? window.RECETTES_ASKESIS : [];
+  if (!recettesChargees()) { chargerRecettesAskesis().catch(() => {}); return []; }
+  if (!recettesAskesisCache) recettesAskesisCache = window.RECETTES_ASKESIS;
   return recettesAskesisCache;
 }
 function trouverRecette(id) {
@@ -13132,6 +13165,7 @@ function renderBibliothequeRecettes() {
   const mots = q ? q.split(' ') : [];
   const repas = repasFeuille || repasDuMoment();
   const toutes = recettesAskesis();
+  if (!recettesChargees()) { c.innerHTML = '<p class="note">Chargement des recettes…</p>'; return; }
   const fr = n => Math.round(n).toLocaleString('fr-FR');
   const puces = document.getElementById('choix-recette-categories');
   if (puces) puces.innerHTML = CATEGORIES_RECETTES.filter(([k]) => k === 'toutes' || toutes.some(r => r.categorie === k))
@@ -17639,6 +17673,25 @@ create policy "photos progression suppr" on storage.objects for delete to authen
 --    que par lui tant que l'admin ne l'a pas validé. Tout est vérifié ici,
 --    côté serveur : modifier le stockage local du téléphone ne peut ni
 --    valider un aliment, ni le rendre visible, ni en ressusciter un retiré.
+-- Table des aliments ajoutés par les utilisateurs (créée à la main en
+-- production avant ce script : « if not exists » la laisse telle quelle ;
+-- les colonnes de validation sont ajoutées juste au-dessus).
+create table if not exists public.aliments_partages (
+  id          uuid primary key default gen_random_uuid(),
+  nom         text not null,
+  kcal100     numeric,
+  p100        numeric,
+  c100        numeric,
+  f100        numeric,
+  code_barre  text,
+  source      text,
+  createur_id text,
+  cree_le     timestamptz not null default now(),
+  supprime    boolean not null default false,
+  valide      boolean not null default false,
+  valide_par  text,
+  valide_le   timestamptz
+);
 do $$ begin
   if not exists (select 1 from information_schema.columns
                  where table_schema = 'public' and table_name = 'aliments_partages' and column_name = 'valide') then
@@ -22036,6 +22089,11 @@ create or replace function public.est_bloque(p_utilisateur text)
 returns boolean language sql security definer set search_path = public as $$
   select exists(select 1 from comptes_bloques where utilisateur = p_utilisateur);
 $$;
+-- Les règles ci-dessous l'appellent avec les droits du compte connecté
+-- (une règle s'évalue comme l'appelant, SECURITY DEFINER ne joue qu'à
+-- l'intérieur) : elle doit donc rester exécutable par « authenticated »,
+-- sinon plus personne ne lit ses propres lignes (vérifié par tests/sql.test.js).
+-- Portée : dire si un identifiant (UUID, non devinable) est bloqué.
 grant execute on function public.est_bloque(text) to authenticated;
 
 -- Utilisée par l'appli juste après la connexion, pour reconnaître SON PROPRE
@@ -22320,9 +22378,20 @@ create or replace function f_norm(text) returns text
 $$;
 
 -- Colonne calculée : Postgres la maintient, l'application ne l'écrit jamais.
-alter table ${table}
-  add column if not exists recherche text
-  generated always as (f_norm(${colonne})) stored;
+-- La colonne du nom est trouvée ici même (${colonne} si l'appli l'a reconnue,
+-- sinon la première colonne candidate), pour que le script soit rejouable
+-- tel quel sur n'importe quelle base.
+do $$
+declare col text;
+begin
+  select column_name into col from information_schema.columns
+  where table_schema = 'public' and table_name = '${table}'
+    and replace(lower(column_name), '_', ' ') = any (array['${colonne.replace(/_/g, ' ').toLowerCase()}', 'alim nom fr', 'nom fr', 'libelle', 'aliment', 'produit', 'nom', 'name', 'titre'])
+  order by array_position(array['${colonne.replace(/_/g, ' ').toLowerCase()}', 'alim nom fr', 'nom fr', 'libelle', 'aliment', 'produit', 'nom', 'name', 'titre'], replace(lower(column_name), '_', ' '))
+  limit 1;
+  if col is null then raise exception 'table ${table} : aucune colonne de nom reconnue'; end if;
+  execute format('alter table public.%I add column if not exists recherche text generated always as (f_norm(%I)) stored', '${table}', col);
+end $$;
 
 -- Sans cet index, chaque frappe balaierait toute la table.
 create index if not exists ${table}_recherche_trgm

@@ -60,6 +60,8 @@ async function ouvrirAppli(navigateur, options = {}) {
   if (options.natif) await ctx.addInitScript(installerFauxNatif);
   const page = await ctx.newPage();
   const erreurs = [];
+  // Une violation de la politique de sécurité du contenu compte comme une erreur de la page.
+  await ctx.addInitScript(() => { document.addEventListener('securitypolicyviolation', e => { window.__csp = window.__csp || []; window.__csp.push(e.violatedDirective + ' ' + (e.blockedURI || '') + ' ' + (e.sourceFile || '') + ':' + e.lineNumber); }); });
   const dialogues = [];
   page.on('pageerror', e => erreurs.push(e.message));
   page.on('dialog', d => { dialogues.push(d.message()); d.accept(); });
@@ -70,6 +72,10 @@ async function ouvrirAppli(navigateur, options = {}) {
   await page.waitForFunction(() => typeof allerA === 'function' && typeof Chart !== 'undefined');
   await page.waitForTimeout(800);
   await preparer(page, options.theme);
+  // Les recettes arrivent à part, un peu après la page (lot 11) : les tests
+  // les trouvent prêtes d'emblée, sauf celui qui vérifie ce chargement
+  // différé ({ recettes: false }).
+  if (options.recettes !== false) await page.evaluate(() => typeof chargerRecettesAskesis === 'function' ? chargerRecettesAskesis() : null);
   return { page, ctx, erreurs, dialogues };
 }
 

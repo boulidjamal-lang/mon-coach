@@ -70,6 +70,8 @@ async function avecAppli(options, corps) {
   try {
     await corps(appli);
     assert.deepEqual(appli.erreurs, [], 'erreurs JavaScript dans la page');
+    const csp = await appli.page.evaluate(() => window.__csp || []).catch(() => []);
+    assert.deepEqual(csp, [], 'violations de la politique de sécurité du contenu');
   } finally {
     await appli.ctx.close();
   }
@@ -80,6 +82,16 @@ test('les versions des bibliothèques sont figées', () => {
   // Seuls les scripts venus d'un CDN ont une version à figer (assets/donnees.js est à nous).
   const scripts = [...html.matchAll(/<script[^>]*src="(https?:[^"]+)"/g)].map(m => m[1]);
   for (const src of scripts) assert.match(src, /@\d+\.\d+\.\d+/, `version exacte manquante : ${src}`);
+  // Chaque bibliothèque externe porte le hachage de son contenu, calculé sur le fichier du paquet installé.
+  const crypto = require('crypto');
+  const hache = f => 'sha384-' + crypto.createHash('sha384').update(fs.readFileSync(f)).digest('base64');
+  const balises = [...html.matchAll(/<script[^>]*src="(https?:[^"]+)"[^>]*>/g)].map(m => m[0]);
+  assert.equal(balises.length, 3);
+  for (const b of balises) assert.match(b, /integrity="sha384-[A-Za-z0-9+/=]+" crossorigin="anonymous"/, b);
+  const attendu = { 'chart.js': hache(path.join(RACINE, 'node_modules/chart.js/dist/chart.umd.min.js')) };
+  const chart = balises.find(b => b.includes('chart.js'));
+  assert.ok(chart.includes(attendu['chart.js']), 'le hachage de Chart.js correspond au paquet installé');
+  assert.ok(html.includes('<meta http-equiv="Content-Security-Policy"'), 'politique de sécurité du contenu présente');
   const versionChart = JSON.parse(fs.readFileSync(path.join(RACINE, 'node_modules/chart.js/package.json'), 'utf8')).version;
   assert.ok(html.includes(`chart.js@${versionChart}/`), `les tests utilisent Chart.js ${versionChart}, l'appli une autre version`);
 });
@@ -89,11 +101,29 @@ test('hors ligne : le service worker garde la page, ses données et ses recettes
   const liste = sw.match(/const A_PRECHARGER = \[([^\]]*)\]/)[1];
   for (const f of ["'index.html'", "'assets/donnees.js'", "'assets/recettes.js'"]) assert.ok(liste.includes(f), f);
   const html = fs.readFileSync(path.join(RACINE, 'index.html'), 'utf8');
-  for (const f of ['assets/donnees.js', 'assets/recettes.js']) {
-    assert.ok(html.includes(`<script src="${f}"></script>`), f);
-    assert.ok(fs.existsSync(path.join(RACINE, f)), f);
-  }
+  assert.ok(html.includes('<script src="assets/donnees.js"></script>'));
+  // Les recettes ne bloquent plus la page : chargées à part, mais toujours préchargées hors ligne.
+  assert.ok(!html.includes('<script src="assets/recettes.js"></script>'), 'plus de balise bloquante pour les recettes');
+  assert.ok(html.includes("s.src = 'assets/recettes.js'"), 'chargeur à la demande');
+  for (const f of ['assets/donnees.js', 'assets/recettes.js']) assert.ok(fs.existsSync(path.join(RACINE, f)), f);
 });
+
+test('recettes à la demande (lot 11) : la liste se remplit à leur arrivée et une recette se retrouve par son identifiant', () => avecAppli({ recettes: false }, async ({ page }) => {
+  const r = await page.evaluate(async () => {
+    const res = { avant: recettesAskesis().length };
+    await chargerRecettesAskesis();
+    const toutes = recettesAskesis();
+    res.apres = toutes.length;
+    res.trouvee = !!(toutes[0] && trouverRecette(toutes[0].id));
+    allerA('repas'); renderApp(); ouvrirFeuilleRepas('lunch'); depuisFeuille('recette');
+    await new Promise(ok => setTimeout(ok, 50));
+    res.lignes = document.querySelectorAll('#choix-recette-askesis .recette-ligne, #choix-recette-askesis [onclick*="choisirRecette"], #choix-recette-askesis button').length;
+    return res;
+  });
+  assert.ok(r.apres > 400, 'plus de 400 recettes : ' + r.apres);
+  assert.equal(r.trouvee, true);
+  assert.ok(r.lignes > 0, 'la bibliothèque affiche les recettes');
+}));
 
 test('chaque script de la page se compile', () => {
   const html = fs.readFileSync(path.join(RACINE, 'index.html'), 'utf8');

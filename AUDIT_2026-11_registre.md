@@ -9,19 +9,19 @@ Branche de travail : `corrections-audit` (dépôt mon-coach). Rien n'est mis en 
 | Id | Gravité | Lot | Anomalie | Statut | Notes |
 |----|---------|-----|----------|--------|-------|
 | SEC-01 | P0 | 1 | Script 1 recrée des règles ouvertes | Tests réussis (code) · SQL prod à passer | Sonde réelle `admin_regles_ouvertes()` ; script 1 sans règle ; textes corrigés |
-| SEC-02 | P1 | 7 | Ni CSP ni intégrité CDN (web) | À corriger | |
+| SEC-02 | P1 | 7 | Ni CSP ni intégrité CDN (web) | Tests réussis (phase 1) | `integrity` + `crossorigin` sur les 3 bibliothèques (hachages vérifiés contre les CDN et les paquets), URL explicite de supabase-js, méta CSP (scripts : page + 2 CDN ; connexions : services connus ; ni cadre ni plugin) ; toute violation fait échouer un test ; retirée dans l'app iPhone. Phase 2 (sans 'unsafe-inline') au lot 14 |
 | SEC-03 | P1 | 6 | Jetons Withings et clé IA dans le profil synchronisé | À corriger | |
 | SEC-04 | P1 | 2 | Clé Gemini utilisée depuis le téléphone ; porte d'entrée photo liée à l'ancien chemin | Tests réussis | Plus de clé distribuée par l'administration ; porte d'entrée sur `iaDisponible()`. Clé personnelle conservée (décision 1 en attente) |
 | LEG-01 | P1 | 3 | Médias tiers sans licence sur le site | Tests réussis | Site aligné sur l'app : aucun média SmartWorkout, ExerciseDB ni wger ; tables vidées, 1 622 mini-vidéos retirées des deux dépôts. Purge de l'historique Git : décision 3 en attente |
-| TECH-02 | P1 | 5 | SQL sans migrations ni suivi | À corriger | Schéma réel de production à fournir (décision 4) |
-| QA-01 | P1 | 5 | Règles d'accès jamais testées | À corriger | Docker indisponible ici : tests écrits pour le CI |
+| TECH-02 | P1 | 5 | SQL sans migrations ni suivi | Tests réussis | `supabase/migrations/` (9 fichiers générés depuis index.html par `scripts/exporter-sql.mjs`, rejouables sur une base vide), test anti-dérive en CI, job `supabase db push` sur main si les secrets existent (décision 4 : baseline à confronter à la production) ; script 3 trouve seul la colonne du nom ; création de `aliments_partages` ajoutée (elle n'existait qu'en production) |
+| QA-01 | P1 | 5 | Règles d'accès jamais testées | Tests réussis | `tests/sql.test.js` : Postgres local éphémère (initdb) + double de Supabase ; 5 scénarios (isolation des 5 tables, anonyme, admin, fonctions réservées, rejeu du script 1, gymbros et défis) ; inclus dans `npm test` et le CI |
 | OPS-01 | P1 | 4 | Aucun build TestFlight depuis le 6 novembre | Tests réussis | Build #33 envoyé le 9 nov. à 15 h 05 UTC ; durcissement (certificat persistant) restant |
 | SEC-05 | P2 | 8 | Administrateur reconnu par e-mail | À corriger | Phase 1 sans risque ; phase 2 après l'UUID (décision 5) |
 | SEC-06 | P2 | 8 | Accès administrateur total | À corriger | |
 | SEC-07 | P2 | 2 | Proxy IA générique | Tests réussis · à déployer | Tâches typées, consigne de rôle imposée, chaque réponse comptée, erreurs génériques ; fonction `ia` à redéployer par le propriétaire |
 | SEC-08 | P2 | 6 | Fonction Withings hors dépôt, sans authentification | À corriger | Code présent dans WITHINGS_edge_function.md |
 | TECH-01 | P2 | 14 | Monolithe d'un seul fichier | À corriger | Par étapes |
-| PERF-01 | P2 | 11 | Premier chargement lourd | À corriger | |
+| PERF-01 | P2 | 11 | Premier chargement lourd | Tests réussis | `assets/recettes.js` (424 Ko gzip) chargé après le premier affichage ou à la demande, plus en bloquant la page ; toujours préchargé hors ligne par le service worker |
 | DATA-01 | P2 | 12 | Tout dans localStorage | À corriger | IndexedDB retenu par défaut (décision 6) |
 | A11Y-01 | P2 | 13 | Zoom bloqué, taille de texte iOS ignorée | À corriger | |
 | A11Y-02 | P2 | 10 | 18 champs sans libellé, textes < 12 px | Tests réussis | `aria-label` sur les 18 champs ; plus aucun texte sous 12 px (règles 11 px et < 0,76 rem relevées) ; `--text-muted` clair #5f5f67 (contraste ≥ 5:1) |
@@ -38,8 +38,8 @@ Branche de travail : `corrections-audit` (dépôt mon-coach). Rien n'est mis en 
 | MET-06 | P3 | 9 | Plancher = métabolisme de base | Tests réussis | Plancher jamais sous 1 200 kcal (femme) / 1 500 kcal (homme) ; `plancherRaison` |
 | TECH-04 | P3 | 3 | Copie obsolète dans le dépôt Anqa | Corrigée | Racine du dépôt Anqa réduite à ios-app/, .github/ et un LISEZMOI ; la doc Withings déplacée dans mon-coach |
 | QA-02 | P3 | 4 | Captures du simulateur blanches | Tests réussis | Annonce après peinture, image presque vide reprise une fois ; CI #34 : 14 captures, aucune vide |
-| PERF-02 | P3 | 11 | Rendu complet à chaque action | À analyser | Mesure sur appareil d'abord |
-| SEC-09 | P3 | 5 | `est_bloque()` exécutable par tous | À corriger | |
+| PERF-02 | P3 | 11 | Rendu complet à chaque action | À analyser | 19-30 ms par écran mesurés sur poste ; décision sur mesure réelle iPhone (non faite ici) ; traité au lot 14 si nécessaire |
+| SEC-09 | P3 | 5 | `est_bloque()` exécutable par tous | Non corrigible tel que proposé (faux positif de l'audit) | Le test SQL a montré que les règles l'évaluent avec les droits du compte : la révoquer coupe l'accès de chacun à ses propres lignes. Elle reste exécutable, commentée ; portée limitée (entrée UUID) |
 | DATA-02 | P3 | 12 | Profil : le dernier qui écrit gagne | À corriger | |
 | RESP-01 | P3 | 10 | Animation d'entrée non réduite | Tests réussis | `.ecran` dans le bloc animations réduites ; `html { overflow-x: clip }` |
 
@@ -83,6 +83,19 @@ Branche de travail : `corrections-audit` (dépôt mon-coach). Rien n'est mis en 
 - Fichiers : `index.html` (`majBoutonPlus`, `renderVitrineMuscu`, 18 champs, règles CSS de tailles, `--text-muted`, bouton Annuler des feuilles, bloc animations réduites, `html`), `tests/appli.test.js`.
 - Tests : nouveau test « interface (lot 10) » (noms accessibles, tailles, « + », héros, contraste, animation, overflow) ; test de navigation adapté (Profil sans « + ») ; suite complète en cours.
 - Captures : Repas, Activité en semaine vide, feuille d'ajout, objectif estimé (envoyées pour accord avant mise en ligne).
+
+### Lot 5 — TECH-02, QA-01, SEC-09
+
+- Fichiers : `scripts/exporter-sql.mjs`, `supabase/migrations/0001…0009.sql`, `tests/sql/stub-supabase.sql`, `tests/sql/postgres-local.js`, `tests/sql.test.js`, `.github/workflows/tests.yml`, `package.json` (`test:sql`, `exporter-sql`), `index.html` (script 3 : détection de la colonne du nom en SQL ; script 4 : création de `aliments_partages` ; commentaire sur `est_bloque`).
+- Résultat : les 9 scripts se rejouent sur une base vide ; 5 scénarios d'isolation passent ; le test a invalidé la recommandation SEC-09 avant toute mise en production.
+
+### Lot 7 — SEC-02 (phase 1)
+
+- Fichiers : `index.html` (3 balises `<script>`, méta CSP), `tests/outils.js` (écoute des violations), `tests/appli.test.js` (chaque test échoue sur une violation ; test des hachages), `ios-app/scripts/preparer-www.mjs` (Anqa : CSP retirée dans l'app).
+
+### Lot 11 — PERF-01 (PERF-02 à l'analyse)
+
+- Fichiers : `index.html` (`chargerRecettesAskesis`, `recettesAskesis`, `renderBibliothequeRecettes`), `tests/appli.test.js` (test hors ligne adapté, test « recettes à la demande »).
 
 ## Actions côté production (à faire par le propriétaire, dans l'éditeur SQL de Supabase)
 
