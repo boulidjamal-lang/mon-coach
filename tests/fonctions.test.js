@@ -100,16 +100,51 @@ test('fonction « ia » : Pro sans limite pratique ; un échec de Gemini rend l\
   assert.equal((await appelIA(h, 'jeton-pro', 'POST', { parts: [] })).status, 400);
 });
 
-test('fonction « ia » : plusieurs réponses en une demande (3 au plus), comptées comme un seul essai', async () => {
+test('fonction « ia » : chaque réponse demandée compte pour un essai ; plusieurs réponses seulement pour la photo ; consigne de rôle imposée par tâche ; tâche inconnue refusée', async () => {
   const base = fausseBase();
+  base.tables.abonnements.push({ utilisateur: 'u-pro', formule: 'an', statut: 'actif', fin: new Date(Date.now() + 864e5).toISOString() });
   const corps = [];
   globalThis.fetch = async (url, o) => { corps.push(JSON.parse(o.body)); return new Response(JSON.stringify({ candidates: [{ content: { parts: [{ text: 'a' }] } }, { content: { parts: [{ text: 'b' }] } }] }), { status: 200 }); };
   const h = await chargerFonction('ia', envIA, base);
-  const r = await appelIA(h, 'jeton-libre', 'POST', { parts: [{ text: 'photo' }], modele: 'gemini-3.5-flash', candidats: 3 });
-  assert.deepEqual([r.status, r.corps.restant, r.corps.candidates.length], [200, 2, 2]);
-  await appelIA(h, 'jeton-libre', 'POST', { parts: [{ text: 'photo' }], candidats: 9 });
-  await appelIA(h, 'jeton-libre', 'POST', { parts: [{ text: 'texte' }] });
-  assert.deepEqual(corps.map(c => c.generationConfig || null), [{ candidateCount: 3 }, { candidateCount: 3 }, null]);
+  const usage = u => { const l = base.tables.usages_ia.find(x => x.utilisateur === u); return l ? l.nombre : 0; };
+  // Pro : 3 réponses pour une photo = 3 essais ; une autre tâche n'en a qu'une, même si elle en demande 9.
+  let r = await appelIA(h, 'jeton-pro', 'POST', { parts: [{ text: 'photo' }], modele: 'gemini-3.5-flash', tache: 'photo', candidats: 3 });
+  assert.deepEqual([r.status, r.corps.candidates.length, usage('u-pro')], [200, 2, 3]);
+  r = await appelIA(h, 'jeton-pro', 'POST', { parts: [{ text: 'journée' }], tache: 'journee', candidats: 9 });
+  assert.deepEqual([r.status, usage('u-pro')], [200, 4]);
+  assert.deepEqual(corps.map(c => c.generationConfig || null), [{ candidateCount: 3 }, null]);
+  assert.match(corps[0].systemInstruction.parts[0].text, /reconnaître les aliments/);
+  assert.match(corps[1].systemInstruction.parts[0].text, /analyser la journée/);
+  // Sans tâche (ancienne appli) : la consigne générale ; tâche inconnue : refusée, rien de compté.
+  r = await appelIA(h, 'jeton-pro', 'POST', { parts: [{ text: 'texte' }] });
+  assert.equal(r.status, 200);
+  assert.match(corps[2].systemInstruction.parts[0].text, /Hors sujet/);
+  r = await appelIA(h, 'jeton-pro', 'POST', { parts: [{ text: 'texte' }], tache: 'chatbot' });
+  assert.deepEqual([r.status, r.corps.erreur, usage('u-pro')], [400, 'Tâche inconnue.', 5]);
+  // Contenus : une image acceptée, deux refusées, autre chose refusé.
+  const img = { inlineData: { mimeType: 'image/jpeg', data: 'AAAA' } };
+  assert.equal((await appelIA(h, 'jeton-pro', 'POST', { parts: [{ text: 'photo' }, img], tache: 'photo' })).status, 200);
+  assert.equal((await appelIA(h, 'jeton-pro', 'POST', { parts: [img, img], tache: 'photo' })).corps.erreur, 'Une seule photo par demande.');
+  assert.equal((await appelIA(h, 'jeton-pro', 'POST', { parts: [{ fileData: { fileUri: 'x' } }], tache: 'photo' })).status, 400);
+  // Compte gratuit : 3 réponses épuisent les 3 essais ; la demande suivante est refusée sans rien compter.
+  r = await appelIA(h, 'jeton-libre', 'POST', { parts: [{ text: 'photo' }], tache: 'photo', candidats: 3 });
+  assert.deepEqual([r.status, r.corps.restant, usage('u-libre')], [200, 0, 3]);
+  r = await appelIA(h, 'jeton-libre', 'POST', { parts: [{ text: 'photo' }], tache: 'photo' });
+  assert.deepEqual([r.status, r.corps.code, usage('u-libre')], [402, 'pro_requis', 3]);
+});
+
+test('fonction « ia » : un échec de Gemini rend les essais et ne renvoie jamais son message brut ; le refus de plusieurs réponses reste reconnaissable', async () => {
+  const base = fausseBase();
+  base.tables.abonnements.push({ utilisateur: 'u-pro', formule: 'an', statut: 'actif', fin: new Date(Date.now() + 864e5).toISOString() });
+  let reponse = { status: 400, corps: { error: { message: 'candidateCount must be 1 for this model', details: 'secret interne' } } };
+  globalThis.fetch = async () => new Response(JSON.stringify(reponse.corps), { status: reponse.status });
+  const h = await chargerFonction('ia', envIA, base);
+  let r = await appelIA(h, 'jeton-pro', 'POST', { parts: [{ text: 'photo' }], tache: 'photo', candidats: 3 });
+  assert.deepEqual([r.status, r.corps.erreur, JSON.stringify(r.corps).includes('secret interne')], [400, 'Plusieurs candidats refusés par le modèle.', false]);
+  assert.equal(base.tables.usages_ia.find(x => x.utilisateur === 'u-pro').nombre, 0, 'les 3 essais sont rendus');
+  reponse = { status: 503, corps: { error: { message: 'overloaded, internal trace 0xdead' } } };
+  r = await appelIA(h, 'jeton-pro', 'POST', { parts: [{ text: 'x' }], tache: 'journee' });
+  assert.deepEqual([r.status, /0xdead/.test(JSON.stringify(r.corps))], [503, false]);
 });
 
 test('fonction « ia » : sans clé Gemini sur le serveur, rien n\'est compté', async () => {
