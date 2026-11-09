@@ -57,9 +57,31 @@ si('journées, profil, programmes, séances, exercices perso : chaque compte ne 
   assert.equal(compte(A, 'a@test.fr', `select count(*) from journees where donnees ? 'pirate';`), 0);
 });
 
-si("l'administrateur reconnu par son e-mail voit les données (état actuel, documenté SEC-06) ; un autre compte avec un e-mail quelconque, non", () => {
+si("l'administrateur est reconnu par la table admins (est_admin), l'e-mail historique restant un repli ; un autre compte avec un e-mail quelconque ne voit rien", () => {
+  // Repli par l'e-mail : le compte ADM n'existait pas encore quand le script 2 a amorcé la table.
   assert.equal(compte(ADM, ADMIN, 'select count(*) from journees;'), 1);
   assert.equal(compte(B, 'b@test.fr', 'select count(*) from journees;'), 0);
+  assert.equal(compte(ADM, ADMIN, 'select (est_admin())::int;'), 1);
+  assert.equal(compte(B, 'b@test.fr', 'select (est_admin())::int;'), 0);
+  // Rejouer l'amorce une fois le compte créé : l'identifiant entre dans la table.
+  pg.sql(`insert into public.admins (utilisateur, note) select id, 'administrateur initial' from auth.users where email = '${ADMIN}' on conflict (utilisateur) do nothing;`);
+  assert.match(pg.sql(`\\pset tuples_only on\nselect utilisateur from admins;`), new RegExp(ADM));
+  // Un compte inscrit dans la table est administrateur quel que soit son e-mail, et personne ne lit ni n'écrit la table depuis l'appli.
+  const D = '55555555-5555-4555-8555-555555555555';
+  pg.sql(`insert into auth.users (id, email) values ('${D}', 'd@test.fr'); insert into public.admins (utilisateur, note) values ('${D}', 'second administrateur');`);
+  assert.equal(compte(D, 'd@test.fr', 'select count(*) from journees;'), 1, 'D lit comme administrateur');
+  assert.equal(compte(D, 'd@test.fr', 'select (est_admin())::int;'), 1);
+  for (const [u, e] of [[A, 'a@test.fr'], [D, 'd@test.fr'], [ADM, ADMIN], [null, null]]) {
+    assert.equal(refuse(u, e, 'select count(*) from admins;'), true, (e || 'anonyme') + ' ne lit pas la table admins');
+    assert.equal(refuse(u, e, `insert into admins (utilisateur) values ('${u || A}');`), true, (e || 'anonyme') + " ne s'y inscrit pas");
+  }
+  // Phase 2 : sans le repli par l'e-mail, seuls les identifiants de la table comptent.
+  pg.sql(`create or replace function public.est_admin() returns boolean language sql stable security definer set search_path = public as $$ select exists (select 1 from public.admins where utilisateur = auth.uid()); $$;`);
+  assert.equal(compte(ADM, ADMIN, 'select count(*) from journees;'), 1, 'ADM, inscrit dans la table, garde l\'accès');
+  assert.equal(compte('66666666-6666-4666-8666-666666666666', ADMIN, 'select count(*) from journees;'), 0, 'la seule adresse ne suffit plus');
+  assert.equal(compte(D, 'd@test.fr', 'select count(*) from journees;'), 1);
+  pg.sql(`delete from auth.users where id = '${D}';`);
+  assert.match(pg.sql(`\\pset tuples_only on\nselect count(*) from admins where utilisateur = '${D}';`), /^\s*0\s*$/m);
 });
 
 si('fonctions réservées : admin_regles_ouvertes() répond à l\'administrateur (0 règle ouverte) et rien aux autres ; est_bloque() reste appelable (les règles l\'évaluent avec les droits du compte)', () => {

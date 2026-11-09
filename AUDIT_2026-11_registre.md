@@ -16,8 +16,8 @@ Branche de travail : `corrections-audit` (dépôt mon-coach). Rien n'est mis en 
 | TECH-02 | P1 | 5 | SQL sans migrations ni suivi | Tests réussis | `supabase/migrations/` (9 fichiers générés depuis index.html par `scripts/exporter-sql.mjs`, rejouables sur une base vide), test anti-dérive en CI, job `supabase db push` sur main si les secrets existent (décision 4 : baseline à confronter à la production) ; script 3 trouve seul la colonne du nom ; création de `aliments_partages` ajoutée (elle n'existait qu'en production) |
 | QA-01 | P1 | 5 | Règles d'accès jamais testées | Tests réussis | `tests/sql.test.js` : Postgres local éphémère (initdb) + double de Supabase ; 5 scénarios (isolation des 5 tables, anonyme, admin, fonctions réservées, rejeu du script 1, gymbros et défis) ; inclus dans `npm test` et le CI |
 | OPS-01 | P1 | 4 | Aucun build TestFlight depuis le 6 novembre | Tests réussis | Build #33 envoyé le 9 nov. à 15 h 05 UTC ; durcissement (certificat persistant) restant |
-| SEC-05 | P2 | 8 | Administrateur reconnu par e-mail | À corriger | Phase 1 sans risque ; phase 2 après l'UUID (décision 5) |
-| SEC-06 | P2 | 8 | Accès administrateur total | À corriger | |
+| SEC-05 | P2 | 8 | Administrateur reconnu par e-mail | Tests réussis (phase 1) | Table `admins` (identifiant du compte) + `est_admin()` dans le script 2, amorcée par l'e-mail depuis `auth.users` (plus besoin de l'UUID : décision 5 levée) ; les 38 comparaisons d'e-mail des scripts 2, 3, 4, 5, 6, 8 remplacées par `est_admin()` ; `je_suis_admin()` devient un alias ; client : `verifierAdminServeur()` (rpc `est_admin`), e-mail en repli. Phase 2 (retirer l'e-mail) : SQL prêt, après contrôle en production |
+| SEC-06 | P2 | 8 | Accès administrateur total | Tests réussis (phase 1) | Chaque consultation d'un compte, de ses statistiques et chaque export sont consignés dans `journal_admin` (`consultation`, `consultation_stats`, `donnees_exportees` ; import et effacement l'étaient déjà). Phase 2 (lecture par fonctions dédiées à la place de l'accès RLS direct) : décision 6, non engagée |
 | SEC-07 | P2 | 2 | Proxy IA générique | Tests réussis · à déployer | Tâches typées, consigne de rôle imposée, chaque réponse comptée, erreurs génériques ; fonction `ia` à redéployer par le propriétaire |
 | SEC-08 | P2 | 6 | Fonction Withings hors dépôt, sans authentification | Tests réussis | `supabase/functions/withings/index.ts` versionnée : session exigée, origines de l'appli, URL de retour imposée, Pro exigé ; 2 tests de fonction, 1 test SQL, 1 test d'appli ; à déployer (actions côté production) |
 | TECH-01 | P2 | 14 | Monolithe d'un seul fichier | À corriger | Par étapes |
@@ -103,6 +103,14 @@ Branche de travail : `corrections-audit` (dépôt mon-coach). Rien n'est mis en 
 - Décisions prises sans l'utilisateur : la balance exige Pro côté serveur (règle déjà appliquée par l'appli) ; les jetons laissés dans le profil par les anciennes versions sont déplacés par le serveur (jamais effacés sans avoir été repris) ; un jeton local n'est effacé de l'appareil qu'après réception par le serveur (ou refus définitif).
 - Risque résiduel : une ancienne version de l'app iPhone encore installée peut ré-envoyer un profil contenant `withings` — le déclencheur SQL le sort du profil à chaque écriture ; l'ancienne fonction `dynamic-responder` reste ouverte tant qu'elle n'est pas supprimée (action côté production).
 
+### Lot 8 — SEC-05, SEC-06 (phase 1)
+
+- Fichiers : `index.html` (script 2 : table `admins`, amorce depuis `auth.users`, `est_admin()` ; scripts 2, 3, 4, 5, 6, 8 : `public.est_admin()` à la place de toute comparaison d'e-mail ; script 4 : règles d'`exercices_base_overrides` recréées à chaque passage au lieu d'une garde « si aucune règle » qui figeait l'ancienne ; script 8 : `je_suis_admin()` alias ; client : `estCompteAdmin()` reconnaît `sessionUtilisateur.admin` posé par `verifierAdminServeur()`, l'e-mail en repli ; `consignerAction` sur `ouvrirCompteAdmin`, `voirStatsCompte`, `exporterDonneesUtilisateurAdmin`), `supabase/migrations/0002…0008` régénérées, `tests/sql.test.js` (test 2 réécrit : repli, amorce rejouée, second administrateur par identifiant, table fermée à l'appli, phase 2 simulée), `tests/appli.test.js` (test « administration par identifiant (lot 8) », assertion Serveur et SQL).
+- Ce qui reste de l'e-mail dans le SQL : l'amorce de la table (`insert into admins … from auth.users where email = …`), le repli dans `est_admin()` (phase 2 le retire), et l'auteur noté dans les journaux (`admin_consigner`, `journaliser_utilisateur`).
+- Décision levée : plus besoin que l'utilisateur fournisse son identifiant (décision 5) : l'éditeur SQL le retrouve lui-même dans `auth.users`.
+- Tests : SQL 6/6, fonctions 10/10, appli 161/161 (suite complète après le lot).
+- Risque résiduel : tant que les scripts 2 à 8 ne sont pas rejoués en production, les règles existantes comparent encore l'e-mail (elles continuent de fonctionner) ; l'accès administrateur direct aux tables de données (RLS) reste total, seulement tracé (phase 2 = décision 6).
+
 ## Actions côté production (à faire par le propriétaire, dans l'éditeur SQL de Supabase)
 
 ### Lot 0 — contrôles en lecture seule
@@ -157,3 +165,28 @@ select count(*) from profil where donnees ? 'withings';
 ```
 
 Une fois l'appli à jour sur le web et dans TestFlight : `supabase functions delete dynamic-responder` (l'ancienne fonction, ouverte à tous).
+
+### Lot 8 — administrateur par identifiant
+
+Rejouer, depuis l'appli à jour (Administration › Serveur et SQL › Copier le SQL), les scripts **2, 3, 4, 5, 6 puis 8** (idempotents ; les règles existantes continuent de fonctionner entre-temps). Contrôles :
+
+```sql
+-- 1) l'administrateur est dans la table (attendu : 1 ligne, ton identifiant)
+select utilisateur, ajoute_le, note from public.admins;
+-- 2) plus aucune règle ni fonction ne compare l'e-mail (attendu : 0 ligne)
+select tablename, policyname from pg_policies
+where schemaname = 'public' and (qual ilike '%jambou592%' or with_check ilike '%jambou592%');
+select proname from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+where n.nspname = 'public' and p.proname <> 'est_admin' and pg_get_functiondef(p.oid) ilike '%jambou592%';
+```
+
+Phase 2, seulement si le contrôle 1 renvoie bien ta ligne : l'e-mail cesse d'être un passe-droit.
+
+```sql
+create or replace function public.est_admin()
+returns boolean language sql stable security definer set search_path = public as $$
+  select exists (select 1 from public.admins where utilisateur = auth.uid());
+$$;
+```
+
+(Côté appli, retirer alors le repli `ADMIN_EMAIL` d'`estCompteAdmin()` ; `verifierAdminServeur()` fait déjà le travail.)

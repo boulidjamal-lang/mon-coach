@@ -15,7 +15,7 @@ drop policy if exists "base lecture" on aliments_base;
 drop policy if exists "base admin" on aliments_base;
 create policy "base lecture" on aliments_base for select to anon, authenticated using (true);
 create policy "base admin" on aliments_base for all to authenticated
-  using (auth.jwt() ->> 'email' = 'jambou592@gmail.com') with check (auth.jwt() ->> 'email' = 'jambou592@gmail.com');
+  using (public.est_admin()) with check (public.est_admin());
 
 -- Colonnes ajoutées par l'application pour tes propres aliments.
 alter table aliments_base add column if not exists code_barre text;

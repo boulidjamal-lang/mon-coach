@@ -1042,7 +1042,8 @@ test('Administration : Serveur et SQL sonde chaque SQL sans rien modifier, signa
   assert.match(r.bilan[1], /^Vérifié à l'instant · Supabase répond en \d+ ms$/);
   assert.equal(r.ouvert, 'true');
   assert.match(r.sql, /create table if not exists public\.erreurs_appli/);
-  assert.match(r.sql, /jambou592@gmail\.com/);
+  assert.match(r.sql, /public\.est_admin\(\)/);
+  assert.doesNotMatch(r.sql, /jambou592/, "l'administration ne dépend plus d'une adresse");
   assert.equal(r.ecritures, 0, 'le bilan ne modifie rien');
   assert.deepEqual(r.rpc, ['admin_regles_ouvertes', 'admin_signalements', 'gymbro_direct', 'gymbro_saisons', 'mes_defis']);
   assert.deepEqual(r.tuileErreurs, ['—', 'SQL « Administration » à passer'], 'table absente : pas « 0 erreur »');
@@ -1147,6 +1148,46 @@ test("balance Withings (lot 6) : l'appli ne détient aucun jeton — état, conn
   assert.deepEqual([s.etat, s.rouge], ['Accès ouvert à tous', true]);
   assert.match(s.sql, /revoke all on table public\.withings_jetons from public, anon, authenticated;/);
   assert.match(s.sql, /create trigger profil_sans_jetons before insert or update on public\.profil/);
+}));
+
+test("administration par identifiant (lot 8) : le serveur dit qui est administrateur (table admins), l'e-mail n'est plus qu'un repli, et tout le SQL passe par est_admin()", () => avecAppli({}, async ({ page }) => {
+  const r = await page.evaluate(async () => {
+    const res = {};
+    let reponse = true;
+    supa = { rpc: async nom => ({ data: nom === 'est_admin' ? reponse : null, error: null }) };
+    // Un compte quelconque, reconnu administrateur par le serveur : l'écran Administration s'ouvre.
+    sessionUtilisateur = { id: 'u-9', email: 'quelqu.un@exemple.fr' };
+    majUICompte();
+    res.avant = [estCompteAdmin(), document.getElementById('nav-admin').classList.contains('hidden')];
+    await verifierAdminServeur();
+    res.apres = [estCompteAdmin(), document.getElementById('nav-admin').classList.contains('hidden')];
+    // Le serveur dit non : l'écran se referme.
+    reponse = false;
+    await verifierAdminServeur();
+    res.retire = [estCompteAdmin(), document.getElementById('nav-admin').classList.contains('hidden')];
+    // L'adresse historique reste un repli le temps de la transition.
+    sessionUtilisateur = { id: 'u-adm', email: ADMIN_EMAIL };
+    res.repli = estCompteAdmin();
+    // Tout le SQL passe par est_admin() ; plus aucune règle ne compare l'e-mail.
+    const scripts = [SQL_SUPABASE, SQL_RLS, sqlAccents(), SQL_GYMBRO_PHOTOS, SQL_PRO, SQL_APP_STORE, SQL_GYMBRO_DIRECT, SQL_ADMIN, SQL_SAISON, SQL_WITHINGS].join('\n');
+    res.sql = {
+      table: /create table if not exists public\.admins \(/.test(SQL_RLS),
+      fonction: /create or replace function public\.est_admin\(\)/.test(SQL_RLS),
+      amorce: /insert into public\.admins \(utilisateur, note\)\s*select id, 'administrateur initial' from auth\.users where email = 'jambou592@gmail\.com'/.test(SQL_RLS),
+      comparaisons: (scripts.match(/auth\.jwt\(\) ->> 'email'/g) || []).length,
+      estAdmin: (scripts.match(/public\.est_admin\(\)/g) || []).length,
+      garde: !/if not exists \(select 1 from pg_policies where schemaname = 'public' and tablename = 'exercices_base_overrides'\)/.test(SQL_GYMBRO_PHOTOS),
+    };
+    return res;
+  });
+  assert.deepEqual(r.avant, [false, true]);
+  assert.deepEqual(r.apres, [true, false], 'reconnu par le serveur');
+  assert.deepEqual(r.retire, [false, true]);
+  assert.equal(r.repli, true);
+  assert.deepEqual([r.sql.table, r.sql.fonction, r.sql.amorce, r.sql.garde], [true, true, true, true]);
+  // Les seules lectures de l'e-mail qui restent : le repli dans est_admin() et l'auteur noté dans le journal (admin_consigner, journaliser_utilisateur).
+  assert.equal(r.sql.comparaisons, 3, 'auth.jwt() ->> email : repli, admin_consigner, journaliser_utilisateur');
+  assert.ok(r.sql.estAdmin >= 40, 'est_admin() partout : ' + r.sql.estAdmin);
 }));
 
 test("IA par le serveur : sans clé personnelle, l'IA reste disponible (photo comprise) et chaque demande part avec sa tâche ; l'administration ne distribue plus de clé", () => avecAppli({}, async ({ page }) => {

@@ -21,7 +21,7 @@ create table if not exists public.abonnements (
 alter table public.abonnements enable row level security;
 drop policy if exists "abonnements lecture" on public.abonnements;
 create policy "abonnements lecture" on public.abonnements for select to authenticated
-  using (utilisateur = auth.uid()::text or auth.jwt() ->> 'email' = 'jambou592@gmail.com');
+  using (utilisateur = auth.uid()::text or public.est_admin());
 
 -- 2) Membres fondateurs : tous les comptes qui existent au premier passage.
 do $$
@@ -38,7 +38,7 @@ $$;
 create or replace function public.admin_offrir_pro(p_utilisateur text, p_offert boolean)
 returns void language plpgsql security definer set search_path = public as $$
 begin
-  if coalesce(auth.jwt() ->> 'email', '') <> 'jambou592@gmail.com' then
+  if not public.est_admin() then
     raise exception 'Accès réservé à l''administrateur';
   end if;
   if p_offert then

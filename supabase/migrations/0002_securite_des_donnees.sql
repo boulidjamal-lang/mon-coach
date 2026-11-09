@@ -3,8 +3,31 @@
 -- compte (bouton <svg class="icone-ui" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2" /><circle cx="12" cy="7" r="4" /></svg> <svg class="icone-ui" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 18 6-6-6-6" /></svg> Créer un compte). Idempotent : relancer ne casse rien.
 -- Avant ça, les tables sont fermées (le script 1 ne crée plus de règle) ;
 -- après, chaque compte ne peut lire/écrire que les lignes où
--- utilisateur = son propre auth.uid() — sauf le compte administrateur
--- (jambou592@gmail.com), qui voit et gère tout.
+-- utilisateur = son propre auth.uid() — sauf l'administrateur, qui voit et
+-- gère tout.
+
+-- 0) Qui est l'administrateur : la table admins (identifiant du compte),
+--    et, le temps de la transition, encore l'e-mail historique. Tout le SQL
+--    de l'appli passe par est_admin() : un seul endroit à changer. Quand la
+--    table est remplie (contrôle ci-dessous), l'e-mail se retire de la
+--    fonction, et l'administrateur ne dépend plus d'une adresse.
+create table if not exists public.admins (
+  utilisateur uuid primary key references auth.users(id) on delete cascade,
+  ajoute_le   timestamptz not null default now(),
+  note        text
+);
+alter table public.admins enable row level security;
+revoke all on table public.admins from public, anon, authenticated;
+-- L'administrateur actuel, retrouvé par son e-mail (l'éditeur SQL lit auth.users).
+insert into public.admins (utilisateur, note)
+select id, 'administrateur initial' from auth.users where email = 'jambou592@gmail.com'
+on conflict (utilisateur) do nothing;
+create or replace function public.est_admin()
+returns boolean language sql stable security definer set search_path = public as $$
+  select exists (select 1 from public.admins where utilisateur = auth.uid())
+      or coalesce(auth.jwt() ->> 'email', '') = 'jambou592@gmail.com';
+$$;
+grant execute on function public.est_admin() to anon, authenticated;
 
 -- Comptes suspendus/supprimés : une table à part que seul l'administrateur
 -- peut lire ou modifier. Un compte "supprimé" ici garde ses données dans
@@ -22,8 +45,8 @@ alter table comptes_bloques enable row level security;
 drop policy if exists "admin gere blocages" on comptes_bloques;
 create policy "admin gere blocages" on comptes_bloques
   for all
-  using (auth.jwt() ->> 'email' = 'jambou592@gmail.com')
-  with check (auth.jwt() ->> 'email' = 'jambou592@gmail.com');
+  using (public.est_admin())
+  with check (public.est_admin());
 
 -- Utilisée à l'intérieur des policies ci-dessous : un compte bloqué perd
 -- l'accès à SES PROPRES lignes, même si utilisateur = auth.uid().
@@ -64,36 +87,36 @@ drop policy if exists "acces journees" on journees;
 drop policy if exists "journees par compte" on journees;
 create policy "journees par compte" on journees
   for all
-  using ((utilisateur = auth.uid()::text and not est_bloque(utilisateur) and mon_compte_existe()) or auth.jwt() ->> 'email' = 'jambou592@gmail.com')
-  with check ((utilisateur = auth.uid()::text and not est_bloque(utilisateur) and mon_compte_existe()) or auth.jwt() ->> 'email' = 'jambou592@gmail.com');
+  using ((utilisateur = auth.uid()::text and not est_bloque(utilisateur) and mon_compte_existe()) or public.est_admin())
+  with check ((utilisateur = auth.uid()::text and not est_bloque(utilisateur) and mon_compte_existe()) or public.est_admin());
 
 drop policy if exists "acces profil" on profil;
 drop policy if exists "profil par compte" on profil;
 create policy "profil par compte" on profil
   for all
-  using ((utilisateur = auth.uid()::text and not est_bloque(utilisateur) and mon_compte_existe()) or auth.jwt() ->> 'email' = 'jambou592@gmail.com')
-  with check ((utilisateur = auth.uid()::text and not est_bloque(utilisateur) and mon_compte_existe()) or auth.jwt() ->> 'email' = 'jambou592@gmail.com');
+  using ((utilisateur = auth.uid()::text and not est_bloque(utilisateur) and mon_compte_existe()) or public.est_admin())
+  with check ((utilisateur = auth.uid()::text and not est_bloque(utilisateur) and mon_compte_existe()) or public.est_admin());
 
 drop policy if exists "acces programmes_musculation" on programmes_musculation;
 drop policy if exists "programmes_musculation par compte" on programmes_musculation;
 create policy "programmes_musculation par compte" on programmes_musculation
   for all
-  using ((utilisateur = auth.uid()::text and not est_bloque(utilisateur) and mon_compte_existe()) or auth.jwt() ->> 'email' = 'jambou592@gmail.com')
-  with check ((utilisateur = auth.uid()::text and not est_bloque(utilisateur) and mon_compte_existe()) or auth.jwt() ->> 'email' = 'jambou592@gmail.com');
+  using ((utilisateur = auth.uid()::text and not est_bloque(utilisateur) and mon_compte_existe()) or public.est_admin())
+  with check ((utilisateur = auth.uid()::text and not est_bloque(utilisateur) and mon_compte_existe()) or public.est_admin());
 
 drop policy if exists "acces seances_musculation" on seances_musculation;
 drop policy if exists "seances_musculation par compte" on seances_musculation;
 create policy "seances_musculation par compte" on seances_musculation
   for all
-  using ((utilisateur = auth.uid()::text and not est_bloque(utilisateur) and mon_compte_existe()) or auth.jwt() ->> 'email' = 'jambou592@gmail.com')
-  with check ((utilisateur = auth.uid()::text and not est_bloque(utilisateur) and mon_compte_existe()) or auth.jwt() ->> 'email' = 'jambou592@gmail.com');
+  using ((utilisateur = auth.uid()::text and not est_bloque(utilisateur) and mon_compte_existe()) or public.est_admin())
+  with check ((utilisateur = auth.uid()::text and not est_bloque(utilisateur) and mon_compte_existe()) or public.est_admin());
 
 drop policy if exists "acces exercices_perso_musculation" on exercices_perso_musculation;
 drop policy if exists "exercices_perso_musculation par compte" on exercices_perso_musculation;
 create policy "exercices_perso_musculation par compte" on exercices_perso_musculation
   for all
-  using ((utilisateur = auth.uid()::text and not est_bloque(utilisateur) and mon_compte_existe()) or auth.jwt() ->> 'email' = 'jambou592@gmail.com')
-  with check ((utilisateur = auth.uid()::text and not est_bloque(utilisateur) and mon_compte_existe()) or auth.jwt() ->> 'email' = 'jambou592@gmail.com');
+  using ((utilisateur = auth.uid()::text and not est_bloque(utilisateur) and mon_compte_existe()) or public.est_admin())
+  with check ((utilisateur = auth.uid()::text and not est_bloque(utilisateur) and mon_compte_existe()) or public.est_admin());
 
 -- Important : ces policies exigent d'être connecté (auth.uid() non nul).
 -- Si l'un de vous continue à utiliser l'identifiant libre sans jamais se
@@ -122,7 +145,7 @@ security definer
 set search_path = public
 as $$
 begin
-  if coalesce(auth.jwt() ->> 'email', '') <> 'jambou592@gmail.com' then
+  if not public.est_admin() then
     raise exception 'Accès réservé à l''administrateur';
   end if;
   return query
@@ -155,7 +178,7 @@ security definer
 set search_path = public
 as $$
 begin
-  if coalesce(auth.jwt() ->> 'email', '') <> 'jambou592@gmail.com' then
+  if not public.est_admin() then
     raise exception 'Accès réservé à l''administrateur';
   end if;
   if p_type is null then
@@ -185,7 +208,7 @@ security definer
 set search_path = public
 as $$
 begin
-  if coalesce(auth.jwt() ->> 'email', '') <> 'jambou592@gmail.com' then
+  if not public.est_admin() then
     raise exception 'Accès réservé à l''administrateur';
   end if;
   begin
@@ -243,7 +266,7 @@ security definer
 set search_path = public
 as $$
 begin
-  if coalesce(auth.jwt() ->> 'email', '') <> 'jambou592@gmail.com' then
+  if not public.est_admin() then
     raise exception 'Accès réservé à l''administrateur';
   end if;
   delete from journees where utilisateur = p_utilisateur;
@@ -262,7 +285,7 @@ grant execute on function public.admin_effacer_definitivement(text) to authentic
 -- l'administrateur ; l'écran Administration l'affiche en rouge sinon.
 create or replace function public.admin_regles_ouvertes()
 returns integer language sql stable security definer set search_path = public as $$
-  select case when coalesce(auth.jwt() ->> 'email', '') = 'jambou592@gmail.com'
+  select case when public.est_admin()
     then (select count(*)::int from pg_policies
           where schemaname = 'public'
             and tablename in ('journees', 'profil', 'programmes_musculation', 'seances_musculation', 'exercices_perso_musculation')
