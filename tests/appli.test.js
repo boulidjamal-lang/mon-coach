@@ -1190,6 +1190,74 @@ test("administration par identifiant (lot 8) : le serveur dit qui est administra
   assert.ok(r.sql.estAdmin >= 40, 'est_admin() partout : ' + r.sql.estAdmin);
 }));
 
+test("stockage local (lot 12) : les données vivent dans IndexedDB et localStorage n'en est qu'une copie — un stockage plein n'empêche plus d'enregistrer, les données reviennent sans localStorage, un changement de compte vide tout, et celles d'une ancienne version sont reprises", () => avecAppli({}, async ({ page, dialogues }) => {
+  const jour = '2026-03-04';
+  const r1 = await page.evaluate(async jour => {
+    const res = { idb: !!baseIDB };
+    appData[jour] = { meals: { lunch: [{ name: 'Riz', kcal: 200, p: 4, c: 44, f: 1 }] }, eauMl: 500 };
+    res.sauve = saveData(jour);
+    await new Promise(ok => setTimeout(ok, 150));
+    const blocs = await lireTousIDB(baseIDB);
+    res.dansIDB = !!(blocs[STORAGE_KEY] && blocs[STORAGE_KEY][jour]);
+    res.copieLocale = !!(JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}')[jour]);
+    // localStorage plein : l'enregistrement passe quand même, sans alerte.
+    const setItem = localStorage.setItem.bind(localStorage);
+    localStorage.setItem = () => { throw new DOMException('plein', 'QuotaExceededError'); };
+    appData[jour].eauMl = 750;
+    res.sauvePlein = saveData(jour);
+    res.sature = copieLocaleSaturee;
+    localStorage.setItem = setItem;
+    await new Promise(ok => setTimeout(ok, 150));
+    res.eauIDB = (await lireTousIDB(baseIDB))[STORAGE_KEY][jour].eauMl;
+    // Sans la copie localStorage, les données reviennent d'IndexedDB au prochain démarrage.
+    localStorage.removeItem(STORAGE_KEY);
+    return res;
+  }, jour);
+  await page.reload({ waitUntil: 'domcontentloaded' });
+  await page.waitForFunction(() => typeof allerA === 'function' && typeof appData === 'object' && Object.keys(appData).length > 0);
+  const r2 = await page.evaluate(async jour => {
+    const res = { eau: appData[jour] && appData[jour].eauMl };
+    // Changement de compte : tout part, IndexedDB compris.
+    viderDonneesLocales();
+    await new Promise(ok => setTimeout(ok, 150));
+    res.apresVidage = Object.keys(await lireTousIDB(baseIDB)).filter(k => k === STORAGE_KEY || k === PROFILE_KEY).length;
+    // Une ancienne version n'avait que localStorage : repris au démarrage, puis rangé dans IndexedDB.
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({ '2025-12-25': { meals: { dinner: [{ name: 'Dinde', kcal: 300, p: 40, c: 0, f: 8 }] } } }));
+    return res;
+  }, jour);
+  await page.reload({ waitUntil: 'domcontentloaded' });
+  await page.waitForFunction(() => typeof allerA === 'function' && typeof appData === 'object' && !!appData['2025-12-25']);
+  const r3 = await page.evaluate(async () => {
+    await new Promise(ok => setTimeout(ok, 150));
+    const blocs = await lireTousIDB(baseIDB);
+    return { repris: !!appData['2025-12-25'], dansIDB: !!(blocs[STORAGE_KEY] && blocs[STORAGE_KEY]['2025-12-25']) };
+  });
+  assert.deepEqual(r1, { idb: true, sauve: true, dansIDB: true, copieLocale: true, sauvePlein: true, sature: true, eauIDB: 750 });
+  assert.equal(r2.eau, 750, "les données reviennent d'IndexedDB");
+  assert.equal(r2.apresVidage, 0, 'plus rien dans IndexedDB après le changement de compte');
+  assert.deepEqual(r3, { repris: true, dansIDB: true });
+  assert.ok(!dialogues.some(d => /Impossible d'enregistrer/.test(d)), dialogues.join(' | '));
+}));
+
+test("profil fusionné (lot 12) : une pesée faite ici et une autre là-bas sont gardées toutes les deux, un champ changé d'un seul côté passe, changé des deux côtés il va au plus récent, une suppression ne revient pas", () => avecAppli({}, async ({ page }) => {
+  const r = await page.evaluate(() => {
+    const base = { age: 30, height: 180, poidsVise: 75, mesures: { '2026-01-01': { poids: 80 } }, alimentsFavoris: ['Riz'] };
+    const local = { age: 31, height: 180, poidsVise: 75, mesures: { '2026-01-01': { poids: 80 }, '2026-01-02': { poids: 79.5 } }, alimentsFavoris: ['Riz', 'Œuf'] };
+    const distant = { age: 30, height: 181, poidsVise: 74, mesures: { '2026-01-03': { poids: 79 } }, maj: 5 };
+    return {
+      f: fusionnerProfil(base, local, distant, true),
+      g: fusionnerProfil(null, local, distant, false),
+      conflitPoids: fusionnerProfil(base, Object.assign({}, local, { poidsVise: 73 }), distant, false).poidsVise,
+      meme: memeProfil({ a: 1, maj: 2 }, { maj: 3, a: 1 }),
+    };
+  });
+  assert.deepEqual(r.f, { age: 31, height: 181, poidsVise: 74, mesures: { '2026-01-02': { poids: 79.5 }, '2026-01-03': { poids: 79 } }, alimentsFavoris: ['Riz', 'Œuf'] });
+  assert.deepEqual(r.g.mesures, { '2026-01-01': { poids: 80 }, '2026-01-02': { poids: 79.5 }, '2026-01-03': { poids: 79 } }, "sans base : rien n'est perdu");
+  assert.deepEqual([r.g.age, r.g.height, r.g.poidsVise], [30, 181, 74], "sans base : le plus récent l'emporte sur les champs simples");
+  assert.equal(r.conflitPoids, 74, 'changé des deux côtés : le plus récent');
+  assert.equal(r.meme, true);
+}));
+
 test("IA par le serveur : sans clé personnelle, l'IA reste disponible (photo comprise) et chaque demande part avec sa tâche ; l'administration ne distribue plus de clé", () => avecAppli({}, async ({ page }) => {
   const r = await page.evaluate(async () => {
     const appels = [];
@@ -3885,7 +3953,7 @@ test('synchro : après une déconnexion, la reconnexion retélécharge les journ
 test('synchro : un appareil vidé en gardant son état de synchro (version précédente) récupère ses journées', () => deuxAppareils(async (tel, tab) => {
   await noterAliment(tab, 'breakfast', 'Flocons');
   await synchro(tab); await synchro(tel);
-  await tel.evaluate(() => { appData = {}; localStorage.removeItem(STORAGE_KEY); });
+  await tel.evaluate(() => { appData = {}; effacerBloc(STORAGE_KEY); });
   await synchro(tel, 'connexion');
   assert.deepEqual((await journee(tel)).matin, ['Flocons']);
   assert.deepEqual(await tel.evaluate(() => joursModifies()), {});
