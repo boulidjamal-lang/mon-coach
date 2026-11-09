@@ -947,7 +947,8 @@ test('Administration : les comptes en liste (pseudo, état, recherche, filtres),
       { utilisateur: 'a1', email: 'alice@x.fr', maj: Date.now() - 1000, nb_journees: 12, cree_le: new Date(Date.now() - 90 * 864e5).toISOString(), derniere_connexion: new Date().toISOString() },
       { utilisateur: 'b2', email: 'bob@x.fr', maj: Date.now() - 2000, statut: 'suspendu' },
       { utilisateur: 'c3', email: 'carl@x.fr', maj: Date.now() - 40 * 864e5 }],
-    'table:pseudos': [{ utilisateur: 'a1', pseudo: 'alice.fit' }, { utilisateur: 'b2', pseudo: 'bob' }] }, { 'rpc:admin_compte_details': {
+    'table:pseudos': [{ utilisateur: 'a1', pseudo: 'alice.fit' }, { utilisateur: 'b2', pseudo: 'bob' }],
+    'table:withings_jetons:compte': { __erreur: { code: '42501', message: 'permission denied for table withings_jetons' } } }, { 'rpc:admin_compte_details': {
     appareils: [{ appareil: 'x', plateforme: 'iPhone · app Askēsis', version: VERSION_APPLI, synchro_le: new Date().toISOString(), en_attente: 0 },
       { appareil: 'y', plateforme: 'Mac · Safari', version: '2026-01-01', synchro_le: new Date(Date.now() - 6 * 864e5).toISOString(), en_attente: 2 }],
     erreurs_7j: 3, erreur: 'délai dépassé', gymbros: 4, signale: 1, ia_mois: 2 } }));
@@ -995,7 +996,8 @@ test('Administration : « À surveiller » (tableau, signalements, erreurs, serv
       { utilisateur: 'a1', email: 'alice@x.fr', maj: Date.now() - 1000, nb_journees: 12, cree_le: new Date(Date.now() - 90 * 864e5).toISOString(), derniere_connexion: new Date().toISOString() },
       { utilisateur: 'b2', email: 'bob@x.fr', maj: Date.now() - 2000, statut: 'suspendu' },
       { utilisateur: 'c3', email: 'carl@x.fr', maj: Date.now() - 40 * 864e5 }],
-    'table:pseudos': [{ utilisateur: 'a1', pseudo: 'alice.fit' }, { utilisateur: 'b2', pseudo: 'bob' }] }, {
+    'table:pseudos': [{ utilisateur: 'a1', pseudo: 'alice.fit' }, { utilisateur: 'b2', pseudo: 'bob' }],
+    'table:withings_jetons:compte': { __erreur: { code: '42501', message: 'permission denied for table withings_jetons' } } }, {
     'rpc:admin_tableau_de_bord': { comptes: 4, actifs_jour: 3, actifs_7j: 4, par_jour: [], en_seance: [{ pseudo: 'alice.fit' }] },
     'rpc:admin_signalements': q => q.args.p_traites ? [] : [{ id: 1, cible: 'a1', cible_pseudo: 'alice.fit', motif: 'Pub ou spam', cree_le: new Date().toISOString() }, { id: 2, cible: 'a1', cible_pseudo: 'alice.fit', cree_le: new Date().toISOString() }],
     'table:erreurs_appli:compte': 5,
@@ -1020,7 +1022,7 @@ test('Administration : « À surveiller » (tableau, signalements, erreurs, serv
 }));
 
 test('Administration : Serveur et SQL sonde chaque SQL sans rien modifier, signale le manquant et donne son SQL', () => avecAppli({}, async ({ page }) => {
-  await installerFauxAdmin(page, () => ({ 'table:erreurs_appli:compte': { __404vide: true } }));
+  await installerFauxAdmin(page, () => ({ 'table:erreurs_appli:compte': { __404vide: true }, 'table:withings_jetons:compte': { __erreur: { code: '42501', message: 'permission denied for table withings_jetons' } } }));
   const r = await page.evaluate(async () => {
     window.__appels = [];
     ouvrirServeurAdmin();
@@ -1035,7 +1037,7 @@ test('Administration : Serveur et SQL sonde chaque SQL sans rien modifier, signa
       ecritures: window.__appels.filter(a => a[0] === 'from' && a[2] !== 'select').length,
       rpc: [...new Set(window.__appels.filter(a => a[0] === 'rpc').map(a => a[1]))].sort() };
   });
-  assert.deepEqual(r.lignes, [['supabase', 'OK'], ['rls', 'OK'], ['accents', 'OK'], ['gymbro', 'OK'], ['pro', 'OK'], ['appstore', 'OK'], ['direct', 'OK'], ['admin', 'Manquant'], ['saison', 'OK']]);
+  assert.deepEqual(r.lignes, [['supabase', 'OK'], ['rls', 'OK'], ['accents', 'OK'], ['gymbro', 'OK'], ['pro', 'OK'], ['appstore', 'OK'], ['direct', 'OK'], ['admin', 'Manquant'], ['saison', 'OK'], ['withings', 'OK']]);
   assert.equal(r.bilan[0], '1 point à régler');
   assert.match(r.bilan[1], /^Vérifié à l'instant · Supabase répond en \d+ ms$/);
   assert.equal(r.ouvert, 'true');
@@ -1047,7 +1049,7 @@ test('Administration : Serveur et SQL sonde chaque SQL sans rien modifier, signa
 }));
 
 test("Administration : une règle d'accès ouverte à tous sur les tables de données est signalée en rouge, et le script 1 n'en crée plus", () => avecAppli({}, async ({ page }) => {
-  await installerFauxAdmin(page, () => ({ 'rpc:admin_regles_ouvertes': 2 }));
+  await installerFauxAdmin(page, () => ({ 'rpc:admin_regles_ouvertes': 2, 'table:withings_jetons:compte': { __erreur: { code: '42501', message: 'permission denied for table withings_jetons' } } }));
   const r = await page.evaluate(async () => {
     ouvrirServeurAdmin();
     await verifierServeurAdmin(true);
@@ -1061,6 +1063,90 @@ test("Administration : une règle d'accès ouverte à tous sur les tables de don
   assert.ok(!/using \(true\)/.test(r.script1), 'le script 1 ne crée plus de règle ouverte');
   assert.match(r.script1, /drop policy if exists "acces journees" on journees;/);
   assert.match(r.script2, /create or replace function public\.admin_regles_ouvertes\(\)/);
+}));
+
+test("balance Withings (lot 6) : l'appli ne détient aucun jeton — état, connexion avec « state », pesées et déconnexion passent par la fonction serveur ; un ancien jeton local est repris par le serveur puis effacé ; une table de jetons lisible est signalée", () => avecAppli({}, async ({ page, dialogues }) => {
+  const r = await page.evaluate(async () => {
+    const appels = [];
+    let connecte = false;
+    supa = { functions: { invoke: async (nom, o) => {
+      appels.push([nom, JSON.parse(JSON.stringify(o.body))]);
+      const a = o.body.action;
+      if (a === 'etat') return { data: { connecte }, error: null };
+      if (a === 'importer' || a === 'connecter') { connecte = true; return { data: { connecte: true }, error: null }; }
+      if (a === 'deconnecter') { connecte = false; return { data: { connecte: false }, error: null }; }
+      if (a === 'mesures') return { data: { status: 0, body: { measuregrps: [{ date: 1762560000, measures: [{ type: 1, value: 80400, unit: -3 }, { type: 6, value: 221, unit: -1 }] }] } }, error: null };
+      return { data: null, error: { context: { status: 400, json: async () => ({ erreur: 'Action inconnue.' }) } } };
+    } } };
+    sessionUtilisateur = { id: 'u-1', email: 'moi@test.fr' };
+    const res = {};
+    // Un jeton gardé par une ancienne version (profil et appareil) : repris par le serveur, puis plus nulle part ici.
+    const ancien = { access_token: 'acc-ancien', refresh_token: 'ref-ancien', expire_le: Date.now() + 1000, userid: 42 };
+    localStorage.setItem(WITHINGS_TOKEN_LS, JSON.stringify(ancien));
+    userProfile.withings = Object.assign({}, ancien);
+    await rafraichirEtatWithings();
+    res.importe = appels.filter(a => a[1].action === 'importer').map(a => [a[1].access_token, a[1].refresh_token, a[1].userid]);
+    res.localApres = [localStorage.getItem(WITHINGS_TOKEN_LS), 'withings' in userProfile, 'withings' in JSON.parse(localStorage.getItem(PROFILE_KEY) || '{}')];
+    res.reliee = [etatWithings.connecte, !document.getElementById('withings-connecte-reglages').classList.contains('hidden'), document.getElementById('withings-deconnecte').classList.contains('hidden')];
+    // Pesées : lues par le serveur, pré-remplies dans Mesures (poids et masse grasse de cette pesée).
+    await importerPoidsWithings();
+    res.mesures = [document.getElementById('mes-poids').value, document.getElementById('mes-grasse-pct').value, document.getElementById('mes-muscle-kg').value, document.getElementById('note-import-withings').textContent];
+    // Déconnexion : le serveur oublie, l'appli repasse sur « Connecter ».
+    await deconnexionWithings();
+    res.deconnecte = [etatWithings.connecte, !document.getElementById('withings-deconnecte-reglages').classList.contains('hidden')];
+    // Connexion : le lien part avec un « state » gardé sur l'appareil.
+    const lien = document.querySelector('#withings-deconnecte-reglages a');
+    const suivi = connexionWithings({ currentTarget: lien, preventDefault() { res.empeche = true; } });
+    const u = new URL(lien.href);
+    const state = u.searchParams.get('state');
+    res.lien = [suivi, u.origin + u.pathname, u.searchParams.get('client_id') === WITHINGS_CLIENT_ID, u.searchParams.get('redirect_uri'), (state || '').length, JSON.parse(localStorage.getItem(WITHINGS_STATE_LS)).state === state];
+    // Retour avec un mauvais « state » : rien n'est envoyé, l'URL est nettoyée.
+    const avant = appels.length;
+    history.replaceState({}, '', location.pathname + '?code=CODE-1&state=pirate');
+    await traiterRetourWithings();
+    res.mauvaisState = [appels.length - avant, etatWithings.connecte, location.search, localStorage.getItem(WITHINGS_STATE_LS)];
+    // Le bon « state » : le code part seul (ni URL de retour, ni jeton), la balance est reliée.
+    connexionWithings({ currentTarget: lien, preventDefault() {} });
+    const bon = JSON.parse(localStorage.getItem(WITHINGS_STATE_LS)).state;
+    history.replaceState({}, '', location.pathname + '?code=CODE-2&state=' + bon);
+    await traiterRetourWithings();
+    const connecter = appels.filter(a => a[1].action === 'connecter');
+    res.connecter = [connecter.length, connecter[0] && connecter[0][1], etatWithings.connecte, location.search, localStorage.getItem(WITHINGS_STATE_LS)];
+    res.actions = appels.map(a => a[0] + ':' + a[1].action);
+    res.jetonSorti = JSON.stringify(appels.filter(a => a[1].action !== 'importer')).includes('acc-ancien');
+    res.appliSansJeton = !/wbsapi\.withings\.net|withingsAccessTokenValide|enregistrerTokenWithings/.test(document.documentElement.outerHTML.slice(0, 0) + [...document.scripts].map(x => x.textContent).join(''));
+    // Déconnecté du compte : plus d'état.
+    definirSessionUtilisateur(null);
+    res.sansCompte = [etatWithings.connecte, !document.getElementById('withings-deconnecte-reglages').classList.contains('hidden')];
+    return res;
+  });
+  assert.deepEqual(r.importe, [['acc-ancien', 'ref-ancien', 42]], "l'ancien jeton part une fois au serveur");
+  assert.deepEqual(r.localApres, [null, false, false], 'plus de jeton sur l\'appareil ni dans le profil');
+  assert.deepEqual(r.reliee, [true, true, true], 'reliée : « Déconnecter » dans Réglages, bouton d\'import dans Mesures');
+  assert.deepEqual(r.mesures.slice(0, 3), ['80.4', '22.1', '']);
+  assert.match(r.mesures[3], /^Pesée du .* importée \(Poids, Masse grasse\) — vérifie puis enregistre\.$/);
+  assert.deepEqual(r.deconnecte, [false, true]);
+  assert.equal(r.empeche, undefined, 'la navigation vers Withings suit son cours');
+  assert.deepEqual(r.lien, [true, 'https://account.withings.com/oauth2_user/authorize2', true, 'https://boulidjamal-lang.github.io/mon-coach/', 32, true]);
+  assert.deepEqual(r.mauvaisState, [0, false, '', null], 'un code avec un autre « state » est ignoré');
+  assert.deepEqual(r.connecter, [1, { action: 'connecter', code: 'CODE-2' }, true, '', null]);
+  assert.deepEqual(r.actions, ['withings:importer', 'withings:etat', 'withings:mesures', 'withings:deconnecter', 'withings:connecter']);
+  assert.equal(r.jetonSorti, false, 'aucun jeton ne circule hors de la reprise');
+  assert.equal(r.appliSansJeton, true, "l'appli n'appelle plus Withings directement");
+  assert.deepEqual(r.sansCompte, [false, true]);
+  assert.ok(dialogues.some(d => /Balance Withings connectée/.test(d)), dialogues.join(' | '));
+  assert.ok(dialogues.some(d => /ignorée/.test(d)));
+  // Table lisible par l'administrateur = protection absente : signalée en rouge.
+  await installerFauxAdmin(page, () => ({ 'table:withings_jetons:compte': 0 }));
+  const s = await page.evaluate(async () => {
+    ouvrirServeurAdmin();
+    await verifierServeurAdmin(true);
+    const w = document.querySelector('.adm-sql[data-sql="withings"]');
+    return { etat: w.querySelector('[data-etat-sql]').textContent, rouge: w.classList.contains('adm-sql--ko'), sql: SQL_WITHINGS };
+  });
+  assert.deepEqual([s.etat, s.rouge], ['Accès ouvert à tous', true]);
+  assert.match(s.sql, /revoke all on table public\.withings_jetons from public, anon, authenticated;/);
+  assert.match(s.sql, /create trigger profil_sans_jetons before insert or update on public\.profil/);
 }));
 
 test("IA par le serveur : sans clé personnelle, l'IA reste disponible (photo comprise) et chaque demande part avec sa tâche ; l'administration ne distribue plus de clé", () => avecAppli({}, async ({ page }) => {
@@ -1094,7 +1180,8 @@ test('Administration : signalements (motif, bio, « 2e fois ») ; classer et sus
       { utilisateur: 'a1', email: 'alice@x.fr', maj: Date.now() - 1000, nb_journees: 12, cree_le: new Date(Date.now() - 90 * 864e5).toISOString(), derniere_connexion: new Date().toISOString() },
       { utilisateur: 'b2', email: 'bob@x.fr', maj: Date.now() - 2000, statut: 'suspendu' },
       { utilisateur: 'c3', email: 'carl@x.fr', maj: Date.now() - 40 * 864e5 }],
-    'table:pseudos': [{ utilisateur: 'a1', pseudo: 'alice.fit' }, { utilisateur: 'b2', pseudo: 'bob' }] }, {
+    'table:pseudos': [{ utilisateur: 'a1', pseudo: 'alice.fit' }, { utilisateur: 'b2', pseudo: 'bob' }],
+    'table:withings_jetons:compte': { __erreur: { code: '42501', message: 'permission denied for table withings_jetons' } } }, {
     'rpc:admin_signalements': q => q.args.p_traites ? [] : [
       { id: 7, cree_le: new Date(Date.now() - 5 * 3600e3).toISOString(), motif: 'Pub ou spam', traite: false, auteur: 'b2', auteur_pseudo: 'bob', cible: 'a1', cible_pseudo: 'alice.fit', cible_bio: 'Coaching 💸', cible_nb: 2 },
       { id: 8, cree_le: new Date().toISOString(), motif: null, traite: false, auteur: 'a1', auteur_pseudo: 'alice.fit', cible: 'c3', cible_pseudo: null, cible_nb: 1 }],
@@ -1138,7 +1225,8 @@ test('Erreurs : envoyées sans données perso, une fois, pas les coupures résea
       { utilisateur: 'a1', email: 'alice@x.fr', maj: Date.now() - 1000, nb_journees: 12, cree_le: new Date(Date.now() - 90 * 864e5).toISOString(), derniere_connexion: new Date().toISOString() },
       { utilisateur: 'b2', email: 'bob@x.fr', maj: Date.now() - 2000, statut: 'suspendu' },
       { utilisateur: 'c3', email: 'carl@x.fr', maj: Date.now() - 40 * 864e5 }],
-    'table:pseudos': [{ utilisateur: 'a1', pseudo: 'alice.fit' }, { utilisateur: 'b2', pseudo: 'bob' }] }, { 'table:erreurs_appli': [
+    'table:pseudos': [{ utilisateur: 'a1', pseudo: 'alice.fit' }, { utilisateur: 'b2', pseudo: 'bob' }],
+    'table:withings_jetons:compte': { __erreur: { code: '42501', message: 'permission denied for table withings_jetons' } } }, { 'table:erreurs_appli': [
     { id: 1, utilisateur: 'a1', cree_le: new Date(Date.now() - 12 * 60000).toISOString(), type: 'synchro', message: 'délai dépassé', appareil: 'iPhone · app Askēsis', ecran: 'repas', version: '2026-01-01', detail: 'pile' },
     { id: 2, utilisateur: 'b2', cree_le: new Date(Date.now() - 3600e3).toISOString(), type: 'synchro', message: 'délai dépassé', appareil: 'Mac · Safari', ecran: 'stats', version: VERSION_APPLI },
     { id: 3, utilisateur: 'a1', cree_le: new Date(Date.now() - 2 * 3600e3).toISOString(), type: 'ia', message: 'Quota atteint', appareil: 'iPhone · app Askēsis', ecran: 'repas', version: VERSION_APPLI },

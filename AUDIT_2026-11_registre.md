@@ -10,7 +10,7 @@ Branche de travail : `corrections-audit` (dépôt mon-coach). Rien n'est mis en 
 |----|---------|-----|----------|--------|-------|
 | SEC-01 | P0 | 1 | Script 1 recrée des règles ouvertes | Tests réussis (code) · SQL prod à passer | Sonde réelle `admin_regles_ouvertes()` ; script 1 sans règle ; textes corrigés |
 | SEC-02 | P1 | 7 | Ni CSP ni intégrité CDN (web) | Tests réussis (phase 1) | `integrity` + `crossorigin` sur les 3 bibliothèques (hachages vérifiés contre les CDN et les paquets), URL explicite de supabase-js, méta CSP (scripts : page + 2 CDN ; connexions : services connus ; ni cadre ni plugin) ; toute violation fait échouer un test ; retirée dans l'app iPhone. Phase 2 (sans 'unsafe-inline') au lot 14 |
-| SEC-03 | P1 | 6 | Jetons Withings et clé IA dans le profil synchronisé | À corriger | |
+| SEC-03 | P1 | 6 | Jetons Withings et clé IA dans le profil synchronisé | Tests réussis | Clé IA : lot 2. Jetons Withings : table `withings_jetons` fermée à l'appli, déclencheur `profil_sans_jetons`, client sans jeton (`appelWithings`, `state` OAuth) ; suite complète 160/160 |
 | SEC-04 | P1 | 2 | Clé Gemini utilisée depuis le téléphone ; porte d'entrée photo liée à l'ancien chemin | Tests réussis | Plus de clé distribuée par l'administration ; porte d'entrée sur `iaDisponible()`. Clé personnelle conservée (décision 1 en attente) |
 | LEG-01 | P1 | 3 | Médias tiers sans licence sur le site | Tests réussis | Site aligné sur l'app : aucun média SmartWorkout, ExerciseDB ni wger ; tables vidées, 1 622 mini-vidéos retirées des deux dépôts. Purge de l'historique Git : décision 3 en attente |
 | TECH-02 | P1 | 5 | SQL sans migrations ni suivi | Tests réussis | `supabase/migrations/` (9 fichiers générés depuis index.html par `scripts/exporter-sql.mjs`, rejouables sur une base vide), test anti-dérive en CI, job `supabase db push` sur main si les secrets existent (décision 4 : baseline à confronter à la production) ; script 3 trouve seul la colonne du nom ; création de `aliments_partages` ajoutée (elle n'existait qu'en production) |
@@ -19,7 +19,7 @@ Branche de travail : `corrections-audit` (dépôt mon-coach). Rien n'est mis en 
 | SEC-05 | P2 | 8 | Administrateur reconnu par e-mail | À corriger | Phase 1 sans risque ; phase 2 après l'UUID (décision 5) |
 | SEC-06 | P2 | 8 | Accès administrateur total | À corriger | |
 | SEC-07 | P2 | 2 | Proxy IA générique | Tests réussis · à déployer | Tâches typées, consigne de rôle imposée, chaque réponse comptée, erreurs génériques ; fonction `ia` à redéployer par le propriétaire |
-| SEC-08 | P2 | 6 | Fonction Withings hors dépôt, sans authentification | À corriger | Code présent dans WITHINGS_edge_function.md |
+| SEC-08 | P2 | 6 | Fonction Withings hors dépôt, sans authentification | Tests réussis | `supabase/functions/withings/index.ts` versionnée : session exigée, origines de l'appli, URL de retour imposée, Pro exigé ; 2 tests de fonction, 1 test SQL, 1 test d'appli ; à déployer (actions côté production) |
 | TECH-01 | P2 | 14 | Monolithe d'un seul fichier | À corriger | Par étapes |
 | PERF-01 | P2 | 11 | Premier chargement lourd | Tests réussis | `assets/recettes.js` (424 Ko gzip) chargé après le premier affichage ou à la demande, plus en bloquant la page ; toujours préchargé hors ligne par le service worker |
 | DATA-01 | P2 | 12 | Tout dans localStorage | À corriger | IndexedDB retenu par défaut (décision 6) |
@@ -97,6 +97,12 @@ Branche de travail : `corrections-audit` (dépôt mon-coach). Rien n'est mis en 
 
 - Fichiers : `index.html` (`chargerRecettesAskesis`, `recettesAskesis`, `renderBibliothequeRecettes`), `tests/appli.test.js` (test hors ligne adapté, test « recettes à la demande »).
 
+### Lot 6 — SEC-03, SEC-08
+
+- Fichiers : `supabase/functions/withings/index.ts` (nouvelle fonction versionnée : session exigée, origines de l'appli seulement, URL de retour imposée, Pro exigé, actions `etat`/`connecter`/`mesures`/`deconnecter`/`importer`, messages rédigés), `supabase/functions/withings/LISEZMOI.md` (déploiement), `index.html` (SQL n° 10 « Balance Withings » : table `withings_jetons` sans règle ni droit pour l'appli, déclencheur `profil_sans_jetons` qui sort tout jeton du profil, nettoyage à l'effacement du compte ; client sans jeton : `appelWithings`, `rafraichirEtatWithings`, `reprendreJetonWithingsLocal`, `state` OAuth par appareil, pesées lues par le serveur ; sonde n° 10 qui signale une table lisible ; CSP sans `wbsapi.withings.net`), `supabase/migrations/0010_balance_withings.sql`, `scripts/exporter-sql.mjs`, `tests/fonctions.test.js` (2 tests, 10/10), `tests/sql.test.js` (1 test, 6/6), `tests/appli.test.js` (test « balance Withings (lot 6) », écran Serveur et SQL à 10 lignes).
+- Décisions prises sans l'utilisateur : la balance exige Pro côté serveur (règle déjà appliquée par l'appli) ; les jetons laissés dans le profil par les anciennes versions sont déplacés par le serveur (jamais effacés sans avoir été repris) ; un jeton local n'est effacé de l'appareil qu'après réception par le serveur (ou refus définitif).
+- Risque résiduel : une ancienne version de l'app iPhone encore installée peut ré-envoyer un profil contenant `withings` — le déclencheur SQL le sort du profil à chaque écriture ; l'ancienne fonction `dynamic-responder` reste ouverte tant qu'elle n'est pas supprimée (action côté production).
+
 ## Actions côté production (à faire par le propriétaire, dans l'éditeur SQL de Supabase)
 
 ### Lot 0 — contrôles en lecture seule
@@ -128,3 +134,26 @@ drop policy if exists "acces exercices_perso_musculation" on exercices_perso_mus
 Puis relancer le script 2 (« Sécurité des données », copié depuis l'appli à jour) pour créer `admin_regles_ouvertes()`. Contrôle : la ligne « Sécurité des données » de l'écran Administration passe à OK.
 
 Si le contrôle 2 ne renvoie pas 5 lignes : ne rien supprimer ; passer d'abord le script 2 complet, puis revenir au contrôle 1.
+
+### Lot 2 et Lot 6 — fonctions serveur (CLI Supabase, depuis la racine du dépôt)
+
+```bash
+# Lot 2 : la fonction « ia » (consigne de rôle par tâche, essais comptés par réponse)
+supabase functions deploy ia
+
+# Lot 6 : la balance Withings côté serveur (le secret vient du tableau de bord développeur Withings)
+supabase secrets set WITHINGS_CLIENT_SECRET=<client_secret Withings>
+supabase functions deploy withings
+```
+
+Puis exécuter le SQL n° 10 « Balance Withings » (Administration › Serveur et SQL). Contrôles :
+
+```sql
+-- la table existe et aucun droit n'est laissé à l'appli (attendu : 0 ligne)
+select grantee, privilege_type from information_schema.role_table_grants
+where table_schema = 'public' and table_name = 'withings_jetons' and grantee in ('anon', 'authenticated');
+-- plus aucun jeton dans les profils (attendu : 0)
+select count(*) from profil where donnees ? 'withings';
+```
+
+Une fois l'appli à jour sur le web et dans TestFlight : `supabase functions delete dynamic-responder` (l'ancienne fonction, ouverte à tous).
