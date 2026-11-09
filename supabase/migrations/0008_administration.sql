@@ -4,10 +4,12 @@
 -- À exécuter une fois dans l'éditeur SQL de Supabase, après les autres SQL.
 -- Idempotent : relancer ne casse rien, aucune donnée existante n'est modifiée.
 
--- 0) Qui est l'administrateur (utilisé par les règles ci-dessous).
+-- 0) Qui est l'administrateur : est_admin() (script « Sécurité des données »).
+--    je_suis_admin() est gardée comme simple alias, pour les objets créés
+--    par d'anciennes versions de ce script.
 create or replace function public.je_suis_admin()
 returns boolean language sql stable as $fn$
-  select coalesce(auth.jwt() ->> 'email', '') = 'jambou592@gmail.com';
+  select public.est_admin();
 $fn$;
 grant execute on function public.je_suis_admin() to anon, authenticated;
 
@@ -33,7 +35,7 @@ alter table public.journal_admin add column if not exists detail jsonb;
 create index if not exists journal_admin_date on public.journal_admin (fait_le desc);
 alter table public.journal_admin enable row level security;
 drop policy if exists "journal admin lecture" on public.journal_admin;
-create policy "journal admin lecture" on public.journal_admin for select to authenticated using (public.je_suis_admin());
+create policy "journal admin lecture" on public.journal_admin for select to authenticated using (public.est_admin());
 grant select on public.journal_admin to authenticated;
 
 do $$
@@ -49,7 +51,7 @@ create function public.admin_consigner(p_action text, p_cible_id text default nu
                                        p_motif text default null, p_detail jsonb default null)
 returns void language plpgsql security definer set search_path = public as $fn$
 begin
-  if not je_suis_admin() then raise exception 'Accès réservé à l''administrateur'; end if;
+  if not public.est_admin() then raise exception 'Accès réservé à l''administrateur'; end if;
   insert into journal_admin (fait_par, action, cible_id, cible_libelle, motif, detail)
   values (auth.jwt() ->> 'email', left(coalesce(p_action, '?'), 80), left(p_cible_id, 200), left(p_cible_libelle, 300), left(p_motif, 1000), p_detail);
 end;
@@ -58,7 +60,7 @@ $fn$;
 create function public.admin_journal_lire(p_cible text default null, p_limite integer default 100)
 returns setof public.journal_admin language plpgsql stable security definer set search_path = public as $fn$
 begin
-  if not je_suis_admin() then raise exception 'Accès réservé à l''administrateur'; end if;
+  if not public.est_admin() then raise exception 'Accès réservé à l''administrateur'; end if;
   return query select * from journal_admin j where p_cible is null or j.cible_id = p_cible
     order by j.fait_le desc limit least(greatest(coalesce(p_limite, 100), 1), 500);
 end;
@@ -69,7 +71,7 @@ create function public.admin_apercu()
 returns table (total bigint, actifs bigint, suspendus bigint, inactifs30 bigint, supprimes bigint)
 language plpgsql stable security definer set search_path = public as $fn$
 begin
-  if not je_suis_admin() then raise exception 'Accès réservé à l''administrateur'; end if;
+  if not public.est_admin() then raise exception 'Accès réservé à l''administrateur'; end if;
   return query
     select count(*),
            count(*) filter (where b.type is null),
@@ -107,7 +109,7 @@ create index if not exists erreurs_appli_compte on public.erreurs_appli (utilisa
 alter table public.erreurs_appli enable row level security;
 drop policy if exists "erreurs admin" on public.erreurs_appli;
 create policy "erreurs admin" on public.erreurs_appli for all to authenticated
-  using (public.je_suis_admin()) with check (public.je_suis_admin());
+  using (public.est_admin()) with check (public.est_admin());
 grant select, update, delete on public.erreurs_appli to authenticated;
 
 create or replace function public.noter_erreur(p_type text, p_message text, p_detail text default null,
@@ -140,7 +142,7 @@ create table if not exists public.appareils (
 );
 alter table public.appareils enable row level security;
 drop policy if exists "appareils admin" on public.appareils;
-create policy "appareils admin" on public.appareils for select to authenticated using (public.je_suis_admin());
+create policy "appareils admin" on public.appareils for select to authenticated using (public.est_admin());
 grant select on public.appareils to authenticated;
 
 create or replace function public.noter_appareil(p_appareil text, p_plateforme text, p_version text,
@@ -176,10 +178,10 @@ create table if not exists public.annonces (
 alter table public.annonces enable row level security;
 drop policy if exists "annonces lecture" on public.annonces;
 create policy "annonces lecture" on public.annonces for select to anon, authenticated
-  using ((not retiree and (jusqua is null or jusqua > now())) or public.je_suis_admin());
+  using ((not retiree and (jusqua is null or jusqua > now())) or public.est_admin());
 drop policy if exists "annonces admin" on public.annonces;
 create policy "annonces admin" on public.annonces for all to authenticated
-  using (public.je_suis_admin()) with check (public.je_suis_admin());
+  using (public.est_admin()) with check (public.est_admin());
 grant select on public.annonces to anon, authenticated;
 grant insert, update, delete on public.annonces to authenticated;
 grant usage on sequence public.annonces_id_seq to authenticated;
@@ -190,7 +192,7 @@ create or replace function public.admin_signalements(p_traites boolean default f
 returns jsonb language plpgsql stable security definer set search_path = public as $fn$
 declare r jsonb;
 begin
-  if not je_suis_admin() then raise exception 'Accès réservé à l''administrateur'; end if;
+  if not public.est_admin() then raise exception 'Accès réservé à l''administrateur'; end if;
   if to_regclass('public.gymbros_signalements') is null then return '[]'::jsonb; end if;
   select coalesce(jsonb_agg(x order by (x ->> 'cree_le') desc), '[]'::jsonb) into r from (
     select jsonb_build_object('id', s.id, 'cree_le', s.cree_le, 'motif', s.motif, 'traite', s.traite,
@@ -215,7 +217,7 @@ create or replace function public.admin_compte_details(p_utilisateur text)
 returns jsonb language plpgsql stable security definer set search_path = public as $fn$
 declare r jsonb;
 begin
-  if not je_suis_admin() then raise exception 'Accès réservé à l''administrateur'; end if;
+  if not public.est_admin() then raise exception 'Accès réservé à l''administrateur'; end if;
   r := jsonb_build_object(
     'appareils', (select coalesce(jsonb_agg(to_jsonb(a) - 'utilisateur' order by a.vu_le desc), '[]'::jsonb) from appareils a where a.utilisateur = p_utilisateur),
     'erreurs_7j', (select count(*) from erreurs_appli e where e.utilisateur = p_utilisateur and e.cree_le > now() - interval '7 days'),
@@ -248,7 +250,7 @@ declare
   r jsonb;
   gymbro text[] := '{}';
 begin
-  if not je_suis_admin() then raise exception 'Accès réservé à l''administrateur'; end if;
+  if not public.est_admin() then raise exception 'Accès réservé à l''administrateur'; end if;
   with comptes as (select id::text as utilisateur from auth.users),
   act as (
     select utilisateur, (to_timestamp(maj / 1000.0) at time zone 'Europe/Paris')::date as jour from journees where maj > 0

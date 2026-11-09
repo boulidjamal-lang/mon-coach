@@ -78,7 +78,7 @@ create table if not exists public.gymbros_signalements (
 alter table public.gymbros_signalements enable row level security;
 drop policy if exists "signalements admin" on public.gymbros_signalements;
 create policy "signalements admin" on public.gymbros_signalements for all to authenticated
-  using (auth.jwt() ->> 'email' = 'jambou592@gmail.com') with check (auth.jwt() ->> 'email' = 'jambou592@gmail.com');
+  using (public.est_admin()) with check (public.est_admin());
 
 create or replace function public.gymbro_bloquer(p_pseudo text)
 returns void language plpgsql security definer set search_path = public as $fn$

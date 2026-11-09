@@ -362,13 +362,11 @@ create table if not exists public.exercices_base_overrides (
   modifie_par text
 );
 alter table public.exercices_base_overrides enable row level security;
-do $$ begin
-  if not exists (select 1 from pg_policies where schemaname = 'public' and tablename = 'exercices_base_overrides') then
-    create policy "corrections lisibles" on public.exercices_base_overrides for select to authenticated using (true);
-    create policy "corrections admin" on public.exercices_base_overrides for all to authenticated
-      using (auth.jwt() ->> 'email' = 'jambou592@gmail.com') with check (auth.jwt() ->> 'email' = 'jambou592@gmail.com');
-  end if;
-end $$;
+drop policy if exists "corrections lisibles" on public.exercices_base_overrides;
+drop policy if exists "corrections admin" on public.exercices_base_overrides;
+create policy "corrections lisibles" on public.exercices_base_overrides for select to authenticated using (true);
+create policy "corrections admin" on public.exercices_base_overrides for all to authenticated
+  using (public.est_admin()) with check (public.est_admin());
 create or replace function public.bloquer_exercice_supprime()
 returns trigger language plpgsql security definer set search_path = public as $fn$
 begin
@@ -401,14 +399,14 @@ drop policy if exists "recettes_perso ecriture" on public.recettes_perso;
 drop policy if exists "recettes_perso modif" on public.recettes_perso;
 drop policy if exists "recettes_perso suppr" on public.recettes_perso;
 create policy "recettes_perso lecture" on public.recettes_perso for select to authenticated
-  using (utilisateur = auth.uid()::text or auth.jwt() ->> 'email' = 'jambou592@gmail.com' or donnees ->> 'partagee' = 'true');
+  using (utilisateur = auth.uid()::text or public.est_admin() or donnees ->> 'partagee' = 'true');
 create policy "recettes_perso ecriture" on public.recettes_perso for insert to authenticated
-  with check ((utilisateur = auth.uid()::text and not est_bloque(utilisateur) and mon_compte_existe()) or auth.jwt() ->> 'email' = 'jambou592@gmail.com');
+  with check ((utilisateur = auth.uid()::text and not est_bloque(utilisateur) and mon_compte_existe()) or public.est_admin());
 create policy "recettes_perso modif" on public.recettes_perso for update to authenticated
-  using ((utilisateur = auth.uid()::text and not est_bloque(utilisateur) and mon_compte_existe()) or auth.jwt() ->> 'email' = 'jambou592@gmail.com')
-  with check ((utilisateur = auth.uid()::text and not est_bloque(utilisateur) and mon_compte_existe()) or auth.jwt() ->> 'email' = 'jambou592@gmail.com');
+  using ((utilisateur = auth.uid()::text and not est_bloque(utilisateur) and mon_compte_existe()) or public.est_admin())
+  with check ((utilisateur = auth.uid()::text and not est_bloque(utilisateur) and mon_compte_existe()) or public.est_admin());
 create policy "recettes_perso suppr" on public.recettes_perso for delete to authenticated
-  using ((utilisateur = auth.uid()::text and not est_bloque(utilisateur) and mon_compte_existe()) or auth.jwt() ->> 'email' = 'jambou592@gmail.com');
+  using ((utilisateur = auth.uid()::text and not est_bloque(utilisateur) and mon_compte_existe()) or public.est_admin());
 
 -- 5) Photos de progression : bucket privé, chaque compte ne voit et ne
 --    gère que son propre dossier (<son id>/...).
@@ -465,16 +463,16 @@ do $$ declare r record; begin
   end loop;
 end $$;
 create policy "aliments lecture" on public.aliments_partages for select to authenticated
-  using (auth.jwt() ->> 'email' = 'jambou592@gmail.com'
+  using (public.est_admin()
          or (not coalesce(supprime, false) and (valide or createur_id::text = auth.uid()::text)));
 create policy "aliments creation" on public.aliments_partages for insert to authenticated
-  with check (auth.jwt() ->> 'email' = 'jambou592@gmail.com'
+  with check (public.est_admin()
               or (createur_id::text = auth.uid()::text and not valide and not coalesce(supprime, false)
                   and not est_bloque(auth.uid()::text) and mon_compte_existe()));
 create policy "aliments admin modif" on public.aliments_partages for update to authenticated
-  using (auth.jwt() ->> 'email' = 'jambou592@gmail.com') with check (auth.jwt() ->> 'email' = 'jambou592@gmail.com');
+  using (public.est_admin()) with check (public.est_admin());
 create policy "aliments admin suppr" on public.aliments_partages for delete to authenticated
-  using (auth.jwt() ->> 'email' = 'jambou592@gmail.com');
+  using (public.est_admin());
 
 create or replace function public.plier_texte(t text) returns text language sql immutable as $fn$
   select translate(lower(coalesce(t, '')), 'àâäáãåçéèêëíìîïñóòôöõúùûüýÿœæ', 'aaaaaaceeeeiiiinooooouuuuyyoa')
@@ -514,7 +512,7 @@ grant execute on function public.chercher_aliments(text, integer) to anon, authe
 create or replace function public.proteger_partage_recette()
 returns trigger language plpgsql security definer set search_path = public as $fn$
 begin
-  if coalesce(auth.jwt() ->> 'email', '') = 'jambou592@gmail.com' then return new; end if;
+  if public.est_admin() then return new; end if;
   if tg_op = 'INSERT' or not (old.donnees ? 'partagee') then
     new.donnees := new.donnees - 'partagee';
   else
@@ -576,7 +574,7 @@ do $$ declare r record; begin
     end loop;
     execute 'create policy "base lecture" on public.aliments_base for select to anon, authenticated using (true)';
     execute 'create policy "base admin" on public.aliments_base for all to authenticated '
-         || 'using (auth.jwt() ->> ''email'' = ''jambou592@gmail.com'') with check (auth.jwt() ->> ''email'' = ''jambou592@gmail.com'')';
+         || 'using (public.est_admin()) with check (public.est_admin())';
     -- Ancien nom gardé en lecture seule, le temps que tous les téléphones
     -- aient la nouvelle version de l'appli (mêmes droits que la table).
     if to_regclass('public.ciqual_aliments') is null then
@@ -603,7 +601,7 @@ create index if not exists journal_utilisateurs_date on public.journal_utilisate
 alter table public.journal_utilisateurs enable row level security;
 drop policy if exists "journal utilisateurs admin" on public.journal_utilisateurs;
 create policy "journal utilisateurs admin" on public.journal_utilisateurs for select to authenticated
-  using (auth.jwt() ->> 'email' = 'jambou592@gmail.com');
+  using (public.est_admin());
 
 create or replace function public.journaliser_utilisateur()
 returns trigger language plpgsql security definer set search_path = public as $fn$
@@ -615,7 +613,7 @@ declare
   v_action text;
 begin
   -- Les actions de l'admin sont déjà dans son propre journal.
-  if v_uid is null or coalesce(v_email, '') = 'jambou592@gmail.com' then
+  if v_uid is null or public.est_admin() then
     return coalesce(new, old);
   end if;
   if tg_table_name = 'aliments_partages' then
