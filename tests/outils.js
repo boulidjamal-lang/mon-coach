@@ -40,7 +40,7 @@ async function lancerNavigateur() {
 async function ouvrirAppli(navigateur, options = {}) {
   // Mouvement réduit par défaut : les chiffres s'affichent tout de suite à
   // leur valeur (pas de défilement), ce que les tests lisent aussitôt.
-  const ctx = await navigateur.newContext({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 1,
+  const ctx = await navigateur.newContext({ viewport: options.viewport || { width: 390, height: 844 }, deviceScaleFactor: options.echelle || 1,
     reducedMotion: options.animations ? 'no-preference' : 'reduce', serviceWorkers: 'block' });
   await ctx.route(/^https?:/, r => {
     const url = new URL(r.request().url());

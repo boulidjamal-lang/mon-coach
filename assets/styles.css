@@ -4930,3 +4930,222 @@ html.onglets-natifs body { padding-bottom: calc(24px + env(safe-area-inset-botto
 html.onglets-natifs body :is(.toast-annuler, .duo-invit) { bottom: calc(12px + env(safe-area-inset-bottom, 0px)) !important; }
 /* Barre d'onglets du site (avant iOS 26) : l'onglet choisi dans une bulle. */
 html.app-ios body .onglet.actif { background: var(--ios-remplir) !important; border-radius: 999px !important; }
+
+/* =====================================================================
+   REFONTE iOS — B. DESIGN SYSTEM (mission 17)
+   Toujours sous html.app-ios : le site ne change pas. Les jetons ci-dessous
+   fixent la langue de l'app iPhone — surfaces système nues, une seule
+   couleur vivante (le rose Anqā), l'échelle de SF Pro en points réels
+   (suivant la taille de texte du système), des chiffres héros arrondis,
+   des rayons continus, des ressorts courts. Les écrans (étapes C à E)
+   s'écrivent avec ces jetons, jamais avec des valeurs à part.
+   ===================================================================== */
+html.app-ios:root {
+  /* Échelle typographique d'iOS, en points réels × taille de texte du système. */
+  --t-grand-titre: calc(34px * var(--echelle-texte, 1));
+  --t-titre1: calc(28px * var(--echelle-texte, 1));
+  --t-titre2: calc(22px * var(--echelle-texte, 1));
+  --t-titre3: calc(20px * var(--echelle-texte, 1));
+  --t-corps: calc(17px * var(--echelle-texte, 1));
+  --t-note: calc(15px * var(--echelle-texte, 1));
+  --t-legende: calc(13px * var(--echelle-texte, 1));
+  --t-mini: calc(12px * var(--echelle-texte, 1)); /* plancher de lisibilité (audit, lot 10) */
+  --chiffres: ui-rounded, 'SF Pro Rounded', var(--police);
+  /* Rayons continus : grands blocs, cellules, pilules. */
+  --r-bloc: 24px; --r-cellule: 12px; --r-pilule: 999px;
+  /* Ressorts d'iOS : courts, sans rebond visible. */
+  --ressort: cubic-bezier(.2, .9, .3, 1); --duree-courte: 260ms; --duree: 380ms;
+  /* Le fond système, nu : ni quadrillage ni ambiance floutée. */
+  --ambiance: none; --grille: transparent;
+  /* Les macros, calmées d'un cran : elles ne rivalisent plus avec l'accent. */
+  --protein: #e4575f; --carbs: #df9a2d; --fat: #8a6ae0;
+}
+html.app-ios:root[data-theme="dark"] { --protein: #ff7b7b; --carbs: #f5b85c; --fat: #b39cf7; }
+html.app-ios:root body::before { display: none !important; }
+
+/* Typographie : grand titre 34 pt, sections 22 pt, corps 17, notes 15, légendes 13 ; jamais sous 11. */
+html.app-ios:root body .titre-ecran { font-size: var(--t-grand-titre) !important; font-weight: 700 !important; letter-spacing: -.012em !important; line-height: 1.12; }
+html.app-ios:root body :is(.titre-section, .vitrine-sec h3) { font-size: var(--t-titre2) !important; font-weight: 600 !important; letter-spacing: -.005em !important; }
+html.app-ios:root body :is(.modal-entete h3, .feuille-titre) { font-size: var(--t-titre3) !important; font-weight: 600 !important; }
+html.app-ios:root body :is(.note, .note-explicative, .food-meta, .carte-stats-ligne, .coach-nb) { font-size: var(--t-legende) !important; line-height: 1.35; }
+html.app-ios:root body :is(.btn, .feuille-action, .ligne-reglage, .food-name, .meal-title, .pilule) { font-size: var(--t-corps); }
+html.app-ios:root body :is(.pilule, .coach-action, .segment button) { font-size: var(--t-note) !important; }
+html.app-ios:root body :is(#total-kcals, .reste-kcal, .hx-geant, .cardio-gros, .pg-tuile b, .carte-stats-valeur b, .sh-chrono, .repos-chrono, .bilan-geant b) {
+  font-family: var(--chiffres) !important; font-weight: 700 !important; font-variant-numeric: tabular-nums; }
+
+/* Boutons : l'action principale est le seul objet rose plein d'un écran ;
+   le secondaire, un remplissage teinté ; tout bouton répond par un léger retrait. */
+html.app-ios:root body .btn-primary { background: var(--ios-accent) !important; color: #fff !important; font-weight: 600 !important; }
+html.app-ios:root body .btn-primary:hover { background: var(--ios-accent) !important; filter: brightness(1.04); }
+html.app-ios:root body :is(.btn-secondaire, .btn-analysis) { background: var(--ios-remplir) !important; color: var(--text) !important; font-weight: 600 !important; }
+html.app-ios:root body .btn-analysis { color: var(--ios-accent) !important; }
+html.app-ios:root body :is(.btn, .pilule, .feuille-action, .onglet, .segment button, .coach-action, .action-tuile, .obj-tuile) {
+  transition: transform var(--duree-courte) var(--ressort), background-color 160ms ease, color 160ms ease, opacity 160ms ease; }
+html.app-ios:root body :is(.btn, .pilule, .feuille-action, .coach-action, .action-tuile, .obj-tuile):active { transform: scale(.97); }
+
+/* Surfaces : grands blocs et cellules aux rayons continus, séparateurs système. */
+html.app-ios:root body :is(.summary-card, .coach-carte, .pg-carte, .fitness-card, .carte-liste, .carte-stats, .bloc-verre, .vitrine) { border-radius: var(--r-bloc); }
+html.app-ios:root body .ligne-reglage { border-radius: 0; }
+html.app-ios:root body :is(.food-item, .ligne-liste) { border-radius: var(--r-cellule); }
+
+/* Grand titre repliable : passé sous la barre d'état, un titre compact en
+   matériau prend le relais (html.titre-replie, voir onScrollAppBar). Repas
+   garde sa bande du haut (app-bar) ; les fenêtres ouvertes le cachent. */
+html.app-ios body .titre-compact {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 60;
+  height: calc(env(safe-area-inset-top, 0px) + 44px); padding-top: env(safe-area-inset-top, 0px);
+  display: grid; place-items: center; font-size: var(--t-corps); font-weight: 600; color: var(--text);
+  background: var(--ios-verre); -webkit-backdrop-filter: blur(20px) saturate(1.8); backdrop-filter: blur(20px) saturate(1.8);
+  box-shadow: 0 .5px 0 var(--ligne); opacity: 0; transform: translateY(-8px); pointer-events: none;
+  transition: opacity var(--duree-courte) var(--ressort), transform var(--duree-courte) var(--ressort); }
+html.app-ios.titre-replie body:not(.sur-repas):not(.couche-ouverte) .titre-compact { opacity: 1; transform: none; }
+html.app-ios.titre-replie body:not(.sur-repas) .bord-haut { opacity: 0; }
+
+/* Menu contextuel (appui long) : un menu d'iOS en matériau, rangées de
+   44 pt, séparateurs fins, la dernière action en rouge si destructive. */
+html.app-ios body .menu-ctx-voile { position: fixed; inset: 0; z-index: 1300; background: rgba(0,0,0,.18); -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px);
+  animation: menuVoileIn var(--duree-courte) ease; }
+html.app-ios body .menu-ctx { position: fixed; z-index: 1301; min-width: 250px; max-width: min(320px, calc(100vw - 32px)); padding: 0; margin: 0; list-style: none;
+  border-radius: 14px; overflow: hidden; background: var(--ios-verre); -webkit-backdrop-filter: blur(30px) saturate(1.8); backdrop-filter: blur(30px) saturate(1.8);
+  box-shadow: 0 18px 50px -12px rgba(0,0,0,.45), inset 0 0 0 .5px rgba(255,255,255,.18); transform-origin: var(--menu-origine, top left);
+  animation: menuIn var(--duree-courte) var(--ressort); }
+html.app-ios body .menu-ctx-titre { padding: 10px 16px 8px; font-size: var(--t-legende); color: var(--text-muted); box-shadow: inset 0 -.5px 0 var(--ligne); }
+html.app-ios body .menu-ctx button { display: flex; align-items: center; justify-content: space-between; gap: 14px; width: 100%; min-height: 44px; padding: 0 16px;
+  border: 0; background: none; font: inherit; font-size: var(--t-corps); color: var(--text); text-align: left; cursor: pointer; box-shadow: inset 0 -.5px 0 var(--ligne); }
+html.app-ios body .menu-ctx li:last-child button { box-shadow: none; }
+html.app-ios body .menu-ctx button:active { background: var(--ios-remplir); }
+html.app-ios body .menu-ctx button.destructif { color: var(--alerte); }
+html.app-ios body .menu-ctx button .icone-ui { width: 20px; height: 20px; flex: none; color: currentColor; }
+html.app-ios body .menu-ctx-cible { position: relative; z-index: 1302; }
+@keyframes menuIn { from { opacity: 0; transform: scale(.92); } to { opacity: 1; transform: none; } }
+@keyframes menuVoileIn { from { opacity: 0; } to { opacity: 1; } }
+
+/* Mouvement : feuilles, fenêtres et écrans sur le ressort d'iOS. */
+html.app-ios body .feuille-contenu { animation: feuilleIn var(--duree) var(--ressort); border-radius: var(--r-bloc) var(--r-bloc) 0 0; }
+html.app-ios body .modal-content { animation: modalIn var(--duree) var(--ressort); }
+html.app-ios body .ecran { animation-timing-function: var(--ressort); animation-duration: var(--duree-courte); }
+@media (prefers-reduced-motion: reduce) {
+  html.app-ios body :is(.menu-ctx, .menu-ctx-voile, .titre-compact) { animation: none !important; transition: none !important; }
+}
+
+/* =====================================================================
+   REFONTE iOS — C. REPAS
+   Un seul héros, sans carte : les anneaux et ce qu'il reste. Le coach en
+   bandeau discret, puis le journal des repas en listes groupées (le cœur
+   de l'écran remonte), puis pas, eau et poids en trois tuiles fixes à la
+   place de la roulette. Toujours sous html.app-ios.
+   ===================================================================== */
+html.app-ios body #ecran-repas.actif { display: flex; flex-direction: column; }
+html.app-ios body #ecran-repas > * { order: 5; }
+html.app-ios body #ecran-repas > :is(.titre-ecran, #annonce, #premiers-pas) { order: 0; }
+html.app-ios body #ecran-repas > .summary-card { order: 1; }
+html.app-ios body #ecran-repas > #coach-jour { order: 2; }
+html.app-ios body #ecran-repas > #meals-container { order: 3; }
+html.app-ios body #ecran-repas > #cartes-stats-repas { order: 4; }
+
+/* Héros : plus de carte, le fond système ; un seul chiffre héros (le reste),
+   le centre des anneaux dit la consommation sans crier. */
+html.app-ios body #ecran-repas .summary-card { background: none !important; box-shadow: none !important; padding: 4px 2px 2px !important; margin: 0 0 8px; border-radius: 0; text-align: left; }
+html.app-ios body #ecran-repas .heros { grid-template-columns: 136px minmax(0, 1fr); gap: 18px; align-items: center; }
+html.app-ios body #ecran-repas .anneaux { width: 136px; height: 136px; }
+html.app-ios body #ecran-repas .anneaux .anneau-val { filter: none; }
+html.app-ios body #ecran-repas .anneaux-centre h1 { font-size: var(--t-titre3) !important; font-weight: 600 !important; color: var(--text) !important; margin: 0 !important; letter-spacing: -.01em !important; }
+html.app-ios body #ecran-repas .anneaux-centre small { font-size: var(--t-mini) !important; letter-spacing: .04em; }
+html.app-ios body #ecran-repas .heros-droite .libelle { font-size: var(--t-legende) !important; letter-spacing: 0 !important; text-transform: none !important; font-weight: 500 !important; color: var(--text-muted); }
+html.app-ios body #ecran-repas .reste-kcal { font-size: var(--t-grand-titre) !important; font-family: var(--chiffres) !important; font-weight: 700 !important; letter-spacing: -.02em !important; line-height: 1.05; margin: 2px 0 6px; }
+html.app-ios body #ecran-repas .reste-kcal em { font-size: var(--t-note) !important; font-style: normal; font-weight: 500 !important; color: var(--text-muted); letter-spacing: 0 !important; }
+html.app-ios body #ecran-repas .macros-bar { margin-top: 8px; display: grid; gap: 2px; }
+html.app-ios body #ecran-repas .macro-item { min-height: 30px; padding: 0; }
+html.app-ios body #ecran-repas .macro-lbl { font-size: var(--t-note) !important; font-weight: 500 !important; }
+html.app-ios body #ecran-repas .macro-val { font-size: var(--t-note) !important; font-variant-numeric: tabular-nums; }
+html.app-ios body #ecran-repas .macro-val b { font-weight: 600; }
+html.app-ios body #ecran-repas .detail-nutri { margin-top: 8px; }
+html.app-ios body #ecran-repas .seance-prevue-heros { font-size: var(--t-legende) !important; }
+
+/* Coach : un bandeau teinté, calme, l'action principale en rose. */
+html.app-ios body #ecran-repas .coach-carte { padding: 12px 14px; margin: 6px 0 16px; border-radius: 20px; gap: 12px; align-items: flex-start;
+  background: color-mix(in srgb, var(--ios-accent) 9%, var(--s1)) !important; box-shadow: none !important; }
+html.app-ios body #ecran-repas .coach-carte::before, html.app-ios body #ecran-repas .coach-carte::after { display: none !important; }
+html.app-ios body #ecran-repas .coach-icone { width: 32px; height: 32px; border-radius: 10px; background: var(--ios-accent) !important; box-shadow: none !important; margin-top: 2px; }
+html.app-ios body #ecran-repas .coach-icone .icone-ui { width: 17px; height: 17px; }
+html.app-ios body #ecran-repas .coach-carte small { background: none !important; -webkit-background-clip: initial !important; -webkit-text-fill-color: var(--ios-accent) !important; color: var(--ios-accent) !important;
+  font-size: var(--t-mini) !important; letter-spacing: .06em !important; }
+html.app-ios body #ecran-repas .coach-carte p { font-size: var(--t-note) !important; line-height: 1.38; }
+html.app-ios body #ecran-repas .coach-actions { margin-top: 8px; }
+html.app-ios body #ecran-repas .coach-action { background: var(--ios-accent) !important; color: #fff !important; border-radius: 999px !important; border: 0 !important; }
+html.app-ios body #ecran-repas .coach-plus { font-size: var(--t-note) !important; }
+
+/* Pas, eau, poids : trois tuiles fixes, le même gabarit ; la roulette et ses inclinaisons ne s'appliquent plus. */
+html.app-ios body #ecran-repas #cartes-stats-repas { display: grid !important; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; margin: 2px 0 18px; padding: 0;
+  overflow: visible; container-type: normal; }
+html.app-ios body #ecran-repas #cartes-stats-repas::before, html.app-ios body #ecran-repas #cartes-stats-repas::after { display: none; }
+html.app-ios body #ecran-repas #cartes-stats-repas > * { flex: none; transform: none !important; opacity: 1 !important; min-width: 0; margin: 0 !important; padding: 12px 12px 12px !important;
+  border-radius: 18px; background: var(--s1) !important; box-shadow: none !important; display: block !important; min-height: 104px; }
+html.app-ios body #ecran-repas #cartes-stats-repas .tuile-tete { display: flex; align-items: center; gap: 6px; font-size: var(--t-legende); color: var(--text-muted); margin-bottom: 6px; }
+html.app-ios body #ecran-repas #cartes-stats-repas .tuile-tete > :not(.tuile-icone) { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+html.app-ios body #ecran-repas #cartes-stats-repas .tuile-icone { width: 22px; height: 22px; flex: none; }
+html.app-ios body #ecran-repas #cartes-stats-repas .carte-stats-valeur { margin: 0; gap: 4px; flex-wrap: wrap; }
+html.app-ios body #ecran-repas #cartes-stats-repas .carte-stats-valeur b { font-size: var(--t-titre2) !important; font-family: var(--chiffres) !important; font-weight: 700 !important; }
+html.app-ios body #ecran-repas #cartes-stats-repas .carte-stats-valeur span { font-size: var(--t-legende) !important; }
+html.app-ios body #ecran-repas #cartes-stats-repas :is(.carte-stats-ligne, .carte-stats-graph, svg.tuile-graph, .carte-stats-cases, .carte-stats-pied, .carte-stats-chevron) { display: none !important; }
+html.app-ios body #ecran-repas #cartes-stats-repas > svg, html.app-ios body #ecran-repas #cartes-stats-repas > * > svg { display: none !important; }
+/* L'eau : la gourde en petit, la quantité, un seul « + » (250 ml) ; l'appui long donne les autres quantités. */
+html.app-ios body #ecran-repas #cartes-stats-repas > #bloc-eau { display: grid !important; grid-template-columns: 1fr; grid-template-rows: auto auto auto; gap: 0 !important; }
+html.app-ios body #ecran-repas #cartes-stats-repas > #bloc-eau .gourde { display: none !important; }
+html.app-ios body #ecran-repas #cartes-stats-repas > #bloc-eau h3 { grid-column: 1; grid-row: 1; margin: 0 0 6px !important; font-size: var(--t-legende) !important; font-weight: 400 !important; text-transform: none !important; letter-spacing: 0 !important; color: var(--text-muted); }
+html.app-ios body #ecran-repas #cartes-stats-repas > #bloc-eau .eau-texte { grid-column: 1; grid-row: 2; font-size: var(--t-titre2) !important; font-family: var(--chiffres) !important; font-weight: 700 !important; line-height: 1.1; }
+html.app-ios body #ecran-repas #cartes-stats-repas > #bloc-eau .eau-ajout { top: 10px; right: 10px; }
+html:root.app-ios body #ecran-repas #cartes-stats-repas > #bloc-eau .eau-boutons { grid-column: 1; grid-row: 3; justify-content: flex-start !important; margin: 8px 0 0 !important; }
+html.app-ios body #ecran-repas #cartes-stats-repas > #bloc-eau .eau-boutons .btn-icone:not(:first-child) { display: none !important; }
+html.app-ios body #ecran-repas #cartes-stats-repas > #bloc-eau .eau-boutons .btn-icone:first-child { width: 34px !important; height: 34px !important; padding: 0 !important; border-radius: 50% !important;
+  font-size: 22px !important; line-height: 1; font-weight: 500; background: var(--ios-remplir) !important; color: var(--ios-accent) !important; display: grid; place-items: center; }
+
+/* Journal des repas : des listes groupées, à la Réglages. */
+html.app-ios body #meals-container .meal-card { padding: 0 !important; margin-bottom: 14px; border-radius: var(--r-bloc) !important; background: var(--s1) !important; box-shadow: none !important; transform: none !important; overflow: hidden; }
+html.app-ios body #meals-container .meal-header { padding: 12px 12px 10px 14px; margin: 0; border-bottom: 0; }
+html.app-ios body #meals-container .repas-bascule { gap: 12px; }
+html.app-ios body #meals-container .meal-title { font-size: var(--t-corps) !important; font-weight: 600 !important; }
+html.app-ios body #meals-container .meal-title small { font-size: var(--t-legende) !important; font-weight: 400; color: var(--text-muted); }
+html.app-ios body #meals-container .meal-kcals { background: none !important; color: var(--text-muted) !important; font-size: var(--t-note) !important; padding: 0 !important; font-family: var(--chiffres); font-weight: 600 !important; }
+html.app-ios body #meals-container .repas-icone { width: 34px; height: 34px; border-radius: 10px; box-shadow: none; }
+html.app-ios body #meals-container .repas-icone .icone-ui { width: 18px; height: 18px; }
+html.app-ios body #meals-container .repas-ajouter { width: 30px; height: 30px; background: var(--ios-remplir) !important; color: var(--ios-accent) !important; font-size: 21px; font-weight: 500; }
+html.app-ios body #meals-container .repas-equilibre { margin: 0; height: 3px; border-radius: 0; gap: 0; }
+html.app-ios body #meals-container .repas-macros { margin: 8px 14px 0; font-size: var(--t-legende) !important; font-weight: 400 !important; }
+html.app-ios body #meals-container .food-list { padding: 4px 0 4px; }
+html.app-ios body #meals-container .food-item { padding: 0 !important; border-bottom: 0 !important; border-radius: 0 !important; }
+html.app-ios body #meals-container .food-item-ligne { min-height: 48px; padding: 7px 14px; gap: 12px; }
+html.app-ios body #meals-container .food-item + .food-item .food-item-ligne { box-shadow: inset 0 .5px 0 var(--ligne); }
+html.app-ios body #meals-container .food-item > :not(.food-item-ligne) { margin-left: 14px; margin-right: 14px; }
+html.app-ios body #meals-container .food-initiale { width: 30px; height: 30px; border-radius: 9px; flex: none; }
+html.app-ios body #meals-container .food-name { font-size: var(--t-corps) !important; font-weight: 400 !important; }
+html.app-ios body #meals-container .food-detail { font-size: var(--t-legende) !important; }
+html.app-ios body #meals-container .food-kcal { font-size: var(--t-note) !important; font-weight: 500 !important; color: var(--text-muted); font-variant-numeric: tabular-nums; }
+html.app-ios body #meals-container .food-info:active { background: none; }
+html.app-ios body #meals-container .food-item::after { top: 0 !important; border-radius: 0 !important; }
+html.app-ios body #meals-container .meal-card--vide { display: flex; align-items: center; gap: 12px; padding: 11px 14px !important; }
+html.app-ios body #meals-container .meal-card--vide .meal-title { color: var(--text-muted) !important; font-weight: 400 !important; }
+html.app-ios body #meals-container .repas-plus { margin-left: auto; color: var(--ios-accent); font-size: 22px; font-weight: 500; }
+
+
+/* Tuiles Repas : l'icône au-dessus du titre (plus de titre coupé), la valeur en bas ; l'eau garde son « + » dans l'angle. */
+html.app-ios body #ecran-repas #cartes-stats-repas > * { position: relative; display: flex !important; flex-direction: column; justify-content: space-between; }
+html.app-ios body #ecran-repas #cartes-stats-repas .tuile-tete { display: grid; grid-template-columns: 1fr; gap: 8px; align-items: start; margin-bottom: 10px; }
+html.app-ios body #ecran-repas #cartes-stats-repas .tuile-tete > :not(.tuile-icone) { white-space: normal; overflow: visible; line-height: 1.2; }
+html.app-ios body #ecran-repas #cartes-stats-repas .carte-stats-valeur { margin-top: auto; }
+html.app-ios body #ecran-repas #cartes-stats-repas > #bloc-eau { display: flex !important; flex-direction: column; justify-content: space-between; }
+html.app-ios body #ecran-repas #cartes-stats-repas > #bloc-eau h3 { margin: 0 0 auto !important; padding-top: 0; }
+html.app-ios body #ecran-repas #cartes-stats-repas > #bloc-eau .eau-texte { font-size: min(var(--t-titre3), 4.6vw) !important; white-space: nowrap; margin-top: auto; padding-right: 2px; }
+html:root.app-ios body #ecran-repas #cartes-stats-repas > #bloc-eau .eau-boutons { position: absolute; top: 10px; right: 10px; margin: 0 !important; }
+
+/* Tuile de l'eau : même gabarit que les deux autres (icône, titre court « Eau », valeur en bas, « + » dans l'angle). */
+html.app-ios body #ecran-repas #cartes-stats-repas > #bloc-eau h3 { display: grid; grid-template-columns: 1fr; gap: 8px; margin: 0 0 10px !important; }
+html.app-ios body #ecran-repas #cartes-stats-repas > #bloc-eau h3::before, html.app-ios body #ecran-repas #cartes-stats-repas > #bloc-eau h3::after { content: ''; grid-area: 1 / 1; width: 22px; height: 22px; }
+html.app-ios body #ecran-repas #cartes-stats-repas > #bloc-eau h3::before { border-radius: 7px; background: var(--ios-remplir); }
+html.app-ios body #ecran-repas #cartes-stats-repas > #bloc-eau h3::after { -webkit-mask: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='M12 2.7c3.3 4 6 7.5 6 11.1a6 6 0 0 1-12 0c0-3.6 2.7-7.1 6-11.1z'/></svg>") center / 14px 14px no-repeat; mask: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='M12 2.7c3.3 4 6 7.5 6 11.1a6 6 0 0 1-12 0c0-3.6 2.7-7.1 6-11.1z'/></svg>") center / 14px 14px no-repeat; background-color: var(--text-muted); }
+html.app-ios body #ecran-repas #cartes-stats-repas > #bloc-eau h3 > span { grid-row: 2; }
+html.app-ios body #ecran-repas #cartes-stats-repas > #bloc-eau { align-items: stretch !important; }
+html.app-ios body #ecran-repas #cartes-stats-repas > #bloc-eau h3 { justify-items: start; text-align: left; margin-right: auto !important; }
+html.app-ios body #ecran-repas #cartes-stats-repas > #bloc-eau .eau-texte { margin-top: auto; }
+html:root.app-ios body #ecran-repas #cartes-stats-repas > #bloc-eau .eau-boutons { top: 8px; right: 8px; }
+

@@ -1373,6 +1373,153 @@ test("feuille de style externe (lot 14) : le CSS vit dans assets/styles.css, la 
   assert.match(r.police, /Inter|Manrope|system-ui|-apple-system/);
 }));
 
+test("app iOS (refonte B) : fond système nu, échelle SF, bouton principal en accent, grand titre replié en barre compacte, menu contextuel à l'appui long, cran haptique des sélecteurs", () => avecAppli({ natif: true }, async ({ page }) => {
+  const r = await page.evaluate(async () => {
+    const pause = ms => new Promise(ok => setTimeout(ok, ms));
+    const res = {};
+    const racine = getComputedStyle(document.documentElement);
+    res.fond = getComputedStyle(document.body, '::before').display;
+    res.proteine = racine.getPropertyValue('--protein').trim();
+    allerA('seance'); renderApp();
+    res.titre = getComputedStyle(document.querySelector('#ecran-seance .titre-ecran')).fontSize;
+    const btn = document.querySelector('.btn-primary');
+    res.primaire = btn ? getComputedStyle(btn).backgroundColor : null;
+    // Le grand titre passé sous la barre d'état : le titre compact prend le relais, pas sur Repas, pas sous une fenêtre.
+    majTitreReplie(300); await pause(60);
+    const compact = document.getElementById('titre-compact');
+    res.replie = [document.documentElement.classList.contains('titre-replie'), compact.textContent, getComputedStyle(compact).opacity];
+    allerA('repas'); renderApp(); majTitreReplie(300); await pause(60);
+    res.replieRepas = [compact.textContent, getComputedStyle(compact).opacity];
+    majTitreReplie(0);
+    res.deplie = document.documentElement.classList.contains('titre-replie');
+    // Menu contextuel : appui long sur un aliment → dupliquer, puis supprimer.
+    const jour = todayStr(); const d = getDay(jour);
+    d.meals.lunch = [{ name: 'Riz', grams: 150, kcal: 195, p: 4, c: 42, f: 1 }]; saveData(jour); renderMeals(d);
+    window.__appelsNatifs.length = 0;
+    // La liste se redessine à chaque action : la ligne se relit à chaque appui.
+    const appui = async () => { const ligne = document.querySelector('#meals-container .food-item-ligne'); const rect = ligne.getBoundingClientRect(); ligne.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, clientX: rect.left + 30, clientY: rect.top + 18, pointerId: 1, button: 0 })); await pause(560); };
+    await appui();
+    const menu = document.querySelector('.menu-ctx');
+    res.menu = menu ? [...menu.querySelectorAll('button')].map(b => b.textContent.trim()) : null;
+    res.menuTitre = menu && menu.querySelector('.menu-ctx-titre').textContent;
+    res.haptiqueMenu = window.__appelsNatifs.filter(a => a[0] === 'Haptics').map(a => a[1] + ':' + (a[2] && a[2].style || a[2] && a[2].type || ''));
+    menu.querySelectorAll('button')[1].click(); await pause(50);
+    res.apresDupliquer = [getDay(jour).meals.lunch.length, !!document.querySelector('.menu-ctx')];
+    // Un appui trop court ou qui bouge n'ouvre rien.
+    const l2 = document.querySelector('#meals-container .food-item-ligne');
+    const rect = l2.getBoundingClientRect();
+    l2.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, clientX: rect.left + 30, clientY: rect.top + 18, pointerId: 1, button: 0 }));
+    document.dispatchEvent(new PointerEvent('pointermove', { bubbles: true, clientX: rect.left + 60, clientY: rect.top + 18, pointerId: 1 }));
+    await pause(560);
+    res.bouge = !!document.querySelector('.menu-ctx');
+    await appui();
+    document.querySelector('.menu-ctx button.destructif').click(); await pause(50);
+    res.apresSupprimer = getDay(jour).meals.lunch.length;
+    // Le voile ferme le menu ; le cran haptique sur un sélecteur.
+    await appui(); document.querySelector('.menu-ctx-voile').dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, cancelable: true }));
+    res.ferme = !document.querySelector('.menu-ctx');
+    // Le toucher qui a fermé le menu ne touche pas ce qu'il y avait dessous ; le suivant, si.
+    const info = document.querySelector('#meals-container .food-info'); info.click(); await pause(30);
+    res.clicAvale = !document.querySelector('#poids-modal.show, #modal-poids.show, .modal.show');
+    window.__appelsNatifs.length = 0;
+    const segment = document.querySelector('#seance-mode-nav button'); if (segment) segment.click();
+    res.haptiqueSegment = window.__appelsNatifs.filter(a => a[0] === 'Haptics').map(a => a[1]);
+    return res;
+  });
+  assert.equal(r.fond, 'none', 'plus de quadrillage dans l\'app');
+  assert.ok(['#e4575f', '#ff7b7b'].includes(r.proteine), r.proteine);
+  assert.equal(r.titre, '34px', 'grand titre de 34 pt');
+  assert.equal(r.primaire, 'rgb(214, 36, 110)', 'bouton principal en accent');
+  assert.deepEqual(r.replie, [true, 'Activité', '1']);
+  assert.deepEqual(r.replieRepas, ['Repas', '0'], 'Repas garde sa bande du haut');
+  assert.equal(r.deplie, false, 'déplié à 0');
+  assert.deepEqual(r.menu, ['Modifier la quantité', 'Dupliquer', 'Supprimer'], 'le menu et ses trois actions');
+  assert.equal(r.menuTitre, 'Riz', 'le menu dit quel aliment');
+  assert.deepEqual(r.haptiqueMenu, ['impact:MEDIUM'], 'un impact moyen à l\'ouverture');
+  assert.deepEqual(r.apresDupliquer, [2, false], 'dupliquer : deux aliments, menu fermé');
+  assert.equal(r.bouge, false, 'un doigt qui bouge n\'ouvre pas le menu');
+  assert.equal(r.apresSupprimer, 1, 'supprimer');
+  assert.equal(r.ferme, true, 'le voile ferme le menu');
+  assert.equal(r.clicAvale, true, 'le toucher qui ferme le menu ne touche pas ce qu\'il y a dessous');
+  assert.ok(r.haptiqueSegment.includes('selectionChanged'), r.haptiqueSegment.join(','));
+}));
+
+test("sur le web, la refonte iOS ne change rien : quadrillage, boutons et aliments comme avant, pas de menu contextuel", () => avecAppli({}, async ({ page }) => {
+  const r = await page.evaluate(async () => {
+    const pause = ms => new Promise(ok => setTimeout(ok, ms));
+    const jour = todayStr(); const d = getDay(jour);
+    d.meals.lunch = [{ name: 'Riz', grams: 150, kcal: 195, p: 4, c: 42, f: 1 }]; saveData(jour); renderMeals(d);
+    const ligne = document.querySelector('#meals-container .food-item-ligne');
+    const rect = ligne.getBoundingClientRect();
+    ligne.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, clientX: rect.left + 30, clientY: rect.top + 18, pointerId: 1, button: 0 }));
+    await pause(560);
+    allerA('seance'); majTitreReplie(300);
+    return { fond: getComputedStyle(document.body, '::before').display, menu: !!document.querySelector('.menu-ctx'), replie: document.documentElement.classList.contains('titre-replie'),
+      compact: getComputedStyle(document.getElementById('titre-compact')).display, proteine: getComputedStyle(document.documentElement).getPropertyValue('--protein').trim() };
+  });
+  assert.equal(r.fond, 'block');
+  assert.equal(r.menu, false);
+  assert.equal(r.replie, false);
+  assert.ok(['#ff7070', '#e0565c', '#f87171'].includes(r.proteine) || r.proteine !== '#e4575f', 'les macros du site inchangées : ' + r.proteine);
+}));
+
+test("app iOS (refonte C) : Repas en héros nu, coach en bandeau, journal en listes groupées puis trois tuiles fixes ; une tuile s'ouvre au toucher, l'eau répond à l'appui long ; le site garde sa roulette", () => avecAppli({ natif: true }, async ({ page }) => {
+  const r = await page.evaluate(async () => {
+    const pause = ms => new Promise(ok => setTimeout(ok, ms));
+    const jour = todayStr(); const d = getDay(jour);
+    d.meals.breakfast = [{ name: 'Flocons', grams: 60, kcal: 220, p: 8, c: 36, f: 4 }, { name: 'Lait', grams: 250, unite: 'ml', kcal: 115, p: 8, c: 12, f: 4 }];
+    d.eauMl = 500; saveData(jour); allerA('repas'); renderApp(); await pause(80);
+    const ecran = document.getElementById('ecran-repas');
+    const ordre = id => getComputedStyle(document.getElementById(id)).order;
+    const res = { affichage: getComputedStyle(ecran).display, ordres: [ordre('coach-jour'), ordre('meals-container'), ordre('cartes-stats-repas')].map(Number),
+      heros: getComputedStyle(document.querySelector('#ecran-repas .summary-card')).backgroundColor,
+      reste: getComputedStyle(document.getElementById('reste-kcals')).fontSize,
+      tuiles: getComputedStyle(document.getElementById('cartes-stats-repas')).gridTemplateColumns.split(' ').length,
+      roulette: [...document.querySelectorAll('#cartes-stats-repas > *')].map(e => getComputedStyle(e).transform),
+      ligne: document.querySelector('#meals-container .food-item-ligne').getBoundingClientRect().height,
+      coachHalo: getComputedStyle(document.getElementById('coach-jour'), '::before').display };
+    // Toucher la tuile des pas ouvre la saisie (plus d'interception de la roulette).
+    document.getElementById('carte-stats-pas').click(); await pause(60);
+    res.saisie = [...document.querySelectorAll('.feuille.show, .modal.show')].map(e => e.id);
+    document.querySelectorAll('.feuille.show, .modal.show').forEach(m => m.classList.remove('show')); document.body.classList.remove('couche-ouverte');
+    // L'eau : un « + » visible, l'appui long propose les autres quantités.
+    const boutons = [...document.querySelectorAll('#bloc-eau .eau-boutons .btn-icone')].map(b => getComputedStyle(b).display);
+    res.eauBoutons = boutons;
+    const tuile = document.getElementById('bloc-eau'); const rect = tuile.getBoundingClientRect();
+    tuile.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, clientX: rect.left + 20, clientY: rect.top + 20, pointerId: 1, button: 0 })); await pause(560);
+    const menu = document.querySelector('.menu-ctx');
+    res.menuEau = menu ? [...menu.querySelectorAll('button')].map(b => b.textContent.trim()) : null;
+    const avant = Number(getDay(jour).eauMl) || 0;
+    menu.querySelectorAll('button')[1].click(); await pause(60);
+    res.eau = [avant, Number(getDay(jour).eauMl) || 0];
+    return res;
+  });
+  assert.equal(r.affichage, 'flex');
+  assert.deepEqual(r.ordres, [2, 3, 4], 'coach, puis repas, puis tuiles');
+  assert.equal(r.heros, 'rgba(0, 0, 0, 0)', 'le héros n\'est plus une carte');
+  assert.equal(r.reste, '34px', 'le reste est le chiffre héros');
+  assert.equal(r.tuiles, 3, 'trois tuiles');
+  assert.ok(r.roulette.every(tr => tr === 'none'), 'plus d\'inclinaison : ' + r.roulette.join(' | '));
+  assert.ok(r.ligne >= 44, 'rangée d\'aliment d\'au moins 44 pt : ' + r.ligne);
+  assert.equal(r.coachHalo, 'none');
+  assert.ok(r.saisie.length >= 1, 'la tuile des pas ouvre la saisie : ' + r.saisie.join(','));
+  assert.deepEqual(r.eauBoutons.slice(1), ['none', 'none', 'none', 'none']);
+  assert.notEqual(r.eauBoutons[0], 'none');
+  assert.deepEqual(r.menuEau, ['+ 250 ml', '+ 500 ml', '+ 1 L', 'Autre quantité…', 'Retirer 250 ml']);
+  assert.deepEqual(r.eau, [500, 1000]);
+}));
+
+test("sur le web, Repas garde sa roulette de cartes et son héros en carte", () => avecAppli({}, async ({ page }) => {
+  const r = await page.evaluate(() => {
+    allerA('repas'); renderApp();
+    return { affichage: getComputedStyle(document.getElementById('ecran-repas')).display, roulette: getComputedStyle(document.getElementById('cartes-stats-repas')).display,
+      heros: getComputedStyle(document.querySelector('#ecran-repas .summary-card')).backgroundColor, eauBoutons: [...document.querySelectorAll('#bloc-eau .eau-boutons .btn-icone')].filter(b => getComputedStyle(b).display !== 'none').length };
+  });
+  assert.equal(r.affichage, 'block');
+  assert.equal(r.roulette, 'flex');
+  assert.equal(r.eauBoutons, 5);
+}));
+
 test("IA par le serveur : sans clé personnelle, l'IA reste disponible (photo comprise) et chaque demande part avec sa tâche ; l'administration ne distribue plus de clé", () => avecAppli({}, async ({ page }) => {
   const r = await page.evaluate(async () => {
     const appels = [];
@@ -4588,17 +4735,17 @@ test("bande unie en haut (contre le flou d'iOS) : couleur du fond, absente du Pr
   await page.evaluate(() => document.documentElement.classList.remove('spl-actif'));
 }));
 
-test("app iPhone : pas de barre de titre en haut, même une fois la page défilée ; réglages marche/arrêt en interrupteurs ; pas de sélection de texte hors des champs", () => avecAppli({ natif: true }, async ({ page }) => {
-  // Seule la bande du haut (sous l'heure) reste : rien d'autre ne se pose en haut de l'écran au défilement.
-  await page.evaluate(() => { document.body.style.minHeight = '4000px'; allerA('seance'); window.scrollTo(0, 700); });
+test("app iPhone : une fois la page défilée, seul le titre compact de l'écran se pose en haut (refonte iOS B) ; réglages marche/arrêt en interrupteurs ; pas de sélection de texte hors des champs", () => avecAppli({ natif: true }, async ({ page }) => {
+  // Au défilement, le grand titre passe sous la barre d'état et le titre compact prend le relais : rien d'autre en haut.
+  await page.evaluate(() => { document.body.style.minHeight = '4000px'; allerA('seance'); window.scrollTo(0, 700); majTitreReplie(700); });
   await page.waitForTimeout(200);
   const enHaut = await page.evaluate(() => [...document.querySelectorAll('body *')].filter(e => {
     const st = getComputedStyle(e);
     if (st.position !== 'fixed' || st.display === 'none' || st.visibility === 'hidden' || +st.opacity === 0) return false;
     const r = e.getBoundingClientRect();
     return r.height > 0 && r.height < 200 && r.top < 60 && r.bottom > 0;
-  }).map(e => e.className));
-  assert.deepEqual(enHaut, []);   // plus rien en haut : ni barre de titre, ni bande
+  }).map(e => e.className + ':' + e.textContent.trim()));
+  assert.deepEqual(enHaut, ['titre-compact:Activité']);   // le titre compact, et rien d'autre : ni barre, ni bande
   await page.evaluate(() => allerA('stats'));
   const r = await page.evaluate(() => {
     const largeur = id => getComputedStyle(document.getElementById(id)).width;
