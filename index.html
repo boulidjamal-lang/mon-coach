@@ -249,6 +249,9 @@
          — cette zone appartient à <html>, pas à <body> qui porte déjà le
          fond ailleurs, d'où le bandeau visible même quand le thème est clair. */
       background: var(--bg);
+      /* L'animation d'entrée d'un écran le décale de 28 px : rien ne doit
+         déborder ni rendre la page défilable de côté pendant ce temps. */
+      overflow-x: clip;
     }
     html, body { min-height: 100%; touch-action: manipulation; }
     /* Aussi dans les zones qui défilent seules (bande des jours, listes) ; 0 de spécificité : les pan-y et none posés ailleurs gardent la main. */
@@ -378,7 +381,7 @@
     @keyframes spl-sous { from { opacity: 0; transform: translateY(6px); } }
 
     @media (prefers-reduced-motion: reduce) {
-      .etat-bg::before,
+      .ecran, .etat-bg::before,
       .spl-contenu, .spl-plein, .spl-signature svg, .spl-sous
         { animation: none !important; }
       /* Sans animation : le T et le nom déjà formés, sans reflet. */
@@ -610,7 +613,7 @@
     :where(.app-bar h2[onclick], #moi-entete, .macro-item, #ecran-repas .eau-boutons .btn-icone, .repas-ajouter, .food-info, .btn-delete, .segment > button,
       #pg-periode-btn, .titre-depliant, .pg-lien, .force-carte-titre, .btn-engrenage, .pf-modif, #reglages-puce-sync, .pilule, .tuile-plus, .pc-options)::after {
       content: ''; position: absolute; left: 50%; top: 50%; width: max(100%, 44px); height: max(100%, 44px); transform: translate(-50%, -50%); }
-    .summary-card span.libelle { color: var(--text-muted); font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 1.5px; }
+    .summary-card span.libelle { color: var(--text-muted); font-size: 0.76rem; font-weight: 700; text-transform: uppercase; letter-spacing: 1.5px; }
     .summary-card h1 { margin: 8px 0 4px 0; font-size: var(--densite-h1-taille); font-weight: 900; color: var(--primary); letter-spacing: -1px; }    .reste-kcal { font-size: 0.8rem; font-weight: 700; margin-bottom: 16px; }
 
     .jauge { height: 7px; border-radius: 99px; background: var(--verre-creux); overflow: hidden; margin-bottom: var(--densite-jauge-marge); }
@@ -627,7 +630,7 @@
     .macro-item { display: flex; flex-direction: column; align-items: stretch; flex: 1; min-width: 0; text-align: center; }
     .macro-item + .macro-item { border-left: 1px solid var(--verre-brd); padding-left: 14px; }
     .macro-val { font-weight: 800; font-size: 0.92rem; letter-spacing: -0.3px; }
-    .macro-lbl { font-size: 0.62rem; text-transform: uppercase; letter-spacing: 1px; color: var(--text-muted); margin-top: 3px; font-weight: 700; }
+    .macro-lbl { font-size: 0.76rem; text-transform: uppercase; letter-spacing: 1px; color: var(--text-muted); margin-top: 3px; font-weight: 700; }
     /* Une barre par macro, assez epaisse pour se lire d'un coup d'oeil : les
        chiffres seuls demandaient un calcul mental a chaque coup d'oeil. */    /* Depassement : la barre se raye pour que ce soit visible sans lire. */
     /* --- CARTES --- */
@@ -2221,7 +2224,7 @@
     .carte-stats { cursor: pointer; padding: 14px 16px; }
     .carte-stats-haut { display: flex; align-items: center; gap: 14px; }
     .carte-stats-texte { flex: 1; min-width: 0; }
-    .carte-stats-titre { font-weight: 700; font-size: 0.72rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.8px; }
+    .carte-stats-titre { font-weight: 700; font-size: 0.76rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.8px; }
     .carte-stats-valeur { display: flex; align-items: baseline; gap: 6px; margin-top: 2px; }
     .carte-stats-valeur b { font-size: 1.45rem; font-weight: 800; }
     .carte-stats-valeur span { color: var(--text-muted); font-weight: 700; font-size: 0.86rem; }
@@ -2239,13 +2242,13 @@
       display: grid; grid-template-columns: auto 1fr; column-gap: 12px; align-items: center; text-align: left;
       padding: min(14px, var(--densite-pad)) min(16px, var(--densite-pad));
     }
-    #ecran-repas .summary-card > .libelle { grid-column: 1; grid-row: 1; font-size: 0.64rem; letter-spacing: 1px; }
+    #ecran-repas .summary-card > .libelle { grid-column: 1; grid-row: 1; font-size: 0.76rem; letter-spacing: 1px; }
     #ecran-repas .summary-card > h1 { grid-column: 1; grid-row: 2 / span 2; margin: 0; font-size: min(2.1rem, var(--densite-h1-taille)); line-height: 1.05; }    #ecran-repas .summary-card > .reste-kcal { grid-column: 2; grid-row: 3; text-align: right; margin: 0; font-size: 0.76rem; }
     #ecran-repas .summary-card > .jauge { grid-column: 1 / -1; margin: 8px 0 8px; height: 6px; }
     #ecran-repas .summary-card > .macros-bar { grid-column: 1 / -1; padding: min(8px, var(--densite-macros-pad)) 8px; gap: 10px; }
     #ecran-repas .macro-item + .macro-item { padding-left: 10px; }
     #ecran-repas .macro-val { font-size: 0.84rem; }
-    #ecran-repas .macro-lbl { font-size: 0.56rem; margin-top: 1px; }    /* Repas du jour allégé : la barre suffit (pas de %), les macros d'un
+    #ecran-repas .macro-lbl { font-size: 0.76rem; margin-top: 1px; }    /* Repas du jour allégé : la barre suffit (pas de %), les macros d'un
        aliment se voient en le touchant (fenêtre de poids). */
     #ecran-repas .food-macros { display: none; }
     .meal-card--vide .meal-header { border-bottom: 0 !important; padding-bottom: 0 !important; margin-bottom: 0 !important; }
@@ -2254,7 +2257,7 @@
     #bloc-eau > div:first-child { margin: 0 !important; flex-direction: column; align-items: flex-start !important; gap: 2px !important; }
     #bloc-eau .jauge { grid-column: 1 / -1; grid-row: 2; margin: 8px 0 0; height: 5px; }
     #bloc-eau .eau-boutons { margin: 0; gap: 4px; }
-    #bloc-eau .eau-boutons .btn-icone { height: 32px; min-width: 0; padding: 0 8px; flex: none !important; font-size: 0.72rem; }
+    #bloc-eau .eau-boutons .btn-icone { height: 32px; min-width: 0; padding: 0 8px; flex: none !important; font-size: 0.76rem; }
     #bloc-eau .eau-boutons .btn-icone:last-child { width: 32px !important; }
     .idees-recette { margin: 0 0 12px; padding-bottom: 12px; border-bottom: 1px solid var(--verre-brd); }
     #ecran-repas .fitness-card, #ecran-repas .analysis-card, #ecran-repas .meal-card, #ecran-repas .bloc-verre {
@@ -2288,11 +2291,11 @@
     @keyframes macroVise { 0%, 40% { box-shadow: 0 0 0 2px var(--primary); } 100% { box-shadow: 0 0 0 2px transparent; } }
     .carte-stats--compacte:last-child { margin-bottom: 16px; }
     .carte-stats--compacte .carte-stats-haut { gap: 10px; }
-    .carte-stats--compacte .carte-stats-titre { font-size: 0.64rem; }
+    .carte-stats--compacte .carte-stats-titre { font-size: 0.76rem; }
     .carte-stats--compacte .carte-stats-valeur { margin-top: 0; gap: 5px; }
     .carte-stats--compacte .carte-stats-valeur b { font-size: 1.15rem; }
     .carte-stats--compacte .carte-stats-valeur span { font-size: 0.76rem; }
-    .carte-stats--compacte .carte-stats-ligne { font-size: 0.68rem; margin-top: 0; }
+    .carte-stats--compacte .carte-stats-ligne { font-size: 0.76rem; margin-top: 0; }
     .carte-stats--compacte .carte-stats-graph { width: 84px; height: 30px; }
     .stats-entete { display: flex; align-items: center; gap: 10px; margin-bottom: 4px; }
     .stats-entete .titre-ecran { margin: 0; }
@@ -2426,14 +2429,14 @@
     .anneaux-centre { position: absolute; inset: 0; display: grid; place-items: center; text-align: center; pointer-events: none; }
     #ecran-repas .anneaux-centre h1 { margin: 0; font-size: 1.32rem; font-weight: 800; letter-spacing: -0.04em; line-height: 1; color: var(--text); }
     .anneaux-centre small { font-size: 0.56rem; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; color: var(--text-muted); }
-    .heros-droite .libelle { display: block; font-size: 0.68rem !important; font-weight: 800; letter-spacing: .07em !important; text-transform: uppercase; color: var(--text-muted); }
+    .heros-droite .libelle { display: block; font-size: 0.76rem !important; font-weight: 800; letter-spacing: .07em !important; text-transform: uppercase; color: var(--text-muted); }
     #ecran-repas .reste-kcal { margin: 2px 0 0 !important; font-size: 1.75rem !important; font-weight: 800; letter-spacing: -0.04em; line-height: 1.05; color: var(--text); text-align: left !important; }
     /* « 62/1 821 kcal » : le reste en grand, l'objectif et l'unité en petit à sa suite
        (d'un bloc : sur un écran trop étroit, ils passent ensemble à la ligne). */
     .reste-kcal em { display: inline-block; white-space: nowrap; font-style: normal; font-size: 0.9rem; font-weight: 700; color: var(--text-muted); margin-left: 2px; letter-spacing: 0; }
     .reste-kcal.depasse { color: var(--danger) !important; }
     /* Objectif estimé (âge ou taille manquants) : même ligne discrète, touchable. */
-    .objectif-estime { border: 0; background: none; padding: 0; font: inherit; color: var(--accent); text-align: left; cursor: pointer; text-decoration: underline dotted; text-underline-offset: 3px; }
+    .objectif-estime { border: 0; background: none; padding: 0; font: inherit; color: var(--accent); text-align: left; cursor: pointer; text-decoration: underline dotted; text-underline-offset: 3px; white-space: normal !important; overflow: visible !important; line-height: 1.3; }
     /* Séance prévue comptée dans l'objectif : une ligne discrète sous « Il te reste ». */
     .seance-prevue-heros { display: flex; align-items: center; gap: 5px; margin-top: 5px; min-width: 0; font-size: 0.72rem; font-weight: 600; color: var(--text-muted); white-space: nowrap; }
     .seance-prevue-heros span { overflow: hidden; text-overflow: ellipsis; }
@@ -2510,7 +2513,7 @@
     .tuile-icone .icone-ui { width: 16px; height: 16px; }
     .tuile-icone--poids { background: linear-gradient(135deg, #38bdf8, #6366f1); }
     .tuile-icone--pas { background: linear-gradient(135deg, #fbbf24, #f97316); }
-    .carte-stats--tuile .carte-stats-titre { font-size: 0.72rem !important; font-weight: 700; letter-spacing: 0 !important; text-transform: none !important; color: var(--text-muted); }
+    .carte-stats--tuile .carte-stats-titre { font-size: 0.76rem !important; font-weight: 700; letter-spacing: 0 !important; text-transform: none !important; color: var(--text-muted); }
     .carte-stats--tuile .carte-stats-valeur { margin-top: 12px !important; }
     .carte-stats--tuile .carte-stats-valeur b { font-size: 1.5rem !important; font-weight: 800; letter-spacing: -0.04em; }
     .carte-stats--tuile .carte-stats-valeur span { font-size: 0.72rem !important; }
@@ -2535,7 +2538,7 @@
     .eau-texte em { font-style: normal; font-size: 0.8rem; font-weight: 700; color: var(--text-muted); letter-spacing: 0; }
     #bloc-eau.atteint .eau-texte { color: var(--primary); }
     #ecran-repas .eau-boutons { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px !important; }
-    #ecran-repas .eau-boutons .btn-icone { height: 32px !important; min-width: 0 !important; padding: 0 10px !important; border-radius: 99px !important; font-size: 0.72rem !important; font-weight: 800;
+    #ecran-repas .eau-boutons .btn-icone { height: 32px !important; min-width: 0 !important; padding: 0 10px !important; border-radius: 99px !important; font-size: 0.76rem !important; font-weight: 800;
       color: #0284c7 !important; background: rgba(56,189,248,.14) !important; box-shadow: none !important; flex: none !important; width: auto !important; }
     :root[data-theme="dark"] #ecran-repas .eau-boutons .btn-icone { color: #7dd3fc !important; }
 
@@ -2613,6 +2616,10 @@
     .onglet-plus:disabled { cursor: default; color: var(--text-muted); background: var(--piste); box-shadow: none; transform: none; }
     .onglet-plus:disabled::before { display: none; }
     .onglet-plus:disabled .icone-ui { opacity: .45; }
+    .onglet-plus--masque { visibility: hidden; pointer-events: none; }
+    .hx-vide { max-width: 58%; margin: 6px 0 4px; font-size: .95rem; font-weight: 600; color: var(--text-muted); line-height: 1.35; }
+    .hx-vide small { display: block; font-size: .72rem; font-weight: 800; letter-spacing: .07em; text-transform: uppercase; }
+    .hx-vide b { color: var(--text); font-family: 'Manrope', 'Inter', sans-serif; font-size: 1.35rem; font-weight: 800; }
     .onglet-plus::before { content: ''; position: absolute; inset: -4px; z-index: -1; border-radius: 23px; background: conic-gradient(from 0deg, #34d399, #22d3ee, #a78bfa, #34d399); filter: blur(8px); opacity: .55; animation: coach-tour 6s linear infinite; }
     .onglet-plus .icone-ui { width: 26px; height: 26px; stroke-width: 2.6; }
     .profil-entete-boutons { display: flex; gap: 8px; align-items: center; }
@@ -2680,7 +2687,7 @@
     html:root .bt { border-radius: 20px; }
     html:root :is(.bt-deco, .bt-glow) { display: none; }
     html:root .bt-s { max-width: none; }
-    html:root .bt-k { font-size: 11px; letter-spacing: .06em; }
+    html:root .bt-k { font-size: 12px; letter-spacing: .06em; }
     .bt-glow { position: absolute; right: -30%; bottom: -50%; width: 160px; height: 160px; border-radius: 50%; filter: blur(30px); z-index: -1; opacity: .55; }
     .semaine-barres { display: flex; align-items: flex-end; gap: 6px; height: 72px; margin-top: 12px; }
     .semaine-barres div { flex: 1; display: flex; flex-direction: column; justify-content: flex-end; align-items: center; gap: 4px; height: 100%; font-size: .6rem; font-weight: 800; color: var(--text-muted); }
@@ -3331,7 +3338,7 @@
     .zones-grille-ligne > span { font-size: .72rem; font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .zones-grille-tete > span { font-size: .66rem; font-weight: 800; color: var(--text-muted); text-align: center; }
     .zones-grille-tete > span:first-child { text-align: left; }
-    .zones-case { display: grid; place-items: center; height: 28px; border-radius: 8px; font-style: normal; font-size: 11px; font-weight: 800; color: #0b1020; }
+    .zones-case { display: grid; place-items: center; height: 28px; border-radius: 8px; font-style: normal; font-size: 12px; font-weight: 800; color: #0b1020; }
     .zones-case.vide { background: var(--piste); }
     html[data-theme="dark"] .zones-case--sous { color: #fff; }
     .zones-grille-legende { display: flex; flex-wrap: wrap; gap: 6px 12px; margin-top: 10px; font-size: .7rem; font-weight: 700; color: var(--text-muted); }
@@ -3362,8 +3369,8 @@
     :root[data-theme="light"] .faisceaux-alerte { color: #854d0e; }
     /* Plus aucune étiquette sous 11 px (elles descendaient jusqu'à 8,5 px). */
     html:root :is(.cle-lbl, .bt-k, .apercu-lbl, .cg small, .sdj small, .pc .tag, .cardio-pastille, .carte-stats-ligne, .hx-k, .niveau-s, .exo-groupe, .serie-entete span,
-      .anneaux-centre small, .meal-kcals small, .heros-puces div, .coach-carte small, .bilan-tuile span, .badge, .pave-unite, .prog-heros small, .zones-grille-tete > span) { font-size: 11px; }
-    html:root :is(.stats-grille small, .faisceaux-figures figcaption, .zones-sigle) { font-size: 11px; }
+      .anneaux-centre small, .meal-kcals small, .heros-puces div, .coach-carte small, .bilan-tuile span, .badge, .pave-unite, .prog-heros small, .zones-grille-tete > span) { font-size: 12px; }
+    html:root :is(.stats-grille small, .faisceaux-figures figcaption, .zones-sigle) { font-size: 12px; }
     html:root .onglet { font-size: 0.66rem; }
     html:root .heros-droite .macro-item { min-height: 36px; }
     html:root .titre-depliant { min-height: 36px; display: flex; align-items: center; }
@@ -3371,9 +3378,9 @@
     html:root .pilule { min-height: 38px; }
 
 
-    html:root .carte-stats--tuile .carte-stats-ligne { font-size: 11px !important; }
-    html:root .onglet { font-size: 11px; }
-    html:root :is(.cardio-echelle span, .infos-grille label, .cardio-record small, .cardio-record span) { font-size: 11px; }
+    html:root .carte-stats--tuile .carte-stats-ligne { font-size: 12px !important; }
+    html:root .onglet { font-size: 12px; }
+    html:root :is(.cardio-echelle span, .infos-grille label, .cardio-record small, .cardio-record span) { font-size: 12px; }
     html:root .filtre-chip { min-height: 36px; }
     html:root .exo-en-programme-nom { min-height: 32px; text-align: left; }
     html:root label[for="daily-steps"] { white-space: normal; }
@@ -3413,7 +3420,7 @@
     html:root[data-theme="dark"] .pg-heros { --pgh-trait: #e0e7ff; --pgh-point: rgba(255,255,255,.4);
       background: radial-gradient(70% 60% at 85% 20%, rgba(34,211,238,.35), transparent 70%), radial-gradient(60% 50% at 0% 100%, rgba(167,139,250,.30), transparent 70%), linear-gradient(180deg, #0b1020, #070a14); }
     html:root[data-theme="dark"] .pg-heros::after { background: linear-gradient(rgba(255,255,255,.05) 1px, transparent 1px) 0 0/100% 28px, linear-gradient(90deg, rgba(255,255,255,.05) 1px, transparent 1px) 0 0/28px 100%; }
-    .pg-heros small { font-size: 11px; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; color: var(--text-muted); }
+    .pg-heros small { font-size: 12px; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; color: var(--text-muted); }
     html:root .pg-heros h3 { margin: 6px 0 4px; font: 800 1.36rem/1.2 'Manrope', 'Inter', sans-serif; letter-spacing: -.02em; color: var(--text); }
     .pg-heros p { margin: 0 0 6px; font-size: .84rem; line-height: 1.4; color: var(--text-muted); }
     .pg-heros p b { color: var(--text); }
@@ -4206,7 +4213,7 @@
       --bg: #f2f2f4;
       --s1: #ffffff; --s2: #efeff2; --s3: #e1e1e6; --s-fen: #ffffff;
       --ligne: rgba(0,0,0,.075);
-      --text: #0b0b0c; --text-muted: #6b6b72; --t3: #a1a1a8;
+      --text: #0b0b0c; --text-muted: #5f5f67; --t3: #a1a1a8;
       --inv: #0b0b0c; --sur-inv: #ffffff;
       --protein: #ef4136; --carbs: #e3940c; --fat: #6c63f0; --eau: #0a84ff;
       --ok: #1e9e4a; --alerte: #e03a2f; --attention: #d97706;
@@ -4410,7 +4417,7 @@
     html:root body .coach-action::after { content: ''; position: absolute; inset: -4px -2px; }
     html:root body .coach-action--petite { min-height: 32px; margin-top: 8px; padding: 0 12px; background: var(--s3); color: var(--text); font-size: .76rem; }
     html:root body .coach-plus { display: inline-flex; align-items: center; gap: 8px; margin-top: 10px; min-height: 36px; padding: 0; border: 0; background: none; color: var(--text-muted); font: inherit; font-size: .78rem; font-weight: 650; cursor: pointer; }
-    html:root body .coach-nb { min-width: 20px; height: 20px; padding: 0 6px; border-radius: 10px; display: inline-grid; place-items: center; background: var(--s3); color: var(--text); font-size: .7rem; font-weight: 700; }
+    html:root body .coach-nb { min-width: 20px; height: 20px; padding: 0 6px; border-radius: 10px; display: inline-grid; place-items: center; background: var(--s3); color: var(--text); font-size: 0.76rem; font-weight: 700; }
     html:root body .coach-analyse { list-style: none; margin: 0; padding: 0; }
     html:root body .coach-analyse li { display: grid; grid-template-columns: 30px 1fr; gap: 11px; margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--ligne); }
     html:root body .coach-analyse p { margin: 0; font-size: .82rem; line-height: 1.42; }
@@ -4896,7 +4903,9 @@
     html.app-ios:root[data-theme="dark"] body .feuille-contenu > .btn-secondaire:last-child { background: var(--s2) !important; }
     html.app-ios body :is(.modal-content, .feuille-contenu) .carte-liste .segment { background: var(--ios-remplir) !important; }
     html.app-ios body :is(.modal-content, .feuille-contenu) :is(.btn-secondaire, .btn-icone) { background: var(--ios-remplir) !important; }
-    html.app-ios body .feuille-contenu > .btn-secondaire:last-child { color: var(--ios-accent) !important; background: var(--s1) !important; }
+    /* « Annuler » en bas d'une feuille : couleur du texte, pas l'accent (qui
+       reste à la sélection, aux liens et aux données), comme un bouton neutre. */
+    html.app-ios body .feuille-contenu > .btn-secondaire:last-child { color: var(--text) !important; font-weight: 600; background: var(--s1) !important; }
     /* Les messages (confirmer, informer) : alerte d'iOS, au centre, en verre. */
     html.app-ios body #modal-dialogue .modal-content { max-width: 300px; border-radius: 34px !important; background: var(--ios-verre) !important; text-align: center;
       -webkit-backdrop-filter: blur(30px) saturate(1.8) !important; backdrop-filter: blur(30px) saturate(1.8) !important; }
@@ -5198,7 +5207,7 @@
           <div class="seance-prevue-heros hidden" id="seance-prevue-heros"></div>
           <div class="seance-prevue-heros hidden" id="semaine-heros"></div>
           <!-- Âge ou taille pas encore renseignés : l'objectif est calculé sur des valeurs par défaut. -->
-          <button type="button" class="seance-prevue-heros objectif-estime hidden" id="objectif-estime" onclick="event.stopPropagation(); ouvrirMonCorps()">Objectif estimé · indique ton âge et ta taille</button>
+          <button type="button" class="seance-prevue-heros objectif-estime hidden" id="objectif-estime" onclick="event.stopPropagation(); ouvrirMonCorps()">Objectif estimé : renseigne ton âge et ta taille</button>
           <div class="macros-bar">
           <div class="macro-item" role="button" tabindex="0" aria-label="Protéines : voir la courbe et l'objectif" onclick="event.stopPropagation(); ouvrirMacro('p')" onkeydown="if(event.key==='Enter'){event.stopPropagation(); ouvrirMacro('p');}">
             <i class="macro-point" style="background:var(--protein);color:var(--protein)"></i><span class="macro-lbl">Protéines</span><span class="macro-val" id="total-p">0 / 0 g</span>
@@ -5557,7 +5566,7 @@
         <button type="button" class="ligne-reglage ligne-reglage--bouton" onclick="exporterDonneesUtilisateurAdmin()"><span class="action-ic"><svg class="icone-ui" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12" /><path d="m17 8-5-5-5 5" /><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /></svg></span><span class="ligne-txt"><b>Exporter les données</b><small>Fichier JSON du compte</small></span><span class="ligne-chevron"><svg class="icone-ui" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 18 6-6-6-6" /></svg></span></button>
         <button type="button" class="ligne-reglage ligne-reglage--bouton" onclick="document.getElementById('admin-import-file-input').click()" data-destructif><span class="action-ic"><svg class="icone-ui" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 15V3" /><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><path d="m7 10 5 5 5-5" /></svg></span><span class="ligne-txt"><b>Importer des données</b><small>Remplace ses journées</small></span><span class="ligne-chevron"><svg class="icone-ui" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 18 6-6-6-6" /></svg></span></button>
       </div>
-      <input type="file" id="admin-import-file-input" accept=".json,application/json" class="hidden" onchange="importerDonneesUtilisateurAdmin(event)">
+      <input type="file" id="admin-import-file-input" aria-label="Fichier de sauvegarde à importer" accept=".json,application/json" class="hidden" onchange="importerDonneesUtilisateurAdmin(event)">
       <div class="reglages-titre">Abonnement</div>
       <div class="carte-liste" id="admin-pro"></div>
       <div class="reglages-titre">Objectif adapté</div>
@@ -6200,9 +6209,9 @@
     </div>
     <div id="aliments-panneau-valider">
     <div class="aliments-filtres">
-      <input type="text" id="aliments-filter-nom" placeholder="Nom de l'aliment" oninput="filtrerAlimentsAdmin()" autocomplete="off">
-      <input type="text" id="aliments-filter-createur" placeholder="Email du créateur" oninput="filtrerAlimentsAdmin()" autocomplete="off">
-      <input type="date" id="aliments-filter-date" onchange="filtrerAlimentsAdmin()">
+      <input type="text" id="aliments-filter-nom" aria-label="Filtrer les aliments par nom" placeholder="Nom de l'aliment" oninput="filtrerAlimentsAdmin()" autocomplete="off">
+      <input type="text" id="aliments-filter-createur" aria-label="Filtrer les aliments par e-mail du créateur" placeholder="Email du créateur" oninput="filtrerAlimentsAdmin()" autocomplete="off">
+      <input type="date" id="aliments-filter-date" aria-label="Filtrer les aliments par date" onchange="filtrerAlimentsAdmin()">
     </div>
     <p class="note" style="margin:-4px 0 12px;">Seulement les aliments à valider. Un aliment créé par un utilisateur reste visible par lui seul ; « Valider » l'ajoute à la base d'aliments commune (bouton « Base d'aliments ») et le retire d'ici. La corbeille le refuse.</p>
     <div id="aliments-transfert-anciens"></div>
@@ -6211,7 +6220,7 @@
     <div id="aliments-panneau-base" class="hidden">
     <p class="note" style="margin-top:-4px;">La base d'aliments commune (modifiable ici) et USDA (consultation). Un aliment partagé que tu valides arrive ici, marqué « Ajouté par un utilisateur ».</p>
     <div class="aliments-filtres">
-      <input type="text" id="base-filter-nom" placeholder="Chercher un aliment (2 lettres min.)" oninput="filtrerBaseAliments()" autocomplete="off">
+      <input type="text" id="base-filter-nom" aria-label="Chercher un aliment dans la base" placeholder="Chercher un aliment (2 lettres min.)" oninput="filtrerBaseAliments()" autocomplete="off">
     </div>
     <p class="note" id="base-aliments-compteur" style="margin:-4px 0 10px;"></p>
     <div id="admin-base-liste"></div>
@@ -6309,8 +6318,8 @@
     </div>
     <p class="note" style="margin-top:-4px;">Recettes créées par chaque compte, privées à leur créateur. « Rendre accessible à tous » les ajoute au choix « Recette » de tous les utilisateurs (Repas du jour › Recette). Le crayon modifie la recette, la corbeille la supprime : le changement arrive chez son créateur et chez tous les utilisateurs à leur prochaine synchro. Si elles n'apparaissent pas chez les autres, relance le SQL « Gymbro et photos » (Administration › Serveur et SQL) : c'est lui qui leur autorise la lecture.</p>
     <div class="aliments-filtres">
-      <input type="text" id="recettes-filter-nom" placeholder="Nom de la recette" oninput="filtrerRecettesAdmin()" autocomplete="off">
-      <input type="text" id="recettes-filter-createur" placeholder="Email du créateur" oninput="filtrerRecettesAdmin()" autocomplete="off">
+      <input type="text" id="recettes-filter-nom" aria-label="Filtrer les recettes par nom" placeholder="Nom de la recette" oninput="filtrerRecettesAdmin()" autocomplete="off">
+      <input type="text" id="recettes-filter-createur" aria-label="Filtrer les recettes par e-mail du créateur" placeholder="Email du créateur" oninput="filtrerRecettesAdmin()" autocomplete="off">
     </div>
     <div id="admin-recettes-feuille-liste"></div>
   </div>
@@ -6326,9 +6335,9 @@
     </div>
 
     <div class="aliments-filtres">
-      <input type="text" id="exercices-filter-nom" placeholder="Nom de l'exercice" oninput="filtrerExercicesAdmin()" autocomplete="off">
-      <input type="text" id="exercices-filter-createur" placeholder="Email du créateur" oninput="filtrerExercicesAdmin()" autocomplete="off">
-      <select id="exercices-filter-type" onchange="filtrerExercicesAdmin()">
+      <input type="text" id="exercices-filter-nom" aria-label="Filtrer les exercices par nom" placeholder="Nom de l'exercice" oninput="filtrerExercicesAdmin()" autocomplete="off">
+      <input type="text" id="exercices-filter-createur" aria-label="Filtrer les exercices par e-mail du créateur" placeholder="Email du créateur" oninput="filtrerExercicesAdmin()" autocomplete="off">
+      <select id="exercices-filter-type" aria-label="Filtrer les exercices par type" onchange="filtrerExercicesAdmin()">
         <option value="">Bibliothèque + personnalisés</option>
         <option value="base">Bibliothèque uniquement</option>
         <option value="perso">Personnalisés uniquement</option>
@@ -6337,8 +6346,8 @@
         <option value="supprimes">Supprimés de la bibliothèque (à restaurer)</option>
       </select>
       <div style="display:flex; gap:8px;">
-        <select id="exercices-filter-groupe" style="flex:1; min-width:0;" onchange="filtrerExercicesAdmin()"></select>
-        <select id="exercices-filter-materiel" style="flex:1; min-width:0;" onchange="filtrerExercicesAdmin()"></select>
+        <select id="exercices-filter-groupe" aria-label="Filtrer les exercices par groupe musculaire" style="flex:1; min-width:0;" onchange="filtrerExercicesAdmin()"></select>
+        <select id="exercices-filter-materiel" aria-label="Filtrer les exercices par matériel" style="flex:1; min-width:0;" onchange="filtrerExercicesAdmin()"></select>
       </div>
       <select id="exercices-filter-video" onchange="filtrerExercicesAdmin()" aria-label="Vidéo de démonstration">
         <option value="">Avec ou sans vidéo</option>
@@ -6795,7 +6804,7 @@
         <button type="button" class="profil-avatar-btn" onclick="document.getElementById('profil-photo-input').click()" aria-label="Changer la photo de profil">
           <span id="profil-avatar"></span><span class="profil-avatar-crayon" aria-hidden="true">✎</span>
         </button>
-        <input type="file" id="profil-photo-input" accept="image/*" class="hidden" onchange="choisirPhotoProfil(this)">
+        <input type="file" id="profil-photo-input" aria-label="Choisir une photo de profil" accept="image/*" class="hidden" onchange="choisirPhotoProfil(this)">
         <div class="profil-perso-texte input-group" style="margin:0;">
           <label for="profil-bio" class="profil-perso-titre">Bio</label>
           <textarea id="profil-bio" maxlength="160" rows="2" placeholder="Objectif, programme, salle… (facultatif)" oninput="majCompteurBio()" onblur="enregistrerBioProfil()"></textarea>
@@ -7167,12 +7176,12 @@
     <div class="input-group">
       <label style="display:block;font-weight:700;font-size:0.72rem;margin-bottom:6px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.8px;"><svg class="icone-ui" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v18" /><path d="m19 8 3 8a5 5 0 0 1-6 0zV7" /><path d="M3 7h1a17 17 0 0 0 8-2 17 17 0 0 0 8 2h1" /><path d="m5 8 3 8a5 5 0 0 1-6 0zV7" /><path d="M7 21h10" /></svg> Composition globale (corps entier)</label>
       <div class="trio">
-        <div><label>Masse grasse (%)</label><input type="number" step="0.1" inputmode="decimal" id="mes-grasse-pct" placeholder="—"></div>
-        <div><label>Muscle (kg)</label><input type="number" step="0.1" inputmode="decimal" id="mes-muscle-kg" placeholder="—"></div>
-        <div><label>Os (kg)</label><input type="number" step="0.1" inputmode="decimal" id="mes-os-kg" placeholder="—"></div>
+        <div><label>Masse grasse (%)</label><input type="number" step="0.1" inputmode="decimal" id="mes-grasse-pct" aria-label="Masse grasse, en pourcentage" placeholder="—"></div>
+        <div><label>Muscle (kg)</label><input type="number" step="0.1" inputmode="decimal" id="mes-muscle-kg" aria-label="Masse musculaire, en kilogrammes" placeholder="—"></div>
+        <div><label>Os (kg)</label><input type="number" step="0.1" inputmode="decimal" id="mes-os-kg" aria-label="Masse osseuse, en kilogrammes" placeholder="—"></div>
       </div>
       <div class="trio" style="margin-top:8px;">
-        <div><label>Hydratation (%)</label><input type="number" step="0.1" inputmode="decimal" id="mes-eau-pct" placeholder="—"></div>
+        <div><label>Hydratation (%)</label><input type="number" step="0.1" inputmode="decimal" id="mes-eau-pct" aria-label="Eau corporelle, en pourcentage" placeholder="—"></div>
       </div>
       <p class="note note-explicative" style="margin:8px 0 0;">Rempli par l'import Withings si ta balance le mesure, sinon à la main. Laisse vide ce que tu n'as pas.</p>
     </div>
@@ -7381,7 +7390,7 @@
     <!-- Groupes en pastilles qui défilent (une ligne), matériel en menu.
          Le menu des groupes reste la source du filtre (caché). -->
     <div class="puces-groupes" id="picker-puces-groupes" role="group" aria-label="Groupe musculaire"></div>
-    <select id="picker-filtre-groupe" class="hidden" onchange="rendrePickerExercices()" aria-hidden="true" tabindex="-1"></select>
+    <select id="picker-filtre-groupe" aria-label="Filtrer les exercices par groupe musculaire" class="hidden" onchange="rendrePickerExercices()" aria-hidden="true" tabindex="-1"></select>
     <div class="input-group" style="margin-bottom:12px;">
       <select id="picker-filtre-materiel" onchange="rendrePickerExercices()" aria-label="Matériel"></select>
     </div>
@@ -27952,6 +27961,11 @@ function renderVitrineMuscu() {
   const seancesSem = musculationHistorique.filter(h => h.date >= lundi && h.date <= auj);
   // Séries réellement faites (les muscles secondaires, comptés en fraction pour les zones, ne s'ajoutent pas ici).
   const total = seancesSem.reduce((n, h) => n + (h.exercices || []).reduce((m, e) => m + (e.series || []).filter(s => s.fait).length, 0), 0);
+  // Semaine encore vide : un gros « 0 » en tête d'écran démotive ; la séance à
+  // faire passe devant et le bilan de la semaine passée remplace le compteur.
+  const lundiPrec = decalerJours(lundi, -7);
+  const seancesPrec = musculationHistorique.filter(h => h.date >= lundiPrec && h.date < lundi);
+  const totalPrec = seancesPrec.reduce((n, h) => n + (h.exercices || []).reduce((m, e) => m + (e.series || []).filter(s => s.fait).length, 0), 0);
   const zones = Object.keys(ZONES_VOLUME).map(g => cleZoneVolume(g, series[g] || 0));
   const ideal = zones.filter(z => z === 'mav').length, aTravailler = zones.filter(z => z === 'sous' || z === 'mv').length;
   // Séance du jour (ou, un jour de repos, la prochaine)
@@ -27979,16 +27993,17 @@ function renderVitrineMuscu() {
     const b = meilleur1RM(id, duMois), a = meilleur1RM(id, avant);
     if (b && (!a || b.valeur > a.valeur)) records++;
   });
-  c.innerHTML = `
+  const hx = `
     <div class="hx hx--pivot" onclick="ouvrirStats('muscu')">
       <button type="button" class="carte-action" aria-label="Ta semaine de musculation : voir le détail"></button>
       <div class="hx-corps">${corpsPivotHTML(couleurs)}</div>${boutonCorpsPivotHTML()}
       <div class="hx-k">${libelleSemaine(auj)} · Musculation</div><div class="hx-titre">Ta semaine</div>
-      <div class="hx-geant" data-compte="${total}">${total}</div><div class="hx-unite">série${total > 1 ? 's' : ''} · ${seancesSem.length} séance${seancesSem.length > 1 ? 's' : ''}</div>
+      ${total ? `<div class="hx-geant" data-compte="${total}">${total}</div><div class="hx-unite">série${total > 1 ? 's' : ''} · ${seancesSem.length} séance${seancesSem.length > 1 ? 's' : ''}</div>`
+        : `<div class="hx-vide">${totalPrec ? `<small>Semaine passée</small><b>${totalPrec}</b> série${totalPrec > 1 ? 's' : ''} · ${seancesPrec.length} séance${seancesPrec.length > 1 ? 's' : ''}` : 'Ta première série de la semaine allume le corps.'}</div>`}
       <div class="hx-puces">${total ? `<span class="hx-puce"><i style="background:${ZONES_INFO.mav.couleur};color:${ZONES_INFO.mav.couleur}"></i><b>${ideal}</b> en zone idéale</span><span class="hx-puce"><i style="background:${ZONES_INFO.sous.couleur};color:${ZONES_INFO.sous.couleur}"></i><b>${aTravailler}</b> à travailler</span>` : `<span class="hx-puce">Ta semaine démarre à ta première série : le corps s'allume au fil des séances.</span>`}${records ? `<span class="hx-puce hx-puce--record">${ICONE_RECORD}<b>${records}</b> record${records > 1 ? 's' : ''} ce mois</span>` : ''}</div>
       ${total ? `<div class="hx-legende" aria-label="Légende des couleurs">${['sous', 'mv', 'mev', 'mav', 'mrv'].map(k => `<span><i style="background:${ZONES_INFO[k].couleur}"></i>${ZONES_INFO[k].court}</span>`).join('')}</div>` : ''}
-    </div>
-    ${sdj}`;
+    </div>`;
+  c.innerHTML = total ? hx + sdj : sdj + hx;
   activerCorpsPivot(c.querySelector('.corps-pivot'), { bouton: c.querySelector('.cp-bouton'), indice: true });
   animerComptes(c);
   verifierTrophees();
@@ -30116,7 +30131,11 @@ function majBoutonPlus() {
   if (!b) return;
   let l = LIBELLES_PLUS[ecranActif] || LIBELLES_PLUS.repas;
   if (ecranActif === 'seance') l = musculationSessionActive ? 'Ajouter un exercice' : modeSeance === 'cardio' ? 'Noter une séance cardio' : 'Lancer une séance';
-  b.disabled = ecranActif === 'stats';
+  // Progrès, Profil et Administration : pas d'ajout rapide (comme la barre
+  // native) ; le bouton garde sa place pour ne pas décaler les onglets.
+  const masque = ['stats', 'reglages', 'admin'].includes(ecranActif);
+  b.disabled = masque;
+  b.classList.toggle('onglet-plus--masque', masque);
   b.setAttribute('aria-label', l);
   b.title = l;
 }
