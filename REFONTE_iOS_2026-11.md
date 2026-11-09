@@ -11,7 +11,8 @@ session (verdict : hybride assumé — système natif, contenu web redessiné).
 ## Direction artistique en six lignes
 
 - Surfaces : les groupées d'iOS (`#000 / #1c1c1e / #2c2c2e`, `#f2f2f7 / #fff`),
-  séparateurs système, plus de quadrillage ni d'ambiance floutée.
+  séparateurs système, plus d'ambiance floutée ; le quadrillage fin du fond
+  reste (demandé après la première livraison), un peu plus marqué en sombre.
 - Une seule couleur vivante : le rose Anqā (`--ios-accent`), pour l'action
   principale, l'état actif, ce qui est en cours ; un seul objet rose plein par écran.
 - SF Pro partout, en points réels suivant la taille de texte du système
@@ -146,6 +147,22 @@ Watch, Face ID, Vision, Spotlight, réécriture SwiftUI (voir l'analyse).
 - Non vérifiable dans le simulateur, à essayer sur iPhone après TestFlight :
   poser un widget, Siri, l'écriture dans Santé, l'enregistrement du groupe
   d'apps à la signature.
+
+### Retouches après la première livraison
+
+- La grille de fond revient dans l'app, en clair (`rgba(0,0,0,.055)`) et en
+  sombre (`rgba(255,255,255,.085)`), avec le fondu du site.
+- Le corps : les muscles du mannequin étaient dessinés fibre par fibre et les
+  fentes entre fibres hachaient les masses en petit. Chaque fibre porte un
+  trait de sa couleur (6 unités) qui referme ces fentes, les muscles sont
+  découpés au contour du corps (`silhouetteSVG`, `corpsPivotHTML`,
+  `figureCorpsSVG`). Le pictogramme d'un groupe (vignettes, fiche sans image)
+  n'est plus le schéma rond-rectangle-bâtons : c'est le mannequin cadré sur
+  la zone, le groupe en accent, partagé par `<use>` (un seul jeu de tracés
+  par planche, `#symboles-mannequin`), qui suit le sexe du profil ; le cardio
+  garde l'ancien schéma.
+- Test : « corps : les muscles du mannequin sont des masses pleines… » ; le
+  test « refonte B » attend désormais la grille.
 
 ## Vérifier
 

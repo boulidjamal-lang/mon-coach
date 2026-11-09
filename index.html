@@ -19130,7 +19130,37 @@ const SILHOUETTE_REGIONS = {
   adducteurs: '<ellipse cx="50" cy="92" rx="7" ry="12" fill="SUR"/>',
   mollets: '<line x1="39" y1="118" x2="37" y2="148" stroke="SUR" stroke-width="10" stroke-linecap="round"/><line x1="61" y1="118" x2="63" y2="148" stroke="SUR" stroke-width="10" stroke-linecap="round"/>'
 };
+/* Pictogramme d'un groupe (vignettes des listes, fiche sans image) : le
+   mannequin cadré sur la zone (haut du corps ou jambes, de face ou de dos),
+   le groupe en accent. Les tracés ne sont posés qu'une fois dans la page
+   (un <g> par planche, voir symbolesMannequin) et chaque pictogramme les
+   réutilise par <use> : cent exercices ne portent pas cent mannequins. La
+   couleur du groupe passe par une propriété CSS (--m-<groupe>) héritée dans
+   le <use>. Le cardio et un groupe inconnu gardent l'ancien schéma. */
+function symbolesMannequin() {
+  const sexe = femmeProfil() ? 'femme' : 'homme';
+  let el = document.getElementById('symboles-mannequin');
+  if (el && el.dataset.sexe === sexe) return sexe;
+  if (!el) { el = document.createElement('div'); el.id = 'symboles-mannequin'; el.setAttribute('aria-hidden', 'true'); el.style.cssText = 'position:absolute;width:0;height:0;overflow:hidden'; document.body.appendChild(el); }
+  const planche = MANNEQUIN[sexe];
+  el.dataset.sexe = sexe;
+  el.innerHTML = '<svg width="0" height="0">' + ['face', 'dos'].map(vue => {
+    const muscles = planche[vue].map(([slug, traces]) => {
+      const g = GROUPE_PAR_SLUG[slug];
+      const f = g ? `var(--m-${g}, var(--corps-neutre))` : 'var(--corps-neutre)';
+      return traces.map(d => `<path d="${d}" fill="${f}"${LISSAGE_MUSCLE(f)}/>`).join('');
+    }).join('');
+    return `<clipPath id="mannequin-${sexe}-${vue}-c"><path d="${planche.contour[vue]}"/></clipPath><g id="mannequin-${sexe}-${vue}"><path d="${planche.contour[vue]}" fill="var(--corps-contour)"/><g clip-path="url(#mannequin-${sexe}-${vue}-c)">${muscles}</g></g>`;
+  }).join('') + '</svg>';
+  return sexe;
+}
 function svgSilhouetteGroupe(groupe) {
+  if (groupe && groupe !== 'cardio' && typeof MANNEQUIN !== 'undefined' && document.body && Object.values(GROUPE_PAR_SLUG).includes(groupe)) {
+    const sexe = symbolesMannequin();
+    const vue = GROUPES_VUE_DOS.includes(groupe) ? 'dos' : 'face';
+    const vb = cadreSilhouette(GROUPES_BAS.includes(groupe) ? 'jambes' : 'torse', vue);
+    return `<svg class="picto-corps" viewBox="${vb}" preserveAspectRatio="xMidYMid meet" style="--m-${groupe}: var(--corps-cible)" aria-hidden="true"><use href="#mannequin-${sexe}-${vue}"/></svg>`;
+  }
   // Le cardio ne cible pas une zone précise : toute la silhouette en accent
   // plutôt qu'une région arbitraire qui n'aurait pas de sens.
   if (groupe === 'cardio') {
@@ -23350,10 +23380,12 @@ function figureCorpsSVG(vue, c, femme, x) {
   const muscles = planche[vue].map(([slug, traces]) => {
     const g = GROUPE_PAR_SLUG[slug];
     const fill = g ? c(g) : 'var(--corps-neutre)';
-    return traces.map(d => `<path d="${d}" fill="${fill}"/>`).join('');
+    return traces.map(d => `<path d="${d}" fill="${fill}"${LISSAGE_MUSCLE(fill)}/>`).join('');
   }).join('');
+  const id = 'fig' + (++compteurSilhouette);
   return `<svg x="${x}" y="0" width="205" height="440" viewBox="${planche.vb[vue]}">
-    <path d="${planche.contour[vue]}" fill="var(--corps-contour)"/>${muscles}</svg>`;
+    <defs><clipPath id="${id}"><path d="${planche.contour[vue]}"/></clipPath></defs>
+    <path d="${planche.contour[vue]}" fill="var(--corps-contour)"/><g clip-path="url(#${id})">${muscles}</g></svg>`;
 }
 /* Faisceaux sur le mannequin. Chaque pièce : [faisceau, n° du muscle dans
    MANNEQUIN[sexe][vue], n° du tracé, rectangle de découpe ou null]. Les
@@ -23477,10 +23509,17 @@ function silhouetteSVG(vue, couleurs, opts) {
   const muscles = planche[vue].map(([slug, traces]) => {
     const g = GROUPE_PAR_SLUG[slug];
     const f = (g && couleurs[g]) || neutre;
-    return traces.map(d => `<path d="${d}" fill="${f}"/>`).join('');
+    return traces.map(d => `<path d="${d}" fill="${f}"${LISSAGE_MUSCLE(f)}/>`).join('');
   }).join('');
-  return `<svg viewBox="${opts.vb || planche.vb[vue]}" preserveAspectRatio="xMidYMid meet" aria-hidden="true"><path d="${planche.contour[vue]}" fill="${contour}"/>${muscles}</svg>`;
+  const id = 'sil' + (++compteurSilhouette);
+  return `<svg viewBox="${opts.vb || planche.vb[vue]}" preserveAspectRatio="xMidYMid meet" aria-hidden="true"><defs><clipPath id="${id}"><path d="${planche.contour[vue]}"/></clipPath></defs><path d="${planche.contour[vue]}" fill="${contour}"/><g clip-path="url(#${id})">${muscles}</g></svg>`;
 }
+/* Les muscles du mannequin sont dessinés fibre par fibre ; en petit, les
+   fentes entre fibres hachaient les masses (« mal dessiné »). Un trait de la
+   couleur du muscle, de 6 unités, referme ces fentes : chaque muscle redevient
+   une masse pleine aux bords doux, les groupes restent séparés par le corps. */
+var compteurSilhouette = 0;
+function LISSAGE_MUSCLE(f) { return ` stroke="${f}" stroke-width="6" stroke-linejoin="round"`; }
 // Cadrages de la vue de face (homme et femme partagent à peu près la même planche de coordonnées)
 const CADRES_SILHOUETTE = { torse: '120 150 520 760', jambes: '120 650 520 760', buste: '100 160 560 720' };
 // De dos, le même cadrage décalé jusqu'à la planche du dos.
@@ -23536,7 +23575,7 @@ function corpsPivotHTML(couleurs) {
     const muscles = planche[v].map(([slug, traces]) => {
       const g = GROUPE_PAR_SLUG[slug];
       const f = (g && couleurs[g]) || 'var(--corps-neutre)';
-      return traces.map(d => `<path d="${d}" fill="${f}"/>`).join('');
+      return traces.map(d => `<path d="${d}" fill="${f}"${LISSAGE_MUSCLE(f)}/>`).join('');
     }).join('');
     const [x, y, w, h] = planche.vb[v].split(' ').map(Number);
     return `<svg class="cp-vue cp-${v}" viewBox="${planche.vb[v]}" preserveAspectRatio="xMidYMid meet" aria-hidden="true">
@@ -23546,7 +23585,7 @@ function corpsPivotHTML(couleurs) {
           <stop offset="0" stop-color="#000" stop-opacity="0"/><stop offset=".5" stop-color="#000" stop-opacity="0"/><stop offset="1" stop-color="#000" stop-opacity="0"/>
         </linearGradient>
       </defs>
-      <path d="${planche.contour[v]}" fill="var(--corps-contour)"/>${muscles}
+      <path d="${planche.contour[v]}" fill="var(--corps-contour)"/><g clip-path="url(#${id}-${v}-c)">${muscles}</g>
       <rect x="${x}" y="${y}" width="${w}" height="${h}" fill="url(#${id}-${v}-o)" clip-path="url(#${id}-${v}-c)"/>
     </svg>`;
   };

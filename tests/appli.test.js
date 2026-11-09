@@ -1378,7 +1378,7 @@ test("app iOS (refonte B) : fond système nu, échelle SF, bouton principal en a
     const pause = ms => new Promise(ok => setTimeout(ok, ms));
     const res = {};
     const racine = getComputedStyle(document.documentElement);
-    res.fond = getComputedStyle(document.body, '::before').display;
+    res.fond = [getComputedStyle(document.body, '::before').display, getComputedStyle(document.body, '::before').backgroundImage.includes('linear-gradient')];
     res.proteine = racine.getPropertyValue('--protein').trim();
     allerA('seance'); renderApp();
     res.titre = getComputedStyle(document.querySelector('#ecran-seance .titre-ecran')).fontSize;
@@ -1426,7 +1426,7 @@ test("app iOS (refonte B) : fond système nu, échelle SF, bouton principal en a
     res.haptiqueSegment = window.__appelsNatifs.filter(a => a[0] === 'Haptics').map(a => a[1]);
     return res;
   });
-  assert.equal(r.fond, 'none', 'plus de quadrillage dans l\'app');
+  assert.deepEqual(r.fond, ['block', true], 'la grille de fond du site reste dans l\'app (demandée)');
   assert.ok(['#e4575f', '#ff7b7b'].includes(r.proteine), r.proteine);
   assert.equal(r.titre, '34px', 'grand titre de 34 pt');
   assert.equal(r.primaire, 'rgb(214, 36, 110)', 'bouton principal en accent');
@@ -1690,6 +1690,35 @@ test("sur le web, le résumé se calcule mais rien n'est publié ; sans Santé a
   assert.equal(r.appels, 'undefined');
   assert.equal(r.resume.journee.date.length, 10);
   assert.equal(r.sante, false);
+}));
+
+test("corps : les muscles du mannequin sont des masses pleines (contour de leur couleur, découpées au corps) ; le pictogramme d'un groupe est le mannequin cadré, partagé par <use>, et suit le sexe du profil ; le cardio garde l'ancien schéma", () => avecAppli({}, async ({ page }) => {
+  const r = await page.evaluate(() => {
+    const face = silhouetteSVG('face', { pectoraux: 'red' }, {});
+    const res = { lisse: (face.match(/stroke-width="6"/g) || []).length, clip: /<g clip-path="url\(#sil\d+\)">/.test(face), pivot: /stroke-width="6"/.test(corpsPivotHTML({})) && /<g clip-path="url\(#cp\d+-face-c\)">/.test(corpsPivotHTML({})) };
+    userProfile.gender = 'm';
+    const pecs = svgSilhouetteGroupe('pectoraux'), quads = svgSilhouetteGroupe('quadriceps'), dos = svgSilhouetteGroupe('dos');
+    res.pecs = [pecs.includes('<use href="#mannequin-homme-face"'), pecs.includes('--m-pectoraux: var(--corps-cible)'), pecs.includes('viewBox="120 150 520 760"')];
+    res.quads = quads.includes('viewBox="120 650 520 760"');
+    res.dos = dos.includes('<use href="#mannequin-homme-dos"');
+    const sym = document.getElementById('symboles-mannequin');
+    res.symboles = [!!sym, sym && sym.querySelectorAll('g[id^="mannequin-homme-"]').length, sym && sym.querySelectorAll('path').length > 50];
+    userProfile.gender = 'f';
+    res.femme = [svgSilhouetteGroupe('biceps').includes('#mannequin-femme-face'), document.getElementById('symboles-mannequin').dataset.sexe];
+    res.cardio = svgSilhouetteGroupe('cardio').includes('<circle cx="50" cy="17"');
+    res.inconnu = svgSilhouetteGroupe('autre').includes('<circle cx="50" cy="17"');
+    return res;
+  });
+  assert.ok(r.lisse > 50, 'chaque fibre porte le trait de lissage : ' + r.lisse);
+  assert.equal(r.clip, true);
+  assert.equal(r.pivot, true);
+  assert.deepEqual(r.pecs, [true, true, true]);
+  assert.equal(r.quads, true, 'les quadriceps cadrés sur les jambes');
+  assert.equal(r.dos, true);
+  assert.deepEqual(r.symboles, [true, 2, true]);
+  assert.deepEqual(r.femme, [true, 'femme']);
+  assert.equal(r.cardio, true);
+  assert.equal(r.inconnu, true);
 }));
 
 test("IA par le serveur : sans clé personnelle, l'IA reste disponible (photo comprise) et chaque demande part avec sa tâche ; l'administration ne distribue plus de clé", () => avecAppli({}, async ({ page }) => {

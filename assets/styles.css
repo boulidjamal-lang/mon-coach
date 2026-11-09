@@ -4955,13 +4955,13 @@ html.app-ios:root {
   --r-bloc: 24px; --r-cellule: 12px; --r-pilule: 999px;
   /* Ressorts d'iOS : courts, sans rebond visible. */
   --ressort: cubic-bezier(.2, .9, .3, 1); --duree-courte: 260ms; --duree: 380ms;
-  /* Le fond système, nu : ni quadrillage ni ambiance floutée. */
-  --ambiance: none; --grille: transparent;
+  /* Le fond système : pas d'ambiance floutée ; le quadrillage fin du site reste
+     (demandé), un peu plus marqué qu'au web pour se voir sur le noir de l'OLED. */
+  --ambiance: none; --grille: rgba(0,0,0,.055);
   /* Les macros, calmées d'un cran : elles ne rivalisent plus avec l'accent. */
   --protein: #e4575f; --carbs: #df9a2d; --fat: #8a6ae0;
 }
-html.app-ios:root[data-theme="dark"] { --protein: #ff7b7b; --carbs: #f5b85c; --fat: #b39cf7; }
-html.app-ios:root body::before { display: none !important; }
+html.app-ios:root[data-theme="dark"] { --protein: #ff7b7b; --carbs: #f5b85c; --fat: #b39cf7; --grille: rgba(255,255,255,.085); }
 
 /* Typographie : grand titre 34 pt, sections 22 pt, corps 17, notes 15, légendes 13 ; jamais sous 11. */
 html.app-ios:root body .titre-ecran { font-size: var(--t-grand-titre) !important; font-weight: 700 !important; letter-spacing: -.012em !important; line-height: 1.12; }
@@ -5330,4 +5330,11 @@ html.app-ios body .toast-maj { border-radius: 22px !important; }
 html.app-ios body .celebration-carte { background: var(--ios-verre) !important; -webkit-backdrop-filter: blur(20px) saturate(1.8); backdrop-filter: blur(20px) saturate(1.8); border-radius: 22px !important; box-shadow: var(--ombre-haute) !important; }
 html.app-ios.sans-verre body :is(.toast-annuler, .celebration-carte) { background: var(--s2) !important; }
 @media (prefers-reduced-motion: reduce) { html.app-ios body .loader { animation: none; } }
+
+/* Pictogramme d'un groupe (mannequin cadré, voir svgSilhouetteGroupe) : posé sur
+   une tuile, il prend des gris relatifs au texte pour rester lisible sur
+   n'importe quelle surface, clair ou sombre ; le groupe garde l'accent. */
+.picto-corps { --corps-contour: color-mix(in srgb, var(--text) 9%, transparent); --corps-neutre: color-mix(in srgb, var(--text) 20%, transparent); }
+:root[data-theme="dark"] .picto-corps { --corps-contour: color-mix(in srgb, var(--text) 13%, transparent); --corps-neutre: color-mix(in srgb, var(--text) 28%, transparent); }
+.exo-ligne-vignette svg.picto-corps { width: 96%; height: 96%; }
 
