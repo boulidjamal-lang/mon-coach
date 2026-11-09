@@ -1005,14 +1005,14 @@ test('Administration : Serveur et SQL sonde chaque SQL sans rien modifier, signa
       ecritures: window.__appels.filter(a => a[0] === 'from' && a[2] !== 'select').length,
       rpc: [...new Set(window.__appels.filter(a => a[0] === 'rpc').map(a => a[1]))].sort() };
   });
-  assert.deepEqual(r.lignes, [['supabase', 'OK'], ['rls', 'OK'], ['accents', 'OK'], ['gymbro', 'OK'], ['pro', 'OK'], ['appstore', 'OK'], ['direct', 'OK'], ['admin', 'Manquant']]);
+  assert.deepEqual(r.lignes, [['supabase', 'OK'], ['rls', 'OK'], ['accents', 'OK'], ['gymbro', 'OK'], ['pro', 'OK'], ['appstore', 'OK'], ['direct', 'OK'], ['admin', 'Manquant'], ['saison', 'OK']]);
   assert.equal(r.bilan[0], '1 point à régler');
   assert.match(r.bilan[1], /^Vérifié à l'instant · Supabase répond en \d+ ms$/);
   assert.equal(r.ouvert, 'true');
   assert.match(r.sql, /create table if not exists public\.erreurs_appli/);
   assert.match(r.sql, /jambou592@gmail\.com/);
   assert.equal(r.ecritures, 0, 'le bilan ne modifie rien');
-  assert.deepEqual(r.rpc, ['admin_signalements', 'gymbro_direct', 'mon_statut_compte']);
+  assert.deepEqual(r.rpc, ['admin_signalements', 'gymbro_direct', 'gymbro_saisons', 'mon_statut_compte']);
   assert.deepEqual(r.tuileErreurs, ['—', 'SQL « Administration » à passer'], 'table absente : pas « 0 erreur »');
 }));
 
@@ -2762,13 +2762,15 @@ test('vitrines : Activité (corps, séance du jour, programmes), Cardio (arc, tr
   assert.deepEqual(c, { arc: true, trace: 0, valeur: '5 km', mois: 1, longue: '5km' });
   await page.evaluate(() => allerA('reglages'));
   const p = await page.evaluate(() => ({
-    niveau: document.querySelector('#vitrine-badges .niveau-t b').textContent,
+    palier: document.querySelector('#vitrine-badges .sp-palier b').textContent,
+    paliers: document.querySelectorAll('#vitrine-badges .sp-piste .sp-n').length,
     badges: document.querySelectorAll('#vitrine-badges .badge').length,
     objectifCache: getComputedStyle(document.getElementById('carte-objectif')).display
   }));
-  // 1 séance (40 XP) + 1 cardio (25 XP), aucun repas : 65 XP, sous le seuil du niveau 2 (100 XP).
+  // 1 séance (100 XP) + 1 cardio (60 XP), aucun repas : 160 XP, sous le premier palier (250 XP).
   assert.equal(p.badges, 8);
-  assert.match(p.niveau, /^Niveau 1 · Débutant$/);
+  assert.equal(p.palier, '0');
+  assert.equal(p.paliers, 50);
   assert.equal(p.objectifCache, 'none');
   await page.click('#vitrine-profil .obj-tuile:has-text("Masse")');
   const o = await page.evaluate(() => ({ select: document.getElementById('objectif-select').value, goal: getDay(todayStr()).goal, on: document.querySelector('#vitrine-profil .obj-tuile.on').textContent.trim() }));
@@ -2793,6 +2795,55 @@ test('séance : un record est fêté une fois, la série cochée « pop », le r
   });
   assert.match(r.fete, /Nouveau record/);
   assert.deepEqual({ record: r.record, pop: r.pop, anneau: r.anneau, deuxieme: r.deuxieme, records: r.records }, { record: 1, pop: true, anneau: true, deuxieme: '', records: 1 });
+}));
+
+test('passe de saison : deux mois par saison, XP des séances, du cardio et des pesées, 50 paliers, cadre débloqué, tout repart de zéro à la saison suivante', () => avecAppli({}, async ({ page }) => {
+  const r = await page.evaluate(() => {
+    const res = {
+      decoupe: [saisonDe('2026-11-09').id, saisonDe('2026-11-09').debut, saisonDe('2026-11-09').fin, saisonDe('2027-02-28').nom, saisonDe('2027-03-01').debut]
+    };
+    // La saison d'avant : 6 jours à 2 séances (une 3e le même jour ne compte pas), un record, un cardio, deux pesées.
+    const prec = saisonDe(shiftDate(saisonDe(todayStr()).debut, -1));
+    for (let k = 0; k < 6; k++) {
+      const d = shiftDate(prec.debut, k);
+      for (let n = 0; n < (k === 0 ? 3 : 2); n++) musculationHistorique.push({ id: 'p' + k + n, date: d, programmeNom: 'Test',
+        exercices: [{ exerciceId: 'x', nom: 'X', series: [{ poids: 50, reps: 8, fait: true, record: k === 0 && n === 0 }] }] });
+    }
+    const j1 = getDay(shiftDate(prec.debut, 1)); j1.workouts.push({ type: 'course', time: 30, distance: 5, intensite: 2 }); j1.weight = 80; saveData(shiftDate(prec.debut, 1));
+    const j2 = getDay(shiftDate(prec.debut, 2)); j2.weight = 79.8; saveData(shiftDate(prec.debut, 2));
+    const p = passeSaison(prec);
+    res.detail = [p.detail.muscu, p.detail.record, p.detail.cardio, p.detail.pesee, p.detail.journee];
+    res.defis = p.detail.defiSemaine % 150 === 0 && p.xp === Object.values(p.detail).reduce((a, b) => a + b, 0);
+    res.palier = p.palier >= 5 && p.palier === Math.floor(p.xp / 250);
+    // La saison en cours repart de zéro ; le cadre Bronze (palier 5), gagné avant, reste.
+    res.enCours = passeSaison().detail.muscu;
+    allerA('reglages'); renderVitrineProfil();
+    const q = sel => document.querySelectorAll('#vitrine-badges ' + sel).length;
+    res.vue = { paliers: q('.sp-n'), recompenses: q('.sp-n.rec'), defis: q('.sp-defi'), cadres: q('.sp-cadre'), verrous: q('.sp-cadre.verrou'), classement: q('.carte-saison-cl') };
+    res.cadreParDefaut = !!document.querySelector('#vitrine-profil .pf-av.cadre-av');
+    choisirCadre('aucun');
+    res.sansCadre = !document.querySelector('#vitrine-profil .pf-av.cadre-av') && userProfile.cadre === 'aucun';
+    document.querySelector('#vitrine-badges .sp-cadre:not(.verrou):not(.on)').click();
+    res.choisi = [userProfile.cadre, !!document.querySelector('#vitrine-profil .pf-av.cadre-av')];
+    // Classement de la saison : un gymbro qui a publié sa saison en cours.
+    gymbroLiens = [{ pseudo: 'carl', sens: 'envoyee', statut: 'acceptee' }];
+    saisonsGymbros = [{ pseudo: 'carl', saison: { id: saisonDe(todayStr()).id, xp: 900, palier: 99, cadre: 'or' } }, { pseudo: 'vieux', saison: { id: prec.id, xp: 5000 } }];
+    renderVitrineProfil();
+    res.gymbros = [...document.querySelectorAll('#vitrine-badges .carte-saison-cl .gcl b')].map(b => b.textContent);
+    res.palierGymbro = document.querySelector('#vitrine-badges .carte-saison-cl .gcl .gcl-sous').textContent;
+    return res;
+  });
+  assert.deepEqual(r.decoupe, ['2026-6', '2026-11-01', '2026-12-31', 'Résolution', '2027-03-01']);
+  assert.deepEqual(r.detail, [1200, 50, 60, 20, 0]);
+  assert.equal(r.defis, true);
+  assert.equal(r.palier, true);
+  assert.equal(r.enCours, 0);
+  assert.deepEqual(r.vue, { paliers: 50, recompenses: 10, defis: 3, cadres: 6, verrous: 4, classement: 0 });
+  assert.equal(r.cadreParDefaut, true);
+  assert.equal(r.sansCadre, true);
+  assert.deepEqual(r.choisi, ['bronze', true]);
+  assert.deepEqual(r.gymbros, ['@carl', 'Toi']);
+  assert.equal(r.palierGymbro, 'Palier 3', 'le palier se recalcule d\'après l\'XP publiée');
 }));
 
 test('trophées : un badge tout juste gagné est fêté, une seule fois', () => avecAppli({}, async ({ page }) => {
@@ -4324,7 +4375,7 @@ test("Profil : la page montre « moi » (identité, objectif, corps, badges), l'
     };
   });
   assert.deepEqual(r.ordre, ['vitrine-profil', 'carte-corps', 'gymbros-rangee-profil', 'vitrine-badges']);
-  assert.deepEqual(r.titres, ['Mon objectif', 'Mon corps', 'Niveau et badges']);
+  assert.deepEqual(r.titres, ['Mon objectif', 'Mon corps', 'Passe de saison', 'Vitrine']);
   assert.deepEqual([r.corps, r.reglages, r.identite, r.compteSansBalance, r.modifier], [true, true, true, true, true]);
   assert.deepEqual(r.balance, [true, false]);
 }));

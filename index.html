@@ -2770,6 +2770,81 @@
     .badge.verrou .med { background: var(--piste); color: var(--text-muted); box-shadow: inset 0 0 0 1.5px var(--trait); }
     .badge.verrou .med .icone-ui { opacity: .55; filter: none; }
     .badge b { color: var(--text); font-size: .7rem; font-weight: 800; }
+    /* =====================================================================
+       PASSE DE SAISON — en-tête (palier, XP), piste des 50 paliers, défis de
+       la semaine, cadres ; couleurs de la saison dans --sc1 / --sc2.
+       ===================================================================== */
+    .carte-saison { position: relative; padding: 16px; border-radius: 26px; margin-bottom: 12px; overflow: hidden;
+      background: var(--verre); -webkit-backdrop-filter: blur(24px) saturate(1.8); backdrop-filter: blur(24px) saturate(1.8); box-shadow: var(--ombre-v), inset 0 0 0 1px var(--trait); }
+    .carte-saison::before { content: ''; position: absolute; top: -45%; right: -20%; width: 75%; height: 95%; border-radius: 50%; pointer-events: none;
+      background: radial-gradient(closest-side, color-mix(in srgb, var(--sc1) 30%, transparent), transparent); }
+    .sp-tete { position: relative; display: flex; gap: 14px; align-items: center; }
+    .sp-palier { flex: none; width: 74px; height: 74px; border-radius: 24px; display: grid; place-content: center; text-align: center; color: #fff;
+      background: linear-gradient(140deg, var(--sc1), var(--sc2)); box-shadow: 0 14px 28px -14px var(--sc2), inset 0 2px 0 rgba(255,255,255,.3); }
+    .sp-palier small { font-size: .55rem; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; opacity: .85; }
+    .sp-palier b { font-family: 'Manrope', 'Inter', sans-serif; font-size: 1.9rem; font-weight: 800; letter-spacing: -.05em; line-height: 1.05; font-variant-numeric: tabular-nums; }
+    .sp-palier span { font-size: .6rem; font-weight: 700; opacity: .8; }
+    .sp-xp { flex: 1; min-width: 0; }
+    .sp-xp-t { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+    .sp-xp-t b { font-family: 'Manrope', 'Inter', sans-serif; font-size: 1.02rem; font-weight: 800; letter-spacing: -.02em; }
+    .sp-xp-t span { font-size: .74rem; font-weight: 800; color: var(--text-muted); font-variant-numeric: tabular-nums; white-space: nowrap; }
+    .sp-barre { margin-top: 8px; }
+    html:root body .carte-saison .sp-barre i { background: linear-gradient(90deg, var(--sc1), var(--sc2)) !important; box-shadow: 0 0 14px color-mix(in srgb, var(--sc1) 55%, transparent) !important; }
+    .sp-suite { margin-top: 7px; font-size: .68rem; font-weight: 600; line-height: 1.35; color: var(--text-muted); }
+    .sp-suite b { color: var(--text); }
+    /* La piste : 50 paliers à faire défiler, une récompense tous les 5. */
+    .sp-piste { position: relative; display: flex; gap: 6px; align-items: center; margin: 14px -16px 2px; padding: 10px 16px 12px; overflow-x: auto; scrollbar-width: none; -webkit-overflow-scrolling: touch; }
+    .sp-piste::-webkit-scrollbar { display: none; }
+    .sp-n { position: relative; flex: none; width: 30px; height: 30px; border-radius: 50%; display: grid; place-items: center;
+      background: var(--piste); color: var(--text-muted); font-size: .6rem; font-weight: 800; font-variant-numeric: tabular-nums; }
+    .sp-n i { font-style: normal; }
+    .sp-n + .sp-n::before { content: ''; position: absolute; right: 100%; top: 50%; width: 6px; height: 3px; margin-top: -1.5px; background: var(--piste); }
+    .sp-n.ok { background: linear-gradient(140deg, var(--sc1), var(--sc2)); color: #fff; }
+    .sp-n.ok + .sp-n::before { background: var(--sc1); }
+    .sp-n.cur { color: var(--text); box-shadow: 0 0 0 2px var(--carte-plein), 0 0 0 4px var(--sc1); }
+    .sp-n.rec { width: 46px; height: 46px; border-radius: 16px; }
+    .sp-n.rec i { position: absolute; bottom: -8px; left: 50%; transform: translateX(-50%); padding: 1px 5px; border-radius: 99px; background: var(--carte-plein); color: var(--text); font-size: .55rem; box-shadow: 0 2px 6px -2px rgba(0,0,0,.35); }
+    .sp-rc { width: 28px; height: 28px; border-radius: 50%; background: var(--cadre); -webkit-mask: radial-gradient(circle, transparent 8px, #000 8.5px); mask: radial-gradient(circle, transparent 8px, #000 8.5px); }
+    .sp-rb { width: 28px; height: 28px; border-radius: 10px; display: grid; place-items: center; color: #fff; transform: rotate(-8deg); }
+    .sp-rb .icone-ui { width: 16px; height: 16px; transform: rotate(8deg); }
+    .sp-n.rec:not(.ok) :is(.sp-rc, .sp-rb) { filter: grayscale(1); opacity: .5; }
+    /* Défis de la semaine, cadres. */
+    .sp-bloc { position: relative; margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--ligne); }
+    .sp-bloc h4 { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; margin: 0 0 6px; font-size: .84rem; font-weight: 800; }
+    .sp-bloc h4 span { font-size: .64rem; font-weight: 600; color: var(--text-muted); text-align: right; }
+    .sp-defi { display: grid; grid-template-columns: 32px 1fr auto; gap: 10px; align-items: center; padding: 6px 0; }
+    .sp-ic { width: 32px; height: 32px; border-radius: 11px; display: grid; place-items: center; background: var(--piste); color: var(--text-muted); }
+    .sp-ic .icone-ui { width: 17px; height: 17px; }
+    .sp-defi.ok .sp-ic { background: linear-gradient(140deg, var(--sc1), var(--sc2)); color: #fff; }
+    .sp-defi-t { min-width: 0; }
+    .sp-defi-t b { display: block; margin-bottom: 5px; font-size: .78rem; font-weight: 700; }
+    .sp-mini { display: block; height: 6px; border-radius: 99px; background: var(--piste); overflow: hidden; }
+    .sp-mini i { display: block; height: 100%; border-radius: 99px; background: linear-gradient(90deg, var(--sc1), var(--sc2)); }
+    .sp-defi em { font-style: normal; font-size: .72rem; font-weight: 800; color: var(--text-muted); font-variant-numeric: tabular-nums; white-space: nowrap; }
+    .sp-defi.ok em { color: var(--text); }
+    .sp-cadres { display: flex; gap: 12px; overflow-x: auto; margin: 0 -16px; padding: 6px 16px 2px; scrollbar-width: none; }
+    .sp-cadres::-webkit-scrollbar { display: none; }
+    .sp-cadre { flex: none; display: grid; justify-items: center; gap: 6px; padding: 0; border: 0; background: none; color: var(--text-muted); font: inherit; font-size: .6rem; font-weight: 700; cursor: pointer; }
+    .sp-cadre-r { position: relative; width: 46px; height: 46px; border-radius: 50%; display: grid; place-items: center; background: var(--cadre, var(--piste)); }
+    .sp-cadre-r::after { content: ''; position: absolute; inset: 4px; border-radius: 50%; background: var(--carte-plein); }
+    .sp-cadre-r .icone-ui { position: relative; z-index: 1; width: 15px; height: 15px; color: var(--text-muted); }
+    .sp-cadre.verrou { cursor: default; opacity: .6; }
+    .sp-cadre.verrou .sp-cadre-r { filter: grayscale(1); }
+    .sp-cadre.on { color: var(--text); }
+    .sp-cadre.on .sp-cadre-r { box-shadow: 0 0 0 2px var(--carte-plein), 0 0 0 4px var(--sc1); }
+    .sp-gains { position: relative; margin: 12px 0 0; font-size: .64rem; line-height: 1.45; color: var(--text-muted); }
+    .carte-saison-cl { padding: 4px 16px; border-radius: 26px; margin-bottom: 12px; background: var(--verre); box-shadow: var(--ombre-v), inset 0 0 0 1px var(--trait); }
+    .carte-saison-cl .gcl:first-child { border-top-color: transparent; }
+    .gcl-sous { display: block; font-size: .66rem; font-weight: 700; color: var(--text-muted); }
+    /* Cadres d'avatar gagnés en saison (profil, classements). */
+    @property --ang { syntax: '<angle>'; inherits: false; initial-value: 0deg; }
+    @keyframes cadre-tourne { to { --ang: 360deg; } }
+    .cadre-anime { animation: cadre-tourne 6s linear infinite; }
+    @media (prefers-reduced-motion: reduce) { .cadre-anime { animation: none; } }
+    .cadre-bulle { display: inline-grid; flex: none; padding: 2.5px; border-radius: 50%; background: var(--cadre); }
+    .cadre-bulle > .gav { box-shadow: 0 0 0 2px var(--carte-plein); }
+    html:root body .pf-carte .pf-av.cadre-av, .pf-av.cadre-av { padding: 3px !important; background: var(--cadre) !important; }
+    html:root body .pf-carte .pf-av.cadre-av .avatar, .pf-av.cadre-av .avatar { border: 2px solid var(--carte-plein) !important; }
     .badge.verrou b { color: var(--text-muted); }
     .obj-tuiles { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
     .obj-tuile { padding: 12px 2px 10px; border: 0; border-radius: 18px; text-align: center; background: var(--piste); font: inherit; font-size: .7rem; font-weight: 800; color: var(--text-muted); cursor: pointer; transition: transform .15s; }
@@ -4162,7 +4237,7 @@
       font-size: .78rem !important; font-weight: 600 !important; color: var(--text-muted) !important; opacity: 1 !important; }
 
     /* Surfaces : cartes unies, un rayon, ni verre ni lueur. */
-    html:root body :is(.summary-card, .fitness-card, .analysis-card, .meal-card, .bloc-verre, .carte-stats, .cle, .niveau, .cg, .carte-badges, .carte-objectifs,
+    html:root body :is(.summary-card, .fitness-card, .analysis-card, .meal-card, .bloc-verre, .carte-stats, .cle, .niveau, .cg, .carte-badges, .carte-objectifs, .carte-saison, .carte-saison-cl,
       .carte-liste, .session-exo-bloc, .exo-en-programme, .verre, .action-tuile, .coach-carte, .sdj, .pc, .pg-heros, .pg-tuile, .pg-carte, .pg-constat, .seance-heros,
       .bilan-heros, .hd-resume, .prog-heros, .bt, .celebration-carte) {
       background: var(--s1) !important; -webkit-backdrop-filter: none !important; backdrop-filter: none !important;
@@ -4749,7 +4824,7 @@
       transform: scale(.96) !important; transition-duration: .08s !important; }
 
     /* Cartes : unies, sans ombre ni liseré. */
-    html.app-ios:root[data-theme="dark"] body :is(.summary-card, .fitness-card, .analysis-card, .meal-card, .bloc-verre, .carte-stats, .cle, .niveau, .cg, .carte-badges, .carte-objectifs,
+    html.app-ios:root[data-theme="dark"] body :is(.summary-card, .fitness-card, .analysis-card, .meal-card, .bloc-verre, .carte-stats, .cle, .niveau, .cg, .carte-badges, .carte-objectifs, .carte-saison, .carte-saison-cl,
       .carte-liste, .session-exo-bloc, .exo-en-programme, .verre, .action-tuile, .coach-carte, .sdj, .pc, .pg-heros, .pg-tuile, .pg-carte, .pg-constat, .seance-heros) { box-shadow: none !important; }
 
     /* Fenêtres : feuilles qui montent du bas, décollées des bords, aux coins
@@ -5600,7 +5675,7 @@
 
     <div id="gymbros-rangee-profil" class="gstrip-zone"></div>
 
-    <!-- Niveau et badges (dessinés par renderVitrineProfil). -->
+    <!-- Passe de saison, classement de la saison et vitrine (dessinés par renderVitrineProfil). -->
     <div id="vitrine-badges" class="vitrine"></div>
   </section>
 </main>
@@ -6008,6 +6083,14 @@
         <p class="note note-explicative">Le journal de tes actions, le détail des signalements, les erreurs envoyées par les appareils, la version et la synchro de chaque appareil, le tableau de bord et le message à tous. Ne modifie aucune donnée existante.</p>
         <div class="bloc-sql" id="bloc-sql-admin"></div>
         <button class="btn btn-secondaire" type="button" onclick="copierSqlAdmin()">Copier le SQL</button>
+        </div>
+      </div>
+      <div class="adm-sql" data-sql="saison">
+        <button type="button" class="ligne-reglage ligne-reglage--bouton" aria-expanded="false" onclick="basculerSqlAdmin(this)"><span class="adm-num">9</span><span class="ligne-txt"><b>Saison et défis</b><small>Classement de la saison entre gymbros, défis sur un exercice</small></span><span class="adm-etat adm-etat--attente" data-etat-sql>&hellip;</span></button>
+        <div class="adm-sql-corps hidden">
+        <p class="note note-explicative">Après « Gymbro et photos » : chacun publie l'XP de sa saison et son cadre pour le classement de la saison entre gymbros. Ne modifie aucune donnée existante.</p>
+        <div class="bloc-sql" id="bloc-sql-saison"></div>
+        <button class="btn btn-secondaire" type="button" onclick="copierSqlSaison()">Copier le SQL</button>
         </div>
       </div>
     </div>
@@ -18149,6 +18232,7 @@ async function chargerLiensGymbro() {
     }));
     gymbroLiensActifs = true;
     await chargerProfilsGymbros();
+    chargerSaisonsGymbros();
   } catch (e) {
     gymbroLiensActifs = false;
     if (!estErreurSqlManquant(e)) console.warn('[Gymbro] demandes indisponibles :', e.message || e);
@@ -19099,11 +19183,13 @@ function renderFilGymbros() {
 let gymbroMesure = 'volume';
 function choisirMesureGymbro(m) { gymbroMesure = m; renderClassementGymbros(); }
 function valeurClassement(v) {
+  if (gymbroMesure === 'saison') return [nombreFr(v, 0), 'XP'];
   if (gymbroMesure === 'volume') return v >= 1000 ? [(v / 1000).toLocaleString('fr-FR', { maximumFractionDigits: 1 }), 't'] : [String(v), 'kg'];
   if (gymbroMesure === 'seances') return [String(v), v > 1 ? 'séances' : 'séance'];
   return [String(v), 'sem.'];
 }
 function participantsClassement() {
+  if (gymbroMesure === 'saison') return classementSaison(passeSaison()).map(x => ({ pseudo: x.pseudo, moi: x.moi, v: x.xp }));
   const lundi = lundiDeLaSemaine(todayStr());
   const mesure = hist => {
     const sem = hist.filter(h => h && h.date >= lundi);
@@ -19122,17 +19208,22 @@ function participantsClassement() {
 function renderClassementGymbros() {
   const zone = document.getElementById('gymbro-vue-classement');
   if (!zone) return;
-  const mesures = [['volume', 'Volume'], ['seances', 'Séances'], ['regularite', 'Régularité']];
+  const mesures = [['volume', 'Volume'], ['seances', 'Séances'], ['regularite', 'Régularité'], ['saison', 'Saison']];
+  if (gymbroMesure === 'saison' && Date.now() - saisonsGymbrosA > 300000) chargerSaisonsGymbros().then(() => { if (gymbroMesure === 'saison') renderClassementGymbros(); });
   let html = `<div class="segment gb-mesure" id="gymbro-mesure" role="group" aria-label="Classer par">${mesures.map(([k, l]) =>
     `<button type="button" onclick="choisirMesureGymbro('${k}')" aria-pressed="${k === gymbroMesure}">${l}</button>`).join('')}</div>`;
   const liste = participantsClassement();
   if (liste.length < 2) {
+    if (gymbroMesure === 'saison' && gymbroLiens.some(l => l.statut === 'acceptee')) {
+      zone.innerHTML = html + `<div class="gvide"><b>Saison ${escapeHtml(saisonDe(todayStr()).nom)}</b><p>Tes gymbros apparaissent ici dès qu'ils ouvrent l'appli à jour : celui qui a le plus d'XP de la saison mène.</p></div>`;
+      return;
+    }
     zone.innerHTML = html + `<div class="gvide"><b>Le classement t'attend</b><p>Invite des amis : chaque semaine, vous verrez qui a soulevé le plus, qui s'est entraîné le plus souvent et qui ne lâche rien.</p>
       <button type="button" class="gbtn gbtn--ok" onclick="choisirOngletGymbro('mes')">Inviter un ami</button></div>`;
     return;
   }
   const nom = p => p.moi ? 'Toi' : '@' + escapeHtml(p.pseudo);
-  const bulle = (p, t, anneau) => bulleGymbro(p.pseudo, t, anneau, p.moi);
+  const bulle = (p, t, anneau) => avecCadre(bulleGymbro(p.pseudo, t, anneau, p.moi), p.moi ? monCadre() : cadreGymbro(p.pseudo));
   const val = p => { const [v, u] = valeurClassement(p.v); return { v, u }; };
   // Podium : 2e, 1er, 3e.
   const podium = [[liste[1], 'p2', 2, 52], [liste[0], 'p1', 1, 62], [liste[2], 'p3', 3, 52]].map(([p, cls, rang, t]) => {
@@ -19148,7 +19239,7 @@ function renderClassementGymbros() {
   }).join('');
   // Défi : ce qu'il manque pour gagner une place (ou l'avance si tu mènes).
   const i = liste.findIndex(p => p.moi);
-  const ecart = (a, b) => { const e = a.v - b.v; return gymbroMesure === 'volume' ? (e >= 1000 ? valeurClassement(e).join(' ') : e + ' kg') : e + (gymbroMesure === 'seances' ? ' séance' + (e > 1 ? 's' : '') : ' semaine' + (e > 1 ? 's' : '')); };
+  const ecart = (a, b) => { const e = a.v - b.v; if (gymbroMesure === 'saison') return nombreFr(e, 0) + ' XP'; return gymbroMesure === 'volume' ? (e >= 1000 ? valeurClassement(e).join(' ') : e + ' kg') : e + (gymbroMesure === 'seances' ? ' séance' + (e > 1 ? 's' : '') : ' semaine' + (e > 1 ? 's' : '')); };
   let defi;
   if (i > 0) {
     const devant = liste[i - 1];
@@ -19160,7 +19251,9 @@ function renderClassementGymbros() {
       : `<b>Tu mènes</b> avec ${ecart(liste[0], liste[1])} d'avance sur @${escapeHtml(liste[1].pseudo)}`;
   }
   const lundi = dateLocale(lundiDeLaSemaine(todayStr())), dimanche = dateLocale(decalerJours(lundiDeLaSemaine(todayStr()), 6));
-  const periode = gymbroMesure === 'regularite' ? "Semaines d'affilée avec au moins une séance"
+  const sa = saisonDe(todayStr());
+  const periode = gymbroMesure === 'saison' ? `Saison ${sa.nom} : jusqu'au ${dateLocale(sa.fin).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' })}`
+    : gymbroMesure === 'regularite' ? "Semaines d'affilée avec au moins une séance"
     : `Semaine du lundi ${lundi.getDate()} au dimanche ${dimanche.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })}`;
   html += `<div class="gpodium">${podium}</div><div class="gb-carte gb-classement">${lignes}</div>
     <div class="gdefi"><span aria-hidden="true">🎯</span><div>${defi}<small>${escapeHtml(periode)}</small></div></div>`;
@@ -27518,7 +27611,10 @@ const ICO_V = {
   amis: '<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M22 21v-2a4 4 0 0 0-3-3.87" /><path d="M16 3.13a4 4 0 0 1 0 7.75" />',
   eclair: '<path d="M4 14a1 1 0 0 1-.78-1.63l9.9-10.2a.5.5 0 0 1 .86.46l-1.92 6.02A1 1 0 0 0 13 10h7a1 1 0 0 1 .78 1.63l-9.9 10.2a.5.5 0 0 1-.86-.46l1.92-6.02A1 1 0 0 0 11 14z" />',
   bas: '<path d="m19 12-7 7-7-7" /><path d="M12 5v14" />', haut: '<path d="m5 12 7-7 7 7" /><path d="M12 19V5" />',
-  recomp: '<path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8" /><path d="M21 3v5h-5" />'
+  recomp: '<path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8" /><path d="M21 3v5h-5" />',
+  check: '<path d="M20 6 9 17l-5-5" />',
+  carnet: '<path d="M12 7v14" /><path d="M3 18a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h5a4 4 0 0 1 4 4 4 4 0 0 1 4-4h5a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1h-6a3 3 0 0 0-3 3 3 3 0 0 0-3-3z" />',
+  balance: '<path d="m16 16 3-8 3 8c-.87.65-1.92 1-3 1s-2.13-.35-3-1Z" /><path d="m2 16 3-8 3 8c-.87.65-1.92 1-3 1s-2.13-.35-3-1Z" /><path d="M7 21h10" /><path d="M12 3v18" /><path d="M3 7h2c2 0 5-1 7-2 2 1 5 2 7 2h2" />'
 };
 const svgV = (k, w, taille) => `<svg class="icone-ui" ${taille ? `width="${taille}" height="${taille}"` : ''} viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="${w || 2}" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICO_V[k]}</svg>`;
 
@@ -27879,6 +27975,269 @@ function bentoCardioHTML() {
 }
 const COULEURS_SPORT = { course: '#f97316', cyclisme: '#3b82f6', natation: '#06b6d4', marche_rapide: '#10b981', rameur: '#8b5cf6', hiit: '#e11d48', foot: '#eab308' };
 
+/* =====================================================================
+   PASSE DE SAISON — à la place de « Niveau et badges ». Une saison dure
+   deux mois (janvier-février, mars-avril…), puis les paliers repartent de
+   zéro. L'XP se gagne en s'entraînant, en notant ses journées et en
+   relevant les trois défis de la semaine : 50 paliers de 250 XP, une
+   récompense tous les 5 (cadres d'avatar, badges de saison). Tout se
+   recalcule d'après les données (une séance supprimée retire son XP) ; les
+   récompenses gagnées restent acquises d'une saison à l'autre (vitrine).
+   Chaque compte publie son XP de la saison (profils.saison, SQL « Saison
+   et défis ») : ses gymbros le voient dans le classement de la saison.
+   ===================================================================== */
+const SAISONS = [
+  { nom: 'Résolution', c1: '#38bdf8', c2: '#6366f1' },   // janvier-février
+  { nom: 'Éveil', c1: '#34d399', c2: '#0d9488' },        // mars-avril
+  { nom: 'Ascension', c1: '#fbbf24', c2: '#f97316' },    // mai-juin
+  { nom: 'Canicule', c1: '#fb7185', c2: '#e11d48' },     // juillet-août
+  { nom: 'Rentrée', c1: '#a78bfa', c2: '#7c3aed' },      // septembre-octobre
+  { nom: 'Forge', c1: '#fb923c', c2: '#dc2626' }         // novembre-décembre
+];
+const XP_PALIER = 250, PALIERS = 50;
+const XP_GAINS = { muscu: 100, cardio: 60, record: 50, journee: 30, eau: 15, pesee: 10, defiSemaine: 150, defiGymbro: 200 };
+const RECOMPENSES_SAISON = [
+  { palier: 5, type: 'cadre', cle: 'bronze', nom: 'Cadre Bronze' },
+  { palier: 10, type: 'badge', cle: 'bronze', nom: 'Badge Bronze' },
+  { palier: 15, type: 'cadre', cle: 'argent', nom: 'Cadre Argent' },
+  { palier: 20, type: 'badge', cle: 'argent', nom: 'Badge Argent' },
+  { palier: 25, type: 'cadre', cle: 'or', nom: 'Cadre Or' },
+  { palier: 30, type: 'badge', cle: 'or', nom: 'Badge Or' },
+  { palier: 35, type: 'cadre', cle: 'neon', nom: 'Cadre Néon' },
+  { palier: 40, type: 'badge', cle: 'platine', nom: 'Badge Platine' },
+  { palier: 45, type: 'cadre', cle: 'legende', nom: 'Cadre Légende' },
+  { palier: 50, type: 'badge', cle: 'legende', nom: 'Badge Légende' }
+];
+const CADRES = {
+  bronze: 'conic-gradient(from 200deg, #fcd34d, #b45309, #fcd34d)',
+  argent: 'conic-gradient(from 200deg, #f8fafc, #94a3b8, #f8fafc)',
+  or: 'conic-gradient(from 200deg, #fef08a, #d97706, #fef08a)',
+  neon: 'conic-gradient(from var(--ang, 0deg), #22d3ee, #a855f7, #ec4899, #22d3ee)',
+  legende: 'conic-gradient(from var(--ang, 0deg), #fbbf24, #f97316, #e11d48, #a855f7, #22d3ee, #fbbf24)'
+};
+const CADRES_ANIMES = ['neon', 'legende'];
+const MEDAILLES_SAISON = {
+  bronze: ['linear-gradient(135deg,#fcd34d,#b45309)', 'rgba(180,83,9,.6)'],
+  argent: ['linear-gradient(135deg,#f8fafc,#94a3b8)', 'rgba(100,116,139,.6)'],
+  or: ['linear-gradient(135deg,#fef08a,#f59e0b)', 'rgba(245,158,11,.7)'],
+  platine: ['linear-gradient(135deg,#e0f2fe,#7dd3fc,#a78bfa)', 'rgba(125,211,252,.7)'],
+  legende: ['linear-gradient(135deg,#fbbf24,#f43f5e,#8b5cf6)', 'rgba(244,63,94,.7)']
+};
+function saisonDe(date) {
+  const a = Number(date.slice(0, 4)), k = Math.floor((Number(date.slice(5, 7)) - 1) / 2);
+  const debut = a + '-' + String(2 * k + 1).padStart(2, '0') + '-01';
+  const suivante = k === 5 ? (a + 1) + '-01-01' : a + '-' + String(2 * k + 3).padStart(2, '0') + '-01';
+  return Object.assign({ id: a + '-' + (k + 1), annee: a, debut, fin: shiftDate(suivante, -1) }, SAISONS[k]);
+}
+// Défis gymbros gagnés (voir DÉFIS ENTRE GYMBROS) : gardés sur l'appareil.
+const DEFIS_GAGNES_LS = 'askesis_defis_gagnes';
+function defisGagnes() {
+  try { const l = JSON.parse(localStorage.getItem(DEFIS_GAGNES_LS) || '[]'); return Array.isArray(l) ? l.filter(g => g && typeof g.fin === 'string' && typeof g.exercice === 'string') : []; } catch (e) { return []; }
+}
+/* Ce que chaque jour de la saison apporte : séances (2 comptées par jour au
+   plus), records (3 au plus), journée notée (60 % de la cible au moins,
+   comme pour les moyennes), eau atteinte, pesée. */
+function statsJoursSaison(s, fin) {
+  const st = {};
+  const jour = d => st[d] || (st[d] = { muscu: 0, cardio: 0, records: 0, notee: false, eau: false, pesee: false });
+  musculationHistorique.forEach(h => {
+    if (!h || !(h.date >= s.debut && h.date <= fin)) return;
+    const j = jour(h.date);
+    j.muscu++;
+    (h.exercices || []).forEach(e => (e.series || []).forEach(x => { if (x && x.fait && x.record) j.records++; }));
+  });
+  seancesCardio().forEach(({ date }) => { if (date >= s.debut && date <= fin) jour(date).cardio++; });
+  const auj = todayStr();
+  const cible = Number(computeTargets(getDay(auj), auj, { sansSemaine: true }).target) || 2000;
+  for (let d = s.debut; d <= fin; d = shiftDate(d, 1)) {
+    const j = appData[d];
+    if (!j) continue;
+    const eau = Number(j.eauMl) || 0, notee = !!j.meals && sumMeals(j).kcal >= cible * 0.6, pesee = Number(j.weight) > 0;
+    if (!eau && !notee && !pesee && !st[d]) continue;
+    const x = jour(d);
+    x.notee = notee; x.pesee = pesee;
+    x.eau = eau > 0 && eau >= quotaEauSuggere(d);
+  }
+  return st;
+}
+// Trois défis par semaine : deux fixes, le troisième change chaque semaine.
+const DEFIS_SEMAINE = {
+  muscu: { nom: '3 séances de muscu', but: 3, ic: 'poids', v: j => Math.min(2, j.muscu) },
+  journees: { nom: '5 journées notées', but: 5, ic: 'carnet', v: j => j.notee ? 1 : 0 },
+  cardio: { nom: '2 séances de cardio', but: 2, ic: 'route', v: j => Math.min(2, j.cardio) },
+  eau: { nom: "4 jours d'eau atteints", but: 4, ic: 'goutte', v: j => j.eau ? 1 : 0 },
+  pesee: { nom: '3 pesées', but: 3, ic: 'balance', v: j => j.pesee ? 1 : 0 }
+};
+function defisSemaine(lundi, st, s, fin) {
+  const n = Math.round(Date.parse(lundi) / 6048e5);
+  return ['muscu', 'journees', ['cardio', 'eau', 'pesee'][((n % 3) + 3) % 3]].map(cle => {
+    const D = DEFIS_SEMAINE[cle];
+    let fait = 0;
+    for (let i = 0; i < 7; i++) { const d = shiftDate(lundi, i); if (d >= s.debut && d <= fin && st[d]) fait += D.v(st[d]); }
+    return { cle, nom: D.nom, ic: D.ic, but: D.but, fait: Math.min(D.but, fait), ok: fait >= D.but };
+  });
+}
+function passeSaison(s) {
+  const auj = todayStr();
+  s = s || saisonDe(auj);
+  const fin = auj < s.fin ? auj : s.fin;
+  const detail = { muscu: 0, cardio: 0, record: 0, journee: 0, eau: 0, pesee: 0, defiSemaine: 0, defiGymbro: 0 };
+  let semaine = null;
+  if (fin >= s.debut) {
+    const st = statsJoursSaison(s, fin);
+    Object.values(st).forEach(j => {
+      detail.muscu += Math.min(2, j.muscu) * XP_GAINS.muscu;
+      detail.cardio += Math.min(2, j.cardio) * XP_GAINS.cardio;
+      detail.record += Math.min(3, j.records) * XP_GAINS.record;
+      if (j.notee) detail.journee += XP_GAINS.journee;
+      if (j.eau) detail.eau += XP_GAINS.eau;
+      if (j.pesee) detail.pesee += XP_GAINS.pesee;
+    });
+    const lundiAuj = lundiDe(auj);
+    for (let l = lundiDe(s.debut); l <= fin; l = shiftDate(l, 7)) {
+      const d = defisSemaine(l, st, s, fin);
+      detail.defiSemaine += d.filter(x => x.ok).length * XP_GAINS.defiSemaine;
+      if (l === lundiAuj) semaine = d;
+    }
+    detail.defiGymbro = defisGagnes().filter(g => g.fin >= s.debut && g.fin <= s.fin).length * XP_GAINS.defiGymbro;
+  }
+  const xp = Object.values(detail).reduce((a, b) => a + b, 0);
+  return { saison: s, xp, palier: Math.min(PALIERS, Math.floor(xp / XP_PALIER)), detail, semaine,
+    reste: Math.max(0, Math.round((Date.parse(s.fin) - Date.parse(auj)) / 864e5) + 1) };
+}
+/* Saisons terminées (18 au plus), calculées une fois tant que les données
+   ne changent pas de taille : leurs récompenses restent acquises. */
+let memoSaisonsPassees = null;
+function saisonsPassees() {
+  const sig = todayStr() + ':' + Object.keys(appData).length + ':' + musculationHistorique.length + ':' + defisGagnes().length;
+  if (memoSaisonsPassees && memoSaisonsPassees.sig === sig) return memoSaisonsPassees.liste;
+  const dates = Object.keys(appData).concat(musculationHistorique.map(h => h && h.date)).filter(d => typeof d === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(d));
+  const premier = dates.length ? dates.reduce((a, b) => a < b ? a : b) : null;
+  const liste = [];
+  if (premier) for (let x = saisonDe(shiftDate(saisonDe(todayStr()).debut, -1)); x.fin >= premier && liste.length < 18; x = saisonDe(shiftDate(x.debut, -1))) {
+    const p = passeSaison(x);
+    if (p.xp > 0) liste.push({ id: x.id, nom: x.nom, annee: x.annee, palier: p.palier, xp: p.xp });
+  }
+  memoSaisonsPassees = { sig, liste };
+  return liste;
+}
+function palierMax(p) { return Math.max((p || passeSaison()).palier, ...saisonsPassees().map(x => x.palier)); }
+function cadresDebloques(max) { return RECOMPENSES_SAISON.filter(r => r.type === 'cadre' && r.palier <= max).map(r => r.cle); }
+// Le cadre choisi, ou par défaut le plus beau débloqué ; « aucun » l'enlève.
+function monCadre(max) {
+  const dispo = cadresDebloques(max == null ? palierMax() : max);
+  if (userProfile.cadre === 'aucun') return null;
+  return dispo.includes(userProfile.cadre) ? userProfile.cadre : (dispo[dispo.length - 1] || null);
+}
+function avecCadre(html, cle) {
+  if (!cle || !CADRES[cle]) return html;
+  return `<span class="cadre-bulle${CADRES_ANIMES.includes(cle) ? ' cadre-anime' : ''}" style="--cadre:${CADRES[cle]}">${html}</span>`;
+}
+function choisirCadre(cle) {
+  userProfile.cadre = cle === 'aucun' || CADRES[cle] ? cle : null;
+  saveData();
+  renderVitrineProfil();
+}
+// Publication de ma saison (dédoublonnée) et saisons de mes gymbros.
+let saisonPubliee = '', saisonServeur = true, saisonsGymbros = [], saisonsGymbrosA = 0;
+async function publierMaSaison(p, max) {
+  if (!supa || !sessionUtilisateur || !saisonServeur || typeof supa.from !== 'function') return;
+  p = p || passeSaison();
+  const v = { id: p.saison.id, xp: p.xp, palier: p.palier, cadre: monCadre(max == null ? palierMax(p) : max) };
+  const cle = sessionUtilisateur.id + JSON.stringify(v);
+  if (cle === saisonPubliee) return;
+  saisonPubliee = cle;
+  try {
+    const { error } = await supa.from('profils').upsert({ utilisateur: sessionUtilisateur.id, saison: v }, { onConflict: 'utilisateur' });
+    if (error) throw error;
+  } catch (e) {
+    saisonPubliee = '';
+    if (estErreurSqlManquant(e)) saisonServeur = false;
+  }
+}
+async function chargerSaisonsGymbros() {
+  if (!supa || !sessionUtilisateur || !saisonServeur || typeof supa.rpc !== 'function') return;
+  saisonsGymbrosA = Date.now();
+  try {
+    const { data, error } = await supa.rpc('gymbro_saisons');
+    if (error) throw error;
+    saisonsGymbros = (data || []).filter(r => r && typeof r.pseudo === 'string' && r.saison && typeof r.saison === 'object');
+    if (typeof ecranActif !== 'undefined' && ecranActif === 'reglages') renderVitrineProfil();
+  } catch (e) { if (estErreurSqlManquant(e)) saisonServeur = false; }
+}
+function cadreGymbro(pseudo) {
+  const r = saisonsGymbros.find(x => x.pseudo.toLowerCase() === String(pseudo || '').toLowerCase());
+  return r && CADRES[r.saison.cadre] ? r.saison.cadre : null;
+}
+// Moi et mes gymbros acceptés qui ont publié la saison en cours, par XP.
+function classementSaison(p, max) {
+  const liste = [{ pseudo: monPseudo ? monPseudo.pseudo : 'toi', moi: true, xp: p.xp, palier: p.palier, cadre: monCadre(max) }];
+  saisonsGymbros.forEach(r => {
+    if (r.saison.id !== p.saison.id || !gymbroLiens.some(l => l.statut === 'acceptee' && l.pseudo.toLowerCase() === r.pseudo.toLowerCase())) return;
+    const xp = Math.max(0, Math.min(1e6, Math.round(Number(r.saison.xp) || 0)));
+    liste.push({ pseudo: r.pseudo, moi: false, xp, palier: Math.min(PALIERS, Math.floor(xp / XP_PALIER)), cadre: CADRES[r.saison.cadre] ? r.saison.cadre : null });
+  });
+  return liste.sort((a, b) => b.xp - a.xp || (a.moi ? -1 : b.moi ? 1 : a.pseudo.localeCompare(b.pseudo)));
+}
+function passeSaisonHTML(p, max) {
+  const s = p.saison, dans = p.palier >= PALIERS ? XP_PALIER : p.xp - p.palier * XP_PALIER;
+  const pct = p.palier >= PALIERS ? 100 : Math.max(2, Math.round(dans / XP_PALIER * 100));
+  const prochaine = RECOMPENSES_SAISON.find(r => r.palier > p.palier);
+  const noeuds = Array.from({ length: PALIERS }, (_, i) => {
+    const n = i + 1, r = RECOMPENSES_SAISON.find(x => x.palier === n);
+    const etat = n <= p.palier ? ' ok' : n === p.palier + 1 ? ' cur' : '';
+    const icone = !r ? '' : r.type === 'cadre' ? `<span class="sp-rc" style="--cadre:${CADRES[r.cle]}"></span>`
+      : `<span class="sp-rb" style="background:${MEDAILLES_SAISON[r.cle][0]}">${svgV('trophee', 2.2)}</span>`;
+    return `<div class="sp-n${r ? ' rec' : ''}${etat}" role="listitem" aria-label="Palier ${n}${r ? ' : ' + r.nom : ''}${n <= p.palier ? ', atteint' : ''}">${icone}<i>${n}</i></div>`;
+  }).join('');
+  const defis = (p.semaine || []).map(d => `<div class="sp-defi${d.ok ? ' ok' : ''}"><span class="sp-ic">${svgV(d.ok ? 'check' : d.ic, 2.2)}</span>
+      <div class="sp-defi-t"><b>${escapeHtml(d.nom)}</b><span class="sp-mini"><i style="width:${Math.round(100 * d.fait / d.but)}%"></i></span></div><em>${d.ok ? '+' + XP_GAINS.defiSemaine + ' XP' : d.fait + ' / ' + d.but}</em></div>`).join('');
+  const choisi = monCadre(max);
+  const cadres = [{ cle: 'aucun', palier: 0, nom: 'Sans cadre' }].concat(RECOMPENSES_SAISON.filter(r => r.type === 'cadre')).map(r => {
+    const ok = r.palier <= max, actif = r.cle === 'aucun' ? !choisi : choisi === r.cle;
+    const nom = r.cle === 'aucun' ? 'Aucun' : ok ? r.nom.replace('Cadre ', '') : 'Palier ' + r.palier;
+    return `<button type="button" class="sp-cadre${actif ? ' on' : ''}${ok ? '' : ' verrou'}"${ok ? ` onclick="choisirCadre('${r.cle}')"` : ' disabled'} aria-pressed="${actif}" aria-label="${escapeHtml(r.nom)}${ok ? '' : ', débloqué au palier ' + r.palier}"><span class="sp-cadre-r${CADRES_ANIMES.includes(r.cle) ? ' cadre-anime' : ''}"${r.cle === 'aucun' ? '' : ` style="--cadre:${CADRES[r.cle]}"`}>${ok ? '' : svgV('cadenas', 2.2)}</span><small>${escapeHtml(nom)}</small></button>`;
+  }).join('');
+  const G = XP_GAINS;
+  return `<div class="vitrine-sec"><h3>Passe de saison</h3><span>${escapeHtml(s.nom)} · ${p.reste > 1 ? 'fin dans ' + p.reste + ' j' : 'dernier jour'}</span></div>
+    <div class="carte-saison" style="--sc1:${s.c1};--sc2:${s.c2}">
+      <div class="sp-tete">
+        <div class="sp-palier"><small>Palier</small><b>${p.palier}</b><span>sur ${PALIERS}</span></div>
+        <div class="sp-xp">
+          <div class="sp-xp-t"><b>Saison ${escapeHtml(s.nom)}</b><span>${nombreFr(p.xp, 0)} XP</span></div>
+          <div class="xp sp-barre"><i style="width:${pct}%"></i></div>
+          <div class="sp-suite">${p.palier >= PALIERS ? 'Dernier palier atteint : bravo !' : `Encore <b>${nombreFr(XP_PALIER - dans, 0)} XP</b> pour le palier ${p.palier + 1}`}${prochaine ? ` · ${escapeHtml(prochaine.nom)} au palier ${prochaine.palier}` : ''}</div>
+        </div>
+      </div>
+      <div class="sp-piste" role="list" aria-label="Les ${PALIERS} paliers de la saison">${noeuds}</div>
+      ${defis ? `<div class="sp-bloc"><h4>Défis de la semaine<span>+${G.defiSemaine} XP chacun</span></h4>${defis}</div>` : ''}
+      <div class="sp-bloc"><h4>Mon cadre<span>autour de ta photo, vu de tes gymbros</span></h4><div class="sp-cadres">${cadres}</div></div>
+      <p class="sp-gains">+${G.muscu} XP par séance de muscu, +${G.cardio} par cardio, +${G.record} par record, +${G.journee} par journée notée, +${G.eau} pour l'eau atteinte, +${G.pesee} par pesée, +${G.defiGymbro} par défi gymbro gagné. Nouvelle saison tous les deux mois : les paliers repartent de zéro, les récompenses restent.</p>
+    </div>`;
+}
+function classementSaisonHTML(p, max) {
+  const liste = classementSaison(p, max);
+  if (liste.length < 2) return '';
+  const lignes = liste.slice(0, 10).map((x, i) => `<div class="gcl${x.moi ? ' moi' : ''}"><span class="grang">${i + 1}</span>${avecCadre(bulleGymbro(x.pseudo, 36, false, x.moi), x.cadre)}
+      <div class="gcl-t"><b>${x.moi ? 'Toi' : '@' + escapeHtml(x.pseudo)}</b><span class="gcl-sous">Palier ${x.palier}</span></div><em>${nombreFr(x.xp, 0)}<small>XP</small></em></div>`).join('');
+  return `<div class="vitrine-sec"><h3>Classement</h3><span>de la saison, avec tes gymbros</span></div><div class="gb-carte gb-classement carte-saison-cl">${lignes}</div>`;
+}
+// Vitrine : les badges de toujours, ceux des saisons, les défis gagnés.
+function vitrineHTML(badges, p) {
+  const saisons = [{ id: p.saison.id, nom: p.saison.nom, annee: p.saison.annee, palier: p.palier, enCours: true }].concat(saisonsPassees())
+    .filter(x => x.palier >= 10).map(x => {
+      const r = RECOMPENSES_SAISON.filter(y => y.type === 'badge' && y.palier <= x.palier).pop();
+      const [g, l] = MEDAILLES_SAISON[r.cle];
+      return { nom: r.nom.replace('Badge ', '') + ' · ' + x.nom, detail: (x.enCours ? 'Saison en cours' : 'Saison ' + x.nom + ' ' + x.annee) + ', palier ' + x.palier, ok: true, ic: 'trophee', g, l, valeur: x.palier };
+    });
+  const victoires = defisGagnes().slice(-12).reverse().map(v => ({ nom: 'Vainqueur', detail: v.exercice + ' · ' + dateCourteFr(v.fin), ok: true, ic: 'trophee',
+    g: 'linear-gradient(135deg,#fde68a,#f59e0b)', l: 'rgba(245,158,11,.7)', valeur: '1er' }));
+  const tout = badges.concat(saisons, victoires);
+  return `<div class="vitrine-sec"><h3>Vitrine</h3><span>${tout.filter(x => x.ok).length} / ${tout.length}</span></div>
+    <div class="carte-badges"><div class="badges">${tout.map(x => `<div class="badge${x.ok ? '' : ' verrou'}" title="${escapeHtml(x.detail)}"><span class="med" style="${x.ok ? `background:${x.g};--l:${x.l}` : ''}">${svgV(x.ic)}${x.ok && x.valeur ? `<em>${escapeHtml(String(x.valeur))}</em>` : ''}</span><b>${escapeHtml(x.nom)}</b>${escapeHtml(x.detail)}</div>`).join('')}</div></div>`;
+}
+function dateCourteFr(d) { return dateLocale(d).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' }); }
+
 /* ---------- Profil : niveau, badges ---------- */
 const TITRES_NIVEAU = [[1, 'Débutant'], [2, 'Motivé'], [4, 'Régulier'], [6, 'Assidu'], [9, 'Athlète'], [12, 'Machine'], [16, 'Légende']];
 function seuilNiveau(n) { return 50 * n * (n - 1); }
@@ -27909,7 +28268,7 @@ function badgesUtilisateur() {
     { cle: 'eau', nom: 'Hydraté', detail: hydrate >= 5 ? hydrate + ' j sur 7' : '5 jours sur 7 d’eau', ok: hydrate >= 5, ic: 'goutte', g: 'linear-gradient(135deg,#7dd3fc,#0284c7)', l: 'rgba(2,132,199,.7)' },
     { cle: 'marathon', nom: 'Marathon', detail: km >= 42 ? nombreFr(km, 0) + ' km cumulés' : nombreFr(km, 0) + ' / 42 km', ok: km >= 42, ic: 'route', g: 'linear-gradient(135deg,#fb7185,#e11d48)', l: 'rgba(225,29,72,.7)' },
     { cle: 'gymbro', nom: 'En équipe', detail: gymbros ? gymbros + ' gymbro' + (gymbros > 1 ? 's' : '') : 'Ajoute un gymbro', ok: gymbros > 0, ic: 'amis', g: 'linear-gradient(135deg,#22d3ee,#6366f1)', l: 'rgba(99,102,241,.7)' },
-    { cle: 'eclair', nom: 'Explosif', detail: niveauUtilisateur().n >= 10 ? 'Niveau 10 atteint' : 'Atteins le niveau 10', ok: niveauUtilisateur().n >= 10, ic: 'eclair', g: 'linear-gradient(135deg,#f472b6,#a855f7)', l: 'rgba(168,85,247,.7)' }
+    { cle: 'eclair', nom: 'Explosif', detail: palierMax() >= 25 ? 'Palier 25 atteint' : 'Atteins le palier 25', ok: palierMax() >= 25, ic: 'eclair', g: 'linear-gradient(135deg,#f472b6,#a855f7)', l: 'rgba(168,85,247,.7)' }
   ];
 }
 /* =====================================================================
@@ -28925,6 +29284,39 @@ create trigger nettoyer_compte_admin after delete on auth.users
   for each row execute function public.nettoyer_compte_admin();
 `;
 
+const SQL_SAISON = `-- Saison et défis entre gymbros. À passer après « Gymbro et photos ».
+-- Ne modifie aucune donnée existante ; le relancer ne casse rien.
+
+-- 1) Passe de saison : chaque compte publie l'XP de sa saison en cours (et
+--    son cadre d'avatar) ; ses gymbros acceptés le voient dans le
+--    classement de la saison.
+alter table public.profils add column if not exists saison jsonb
+  check (saison is null or (jsonb_typeof(saison) = 'object' and length(saison::text) <= 300));
+
+create or replace function public.gymbro_saisons()
+returns table(pseudo text, saison jsonb)
+language sql stable security definer set search_path = public as $$
+  select p.pseudo, pr.saison
+  from gymbros_liens l
+  join pseudos p on p.utilisateur = case when l.demandeur = auth.uid()::text then l.cible else l.demandeur end
+  join profils pr on pr.utilisateur = p.utilisateur
+  where auth.uid() is not null
+    and l.statut = 'acceptee'
+    and auth.uid()::text in (l.demandeur, l.cible)
+    and pr.saison is not null
+    and not exists (select 1 from comptes_bloques b where b.utilisateur = p.utilisateur);
+$$;
+revoke execute on function public.gymbro_saisons() from public, anon;
+grant execute on function public.gymbro_saisons() to authenticated;
+`;
+function copierSqlSaison() {
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(SQL_SAISON).catch(() => informer('Copie ce SQL :', { copie: SQL_SAISON }));
+  } else {
+    informer('Copie ce SQL :', { copie: SQL_SAISON });
+  }
+}
+
 /* SQL « Gymbro en direct et séances à deux » : séance en cours visible des
    gymbros, invitations à s'entraîner ensemble, encouragements. Copiable
    depuis Administration › Serveur et SQL. */
@@ -29171,7 +29563,7 @@ function renderVitrineProfil() {
   const bio = (typeof monProfil !== 'undefined' && monProfil && monProfil.bio) || '';
   const av = avatarHTML(pseudo || nom, sessionUtilisateur && typeof monProfil !== 'undefined' && monProfil ? monProfil.avatar : null);
   const niv = niveauUtilisateur();
-  const pct = Math.max(2, Math.min(100, (niv.xp - niv.bas) / (niv.haut - niv.bas) * 100));
+  const ps = passeSaison(), max = palierMax(ps), cadre = monCadre(max);
   const obj = dernierObjectifConnu(todayStr());
   const t = computeTargets(getDay(todayStr()), todayStr());
   const tuile = (cle, nomO, ic, g) => `<button type="button" class="obj-tuile${obj === cle ? ' on' : ''}" onclick="choisirObjectifVitrine('${cle}')" aria-pressed="${obj === cle}"><span class="obj-ic" style="background:${g}">${svgV(ic)}</span>${nomO}</button>`;
@@ -29179,8 +29571,8 @@ function renderVitrineProfil() {
   // Moi : la photo, le nom, le niveau en une ligne, la bio ; les chiffres ; l'objectif.
   c.innerHTML = `
     <div class="pf-carte">
-      <div class="pf-av">${av}</div>
-      <div class="pf-id"><h3>${escapeHtml(nom)}${estPro() ? '<span class="pastille-pro pastille-pro--abonne">Pro</span>' : ''}</h3><span class="pf-niv">Niveau ${niv.n} · ${niv.titre}</span>${bio ? `<p class="pf-bio">${escapeHtml(bio)}</p>` : ''}</div>
+      <div class="pf-av${cadre ? ' cadre-av' + (CADRES_ANIMES.includes(cadre) ? ' cadre-anime' : '') : ''}"${cadre ? ` style="--cadre:${CADRES[cadre]}"` : ''}>${av}</div>
+      <div class="pf-id"><h3>${escapeHtml(nom)}${estPro() ? '<span class="pastille-pro pastille-pro--abonne">Pro</span>' : ''}</h3><span class="pf-niv">Palier ${ps.palier} · Saison ${escapeHtml(ps.saison.nom)}</span>${bio ? `<p class="pf-bio">${escapeHtml(bio)}</p>` : ''}</div>
       <button type="button" class="pf-modif" onclick="ouvrirModal('profil-modif-modal')">Modifier</button>
     </div>
     <div class="chiffres-geants"><div class="cg"><b data-compte="${musculationHistorique.length}">${musculationHistorique.length}</b><small>séances</small></div><div class="cg"><b data-compte="${niv.joursNotes}">${niv.joursNotes}</b><small>jours suivis</small></div><div class="cg"><b data-compte="${joursDAffilee()}">${joursDAffilee()}</b><small>d'affilée</small></div></div>
@@ -29190,13 +29582,16 @@ function renderVitrineProfil() {
       ${accesPro() ? `<label class="obj-ajust"><input type="checkbox" class="interrupteur" role="switch" id="vitrine-ajustement"${ajustementActif() ? ' checked' : ''} onchange="basculerAjustementBalance(this.checked)"><span><b>Ajuster d'après ma balance</b><small>${escapeHtml(texteAjustement())}</small></span></label>`
         : `<button type="button" class="obj-ajust obj-ajust--pro" id="vitrine-ajustement-pro" onclick="ouvrirPro('ajustement')"><span class="obj-ajust-ic">${svgV('cadenas')}</span><span><b>Ajuster d'après ma balance<span class="pastille-pro">Pro</span></b><small>${escapeHtml(texteAjustement())}</small></span></button>`}</div>`;
   animerComptes(c);
-  // En bas de la page : le niveau en détail, puis les badges.
+  // En bas de la page : le passe de saison, le classement de la saison
+  // avec les gymbros, puis la vitrine des badges.
   const b = document.getElementById('vitrine-badges');
-  if (b) b.innerHTML = `<div class="vitrine-sec"><h3>Niveau et badges</h3><span>${badges.filter(x => x.ok).length} / ${badges.length}</span></div>
-    <div class="carte-badges">
-      <div class="niveau"><div class="niveau-t"><b>Niveau ${niv.n} · ${niv.titre}</b><span>${nombreFr(niv.xp)} / ${nombreFr(niv.haut)} XP</span></div><div class="xp"><i style="width:${pct}%"></i></div>
-        <div class="niveau-s">+40 XP par séance de muscu · +25 par séance cardio · +10 par journée notée</div></div>
-      <div class="badges">${badges.map(x => `<div class="badge${x.ok ? '' : ' verrou'}" title="${escapeHtml(x.detail)}"><span class="med" style="${x.ok ? `background:${x.g};--l:${x.l}` : ''}">${svgV(x.ic)}${x.ok && x.valeur ? `<em>${x.valeur}</em>` : ''}</span><b>${escapeHtml(x.nom)}</b>${escapeHtml(x.detail)}</div>`).join('')}</div></div>`;
+  if (b) {
+    b.innerHTML = passeSaisonHTML(ps, max) + classementSaisonHTML(ps, max) + vitrineHTML(badges, ps);
+    // La piste s'ouvre sur le palier en cours.
+    const piste = b.querySelector('.sp-piste'), cur = piste && (piste.querySelector('.sp-n.cur') || [...piste.querySelectorAll('.sp-n.ok')].pop());
+    if (piste && cur) piste.scrollLeft = Math.max(0, cur.offsetLeft - piste.clientWidth / 2 + cur.offsetWidth / 2);
+  }
+  if (gymbroLiensActifs && gymbroLiens.some(l => l.statut === 'acceptee') && Date.now() - saisonsGymbrosA > 300000) chargerSaisonsGymbros();
   verifierTrophees();
 }
 /* Bandeau de célébration (record, badge, niveau) : glisse du haut avec des
@@ -29254,22 +29649,30 @@ function verifierTrophees() {
   // Rien de noté (données pas encore chargées, ou tout nouveau compte) : on
   // ne mémorise rien, sinon l'arrivée des données passerait pour un exploit.
   if (!niv.joursNotes && !niv.cardio && !musculationHistorique.length) return;
+  const ps = passeSaison();
+  publierMaSaison(ps);
   const gagnes = badgesUtilisateur().filter(b => b.ok);
   let avant = null;
   try { avant = JSON.parse(localStorage.getItem('anqaa_trophees') || 'null'); } catch (e) {}
+  // Palier déjà vu dans cette saison (une nouvelle saison repart de zéro ;
+  // la toute première fois, rien n'est fêté).
+  const palierAvant = !avant || !avant.saison ? ps.palier : avant.saison === ps.saison.id ? (avant.palier || 0) : 0;
   // Un badge gagné reste acquis (et le niveau ne redescend pas) : certaines
   // données arrivent après le démarrage (les gymbros, chargés depuis le
   // serveur). Sans ça, le badge « En équipe » était oublié à chaque
   // lancement, puis refêté dès l'arrivée de la liste.
   const acquis = [...new Set([...((avant && avant.badges) || []), ...gagnes.map(b => b.cle)])];
-  try { localStorage.setItem('anqaa_trophees', JSON.stringify({ niveau: Math.max(niv.n, (avant && avant.niveau) || 1), badges: acquis })); } catch (e) {}
+  try { localStorage.setItem('anqaa_trophees', JSON.stringify({ niveau: Math.max(niv.n, (avant && avant.niveau) || 1), badges: acquis, saison: ps.saison.id, palier: Math.max(ps.palier, palierAvant) })); } catch (e) {}
   if (!avant) return;
   const nouveaux = gagnes.filter(b => !(avant.badges || []).includes(b.cle)), nouveau = nouveaux[0];
-  // Un saut de plusieurs niveaux ou badges d'un coup = des données qui
+  if (avant.saison && avant.saison !== ps.saison.id) { celebrer('Nouvelle saison : ' + ps.saison.nom, 'Les paliers repartent de zéro, tes récompenses restent', 'eclair'); return; }
+  // Un saut de plusieurs paliers ou badges d'un coup = des données qui
   // arrivent (synchronisation), pas un exploit du moment : pas de fête.
-  if (niv.n - (avant.niveau || 1) > 1 || nouveaux.length > 1) return;
-  if (niv.n > (avant.niveau || 1)) celebrer('Niveau ' + niv.n + ' atteint !', niv.titre + ' · ' + nombreFr(niv.xp) + ' XP', 'eclair');
-  else if (nouveau) celebrer('Badge débloqué : ' + nouveau.nom, nouveau.detail, nouveau.ic);
+  if (ps.palier - palierAvant > 2 || nouveaux.length > 1) return;
+  if (ps.palier > palierAvant) {
+    const r = RECOMPENSES_SAISON.find(x => x.palier === ps.palier);
+    celebrer('Palier ' + ps.palier + ' atteint !', r ? r.nom + ' débloqué' : 'Saison ' + ps.saison.nom + ' · ' + nombreFr(ps.xp, 0) + ' XP', r && r.type === 'badge' ? 'trophee' : 'eclair');
+  } else if (nouveau) celebrer('Badge débloqué : ' + nouveau.nom, nouveau.detail, nouveau.ic);
 }
 /* Le bouton + de la barre d'onglets fait l'action utile de l'écran affiché :
    Repas → ajouter au repas du moment ; Activité → ajouter un exercice à la
@@ -31846,6 +32249,7 @@ window.addEventListener('load', () => {
   document.getElementById('bloc-sql-app-store').textContent = SQL_APP_STORE;
   document.getElementById('bloc-sql-gymbro-direct').textContent = SQL_GYMBRO_DIRECT;
   document.getElementById('bloc-sql-admin').textContent = SQL_ADMIN;
+  document.getElementById('bloc-sql-saison').textContent = SQL_SAISON;
   retourPaiementPro();
   // Pas de synchroniser('démarrage') ici : la vérification de session est
   // asynchrone, donc juste après initAuth() sessionUtilisateur est encore
@@ -32650,6 +33054,7 @@ const SONDES_SQL_ADMIN = {
   pro: () => sonderAdmin('table', 'abonnements'),
   appstore: () => sonderAdmin('table', 'gymbros_signalements'),
   direct: () => sonderAdmin('rpc', 'gymbro_direct'),
+  saison: () => sonderAdmin('rpc', 'gymbro_saisons'),
   admin: async () => {
     const [a, b] = await Promise.all([sonderAdmin('rpc', 'admin_signalements', { p_traites: true }), sonderAdmin('table', 'erreurs_appli')]);
     return a === 'ok' && b === 'ok' ? 'ok' : (a === 'inconnu' || b === 'inconnu') ? 'inconnu' : 'ko';
