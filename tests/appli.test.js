@@ -1624,6 +1624,74 @@ test("sur le web, Progrès garde son héros en carte, ses en-têtes de réglages
   assert.equal(r.toast, 'rgb(52, 211, 153)');
 }));
 
+test("app iOS (refonte F) : le résumé publié pour les widgets et Siri (journée, séance à faire, poids), les adresses askesis:// (eau, pesée, séance lancée par une intention Siri), et la séance terminée inscrite dans Santé", () => avecAppli({ natif: true }, async ({ page }) => {
+  const r = await page.evaluate(async () => {
+    const pause = ms => new Promise(ok => setTimeout(ok, ms));
+    donneesPretes = true;
+    const exo = toutesLesExercices().find(e => e.nom === 'Développé couché avec barre');
+    musculationProgrammes = [{ id: 'p1', nom: 'Push', exercices: [{ exerciceId: exo.id, series: [{ reps: 10, poids: 40 }, { reps: 10, poids: 40 }] }] }];
+    sauvegarderProgrammes();
+    const auj = todayStr(), day = getDay(auj);
+    day.eauMl = 500; day.weight = 79.2; getDay(shiftDate(auj, -3)).weight = 80.1; getDay(shiftDate(auj, -8)).weight = 80.8;
+    day.meals.lunch = [{ name: 'Test', grams: 100, kcal: 400, p: 30, c: 40, f: 10 }];
+    saveData(auj);
+    window.__appelsNatifs.length = 0;
+    renderApp(); await pause(700);
+    const pub = window.__appelsNatifs.filter(a => a[0] === 'Resume' && a[1] === 'publier').pop();
+    const res = { publie: !!pub, resume: pub && pub[2] && pub[2].resume };
+    // Adresse d'un widget : un verre d'eau.
+    traiterLienProfond('askesis://eau?ml=250'); await pause(200);
+    res.eau = getDay(auj).eauMl;
+    // Adresse : la pesée (feuille de saisie rapide).
+    traiterLienProfond('askesis://poids'); await pause(200);
+    res.pesee = document.getElementById('feuille-saisie-rapide').classList.contains('show') && saisieRapide === 'poids';
+    fermerFeuilles();
+    // Intention laissée par Siri, prise au retour au premier plan : la séance démarre.
+    window.__reponsesNatives['Resume.intention'] = { url: 'askesis://seance/demarrer?id=p1' };
+    prendreIntentionNative(); await pause(400);
+    res.seance = musculationSessionActive && musculationSessionActive.programmeId;
+    res.ecran = (document.querySelector('.ecran.actif') || {}).id;
+    // Santé activée : la séance terminée y est inscrite avec sa dépense.
+    localStorage.setItem('mc_sante_apple', '1');
+    musculationSessionActive.exercices[0].series[0].fait = true;
+    confirmer = () => Promise.resolve(true);
+    window.__appelsNatifs.length = 0;
+    await terminerSeance(); await pause(100);
+    const sante = window.__appelsNatifs.find(a => a[0] === 'Entrainements' && a[1] === 'enregistrer');
+    res.sante = sante && sante[2];
+    await pause(700);
+    const pub2 = window.__appelsNatifs.filter(a => a[0] === 'Resume' && a[1] === 'publier').pop();
+    res.apres = pub2 && pub2[2].resume.seance;
+    return res;
+  });
+  assert.ok(r.publie, 'un résumé publié');
+  assert.equal(r.resume.journee.eauMl, 500);
+  assert.equal(r.resume.journee.kcalConsommees, 400);
+  assert.ok(r.resume.journee.kcalCible > 0 && r.resume.journee.proteinesCible > 0 && r.resume.journee.eauCibleMl > 0);
+  assert.deepEqual([r.resume.seance.id, r.resume.seance.nom, r.resume.seance.enCours, r.resume.seance.exercices, r.resume.seance.series], ['p1', 'Push', false, 1, 2]);
+  assert.equal(r.resume.poids.dernier, 79.2);
+  assert.ok(Array.isArray(r.resume.poids.tendance) && r.resume.poids.tendance.length >= 2, 'une tendance');
+  assert.equal(r.eau, 750);
+  assert.equal(r.pesee, true);
+  assert.equal(r.seance, 'p1');
+  assert.equal(r.ecran, 'ecran-seance');
+  assert.ok(r.sante && r.sante.type === 'musculation' && r.sante.fin > r.sante.debut && r.sante.kcal >= 0 && r.sante.titre === 'Push', JSON.stringify(r.sante));
+  assert.ok(r.apres && r.apres.enCours === false, 'après la séance, le résumé repropose une séance à faire');
+}));
+
+test("sur le web, le résumé se calcule mais rien n'est publié ; sans Santé activée, rien n'est inscrit", () => avecAppli({}, async ({ page }) => {
+  const r = await page.evaluate(async () => {
+    const pause = ms => new Promise(ok => setTimeout(ok, ms));
+    publierResume(); await pause(500);
+    const res = { appels: typeof window.__appelsNatifs, resume: construireResume() };
+    res.sante = santeActive();
+    return res;
+  });
+  assert.equal(r.appels, 'undefined');
+  assert.equal(r.resume.journee.date.length, 10);
+  assert.equal(r.sante, false);
+}));
+
 test("IA par le serveur : sans clé personnelle, l'IA reste disponible (photo comprise) et chaque demande part avec sa tâche ; l'administration ne distribue plus de clé", () => avecAppli({}, async ({ page }) => {
   const r = await page.evaluate(async () => {
     const appels = [];

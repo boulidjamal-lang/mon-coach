@@ -5181,7 +5181,7 @@ html.app-ios body #ecran-seance .cp-bouton { top: 4px; }
 html.app-ios body #ecran-seance .sdj { background: var(--ios-accent-plein) !important; box-shadow: none !important; border-radius: var(--r-bloc); padding: 18px; min-height: 180px; color: #fff !important; }
 html.app-ios body #ecran-seance .sdj::after { display: none; }
 html.app-ios body #ecran-seance .sdj-corps svg { filter: none; opacity: .92; }
-html.app-ios body #ecran-seance .sdj small { font-size: var(--t-legende) !important; letter-spacing: 0 !important; text-transform: none !important; color: rgba(255,255,255,.88) !important; opacity: 1; font-weight: 500 !important; }
+html.app-ios body #ecran-seance .sdj small { display: block; max-width: 62%; font-size: var(--t-legende) !important; letter-spacing: 0 !important; text-transform: none !important; color: rgba(255,255,255,.88) !important; opacity: 1; font-weight: 500 !important; }
 html.app-ios body #ecran-seance .sdj p { color: rgba(255,255,255,.92) !important; }
 html.app-ios body #ecran-seance .sdj h4 { font-size: var(--t-titre1); font-weight: 700; letter-spacing: -.01em; }
 html.app-ios body #ecran-seance .sdj p { font-size: var(--t-note); font-weight: 400; opacity: .92; }

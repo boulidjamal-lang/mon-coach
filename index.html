@@ -3500,6 +3500,50 @@ function majReglagesRappels() {
     if (h) { h.value = r[k].heure; h.disabled = !r[k].on; }
   });
 }
+/* App iPhone : les adresses askesis://… des widgets, de Siri et des
+   raccourcis ouvrent le bon écran ou font le geste demandé : repas, eau
+   (?ml=), poids (pesée), seance, seance/demarrer (?id=), stats, profil.
+   Reçues à l'ouverture par l'adresse (App.appUrlOpen, App.getLaunchUrl) ou
+   laissées par une intention Siri (module Resume, prises au retour au
+   premier plan). Elles attendent que les données soient chargées. */
+var donneesPretes = false, actionsEnAttente = [];
+function quandDonneesPretes(f) { if (donneesPretes) setTimeout(f, 60); else actionsEnAttente.push(f); }
+function traiterLienProfond(url) {
+  let u;
+  try { u = new URL(String(url || '')); } catch (e) { return false; }
+  if (u.protocol !== 'askesis:') return false;
+  const chemin = (u.host + u.pathname).replace(/\/+$/, '').toLowerCase();
+  const ml = Math.round(Number(u.searchParams.get('ml')) || 250), id = u.searchParams.get('id');
+  quandDonneesPretes(() => {
+    currentDate = todayStr();
+    document.querySelectorAll('.modal.show').forEach(m => fermerModal(m.id));
+    fermerFeuilles();
+    if (chemin === 'repas') { allerA('repas'); renderApp(); }
+    else if (chemin === 'eau') { allerA('repas'); renderApp(); if (ml >= 50 && ml <= 2000) ajouterEau(ml); }
+    else if (chemin === 'poids') { allerA('repas'); renderApp(); ouvrirSaisieRapide('poids'); }
+    else if (chemin === 'seance') { allerA('seance'); renderApp(); }
+    else if (chemin === 'seance/demarrer') {
+      allerA('seance'); choisirModeSeance('muscu'); renderApp();
+      if (musculationSessionActive) return;
+      const sug = seanceAAfficher();
+      const p = (id && musculationProgrammes.find(x => x.id === id)) || (sug && sug.p) || null;
+      if (p) demarrerSeance(p.id); else demarrerSeanceLibre();
+    }
+    else if (chemin === 'stats' || chemin === 'progres') { allerA('stats'); renderApp(); }
+    else if (chemin === 'profil' || chemin === 'reglages') { allerA('reglages'); renderApp(); }
+  });
+  return true;
+}
+function prendreIntentionNative() {
+  if (!NATIF || !NATIF.Resume) return;
+  appelNatif('Resume', 'intention').then(r => { if (r && r.url) traiterLienProfond(r.url); });
+}
+if (NATIF && NATIF.App) {
+  try { Promise.resolve(NATIF.App.addListener('appUrlOpen', e => traiterLienProfond(e && e.url))).catch(() => {}); } catch (e) {}
+  try { Promise.resolve(NATIF.App.addListener('appStateChange', e => { if (e && e.isActive) prendreIntentionNative(); })).catch(() => {}); } catch (e) {}
+  appelNatif('App', 'getLaunchUrl').then(r => { if (r && r.url) traiterLienProfond(r.url); });
+  prendreIntentionNative();
+}
 /* Toucher un rappel ouvre ce qu'il faut : Repas du jour, Ta journée (pour
    retirer la séance), ou la pesée. Au lancement par la notification, on
    attend la fin du démarrage, qui choisit sinon l'écran de départ. */
@@ -3739,6 +3783,7 @@ function loadData() {
    la version la plus récente gagne, journée par journée. Sans elle, il faudrait
    comparer le contenu de chaque repas pour savoir qui a la bonne version. */
 function saveData(jourModifie) {
+  publierResume();
   if (jourModifie && appData[jourModifie]) { appData[jourModifie].maj = Date.now(); marquerJourModifie(jourModifie); }
   if (!jourModifie) userProfile.maj = Date.now();
   // L'ajustement de la semaine ne dépend que des jours d'avant lundi (et du profil).
@@ -4601,6 +4646,7 @@ function majRouletteCartes() {
 
 function renderApp() {
   const day = getDay(currentDate);
+  publierResume();
   document.getElementById('date-display').textContent = formatDateDisplay(currentDate);
 
   document.getElementById('objectif-select').value = dernierObjectifConnu(todayStr());
@@ -19531,6 +19577,70 @@ function majActiviteEnDirect() {
   if (activiteEnDirect !== String(etat.debut)) { activiteEnDirect = String(etat.debut); appelNatif('ActiviteSeance', 'demarrer', etat); }
   else appelNatif('ActiviteSeance', 'maj', etat);
 }
+/* App iPhone : l'essentiel publié pour les widgets de l'écran d'accueil et
+   de l'écran verrouillé et pour « Mon bilan » de Siri (module Resume, voir
+   Resume.swift dans l'app) : la journée (calories, macros, eau, pas), la
+   séance (en cours, ou celle à faire) et le poids (dernière pesée, tendance
+   lissée). Regroupé (400 ms) après chaque rendu ou enregistrement, publié
+   seulement s'il a changé ; rien ne quitte le téléphone (groupe d'apps). */
+var publierResumeMinuteur = null, dernierResumePublie = '';
+function publierResume() {
+  if (!NATIF || !NATIF.Resume) return;
+  clearTimeout(publierResumeMinuteur);
+  publierResumeMinuteur = setTimeout(() => {
+    try {
+      const r = construireResume();
+      const cle = JSON.stringify(Object.assign({}, r, { maj: 0 }));
+      if (cle === dernierResumePublie) return;
+      dernierResumePublie = cle;
+      appelNatif('Resume', 'publier', { resume: r });
+    } catch (e) {}
+  }, 400);
+}
+function construireResume() {
+  const auj = todayStr(), day = getDay(auj), t = computeTargets(day, auj), tot = sumMeals(day);
+  const n = v => Math.max(0, Math.round(Number(v) || 0));
+  const journee = { date: auj, kcalCible: n(t.target), kcalConsommees: n(tot.kcal), proteines: n(tot.p), proteinesCible: n(t.protein),
+    glucides: n(tot.c), glucidesCible: n(t.carbs), lipides: n(tot.f), lipidesCible: n(t.fat),
+    eauMl: n(day.eauMl), eauCibleMl: n(quotaEauSuggere(auj)), pas: Number(day.steps) > 0 ? n(day.steps) : null };
+  let seance = null;
+  const s = musculationSessionActive;
+  if (s && !s.demo) {
+    const exos = s.exercices || [];
+    seance = { id: s.programmeId || null, nom: s.programmeNom || 'Séance libre', titre: 'En cours', muscles: '',
+      exercices: exos.length, series: exos.reduce((m, e) => m + (e.series || []).length, 0), enCours: true };
+  } else {
+    const sug = seanceAAfficher();
+    if (sug && sug.p) {
+      const g = groupesProgramme(sug.p), noms = Object.keys(g).sort((a, b) => g[b] - g[a]).slice(0, 3).map(k => GROUPES_MUSCULAIRES[k] || k);
+      const exos = sug.p.exercices || [];
+      seance = { id: sug.p.id, nom: sug.p.nom, titre: sug.titre, muscles: noms.join(', '), exercices: exos.length,
+        series: exos.reduce((m, e) => m + normaliserSeriesProgramme(e).length, 0), enCours: false };
+    }
+  }
+  // Poids : les pesées des trois dernières semaines, la dernière valeur
+  // reportée entre deux pesées, lissées sur 7 jours ; variation sur 7 jours.
+  let poids = null, derniere = null, serie = [], report = null;
+  for (let i = 20; i >= 0; i--) {
+    const d = shiftDate(auj, -i), w = Number(appData[d] && appData[d].weight);
+    if (Number.isFinite(w) && w > 0) { report = w; derniere = { poids: w, date: d }; }
+    if (report != null) serie.push(report);
+  }
+  if (derniere) {
+    const lisse = moyenneGlissante(serie, 7).filter(v => v != null).slice(-14);
+    const var7 = lisse.length >= 8 ? Math.round((lisse[lisse.length - 1] - lisse[lisse.length - 8]) * 10) / 10 : null;
+    poids = { dernier: derniere.poids, date: derniere.date, vise: poidsVise(), tendance: lisse.length >= 2 ? lisse : [derniere.poids, derniere.poids], variation7j: var7 };
+  }
+  return { journee, seance, poids, maj: Date.now() };
+}
+/* App iPhone : la séance terminée inscrite dans Santé (anneaux, entraînements)
+   avec sa dépense estimée, quand Santé est activée dans les réglages. */
+function enregistrerSeanceDansSante(entree, seriesFaites) {
+  if (!NATIF || !NATIF.Entrainements || !santeActive()) return;
+  const poids = dernierPoidsConnu(entree.date);
+  const kcal = Math.round(kcalSeance('musculation', entree.dureeMin, poids, seriesFaites) || 0);
+  appelNatif('Entrainements', 'enregistrer', { debut: entree.debut, fin: entree.fin, type: 'musculation', kcal, titre: entree.programmeNom || 'Séance' });
+}
 function sauvegarderProgrammeEnEdition() {
   // Même logique que sauvegarderSessionActive() ci-dessus : local uniquement,
   // pour survivre à un rechargement accidentel pendant l'édition, pas
@@ -28107,6 +28217,7 @@ async function terminerSeance() {
   const day = getDay(entree.date);
   day.workouts.push({ type: 'musculation', time: dureeMin, seriesFaites, source: 'seance', nom: entree.programmeNom });
   saveData(entree.date);
+  enregistrerSeanceDansSante(entree, seriesFaites);
 
   const etaitLibre = !s.programmeId && entree.exercices.length > 0;
   finDirect(s, true);
@@ -28539,6 +28650,8 @@ window.addEventListener('load', async () => {
   // revient à l'écran principal plutôt que d'y rester sans « Retour » utile.
   if (ecran === 'stats') ecran = 'repas';
   allerA(ecran);
+  donneesPretes = true;
+  actionsEnAttente.splice(0).forEach(f => setTimeout(f, 60));
 });
 
 /* =====================================================================

@@ -94,9 +94,34 @@ session (verdict : hybride assumé — système natif, contenu web redessiné).
 - `scripts/captures-ios.js` : états « fenêtre Réglages » et « toast ».
 - Tests : « app iOS (refonte E) », « sur le web, Progrès garde son héros ».
 
-### F — Intégrations Apple, G — Validation
+### F — Intégrations Apple (fait, à compiler par le workflow)
 
-À venir ; voir les tâches iOS F et G.
+Choisies parce qu'elles servent vraiment ; écartées pour l'instant : Apple
+Watch, Face ID, Vision, Spotlight, réécriture SwiftUI (voir l'analyse).
+
+- Côté app (dépôt Anqa) : module « Resume » (la page publie son résumé dans
+  le groupe d'apps `group.com.jambou.askesis`, les widgets se redessinent) ;
+  extension WidgetKit : « Ma journée » (calories restantes, macros, eau ;
+  petit, moyen, cercle et rectangle de l'écran verrouillé, « + 250 ml » dans
+  le moyen), « Prochaine séance » (un toucher la lance), « Poids » (dernière
+  pesée, tendance lissée) ; App Intents « Démarre ma séance », « Ajoute un
+  verre d'eau » (quantité), « Mon bilan » (Siri répond sans ouvrir l'app) ;
+  module « Entrainements » (la séance terminée dans Santé avec sa dépense,
+  si Santé est activée) ; adresse `askesis://` déclarée.
+- Côté page (`index.html`, inactif sur le web) : `publierResume()` /
+  `construireResume()` (regroupé 400 ms après chaque rendu ou
+  enregistrement, publié seulement s'il change) ; `traiterLienProfond()`
+  pour `askesis://repas|eau?ml=|poids|seance|seance/demarrer?id=|stats|profil`,
+  reçu par `App.appUrlOpen` / `getLaunchUrl` ou laissé par Siri
+  (`Resume.intention`, pris au retour au premier plan) ; les actions
+  attendent la fin du chargement (`donneesPretes`) ;
+  `enregistrerSeanceDansSante()` à la fin d'une séance.
+- Tests : « app iOS (refonte F) », « sur le web, le résumé se calcule mais
+  rien n'est publié ».
+
+### G — Validation
+
+À venir ; voir la tâche iOS G.
 
 ## Vérifier
 
