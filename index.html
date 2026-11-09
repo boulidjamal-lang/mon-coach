@@ -2833,6 +2833,27 @@
     .sp-cadre.on { color: var(--text); }
     .sp-cadre.on .sp-cadre-r { box-shadow: 0 0 0 2px var(--carte-plein), 0 0 0 4px var(--sc1); }
     .sp-gains { position: relative; margin: 12px 0 0; font-size: .64rem; line-height: 1.45; color: var(--text-muted); }
+    /* Défis entre gymbros (onglet Classement) et fenêtre « Lancer un défi ». */
+    .gdfs { margin: 0 0 16px; }
+    .gdfs-t { display: flex; justify-content: space-between; align-items: center; gap: 10px; margin: 2px 2px 10px; }
+    .gdfs-t h4 { margin: 0; font-size: 1.02rem; font-weight: 800; }
+    .gdfs-vide { margin: 0 2px; font-size: .78rem; line-height: 1.4; color: var(--text-muted); }
+    .gdf-tete { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; margin-bottom: 4px; }
+    .gdf-tete b { display: block; font-size: .92rem; font-weight: 800; }
+    .gdf-tete span { font-size: .72rem; font-weight: 600; color: var(--text-muted); }
+    .gdf-quitter { flex: none; width: 28px; height: 28px; border: 0; border-radius: 50%; display: grid; place-items: center; background: var(--s2); color: var(--text-muted); font-size: 1.05rem; line-height: 1; cursor: pointer; }
+    .gdf p { margin: 6px 0 10px; font-size: .8rem; line-height: 1.4; }
+    .gdf-actions { display: flex; justify-content: flex-end; gap: 8px; }
+    .gdf--invite { box-shadow: inset 0 0 0 1.5px color-mix(in srgb, #6366f1 45%, transparent) !important; }
+    .gdf-attente { display: block; margin-top: 6px; font-size: .68rem; color: var(--text-muted); }
+    .defi-recherche { display: flex; margin: 0 0 8px; }
+    .defi-exos { display: flex; flex-wrap: wrap; gap: 6px; max-height: 172px; overflow-y: auto; margin: 0 0 6px; }
+    .defi-exo, .defi-ami { border: 0; border-radius: 99px; padding: 8px 12px; background: var(--s2); color: var(--text); font: inherit; font-size: .78rem; font-weight: 600; cursor: pointer; }
+    .defi-exo.on, .defi-ami.on { background: var(--inv); color: var(--sur-inv); }
+    .defi-gymbros { display: flex; flex-wrap: wrap; gap: 8px; margin: 0 0 16px; }
+    .defi-ami { display: inline-flex; align-items: center; gap: 6px; padding: 4px 12px 4px 4px; }
+    .defi-ami:not(.on) .gav { opacity: .55; }
+    .defi-explication { margin: 8px 0 4px; }
     .carte-saison-cl { padding: 4px 16px; border-radius: 26px; margin-bottom: 12px; background: var(--verre); box-shadow: var(--ombre-v), inset 0 0 0 1px var(--trait); }
     .carte-saison-cl .gcl:first-child { border-top-color: transparent; }
     .gcl-sous { display: block; font-size: .66rem; font-weight: 700; color: var(--text-muted); }
@@ -6088,7 +6109,7 @@
       <div class="adm-sql" data-sql="saison">
         <button type="button" class="ligne-reglage ligne-reglage--bouton" aria-expanded="false" onclick="basculerSqlAdmin(this)"><span class="adm-num">9</span><span class="ligne-txt"><b>Saison et défis</b><small>Classement de la saison entre gymbros, défis sur un exercice</small></span><span class="adm-etat adm-etat--attente" data-etat-sql>&hellip;</span></button>
         <div class="adm-sql-corps hidden">
-        <p class="note note-explicative">Après « Gymbro et photos » : chacun publie l'XP de sa saison et son cadre pour le classement de la saison entre gymbros. Ne modifie aucune donnée existante.</p>
+        <p class="note note-explicative">Après « Gymbro et photos » : chacun publie l'XP de sa saison et son cadre pour le classement de la saison entre gymbros, et l'on peut se lancer des défis sur un exercice. Ne modifie aucune donnée existante.</p>
         <div class="bloc-sql" id="bloc-sql-saison"></div>
         <button class="btn btn-secondaire" type="button" onclick="copierSqlSaison()">Copier le SQL</button>
         </div>
@@ -7468,6 +7489,26 @@
     <button type="button" class="interet" data-interet="cardio" aria-pressed="true" onclick="basculerInteret('cardio')"><span class="interet-ico"><svg class="icone-ui" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z" /><path d="M3.2 12h3.3l1.5-3 3 6 1.5-3h8.3" /></svg></span><span class="interet-txt"><b>Mon cardio</b><small>Course, vélo, natation, pas</small></span><span class="interet-case"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5" /></svg></span></button>
     <button type="button" class="btn btn-primary" id="btn-interets-ok" style="margin-top:6px;" onclick="validerInterets(false)">C'est parti</button>
     <button type="button" class="btn btn-secondaire" style="margin-top:8px; background:transparent; box-shadow:none;" onclick="validerInterets(true)">Faire plutôt la visite guidée complète</button>
+  </div>
+</div>
+
+<div id="modal-defi" class="modal" role="dialog" aria-modal="true" aria-labelledby="titre-defi">
+  <div class="modal-content" style="max-width:460px;">
+    <div class="modal-entete">
+      <h3 id="titre-defi">Lancer un défi</h3>
+      <button class="close-modal" onclick="fermerModal('modal-defi')" aria-label="Fermer">&times;</button>
+    </div>
+    <div class="cardio-champ-l">Exercice</div>
+    <label class="adm-recherche defi-recherche"><svg class="icone-ui" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="8" /><path d="m21 21-4.3-4.3" /></svg><input type="search" id="defi-recherche" placeholder="Chercher un exercice…" autocomplete="off" oninput="majListeExercicesDefi()" aria-label="Chercher un exercice"></label>
+    <div class="defi-exos" id="defi-exos" role="listbox" aria-label="Exercice"></div>
+    <div class="cardio-champ-l">Durée</div>
+    <div class="segment" id="defi-duree" role="group" aria-label="Durée"><button type="button" onclick="choisirDefi('jours', 7)" aria-pressed="false">7 jours</button><button type="button" onclick="choisirDefi('jours', 14)" aria-pressed="true">14 jours</button><button type="button" onclick="choisirDefi('jours', 30)" aria-pressed="false">30 jours</button></div>
+    <div class="cardio-champ-l">Critère</div>
+    <div class="segment" id="defi-critere" role="group" aria-label="Critère"><button type="button" onclick="choisirDefi('critere', 'charge')" aria-pressed="true">Charge max</button><button type="button" onclick="choisirDefi('critere', 'reps')" aria-pressed="false">Répétitions</button><button type="button" onclick="choisirDefi('critere', 'tonnage')" aria-pressed="false">Tonnage</button></div>
+    <p class="note defi-explication" id="defi-explication"></p>
+    <div class="cardio-champ-l">Avec</div>
+    <div class="defi-gymbros" id="defi-gymbros"></div>
+    <button type="button" class="btn btn-primary fen-enregistrer" id="defi-lancer" onclick="lancerDefi()">Lancer le défi</button>
   </div>
 </div>
 
@@ -17920,7 +17961,7 @@ function choisirOngletGymbro(onglet) {
   [['fil', 'gymbro-vue-fil'], ['classement', 'gymbro-vue-classement'], ['mes', 'gymbro-vue-recherche']].forEach(([k, id]) =>
     document.getElementById(id).classList.toggle('hidden', k !== onglet));
   if (onglet === 'fil') renderFilGymbros();
-  else if (onglet === 'classement') renderClassementGymbros();
+  else if (onglet === 'classement') { renderClassementGymbros(); chargerDefis(); }
   else renderGymbrosFavoris();
 }
 /* Pastille ronde d'un gymbro : sa photo ou son initiale sur une teinte qui
@@ -18233,6 +18274,7 @@ async function chargerLiensGymbro() {
     gymbroLiensActifs = true;
     await chargerProfilsGymbros();
     chargerSaisonsGymbros();
+    chargerDefis();
   } catch (e) {
     gymbroLiensActifs = false;
     if (!estErreurSqlManquant(e)) console.warn('[Gymbro] demandes indisponibles :', e.message || e);
@@ -18254,7 +18296,7 @@ function demandesGymbroRecues() { return gymbroLiens.filter(l => l.sens === 'rec
    - bouton principal de navigation : le total. */
 function majPastilleGymbro() {
   const demandes = demandesGymbroRecues().length;
-  const activite = demandes + nouveauxRespects().length;
+  const activite = demandes + nouveauxRespects().length + invitationsDefis().length;
   const aliments = estCompteAdmin() ? adminAValider.aliments : 0;
   const admin = estCompteAdmin() ? aliments + (adminAValider.signalements || 0) : 0;
   const parId = id => document.getElementById(id);
@@ -19210,7 +19252,7 @@ function renderClassementGymbros() {
   if (!zone) return;
   const mesures = [['volume', 'Volume'], ['seances', 'Séances'], ['regularite', 'Régularité'], ['saison', 'Saison']];
   if (gymbroMesure === 'saison' && Date.now() - saisonsGymbrosA > 300000) chargerSaisonsGymbros().then(() => { if (gymbroMesure === 'saison') renderClassementGymbros(); });
-  let html = `<div class="segment gb-mesure" id="gymbro-mesure" role="group" aria-label="Classer par">${mesures.map(([k, l]) =>
+  let html = defisHTML() + `<div class="segment gb-mesure" id="gymbro-mesure" role="group" aria-label="Classer par">${mesures.map(([k, l]) =>
     `<button type="button" onclick="choisirMesureGymbro('${k}')" aria-pressed="${k === gymbroMesure}">${l}</button>`).join('')}</div>`;
   const liste = participantsClassement();
   if (liste.length < 2) {
@@ -28238,6 +28280,251 @@ function vitrineHTML(badges, p) {
 }
 function dateCourteFr(d) { return dateLocale(d).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' }); }
 
+/* =====================================================================
+   DÉFIS ENTRE GYMBROS — sur un exercice, 7, 14 ou 30 jours, à la charge
+   max, aux répétitions cumulées ou au tonnage. Chacun calcule son score
+   d'après ses séances (celle en cours comprise) et le publie ; le
+   classement se met à jour à chaque séance et à chaque retour dans
+   l'appli. Dépassé : un bandeau prévient. Premier à la fin : badge
+   « Vainqueur » et XP de saison. (SQL « Saison et défis ».)
+   ===================================================================== */
+const CRITERES_DEFI = {
+  charge: { nom: 'Charge max', explication: 'la série validée la plus lourde' },
+  reps: { nom: 'Répétitions', explication: 'le total des répétitions' },
+  tonnage: { nom: 'Tonnage', explication: 'le total des kilos soulevés (charge × répétitions)' }
+};
+const DEFIS_RANGS_LS = 'askesis_defis_rangs';
+const MESSAGE_SQL_DEFIS = "Les défis ne sont pas encore activés sur le serveur : l'administrateur doit exécuter le SQL « Saison et défis ».";
+let defisGymbros = [], defisServeur = true, defisChargesA = 0, defiBrouillon = null;
+function scoreDefi(d) {
+  const seances = musculationHistorique.concat(musculationSessionActive ? [{ date: todayStr(), exercices: musculationSessionActive.exercices }] : []);
+  let v = 0;
+  seances.forEach(h => {
+    if (!h || !(h.date >= d.debut && h.date <= d.fin)) return;
+    (h.exercices || []).forEach(e => {
+      if (!e || e.exerciceId !== d.exercice_id) return;
+      (e.series || []).forEach(x => {
+        if (!x || !x.fait || x.technique === 'echauffement') return;
+        const p = Math.max(0, Number(x.poids) || 0), r = Math.max(0, Number(x.reps) || 0);
+        if (!(r > 0)) return;
+        if (d.critere === 'charge') v = Math.max(v, p);
+        else if (d.critere === 'reps') v += r;
+        else v += p * r;
+      });
+    });
+  });
+  return Math.round(v * 10) / 10;
+}
+// Données venant d'autres comptes : seules des valeurs attendues passent.
+function nettoyerDefi(r) {
+  const date = x => /^\d{4}-\d{2}-\d{2}/.test(String(x || '')) ? String(x).slice(0, 10) : null;
+  if (!r || !/^[0-9a-f-]{36}$/i.test(String(r.id || '')) || !date(r.debut) || !date(r.fin)) return null;
+  const membres = (Array.isArray(r.membres) ? r.membres : []).filter(m => m && typeof m.pseudo === 'string' && m.pseudo).slice(0, 21)
+    .map(m => ({ pseudo: m.pseudo, statut: m.statut === 'accepte' ? 'accepte' : 'invite', score: Math.max(0, Math.min(1e7, Number(m.score) || 0)) }));
+  return { id: String(r.id), createur: typeof r.createur === 'string' ? r.createur : '', exercice_id: String(r.exercice_id || ''), exercice_nom: String(r.exercice_nom || 'Exercice').slice(0, 80),
+    critere: CRITERES_DEFI[r.critere] ? r.critere : 'charge', debut: date(r.debut), fin: date(r.fin), monStatut: r.mon_statut === 'accepte' ? 'accepte' : 'invite', membres };
+}
+function estMonPseudo(pseudo) { return !!monPseudo && String(pseudo).toLowerCase() === String(monPseudo.pseudo).toLowerCase(); }
+// Classement d'un défi ; mon score vient de mes séances (le plus à jour).
+function classementDefi(d) {
+  return d.membres.filter(m => m.statut === 'accepte').map(m => {
+    const moi = estMonPseudo(m.pseudo);
+    return { pseudo: m.pseudo, moi, score: moi && d.monStatut === 'accepte' ? scoreDefi(d) : m.score };
+  }).sort((a, b) => b.score - a.score || (a.moi ? -1 : b.moi ? 1 : a.pseudo.localeCompare(b.pseudo)));
+}
+async function chargerDefis(force) {
+  if (!supa || !sessionUtilisateur || !defisServeur || typeof supa.rpc !== 'function') return;
+  if (!force && Date.now() - defisChargesA < 120000) return;
+  defisChargesA = Date.now();
+  try {
+    const { data, error } = await supa.rpc('mes_defis');
+    if (error) throw error;
+    defisGymbros = (data || []).map(nettoyerDefi).filter(Boolean);
+    await publierScoresDefis();
+    verifierDefis();
+    majVuesDefis();
+  } catch (e) { if (estErreurSqlManquant(e)) defisServeur = false; }
+}
+async function publierScoresDefis() {
+  if (!supa || !sessionUtilisateur) return;
+  const auj = todayStr();
+  for (const d of defisGymbros) {
+    if (d.monStatut !== 'accepte' || auj > shiftDate(d.fin, 2) || auj < d.debut) continue;
+    const v = scoreDefi(d), m = d.membres.find(x => estMonPseudo(x.pseudo));
+    if (m && Math.abs(m.score - v) < 0.05) continue;
+    try {
+      const { error } = await supa.rpc('defi_score', { p_defi: d.id, p_score: v });
+      if (error) throw error;
+      if (m) m.score = v;
+    } catch (e) { /* réessayé au prochain chargement */ }
+  }
+}
+// Après une séance (ou une série) : mon score, puis le classement.
+let minuteurScoresDefis = null;
+function apresSeanceDefis(delai) {
+  if (!defisGymbros.some(d => d.monStatut === 'accepte' && d.fin >= todayStr())) return;
+  clearTimeout(minuteurScoresDefis);
+  minuteurScoresDefis = setTimeout(() => { publierScoresDefis().then(() => { verifierDefis(); majVuesDefis(); }); }, delai || 0);
+}
+/* Rang vu la dernière fois pour chaque défi : dépassé, on prévient ; un
+   défi terminé à la première place (sans ex aequo) devient un badge. */
+function verifierDefis() {
+  let rangs = {};
+  try { rangs = JSON.parse(localStorage.getItem(DEFIS_RANGS_LS) || '{}') || {}; } catch (e) {}
+  const auj = todayStr(), gagnes = defisGagnes(), suivants = {};
+  let depasse = null, victoire = null;
+  defisGymbros.forEach(d => {
+    if (d.monStatut !== 'accepte') return;
+    const cl = classementDefi(d), i = cl.findIndex(x => x.moi);
+    if (i < 0 || cl.length < 2) return;
+    const rang = i + 1;
+    suivants[d.id] = rang;
+    if (d.fin < auj) {
+      if (rang === 1 && cl[0].score > 0 && cl[0].score > cl[1].score && !gagnes.some(g => g.id === d.id)) {
+        const g = { id: d.id, exercice: d.exercice_nom, critere: d.critere, fin: d.fin };
+        gagnes.push(g);
+        victoire = victoire || g;
+      }
+    } else if (rangs[d.id] && rang > rangs[d.id] && !depasse) depasse = { d, devant: cl[i - 1] };
+  });
+  try {
+    localStorage.setItem(DEFIS_RANGS_LS, JSON.stringify(suivants));
+    localStorage.setItem(DEFIS_GAGNES_LS, JSON.stringify(gagnes.slice(-50)));
+  } catch (e) {}
+  if (victoire) celebrer('Défi gagné !', victoire.exercice + ' · badge Vainqueur et +' + XP_GAINS.defiGymbro + ' XP de saison', 'trophee');
+  if (depasse) signalerDepassement(depasse.d, depasse.devant);
+}
+function signalerDepassement(d, devant) {
+  let t = document.getElementById('toast-defi');
+  if (!t) {
+    t = document.createElement('div');
+    t.id = 'toast-defi'; t.className = 'toast-annuler'; t.setAttribute('role', 'status'); t.setAttribute('aria-live', 'polite');
+    document.body.appendChild(t);
+  }
+  t.innerHTML = '';
+  const m = document.createElement('span'); m.textContent = '@' + devant.pseudo + ' t’a dépassé : ' + d.exercice_nom;
+  const b = document.createElement('button'); b.type = 'button'; b.textContent = 'Voir';
+  b.onclick = () => { t.classList.remove('visible'); ouvrirGymbro('classement'); };
+  t.append(m, b);
+  t.classList.add('visible');
+  vibrer('alerte');
+  clearTimeout(signalerDepassement.minuteur);
+  signalerDepassement.minuteur = setTimeout(() => t.classList.remove('visible'), 7000);
+}
+function invitationsDefis() { return defisGymbros.filter(d => d.monStatut === 'invite' && d.fin >= todayStr()); }
+function majVuesDefis() {
+  if (typeof gymbroModalOuvert === 'function' && gymbroModalOuvert() && gymbroOnglet === 'classement') renderClassementGymbros();
+  majPastilleGymbro();
+}
+function valeurDefi(d, v) {
+  if (d.critere === 'reps') return nombreFr(v, 0) + '<small>reps</small>';
+  if (d.critere === 'tonnage' && v >= 10000) return nombreFr(v / 1000, 1) + '<small>t</small>';
+  return nombreFr(v, 1) + '<small>kg</small>';
+}
+function carteDefiHTML(d) {
+  const auj = todayStr(), fini = d.fin < auj, C = CRITERES_DEFI[d.critere];
+  const jours = Math.round((Date.parse(d.fin) - Date.parse(auj)) / 864e5) + 1;
+  const duree = Math.round((Date.parse(d.fin) - Date.parse(d.debut)) / 864e5) + 1;
+  const quand = fini ? 'terminé le ' + dateCourteFr(d.fin) : jours > 1 ? 'encore ' + jours + ' j' : 'dernier jour';
+  const tete = `<div class="gdf-tete"><div><b>${escapeHtml(d.exercice_nom)}</b><span>${C.nom} · ${quand}</span></div>${fini || d.monStatut === 'invite' ? '' : `<button type="button" class="gdf-quitter" onclick="quitterDefi('${d.id}')" aria-label="Quitter le défi">&times;</button>`}</div>`;
+  if (d.monStatut === 'invite') {
+    return `<div class="gb-carte gdf gdf--invite">${tete}<p>${d.createur ? '@' + escapeHtml(d.createur) : 'Un gymbro'} te lance un défi : ${escapeHtml(C.explication)} sur ${duree} jours.</p>
+      <div class="gdf-actions"><button type="button" class="gbtn" onclick="repondreDefi('${d.id}', false)">Refuser</button><button type="button" class="gbtn gbtn--ok" onclick="repondreDefi('${d.id}', true)">Relever le défi</button></div></div>`;
+  }
+  const cl = classementDefi(d);
+  const lignes = cl.map((x, i) => `<div class="gcl${x.moi ? ' moi' : ''}"><span class="grang">${fini && i === 0 && x.score > 0 && (!cl[1] || x.score > cl[1].score) ? '🏆' : i + 1}</span>${avecCadre(bulleGymbro(x.pseudo, 30, false, x.moi), x.moi ? monCadre() : cadreGymbro(x.pseudo))}
+      <div class="gcl-t"><b>${x.moi ? 'Toi' : '@' + escapeHtml(x.pseudo)}</b></div><em>${valeurDefi(d, x.score)}</em></div>`).join('');
+  const attente = d.membres.filter(m => m.statut === 'invite').length;
+  return `<div class="gb-carte gdf">${tete}${lignes}${attente ? `<small class="gdf-attente">${attente} invitation${attente > 1 ? 's' : ''} en attente</small>` : ''}</div>`;
+}
+function defisHTML() {
+  if (!supa || !sessionUtilisateur || !defisServeur || !gymbroLiens.some(l => l.statut === 'acceptee')) return '';
+  const auj = todayStr();
+  const liste = invitationsDefis().concat(defisGymbros.filter(d => d.monStatut === 'accepte' && d.fin >= auj), defisGymbros.filter(d => d.monStatut === 'accepte' && d.fin < auj).slice(0, 3));
+  return `<div class="gdfs"><div class="gdfs-t"><h4>Défis</h4><button type="button" class="gbtn gbtn--ok" onclick="ouvrirNouveauDefi()">Lancer un défi</button></div>
+    ${liste.map(carteDefiHTML).join('') || `<p class="gdfs-vide">Un exercice, 7 à 30 jours, la charge, les répétitions ou le tonnage : vos séances font le classement, en direct. Le premier gagne un badge.</p>`}</div>`;
+}
+// Fenêtre « Lancer un défi ».
+// Proposés après les miens : les grands classiques du défi.
+const CLASSIQUES_DEFI = ['developpe couche avec barre', 'squat', 'souleve de terre', 'traction', 'developpe militaire', 'rowing barre buste penche', 'pompe', 'dips', 'presse a cuisses', 'hip thrust a la barre', 'curl a la barre', 'fentes'];
+function exercicesClassiques(tous) {
+  const n = e => normaliserRecherche(libelleExercice(e));
+  return CLASSIQUES_DEFI.map(k => tous.find(e => n(e) === k) || tous.filter(e => n(e).startsWith(k)).sort((a, b) => n(a).length - n(b).length)[0]).filter(Boolean);
+}
+function exercicesFrequents() {
+  const n = {};
+  musculationHistorique.forEach(h => (h && h.exercices || []).forEach(e => { if (e && e.exerciceId) n[e.exerciceId] = (n[e.exerciceId] || 0) + 1; }));
+  return Object.keys(n).sort((a, b) => n[b] - n[a]).map(id => trouverExercice(id)).filter(Boolean);
+}
+function ouvrirNouveauDefi() {
+  const amis = gymbroLiens.filter(l => l.statut === 'acceptee');
+  if (!amis.length) { informer("Ajoute d'abord un gymbro : un défi se joue à plusieurs."); return; }
+  defiBrouillon = { exercice: (exercicesFrequents()[0] || {}).id || null, jours: 14, critere: 'charge', amis: new Set(amis.map(l => l.pseudo)) };
+  document.getElementById('defi-recherche').value = '';
+  majListeExercicesDefi(); majFormDefi();
+  ouvrirModal('modal-defi', true);
+}
+function majListeExercicesDefi() {
+  if (!defiBrouillon) return;
+  const q = normaliserRecherche(document.getElementById('defi-recherche').value || '');
+  const tous = toutesLesExercices();
+  let liste = q ? tous.filter(e => normaliserRecherche(libelleExercice(e)).includes(q)).slice(0, 30) : exercicesFrequents().slice(0, 12);
+  if (!q && liste.length < 12) liste = liste.concat(exercicesClassiques(tous).filter(e => !liste.includes(e))).slice(0, 12);
+  const choisi = defiBrouillon.exercice && trouverExercice(defiBrouillon.exercice);
+  if (choisi && !liste.includes(choisi)) liste.unshift(choisi);
+  document.getElementById('defi-exos').innerHTML = liste.map(e => `<button type="button" class="defi-exo${e.id === defiBrouillon.exercice ? ' on' : ''}" role="option" aria-selected="${e.id === defiBrouillon.exercice}" data-id="${escapeHtml(e.id)}" onclick="choisirDefi('exercice', this.dataset.id)">${escapeHtml(libelleExercice(e))}</button>`).join('')
+    || '<p class="note">Aucun exercice trouvé.</p>';
+}
+function choisirDefi(champ, v) {
+  if (!defiBrouillon) return;
+  if (champ === 'ami') { if (defiBrouillon.amis.has(v)) defiBrouillon.amis.delete(v); else defiBrouillon.amis.add(v); }
+  else defiBrouillon[champ] = v;
+  if (champ === 'exercice') majListeExercicesDefi();
+  majFormDefi();
+}
+function majFormDefi() {
+  const b = defiBrouillon;
+  if (!b) return;
+  majSegment('defi-duree', [7, 14, 30], b.jours);
+  majSegment('defi-critere', ['charge', 'reps', 'tonnage'], b.critere);
+  const exo = b.exercice && trouverExercice(b.exercice);
+  document.getElementById('defi-explication').textContent = (exo ? libelleExercice(exo) : "L'exercice choisi") + ' : ' + CRITERES_DEFI[b.critere].explication + ' en ' + b.jours
+    + " jours, d'après vos séances. Le premier gagne un badge et " + XP_GAINS.defiGymbro + ' XP de saison.';
+  document.getElementById('defi-gymbros').innerHTML = gymbroLiens.filter(l => l.statut === 'acceptee').map(l => `<button type="button" class="defi-ami${b.amis.has(l.pseudo) ? ' on' : ''}" aria-pressed="${b.amis.has(l.pseudo)}" data-pseudo="${escapeHtml(l.pseudo)}" onclick="choisirDefi('ami', this.dataset.pseudo)">${bulleGymbro(l.pseudo, 26)}<span>@${escapeHtml(l.pseudo)}</span></button>`).join('');
+  document.getElementById('defi-lancer').disabled = !exo || !b.amis.size;
+}
+async function lancerDefi() {
+  const b = defiBrouillon, exo = b && b.exercice && trouverExercice(b.exercice);
+  if (!exo || !b.amis.size || !supa) return;
+  const bouton = document.getElementById('defi-lancer');
+  bouton.disabled = true;
+  try {
+    const { error } = await supa.rpc('defi_creer', { p_exercice_id: exo.id, p_exercice_nom: libelleExercice(exo).slice(0, 80), p_critere: b.critere, p_jours: b.jours, p_debut: todayStr(), p_pseudos: [...b.amis] });
+    if (error) throw error;
+    defiBrouillon = null;
+    fermerModal('modal-defi');
+    await chargerDefis(true);
+    if (gymbroModalOuvert()) choisirOngletGymbro('classement');
+  } catch (e) {
+    bouton.disabled = false;
+    const m = (e && e.message) || '';
+    informer(estErreurSqlManquant(e) ? MESSAGE_SQL_DEFIS : /trop de défis/.test(m) ? "Tu as déjà 5 défis en cours : attends qu'un se termine." : "Le défi n'a pas pu être lancé : vérifie ta connexion et réessaie.");
+  }
+}
+async function repondreDefi(id, ok) {
+  try { const { error } = await supa.rpc('defi_repondre', { p_defi: id, p_accepte: !!ok }); if (error) throw error; }
+  catch (e) { informer('Pas de réponse du serveur : réessaie dans un instant.'); return; }
+  await chargerDefis(true);
+}
+async function quitterDefi(id) {
+  if (!(await confirmer('Quitter ce défi ? Ton score disparaît du classement.', { ok: 'Quitter', danger: true }))) return;
+  try { const { error } = await supa.rpc('defi_quitter', { p_defi: id }); if (error) throw error; }
+  catch (e) { informer('Pas de réponse du serveur : réessaie dans un instant.'); return; }
+  defisGymbros = defisGymbros.filter(d => d.id !== id);
+  majVuesDefis();
+}
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') chargerDefis(); });
+
 /* ---------- Profil : niveau, badges ---------- */
 const TITRES_NIVEAU = [[1, 'Débutant'], [2, 'Motivé'], [4, 'Régulier'], [6, 'Assidu'], [9, 'Athlète'], [12, 'Machine'], [16, 'Légende']];
 function seuilNiveau(n) { return 50 * n * (n - 1); }
@@ -29308,6 +29595,109 @@ language sql stable security definer set search_path = public as $$
 $$;
 revoke execute on function public.gymbro_saisons() from public, anon;
 grant execute on function public.gymbro_saisons() to authenticated;
+
+-- 2) Défis entre gymbros sur un exercice : 7, 14 ou 30 jours, à la charge
+--    max, aux répétitions cumulées ou au tonnage. Chacun publie son score,
+--    calculé sur son téléphone d'après ses séances ; seuls les participants
+--    voient le défi et son classement. Tout passe par les fonctions.
+create table if not exists public.gymbros_defis (
+  id           uuid primary key default gen_random_uuid(),
+  createur     text not null,
+  exercice_id  text not null check (char_length(exercice_id) between 1 and 80),
+  exercice_nom text not null check (char_length(exercice_nom) between 1 and 80),
+  critere      text not null check (critere in ('charge', 'reps', 'tonnage')),
+  debut        date not null,
+  fin          date not null,
+  cree_le      timestamptz not null default now(),
+  check (fin >= debut and fin - debut <= 31)
+);
+create table if not exists public.gymbros_defis_membres (
+  defi        uuid not null references public.gymbros_defis(id) on delete cascade,
+  utilisateur text not null,
+  statut      text not null default 'invite' check (statut in ('invite', 'accepte', 'refuse')),
+  score       numeric not null default 0 check (score >= 0 and score <= 10000000),
+  maj         timestamptz not null default now(),
+  primary key (defi, utilisateur)
+);
+alter table public.gymbros_defis enable row level security;
+alter table public.gymbros_defis_membres enable row level security;
+
+create or replace function public.defi_creer(p_exercice_id text, p_exercice_nom text, p_critere text, p_jours int, p_debut date, p_pseudos text[])
+returns uuid language plpgsql security definer set search_path = public as $$
+declare v_moi text := auth.uid()::text; v_id uuid;
+begin
+  if v_moi is null then raise exception 'connexion requise'; end if;
+  if p_jours not in (7, 14, 30) then raise exception 'durée invalide'; end if;
+  if p_critere not in ('charge', 'reps', 'tonnage') then raise exception 'critère invalide'; end if;
+  if p_debut is null or p_debut < current_date - 1 or p_debut > current_date + 1 then raise exception 'date invalide'; end if;
+  if not public.texte_acceptable(p_exercice_nom) then raise exception 'nom refusé'; end if;
+  if (select count(*) from gymbros_defis d where d.createur = v_moi and d.fin >= current_date) >= 5 then
+    raise exception 'trop de défis en cours';
+  end if;
+  insert into gymbros_defis(createur, exercice_id, exercice_nom, critere, debut, fin)
+  values (v_moi, left(p_exercice_id, 80), left(p_exercice_nom, 80), p_critere, p_debut, p_debut + p_jours - 1)
+  returning id into v_id;
+  insert into gymbros_defis_membres(defi, utilisateur, statut) values (v_id, v_moi, 'accepte');
+  insert into gymbros_defis_membres(defi, utilisateur, statut)
+  select v_id, p.utilisateur, 'invite'::text
+  from pseudos p
+  where lower(p.pseudo) in (select lower(x) from unnest(coalesce(p_pseudos, '{}'::text[])) x)
+    and p.utilisateur <> v_moi
+    and public.est_mon_gymbro(p.utilisateur)
+    and not exists (select 1 from comptes_bloques b where b.utilisateur = p.utilisateur)
+  on conflict do nothing;
+  return v_id;
+end $$;
+
+create or replace function public.defi_repondre(p_defi uuid, p_accepte boolean)
+returns void language sql security definer set search_path = public as $$
+  update gymbros_defis_membres set statut = case when p_accepte then 'accepte' else 'refuse' end, maj = now()
+  where defi = p_defi and utilisateur = auth.uid()::text and statut = 'invite';
+$$;
+
+create or replace function public.defi_quitter(p_defi uuid)
+returns void language sql security definer set search_path = public as $$
+  delete from gymbros_defis_membres where defi = p_defi and utilisateur = auth.uid()::text;
+  delete from gymbros_defis d where d.id = p_defi
+    and not exists (select 1 from gymbros_defis_membres m where m.defi = d.id and m.statut = 'accepte');
+$$;
+
+-- Score du compte connecté, accepté jusqu'à 2 jours après la fin (séances
+-- synchronisées en retard).
+create or replace function public.defi_score(p_defi uuid, p_score numeric)
+returns void language sql security definer set search_path = public as $$
+  update gymbros_defis_membres m set score = greatest(0, least(coalesce(p_score, 0), 10000000)), maj = now()
+  from gymbros_defis d
+  where d.id = m.defi and m.defi = p_defi and m.utilisateur = auth.uid()::text and m.statut = 'accepte'
+    and current_date <= d.fin + 2;
+$$;
+
+-- Mes défis (en cours, ou finis depuis 45 jours au plus) et leurs membres.
+create or replace function public.mes_defis()
+returns table(id uuid, createur text, exercice_id text, exercice_nom text, critere text, debut date, fin date, mon_statut text, membres jsonb)
+language sql stable security definer set search_path = public as $$
+  select d.id, (select ps.pseudo from pseudos ps where ps.utilisateur = d.createur), d.exercice_id, d.exercice_nom, d.critere, d.debut, d.fin, m.statut,
+    coalesce((select jsonb_agg(jsonb_build_object('pseudo', p.pseudo, 'statut', m2.statut, 'score', m2.score) order by m2.score desc, m2.maj)
+       from gymbros_defis_membres m2 join pseudos p on p.utilisateur = m2.utilisateur
+       where m2.defi = d.id and m2.statut <> 'refuse'
+         and not exists (select 1 from comptes_bloques b where b.utilisateur = m2.utilisateur)), '[]'::jsonb)
+  from gymbros_defis d
+  join gymbros_defis_membres m on m.defi = d.id and m.utilisateur = auth.uid()::text and m.statut <> 'refuse'
+  where auth.uid() is not null and d.fin >= current_date - 45
+  order by d.fin desc
+  limit 30;
+$$;
+
+revoke execute on function public.defi_creer(text, text, text, int, date, text[]) from public, anon;
+revoke execute on function public.defi_repondre(uuid, boolean) from public, anon;
+revoke execute on function public.defi_quitter(uuid) from public, anon;
+revoke execute on function public.defi_score(uuid, numeric) from public, anon;
+revoke execute on function public.mes_defis() from public, anon;
+grant execute on function public.defi_creer(text, text, text, int, date, text[]) to authenticated;
+grant execute on function public.defi_repondre(uuid, boolean) to authenticated;
+grant execute on function public.defi_quitter(uuid) to authenticated;
+grant execute on function public.defi_score(uuid, numeric) to authenticated;
+grant execute on function public.mes_defis() to authenticated;
 `;
 function copierSqlSaison() {
   if (navigator.clipboard && navigator.clipboard.writeText) {
@@ -31720,6 +32110,7 @@ function basculerSerieSession(ei, si, verifie) {
   }
   const suivant = set.fait ? enchainerExerciceSession(ei) : null;
   sauvegarderSessionActive();
+  apresSeanceDefis(4000);
   renderSessionModal();
   majBandeauSeanceFlottant();
   if (set.fait) { const b = document.querySelector(`.serie-check[data-serie="${clef}"]`); if (b) b.classList.add('pop'); }
@@ -31929,6 +32320,7 @@ async function terminerSeance() {
 
   musculationHistorique.unshift(entree);
   sauvegarderHistorique();
+  apresSeanceDefis();
 
   // Comptabilise la séance dans la dépense calorique du jour, exactement
   // comme une séance de sport saisie depuis l'onglet Activité — avec un
@@ -33054,7 +33446,10 @@ const SONDES_SQL_ADMIN = {
   pro: () => sonderAdmin('table', 'abonnements'),
   appstore: () => sonderAdmin('table', 'gymbros_signalements'),
   direct: () => sonderAdmin('rpc', 'gymbro_direct'),
-  saison: () => sonderAdmin('rpc', 'gymbro_saisons'),
+  saison: async () => {
+    const [a, b] = await Promise.all([sonderAdmin('rpc', 'gymbro_saisons'), sonderAdmin('rpc', 'mes_defis')]);
+    return a === 'ok' && b === 'ok' ? 'ok' : (a === 'inconnu' || b === 'inconnu') ? 'inconnu' : 'ko';
+  },
   admin: async () => {
     const [a, b] = await Promise.all([sonderAdmin('rpc', 'admin_signalements', { p_traites: true }), sonderAdmin('table', 'erreurs_appli')]);
     return a === 'ok' && b === 'ok' ? 'ok' : (a === 'inconnu' || b === 'inconnu') ? 'inconnu' : 'ko';

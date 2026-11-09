@@ -1012,7 +1012,7 @@ test('Administration : Serveur et SQL sonde chaque SQL sans rien modifier, signa
   assert.match(r.sql, /create table if not exists public\.erreurs_appli/);
   assert.match(r.sql, /jambou592@gmail\.com/);
   assert.equal(r.ecritures, 0, 'le bilan ne modifie rien');
-  assert.deepEqual(r.rpc, ['admin_signalements', 'gymbro_direct', 'gymbro_saisons', 'mon_statut_compte']);
+  assert.deepEqual(r.rpc, ['admin_signalements', 'gymbro_direct', 'gymbro_saisons', 'mes_defis', 'mon_statut_compte']);
   assert.deepEqual(r.tuileErreurs, ['—', 'SQL « Administration » à passer'], 'table absente : pas « 0 erreur »');
 }));
 
@@ -2844,6 +2844,73 @@ test('passe de saison : deux mois par saison, XP des séances, du cardio et des 
   assert.deepEqual(r.choisi, ['bronze', true]);
   assert.deepEqual(r.gymbros, ['@carl', 'Toi']);
   assert.equal(r.palierGymbro, 'Palier 3', 'le palier se recalcule d\'après l\'XP publiée');
+}));
+
+test('défis entre gymbros : mon score vient de mes séances, dépassé = bandeau, premier à la fin = badge et XP, invitation, lancer un défi', () => avecAppli({}, async ({ page }) => {
+  await installerFauxAdmin(page, () => ({}));
+  const r = await page.evaluate(async () => {
+    const auj = todayStr(), exo = toutesLesExercices().find(e => e.groupe === 'pectoraux');
+    monPseudo = { pseudo: 'jamal', partage_seances: true };
+    gymbroLiens = [{ pseudo: 'carl', sens: 'envoyee', statut: 'acceptee' }];
+    window.__rep['rpc:gymbro_mes_liens'] = [{ pseudo: 'carl', sens: 'envoyee', statut: 'acceptee' }];
+    // 80 kg × 5 avant-hier, 85 kg × 3 hier ; l'échauffement à 100 kg ne compte pas.
+    musculationHistorique.push({ id: 's1', date: shiftDate(auj, -2), exercices: [{ exerciceId: exo.id, nom: exo.nom, series: [{ poids: 80, reps: 5, fait: true }] }] });
+    musculationHistorique.push({ id: 's2', date: shiftDate(auj, -1), exercices: [{ exerciceId: exo.id, nom: exo.nom, series: [{ poids: 85, reps: 3, fait: true }, { poids: 100, reps: 1, fait: true, technique: 'echauffement' }] }] });
+    const id1 = '11111111-1111-4111-8111-111111111111', id2 = '22222222-2222-4222-8222-222222222222', id3 = '33333333-3333-4333-8333-333333333333';
+    window.__rep['rpc:mes_defis'] = [
+      { id: id1, createur: 'carl', exercice_id: exo.id, exercice_nom: exo.nom, critere: 'charge', debut: shiftDate(auj, -3), fin: shiftDate(auj, 10), mon_statut: 'accepte',
+        membres: [{ pseudo: 'carl', statut: 'accepte', score: 90 }, { pseudo: 'jamal', statut: 'accepte', score: 80 }] },
+      { id: id2, createur: 'jamal', exercice_id: exo.id, exercice_nom: exo.nom, critere: 'tonnage', debut: shiftDate(auj, -9), fin: shiftDate(auj, -1), mon_statut: 'accepte',
+        membres: [{ pseudo: 'jamal', statut: 'accepte', score: 655 }, { pseudo: 'carl', statut: 'accepte', score: 300 }] },
+      { id: id3, createur: 'carl', exercice_id: 'autre', exercice_nom: '<img src=x onerror="window.__pirate=1">', critere: 'reps', debut: auj, fin: shiftDate(auj, 6), mon_statut: 'invite',
+        membres: [{ pseudo: 'carl', statut: 'accepte', score: 0 }, { pseudo: 'jamal', statut: 'invite', score: 0 }] },
+      { id: 'pas-un-identifiant', debut: auj, fin: auj, membres: [] }
+    ];
+    // J'étais premier au dernier passage : carl (90 kg) est passé devant.
+    localStorage.setItem('askesis_defis_rangs', JSON.stringify({ [id1]: 1 }));
+    await chargerDefis(true);
+    const res = {
+      defis: defisGymbros.length,
+      scores: window.__appels.filter(a => a[0] === 'rpc' && a[1] === 'defi_score').map(a => [a[2].p_defi === id1, a[2].p_score]),
+      toast: (document.getElementById('toast-defi') || {}).textContent || '',
+      gagnes: JSON.parse(localStorage.getItem('askesis_defis_gagnes') || '[]').map(g => g.id === id2),
+      fete: (document.getElementById('celebration') || {}).textContent || '',
+      xp: passeSaison(saisonDe(shiftDate(auj, -1))).detail.defiGymbro,
+      invitations: invitationsDefis().length
+    };
+    ouvrirGymbro('classement');
+    const zone = document.getElementById('gymbro-vue-classement');
+    res.cartes = [zone.querySelectorAll('.gdf').length, zone.querySelectorAll('.gdf--invite').length, zone.querySelectorAll('img[src="x"]').length, !!window.__pirate];
+    res.moi = [...zone.querySelectorAll('.gdf')].map(c => { const m = c.querySelector('.gcl.moi em'); return m ? m.textContent : null; });
+    res.coupe = zone.textContent.includes('🏆');
+    await repondreDefi(id3, true);
+    res.reponse = window.__appels.filter(a => a[1] === 'defi_repondre').map(a => a[2]);
+    // Lancer un défi : l'exercice le plus fait est déjà choisi.
+    ouvrirNouveauDefi();
+    choisirDefi('jours', 7); choisirDefi('critere', 'reps');
+    res.ouverte = document.getElementById('modal-defi').classList.contains('show') && !document.getElementById('defi-lancer').disabled;
+    await lancerDefi();
+    const c = window.__appels.filter(a => a[1] === 'defi_creer').map(a => a[2])[0];
+    res.creation = c && [c.p_exercice_id === exo.id, c.p_critere, c.p_jours, c.p_debut === auj, c.p_pseudos];
+    allerA('reglages'); renderVitrineProfil();
+    res.vitrine = [...document.querySelectorAll('#vitrine-badges .badge b')].some(b => b.textContent === 'Vainqueur');
+    res.exo = exo.nom;
+    return res;
+  });
+  assert.equal(r.defis, 3, 'un défi mal formé est ignoré');
+  assert.deepEqual(r.scores, [[true, 85]], 'seul le score qui a changé est publié');
+  assert.equal(r.toast, `@carl t’a dépassé : ${r.exo}Voir`);
+  assert.deepEqual(r.gagnes, [true]);
+  assert.match(r.fete, /Défi gagné/);
+  assert.equal(r.xp, 200);
+  assert.equal(r.invitations, 1);
+  assert.deepEqual(r.cartes, [3, 1, 0, false]);
+  assert.deepEqual(r.moi, [null, '85kg', '655kg']);
+  assert.equal(r.coupe, true);
+  assert.deepEqual(r.reponse, [{ p_defi: '33333333-3333-4333-8333-333333333333', p_accepte: true }]);
+  assert.equal(r.ouverte, true);
+  assert.deepEqual(r.creation, [true, 'reps', 7, true, ['carl']]);
+  assert.equal(r.vitrine, true);
 }));
 
 test('trophées : un badge tout juste gagné est fêté, une seule fois', () => avecAppli({}, async ({ page }) => {
