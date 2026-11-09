@@ -5232,3 +5232,102 @@ html.app-ios body #ecran-seance .serie-check.pop::after { border-color: var(--io
 html.app-ios body #ecran-seance .btn-ajouter-serie { color: var(--ios-accent); font-size: var(--t-note); font-weight: 600; }
 html.app-ios body #ecran-seance .cardio-liste .cardio-seance { background: var(--s1); box-shadow: none; border-radius: 18px; -webkit-backdrop-filter: none; backdrop-filter: none; }
 
+/* =====================================================================
+   REFONTE iOS — E. PROGRÈS, PROFIL, RÉGLAGES, FORMULAIRES, FEUILLES,
+   ÉTATS VIDES, CHARGEMENT, NOTIFICATIONS
+   Progrès : la phrase de la période en héros nu, puis des tuiles et des
+   cartes en surfaces système. Profil : identité, chiffres et objectif en
+   surfaces, l'objectif actif teinté d'accent. Réglages : en-têtes de groupes
+   en capitales 13 pt, rangées de 44 pt. Champs : fond système, 17 pt.
+   Toasts et célébrations : capsules en verre, action en accent.
+   ===================================================================== */
+/* --- Progrès --- */
+html.app-ios body #ecran-stats .pg-heros { background: none !important; box-shadow: none !important; border-radius: 0; padding: 6px 2px 2px; margin-bottom: 14px; }
+html.app-ios body #ecran-stats .pg-heros small { font-size: var(--t-legende) !important; font-weight: 500 !important; letter-spacing: 0 !important; text-transform: none !important; color: var(--text-muted); }
+html.app-ios body #ecran-stats .pg-heros h3 { font-size: var(--t-titre2) !important; font-weight: 600 !important; letter-spacing: -.01em !important; line-height: 1.2; margin: 4px 0 6px; }
+html.app-ios body #ecran-stats .pg-heros p { font-size: var(--t-note) !important; line-height: 1.4; color: var(--text-muted); }
+html.app-ios body #ecran-stats .pg-heros-puces { border-top: .5px solid var(--ligne); margin-top: 10px; padding-top: 12px; }
+html.app-ios body #ecran-stats .pg-heros-puces b { font-family: var(--chiffres) !important; font-size: var(--t-titre3) !important; font-weight: 700 !important; letter-spacing: -.01em; }
+html.app-ios body #ecran-stats .pg-heros-puces span { font-size: var(--t-legende) !important; color: var(--text-muted); }
+html.app-ios body #ecran-stats .pg-h-courbe text { font: 500 11px var(--police) !important; }
+html.app-ios body #ecran-stats :is(.pg-tuile, .pg-carte, .pg-repli, .cle, .chart-container, .analysis-card, .pg-constat) { background: var(--s1) !important; box-shadow: none !important; border: 0 !important; border-radius: var(--r-bloc) !important; }
+html.app-ios body #ecran-stats .pg-tuile { padding: 14px 14px 12px; }
+html.app-ios body #ecran-stats .pg-tuile small { font-size: var(--t-legende) !important; font-weight: 500 !important; letter-spacing: 0 !important; text-transform: none !important; color: var(--text-muted); }
+html.app-ios body #ecran-stats .pg-tuile b { font-size: var(--t-titre1) !important; letter-spacing: -.02em !important; }
+html.app-ios body #ecran-stats .pg-tuile b i { font-size: var(--t-note) !important; font-style: normal; font-weight: 500; color: var(--text-muted); }
+html.app-ios body #ecran-stats .pg-ev { font-size: var(--t-legende) !important; font-weight: 500 !important; }
+html.app-ios body #ecran-stats .pg-chev { font-size: 22px; font-weight: 400; opacity: .55; top: 8px; right: 12px; }
+html.app-ios body #ecran-stats .stats-periode-resume { font-size: var(--t-legende) !important; font-weight: 400 !important; }
+html.app-ios body #ecran-stats :is(.pg-h, .titre-depliant) { font-size: var(--t-titre2) !important; font-weight: 600 !important; letter-spacing: -.01em; }
+html.app-ios body #ecran-stats .pg-lien { font-size: var(--t-note) !important; font-weight: 600 !important; }
+html.app-ios body #ecran-stats .cle { padding: 14px; }
+html.app-ios body #ecran-stats .cle-lbl { font-size: var(--t-legende) !important; font-weight: 500 !important; }
+html.app-ios body #ecran-stats .cle-val { font-family: var(--chiffres) !important; font-size: var(--t-titre1) !important; font-weight: 700 !important; letter-spacing: -.02em !important; }
+html.app-ios body #ecran-stats :is(.cle-sous, .cle-evol) { font-size: var(--t-legende) !important; font-weight: 500 !important; }
+html.app-ios body #ecran-stats .pg-maint b { font-family: var(--chiffres) !important; font-size: var(--t-titre2) !important; }
+html.app-ios body #ecran-stats :is(.pg-fait, .pg-mesure, .pg-lift) { font-size: var(--t-note) !important; min-height: 44px; }
+html.app-ios body #ecran-stats :is(.pg-vide, .pg-projection, .pg-legende-note) { font-size: var(--t-note) !important; line-height: 1.4; }
+html.app-ios body #ecran-stats .pg-legende { font-size: var(--t-legende) !important; font-weight: 500 !important; }
+
+/* --- Profil --- */
+html.app-ios body #ecran-reglages :is(.pf-carte, .cg, .carte-objectifs, .carte-liste, .fitness-card) { background: var(--s1) !important; box-shadow: none !important; border-radius: var(--r-bloc) !important; }
+html.app-ios body #ecran-reglages .pf-id h3 { font-size: var(--t-titre2) !important; font-weight: 600 !important; letter-spacing: -.01em; }
+html.app-ios body #ecran-reglages :is(.pf-niv, .pf-bio) { font-size: var(--t-legende) !important; font-weight: 400 !important; }
+html.app-ios body #ecran-reglages .pf-modif { background: var(--ios-remplir) !important; color: var(--ios-accent) !important; font-size: var(--t-note) !important; font-weight: 600 !important; min-height: 36px; padding: 0 14px !important; }
+html.app-ios body #ecran-reglages .cg b { font-size: var(--t-titre1) !important; letter-spacing: -.02em !important; }
+html.app-ios body #ecran-reglages .cg small { font-size: var(--t-legende) !important; font-weight: 500 !important; }
+html.app-ios body #ecran-reglages .obj-tuile { background: var(--s2) !important; border-radius: 16px !important; font-size: var(--t-legende) !important; font-weight: 500 !important; color: var(--text-muted) !important; box-shadow: none !important; padding: 12px 2px 10px; }
+html.app-ios body #ecran-reglages .obj-tuile.on { background: color-mix(in srgb, var(--ios-accent) 14%, var(--s2)) !important; color: var(--ios-accent) !important; font-weight: 600 !important; }
+html.app-ios body #ecran-reglages .obj-tuile .obj-ic { width: 34px !important; height: 34px !important; border-radius: 10px !important; box-shadow: none !important; }
+html.app-ios body #ecran-reglages .obj-tuile.on .obj-ic { background: var(--ios-accent-plein) !important; color: #fff !important; }
+html.app-ios body #ecran-reglages .obj-tuile.on .obj-ic :is(.icone-ui, svg) { color: #fff !important; stroke: #fff !important; }
+html.app-ios body #ecran-reglages .obj-cibles { font-size: var(--t-legende) !important; font-weight: 500 !important; border-top: .5px solid var(--ligne) !important; }
+html.app-ios body #ecran-reglages .obj-cibles b { font-family: var(--chiffres) !important; font-size: var(--t-titre3) !important; font-weight: 700 !important; }
+html.app-ios body #ecran-reglages .obj-ajust { border-top: .5px solid var(--ligne) !important; align-items: center; }
+html.app-ios body #ecran-reglages .obj-ajust b { font-size: var(--t-corps) !important; font-weight: 400 !important; }
+html.app-ios body #ecran-reglages .obj-ajust small { font-size: var(--t-legende) !important; }
+
+/* --- Réglages et listes groupées (fenêtres et feuilles comprises) --- */
+html.app-ios body .reglages-titre { margin: 22px 16px 7px !important; font-size: var(--t-legende) !important; font-weight: 400 !important; letter-spacing: .02em; text-transform: uppercase; color: var(--text-muted) !important; }
+html.app-ios body .modal-entete + .reglages-titre { margin-top: 4px !important; }
+html.app-ios body .reglages-note { margin: 7px 16px 0 !important; font-size: var(--t-legende) !important; line-height: 1.35; }
+html.app-ios body .ligne-reglage { min-height: 44px; padding: 9px 14px !important; gap: 12px !important; }
+html.app-ios body .ligne-reglage .ligne-txt b { font-size: var(--t-corps) !important; font-weight: 400 !important; }
+html.app-ios body .ligne-reglage .ligne-txt small { font-size: var(--t-legende) !important; }
+html.app-ios body :is(.ligne-reglage + .ligne-reglage, .carte-liste > * + .ligne-reglage) { border-top: .5px solid var(--ligne) !important; }
+html.app-ios body .ligne-reglage > .ligne-txt--court { flex: none !important; }
+html.app-ios body .ligne-reglage > .segment { margin-left: auto !important; flex: 0 1 auto !important; min-width: 0; }
+html.app-ios body .ligne-reglage > .segment button { font-size: var(--t-note) !important; padding: 6px 10px !important; }
+html.app-ios body .feuille-action:focus-visible { outline-color: var(--ios-accent) !important; }
+
+/* --- Champs de formulaire --- */
+html.app-ios body .input-group label { font-size: var(--t-legende) !important; font-weight: 400 !important; letter-spacing: 0 !important; text-transform: none !important; margin: 0 0 6px 4px !important; }
+html.app-ios body :is(.input-group input, .input-group select, .input-group textarea, #modal-cardio input) { background: var(--ios-remplir) !important; border: 0 !important; border-radius: 12px !important; min-height: 46px; font-size: max(16px, var(--t-corps)) !important; box-shadow: none !important; }
+html.app-ios body :is(.input-group input, .input-group select, .input-group textarea, #modal-cardio input):focus { box-shadow: 0 0 0 2px color-mix(in srgb, var(--ios-accent) 55%, transparent) !important; }
+
+/* --- Feuilles et fenêtres --- */
+html.app-ios body .feuille-poignee { width: 36px; height: 5px; background: color-mix(in srgb, var(--text) 25%, transparent) !important; margin-bottom: 12px; }
+html.app-ios body .feuille-action { min-height: 60px; border-radius: 18px !important; padding: 12px 14px !important; }
+html.app-ios body .feuille-action .ic { width: 36px !important; height: 36px !important; border-radius: 10px !important; }
+html.app-ios body .feuille-action .sous { font-size: var(--t-legende) !important; font-weight: 400 !important; }
+html.app-ios body .feuille-action--suggere { box-shadow: inset 0 0 0 1.5px var(--ios-accent) !important; background: color-mix(in srgb, var(--ios-accent) 8%, var(--s2)) !important; }
+html.app-ios body .feuille-contenu > .btn-secondaire:last-child { min-height: 50px; border-radius: 14px !important; font-size: var(--t-corps) !important; }
+html.app-ios body .dialogue-boutons .btn { min-height: 44px; font-size: var(--t-corps) !important; }
+
+/* --- États vides et chargement --- */
+html.app-ios body :is(.vide, .pg-vide, .chart-container.graph-vide::after) { font-size: var(--t-note) !important; font-weight: 400 !important; line-height: 1.4; color: var(--text-muted); }
+html.app-ios body .vide { padding: 22px 8px; }
+html.app-ios body .loader { font-size: var(--t-note) !important; font-weight: 500 !important; letter-spacing: 0 !important; color: var(--text-muted) !important; animation: iosPulse 1.4s ease-in-out infinite; }
+@keyframes iosPulse { 0%, 100% { opacity: 1; } 50% { opacity: .45; } }
+
+/* --- Notifications dans l'app : toasts et célébrations en capsules de verre --- */
+html.app-ios body .toast-annuler { background: var(--ios-verre) !important; color: var(--text) !important; -webkit-backdrop-filter: blur(20px) saturate(1.8); backdrop-filter: blur(20px) saturate(1.8);
+  border-radius: 999px !important; padding: 9px 10px 9px 18px !important; box-shadow: var(--ombre-haute) !important; gap: 10px !important; }
+html.app-ios body .toast-annuler span { font-size: var(--t-note) !important; font-weight: 500 !important; }
+html.app-ios body .toast-annuler button { background: none !important; color: var(--ios-accent) !important; font-weight: 600 !important; font-size: var(--t-note) !important; padding: 0 10px !important; }
+html.app-ios body .toast-annuler .toast-fermer { color: var(--text-muted) !important; font-weight: 400 !important; }
+html.app-ios body .toast-maj { border-radius: 22px !important; }
+html.app-ios body .celebration-carte { background: var(--ios-verre) !important; -webkit-backdrop-filter: blur(20px) saturate(1.8); backdrop-filter: blur(20px) saturate(1.8); border-radius: 22px !important; box-shadow: var(--ombre-haute) !important; }
+html.app-ios.sans-verre body :is(.toast-annuler, .celebration-carte) { background: var(--s2) !important; }
+@media (prefers-reduced-motion: reduce) { html.app-ios body .loader { animation: none; } }
+

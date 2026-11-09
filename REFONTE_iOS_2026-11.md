@@ -76,9 +76,27 @@ session (verdict : hybride assumé — système natif, contenu web redessiné).
   les règles iOS s'y superposent avec `!important` là où la charte l'impose.
 - Tests : « app iOS (refonte D) », « sur le web, Activité garde ses tuiles ».
 
-### E — Progrès et Profil, F — Intégrations Apple, G — Validation
+### E — Progrès, Profil, réglages, formulaires, feuilles, états (fait)
 
-À venir ; voir les tâches iOS E à G.
+- `assets/styles.css`, section « REFONTE iOS — E » : Progrès avec la phrase
+  de la période en héros nu (22 pt, courbe, trois repères sous un filet),
+  tuiles et cartes en surfaces système sans ombre, chiffres arrondis ;
+  Profil en surfaces (identité, trois compteurs, objectif), l'objectif actif
+  teinté d'accent avec son icône en rose plein, « Modifier » en pilule
+  teintée ; réglages en listes groupées façon iOS (en-têtes en capitales
+  13 pt, rangées de 44 pt, libellés en 17 pt régulier, séparateurs fins) ;
+  champs de formulaire sur fond système (12 pt de rayon, 17 pt, anneau
+  d'accent au focus) ; feuilles (poignée, actions de 60 pt, action
+  suggérée cerclée d'accent, « Annuler » de 50 pt) ; états vides et
+  chargement en 15 pt (pulsation douce, coupée avec « Réduire les
+  animations ») ; toasts et célébrations en capsules de verre, l'action
+  « Annuler » en accent.
+- `scripts/captures-ios.js` : états « fenêtre Réglages » et « toast ».
+- Tests : « app iOS (refonte E) », « sur le web, Progrès garde son héros ».
+
+### F — Intégrations Apple, G — Validation
+
+À venir ; voir les tâches iOS F et G.
 
 ## Vérifier
 

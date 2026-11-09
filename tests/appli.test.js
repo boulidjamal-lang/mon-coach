@@ -1573,6 +1573,57 @@ test("sur le web, Activité garde ses tuiles d'actions et sa prochaine séance e
   assert.equal(r.menu, true, "pas d'appui long sur le site");
 }));
 
+test("app iOS (refonte E) : Progrès en héros nu et tuiles en surfaces, objectif actif teinté d'accent, réglages en liste groupée (en-têtes en capitales, rangées de 44 pt), champs sur fond système, toast en capsule avec l'action en accent", () => avecAppli({ natif: true }, async ({ page }) => {
+  const r = await page.evaluate(async () => {
+    const pause = ms => new Promise(ok => setTimeout(ok, ms));
+    allerA('stats'); renderApp(); await pause(150);
+    const heros = document.querySelector('#ecran-stats .pg-heros'), tuile = document.querySelector('#ecran-stats .pg-tuile');
+    const res = { heros: heros ? [getComputedStyle(heros).backgroundColor, getComputedStyle(heros).boxShadow, getComputedStyle(heros.querySelector('h3')).fontSize] : null,
+      tuile: tuile ? [getComputedStyle(tuile).boxShadow, getComputedStyle(tuile.querySelector('b')).fontFamily] : null };
+    allerA('reglages'); renderApp(); await pause(150);
+    const on = document.querySelector('#ecran-reglages .obj-tuile.on');
+    res.objectif = on ? [getComputedStyle(on).boxShadow, getComputedStyle(on).color, getComputedStyle(on.querySelector('.obj-ic')).backgroundColor] : null;
+    res.modif = getComputedStyle(document.querySelector('#ecran-reglages .pf-modif')).color;
+    ouvrirModal('reglages-modal'); await pause(100);
+    const titre = document.querySelector('#reglages-modal .reglages-titre'), ligne = document.querySelector('#reglages-modal .ligne-reglage');
+    res.reglages = [getComputedStyle(titre).textTransform, Math.round(ligne.getBoundingClientRect().height) >= 44, getComputedStyle(ligne.querySelector('.ligne-txt b')).fontWeight];
+    fermerModal('reglages-modal');
+    const champ = document.querySelector('#base-age');
+    res.champ = [getComputedStyle(champ).borderTopWidth, getComputedStyle(champ).borderTopLeftRadius];
+    afficherAnnulation('Aliment retiré', () => {}); await pause(50);
+    const toast = document.getElementById('toast-annuler'), bouton = toast.querySelector('button');
+    res.toast = [getComputedStyle(toast).borderTopLeftRadius, getComputedStyle(bouton).backgroundColor, getComputedStyle(bouton).color];
+    const vide = document.createElement('div'); vide.className = 'vide'; vide.textContent = 'Rien'; document.body.appendChild(vide);
+    res.vide = getComputedStyle(vide).fontSize; vide.remove();
+    return res;
+  });
+  assert.ok(r.heros, 'un héros sur Progrès');
+  assert.deepEqual([r.heros[0], r.heros[1], r.heros[2]], ['rgba(0, 0, 0, 0)', 'none', '22px'], 'héros nu, phrase en 22 pt');
+  assert.ok(r.tuile && r.tuile[0] === 'none' && /rounded/i.test(r.tuile[1]), 'tuile sans ombre, chiffre arrondi : ' + r.tuile);
+  assert.ok(r.objectif, 'un objectif actif');
+  assert.deepEqual([r.objectif[0], r.objectif[1], r.objectif[2]], ['none', 'rgb(214, 36, 110)', 'rgb(214, 36, 110)'], 'objectif actif teinté');
+  assert.equal(r.modif, 'rgb(214, 36, 110)');
+  assert.deepEqual(r.reglages, ['uppercase', true, '400']);
+  assert.deepEqual(r.champ, ['0px', '12px']);
+  assert.deepEqual(r.toast, ['999px', 'rgba(0, 0, 0, 0)', 'rgb(214, 36, 110)']);
+  assert.equal(r.vide, '15px');
+}));
+
+test("sur le web, Progrès garde son héros en carte, ses en-têtes de réglages en minuscules et son toast vert", () => avecAppli({}, async ({ page }) => {
+  const r = await page.evaluate(async () => {
+    const pause = ms => new Promise(ok => setTimeout(ok, ms));
+    allerA('stats'); renderApp(); await pause(150);
+    const heros = document.querySelector('#ecran-stats .pg-heros');
+    ouvrirModal('reglages-modal'); await pause(50);
+    const titre = document.querySelector('#reglages-modal .reglages-titre'); fermerModal('reglages-modal');
+    afficherAnnulation('Aliment retiré', () => {}); await pause(50);
+    return { heros: heros ? getComputedStyle(heros).backgroundColor : null, titre: getComputedStyle(titre).textTransform, toast: getComputedStyle(document.querySelector('#toast-annuler button')).backgroundColor };
+  });
+  assert.ok(r.heros && r.heros !== 'rgba(0, 0, 0, 0)', 'héros en carte : ' + r.heros);
+  assert.equal(r.titre, 'none');
+  assert.equal(r.toast, 'rgb(52, 211, 153)');
+}));
+
 test("IA par le serveur : sans clé personnelle, l'IA reste disponible (photo comprise) et chaque demande part avec sa tâche ; l'administration ne distribue plus de clé", () => avecAppli({}, async ({ page }) => {
   const r = await page.evaluate(async () => {
     const appels = [];
