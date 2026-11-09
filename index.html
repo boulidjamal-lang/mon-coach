@@ -3898,12 +3898,14 @@
        passe dessous s'efface en douceur (flou et fondu progressifs, sans bord
        net), comme le bord des apps d'iOS 26 : l'heure reste lisible. */
     html.app-ios:root body::before { -webkit-mask-image: none; mask-image: none; }
-    html.app-ios:not(.spl-actif) .bord-haut { height: calc(env(safe-area-inset-top, 0px) + 28px);
+    html.app-ios:not(.spl-actif) .bord-haut { display: none !important; height: calc(env(safe-area-inset-top, 0px) + 28px);
       background: linear-gradient(var(--bg) 0%, color-mix(in srgb, var(--bg) 75%, transparent) 45%, transparent 100%);
       -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px);
       -webkit-mask-image: linear-gradient(#000 40%, transparent); mask-image: linear-gradient(#000 40%, transparent);
       opacity: 0; transition: opacity .25s ease; }
     html.app-ios.page-defilee:not(.spl-actif) .bord-haut { opacity: 1; }
+    /* App iPhone, en sombre : la grille du fond se voit (elle était presque noire sur noir). */
+    html.app-ios:root[data-theme="dark"] { --grille: rgba(255,255,255,.085); }
     /* App iPhone : pas de sélection de texte ni de loupe au toucher long
        sur l'interface, comme dans une app ; les champs restent sélectionnables. */
     html.app-ios body { -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
@@ -5091,6 +5093,7 @@
           <div class="reste-kcal" id="reste-kcals">—<em>/<span id="target-kcals-display">0</span>&nbsp;kcal</em></div>
           <!-- Séance prévue aujourd'hui, déjà comptée dans l'objectif (voir prochainesSeances). -->
           <div class="seance-prevue-heros hidden" id="seance-prevue-heros"></div>
+          <div class="seance-prevue-heros hidden" id="semaine-heros"></div>
           <div class="macros-bar">
           <div class="macro-item" role="button" tabindex="0" aria-label="Protéines : voir la courbe et l'objectif" onclick="event.stopPropagation(); ouvrirMacro('p')" onkeydown="if(event.key==='Enter'){event.stopPropagation(); ouvrirMacro('p');}">
             <i class="macro-point" style="background:var(--protein);color:var(--protein)"></i><span class="macro-lbl">Protéines</span><span class="macro-val" id="total-p">0 / 0 g</span>
@@ -8844,10 +8847,16 @@ function computeTargets(day, dateStr, options) {
   // Les lipides ne descendent pas sous 0,8 g/kg (de poids total, pas de masse
   // maigre) : en dessous, c'est hormonal — lié à la taille du corps dans son
   // ensemble, pas seulement au tissu maigre.
+  // Semaine équilibrée : ce qui a été mangé en trop depuis lundi est repris sur
+  // les jours qui restent (aujourd'hui et la suite), par petites touches. Les
+  // protéines ne bougent pas : la baisse vient des glucides et des lipides.
+  const cibleBase = target;
+  const reprise = (options && options.sansSemaine) || !dateStr || dateStr < todayStr() ? 0 : repriseSemaineKcal(dateStr, target, plancher);
+  target -= reprise;
   const fat = Math.max(Math.round(weight * 0.8), Math.round((target * 0.25) / 9));
   const carbs = Math.max(0, Math.round((target - protein * 4 - fat * 9) / 4));
   return {
-    target, protein, carbs, fat,
+    target, protein, carbs, fat, cibleBase, reprise,
     workoutKcal: Math.round(workoutKcal),
     seancePrevue: prevue, prevueKcal: Math.round(prevueKcal), prevueObjectif,
     bmr: Math.round(bmr), plancher, tdee: Math.round(tdee), tdeeFormule: Math.round(tdeeFormule), correction, ajustement,
@@ -10011,6 +10020,24 @@ function seancesCardio() {
   });
   return liste;
 }
+/* Excès net de la semaine (lundi → veille), réparti sur les jours qui
+   restent, aujourd'hui compris. Une journée trop peu notée (moins de 60 %
+   de son objectif) ne compte pas. Jamais plus de 15 % de l'objectif d'un
+   jour, ni sous le plancher (le métabolisme de base). Un manque ne se
+   rattrape pas en mangeant plus. */
+function repriseSemaineKcal(dateStr, cible, plancher) {
+  let surplus = 0;
+  for (let d = lundiDe(dateStr); d < dateStr; d = shiftDate(d, 1)) {
+    if (!appData[d]) continue;
+    const jour = getDay(d), mange = sumMeals(jour).kcal, base = computeTargets(jour, d, { sansSemaine: true }).target;
+    if (!(base > 0) || mange < base * 0.6) continue;
+    surplus += mange - base;
+  }
+  if (surplus <= 0) return 0;
+  const restants = 7 - ((new Date(dateStr + 'T12:00:00').getDay() + 6) % 7);
+  const reprise = Math.min(surplus / restants, cible * 0.15, Math.max(0, cible - (plancher || 0)));
+  return Math.round(reprise / 10) * 10;
+}
 function lundiDe(dateStr) {
   const d = new Date(dateStr + 'T12:00:00');
   return shiftDate(dateStr, -((d.getDay() + 6) % 7));
@@ -10633,6 +10660,11 @@ function majSeancePrevueHeros(t) {
   const s = t && t.seancePrevue && t.prevueObjectif > 0 ? t.seancePrevue : null;
   el.classList.toggle('hidden', !s);
   el.innerHTML = s ? `${ICONE_HALTERE}<span><b>+${Math.round(t.prevueObjectif).toLocaleString('fr-FR')}\u00a0kcal</b> · séance ${escapeHtml(momentSeance(s))}</span>` : '';
+  const sem = document.getElementById('semaine-heros');
+  if (sem) {
+    sem.classList.toggle('hidden', !(t && t.reprise > 0));
+    sem.innerHTML = t && t.reprise > 0 ? `<span><b>−${t.reprise.toLocaleString('fr-FR')}\u00a0kcal</b> · pour équilibrer ta semaine</span>` : '';
+  }
 }
 /* « Séances prévues » dans Ta journée : la séance d'aujourd'hui (avec de
    quoi la retirer ou en ajouter une), celles des 6 jours suivants, et les
@@ -14490,7 +14522,13 @@ const KCAL_PAR_KG = 7700; // équivalent énergétique approximatif d'1 kg de ma
    comme « hors cible ». La carte « Ma nutrition » de Repas du jour suit la
    même règle sur les mêmes 30 jours : les deux écrans donnent les mêmes
    chiffres. */
-function jourComptable(i) { return !!globalMasterRempli[i] && i < globalMasterLabels.length - 1; }
+function jourComptable(i) {
+  if (!globalMasterRempli[i] || i >= globalMasterLabels.length - 1) return false;
+  // Garde-fou : moins de 60 % de l'objectif noté, ce sont sans doute des repas
+  // oubliés (900 kcal notées pour 2 000 mangées) : la journée fausserait tout.
+  const cible = globalMasterTarget[i];
+  return !(cible > 0 && globalMasterConsumed[i] < cible * 0.6);
+}
 
 function bilanPeriode(s, e) {
   const idx = [];
@@ -14588,8 +14626,6 @@ function afficherChiffresClesPoids(s, e) {
       sous: b.deltaPoids != null ? fmtSigne(b.deltaPoids, ' kg') + ' sur la période' : 'Il faut au moins deux pesées.' },
     { lbl: 'Rythme', val: b.rythmeSemaine == null ? '—' : fmtSigne(b.rythmeSemaine, ' kg/sem.', 1),
       cls: classeRythme, sous: b.pesees < 2 ? 'Il faut au moins deux pesées.' : avisRythme },
-    { lbl: 'Pesées', val: b.pesees + ' / ' + b.jours, large: true,
-      sous: b.pesees < 2 ? 'Il faut au moins deux pesées pour une tendance.' : b.pesees >= b.jours / 4 ? 'Suivi régulier : tendance fiable.' : 'Pèse-toi plus souvent pour une tendance plus sûre.' }
   ];
 
   g.innerHTML = '';
@@ -15190,9 +15226,7 @@ function renderChartsPoids(s, e) {
   if (grilleCompo) {
     const mesuresCompo = [
       ['Masse grasse', globalMasterGrasse, cLip],
-      ['Muscle', globalMasterMuscle, cPrimaire],
-      ['Os', globalMasterOs, cGluc],
-      ['Hydratation', globalMasterEau, cAccent]
+      ['Muscle', globalMasterMuscle, cPrimaire]
     ];
     grilleCompo.innerHTML = mesuresCompo.map(([nom], k) => `<div class="compo-case"><div class="compo-tete"><span>${nom}</span><span id="compo-val-${k}"></span></div><div class="compo-graph"><canvas id="compo-chart-${k}"></canvas></div></div>`).join('');
     mesuresCompo.forEach(([nom, serie, couleur], k) => {
@@ -15695,7 +15729,9 @@ function majOngletsNatifs() {
   // Le « + » reste toujours là (la barre ne se recompose pas d'un écran à
   // l'autre) ; seul son nom, lu par VoiceOver, suit l'écran.
   const libelle = ecranActif === 'stats' ? 'Ajouter une pesée' : (LIBELLES_PLUS[ecranActif] || 'Ajouter');
-  if (libelle !== ongletsPlusEtat) { ongletsPlusEtat = libelle; appelOnglets('plus', { visible: true, libelle }); }
+  const plusVisible = !['stats', 'reglages', 'admin'].includes(ecranActif);
+  const cle = plusVisible + libelle;
+  if (cle !== ongletsPlusEtat) { ongletsPlusEtat = cle; appelOnglets('plus', { visible: plusVisible, libelle }); }
 }
 
 (function glisserPourFermer() {
@@ -23540,6 +23576,7 @@ function sauvegarderSessionActive() {
   // façon envoyée à Supabase qu'une fois terminée, via sauvegarderHistorique).
   // Séance de démonstration de la visite guidée : jamais enregistrée.
   if (musculationSessionActive && musculationSessionActive.demo) return;
+  if (musculationSessionActive) musculationSessionActive.derniereAction = Date.now();
   try {
     if (musculationSessionActive) localStorage.setItem(MUSCU_SESSION_KEY, JSON.stringify(musculationSessionActive));
     else localStorage.removeItem(MUSCU_SESSION_KEY);
@@ -31326,7 +31363,13 @@ async function terminerSeance() {
   if (!s) return;
   const seriesFaites = s.exercices.reduce((n, e) => n + e.series.filter(x => x.fait).length, 0);
   if (!seriesFaites && !(await confirmer("Aucune série n'est cochée comme faite. Terminer quand même la séance ?", { ok: 'Terminer' }))) return;
-  const fin = Date.now();
+  // Garde-fou : une séance oubliée (téléphone dans la poche) ne dure pas la
+  // nuit. 30 min sans rien toucher : elle s'arrête 10 min après la dernière
+  // action ; et jamais plus de 3 h.
+  const derniere = Number(s.derniereAction) || Date.now();
+  let fin = Date.now();
+  if (fin - derniere > 30 * 60000) fin = derniere + 10 * 60000;
+  fin = Math.min(fin, s.debut + 3 * 3600000);
   const dureeMin = Math.max(1, Math.round((fin - s.debut) / 60000));
   const entree = {
     id: idUnique('hist'), programmeId: s.programmeId, programmeNom: s.programmeNom || 'Séance libre',

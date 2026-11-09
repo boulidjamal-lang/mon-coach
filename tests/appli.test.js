@@ -846,7 +846,7 @@ test('cartes de stats : pas, eau et poids sur Repas du jour (pesée au toucher),
     ongletsVisibles: document.getElementById('stats-onglets-nav').offsetHeight > 0
   }));
   assert.equal(r.ecran, 'stats');
-  assert.deepEqual([r.onglet, r.cases, r.vides, r.graphiques, r.bilanDansResume, r.ongletsVisibles], ['poids', 4, 0, 4, true, true]);
+  assert.deepEqual([r.onglet, r.cases, r.vides, r.graphiques, r.bilanDansResume, r.ongletsVisibles], ['poids', 2, 0, 2, true, true]);
   await page.click('#onglet-repas');
   assert.equal(await page.evaluate(() => ecranActif), 'repas');
 
@@ -4092,7 +4092,7 @@ test("app iPhone : pas de barre de titre en haut, même une fois la page défil�
     const r = e.getBoundingClientRect();
     return r.height > 0 && r.height < 200 && r.top < 60 && r.bottom > 0;
   }).map(e => e.className));
-  assert.deepEqual(enHaut, ['bord-haut']);
+  assert.deepEqual(enHaut, []);   // plus rien en haut : ni barre de titre, ni bande
   await page.evaluate(() => allerA('stats'));
   const r = await page.evaluate(() => {
     const largeur = id => getComputedStyle(document.getElementById(id)).width;
@@ -4198,12 +4198,9 @@ test("app iPhone, iOS 26 et plus : la barre d'onglets native remplace celle de l
   const pause = () => page.evaluate(() => new Promise(f => requestAnimationFrame(() => requestAnimationFrame(f))));
   assert.equal(await page.evaluate(() => getComputedStyle(document.querySelector('.onglets')).display), 'none');
   assert.deepEqual((await appels()).slice(0, 3), ['etat null', 'selectionner {"nom":"repas"}', 'afficher {"visible":true}']);
-  // L'écran choisi dans la page : la barre suit ; sur Progrès, le « + » reste (il y ouvre la pesée).
+  // L'écran choisi dans la page : la barre suit ; sur Progrès (et le Profil), pas de « + ».
   await page.evaluate(() => { window.__appelsNatifs.length = 0; allerA('stats'); });
-  assert.deepEqual(await appels(), ['selectionner {"nom":"stats"}', 'plus {"visible":true,"libelle":"Ajouter une pesée"}']);
-  await page.evaluate(() => window.__ecouteurs.plus());
-  assert.equal(await page.evaluate(() => document.getElementById('feuille-saisie-rapide').classList.contains('show')), true);
-  await page.evaluate(() => fermerFeuilles());
+  assert.deepEqual(await appels(), ['selectionner {"nom":"stats"}', 'plus {"visible":false,"libelle":"Ajouter une pesée"}']);
   // Administration n'a pas d'onglet : la barre montre le Profil, et toucher le
   // Profil (déjà en surbrillance) ou un autre onglet ramène à son écran.
   await page.evaluate(() => { window.__appelsNatifs.length = 0; allerA('admin'); });
@@ -4551,6 +4548,30 @@ test('app iOS : Apple Santé remplit les pas et les pesées, sans jamais écrase
   assert.deepEqual((await appelsDe(page, 'Health', 'requestAuthorization'))[0].o, { read: ['steps', 'weight'] });
   await page.evaluate(() => desactiverSante());
   assert.equal(await page.evaluate(() => localStorage.getItem('mc_sante_apple')), null);
+}));
+
+test("garde-fous : l'excès des jours d'avant de la semaine est repris sur les jours qui restent ; une journée trop peu notée ne compte pas ; une séance oubliée s'arrête", () => avecAppli({}, async ({ page }) => {
+  const r = await page.evaluate(() => {
+    const auj = todayStr(), lundi = lundiDe(auj), hier = shiftDate(auj, -1);
+    const base = computeTargets(getDay(auj), auj, { sansSemaine: true }).target;
+    const noter = (d, kcal) => { const j = getDay(d); j.meals.lunch = [{ name: 'Test', grams: 100, kcal, p: 0, c: 0, f: 0 }]; saveData(d); };
+    const res = { lundi: auj === lundi };
+    if (auj !== lundi) {
+      noter(hier, Math.round(base * 1.5));   // une journée bien au-dessus
+      const t = computeTargets(getDay(auj), auj);
+      res.baisse = t.reprise > 0 && t.target === base - t.reprise && t.reprise <= Math.round(base * 0.15 / 10) * 10 + 10;
+      noter(hier, Math.round(base * 0.4));   // une journée à peine notée : ignorée
+      res.ignoree = computeTargets(getDay(auj), auj).reprise === 0;
+    }
+    // Séance oubliée : 2 h sans rien toucher, elle s'arrête 10 min après la dernière action.
+    const debut = Date.now() - 4 * 3600000;
+    musculationSessionActive = { id: 's1', programmeId: null, programmeNom: 'Test', debut, derniereAction: debut + 50 * 60000, exercices: [], notes: '' };
+    return res;
+  });
+  if (!r.lundi) assert.deepEqual({ baisse: r.baisse, ignoree: r.ignoree }, { baisse: true, ignoree: true });
+  await page.evaluate(() => { confirmer = () => Promise.resolve(true); return terminerSeance(); });
+  const duree = await page.evaluate(() => musculationHistorique[0] && musculationHistorique[0].dureeMin);
+  assert.equal(duree, 60);
 }));
 
 test("gourde : une bouteille dessinée image par image ; un défilement rapide fait tanguer l'eau, qui s'apaise ensuite", () => avecAppli({ animations: true }, async ({ page }) => {
@@ -5261,7 +5282,7 @@ test('objectif adapté à la balance : chaque lundi, les repas notés et les pes
     res.rappelsWeb = getComputedStyle(document.getElementById('carte-rappels')).display;
     // 2 000 kcal par jour et 0,5 kg perdu par semaine : la vraie dépense est d'environ 2 550 kcal.
     const t = remplir(2000, 0.5);
-    res.perte = { correction: t.correction, formule: t.tdeeFormule, tdee: t.tdee, bmr: t.bmr, plancher: t.plancher, reelle: t.ajustement.reelle, target: t.target, goal: t.goal };
+    res.perte = { correction: t.correction, formule: t.tdeeFormule, tdee: t.tdee, bmr: t.bmr, plancher: t.plancher, reelle: t.ajustement.reelle, target: t.target, cibleBase: t.cibleBase, goal: t.goal };
     res.semaines = [];
     for (let k = 6; k >= 0; k--) { const c = correctionMaintenance(shiftDate(lundiDe(auj), -7 * k)); res.semaines.push(c ? c.kcal : 0); }
     res.memeSemaine = computeTargets(getDay(shiftDate(auj, -1)), shiftDate(auj, -1)).correction;
@@ -5295,7 +5316,7 @@ test('objectif adapté à la balance : chaque lundi, les repas notés et les pes
   assert.equal(r.perte.tdee, r.perte.formule + r.perte.correction);
   assert.ok(r.perte.correction <= Math.round(r.perte.formule * 0.15) + 10, 'pas plus de 15 % de la formule');
   assert.equal(r.perte.plancher, r.perte.bmr, 'un ajustement en hausse ne relève pas le plancher');
-  assert.equal(r.perte.target, Math.max(r.perte.plancher, Math.round(r.perte.tdee * 0.8)), 'sèche : −20 % de la dépense ajustée');
+  assert.equal(r.perte.cibleBase, Math.max(r.perte.plancher, Math.round(r.perte.tdee * 0.8)), 'sèche : −20 % de la dépense ajustée (avant la reprise de la semaine)');
   r.semaines.forEach((c, i) => { if (i) assert.ok(Math.abs(c - r.semaines[i - 1]) <= 100, `100 kcal au plus d'une semaine à l'autre : ${r.semaines}`); });
   assert.equal(r.memeSemaine, r.perte.correction, 'le même ajustement toute la semaine');
   assert.ok(r.detail.includes(`Ajustement d'après ta balance+ ${r.perte.correction} kcal`), r.detail);
