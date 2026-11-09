@@ -1283,6 +1283,76 @@ test("taille de texte du système (lot 13) : la racine suit l'échelle du télé
   assert.deepEqual(r.zoom, [true, true, 'manipulation'], 'pincement permis, double appui seul retiré');
 }));
 
+test("fibres, sucres, sel et AGS (lot 15) : comptés quand les aliments les portent, avec les repères du jour et le nombre d'aliments renseignés ; une étiquette les remplit d'elle-même, la saisie les garde", () => avecAppli({}, async ({ page }) => {
+  const r = await page.evaluate(async () => {
+    const res = {};
+    const jour = todayStr();
+    const d = getDay(jour);
+    d.meals.lunch = [{ name: 'Lentilles', grams: 200, kcal: 230, p: 18, c: 32, f: 1, fib: 15.6, suc: 1.2, sel: 0.02, ags: 0.1 }, { name: 'Pain', grams: 60, kcal: 160, p: 5, c: 30, f: 1 }];
+    d.meals.dinner = [{ name: 'Charcuterie', grams: 100, kcal: 300, p: 20, c: 1, f: 24, fib: 0, suc: 0.5, sel: 5.4, ags: 9 }];
+    const totaux = sumMeals(d);
+    res.totaux = [totaux.fib, totaux.suc, totaux.sel, totaux.ags, totaux.renseignes, totaux.aliments, totaux.kcal];
+    updateSummary(d);
+    const el = document.getElementById('detail-nutri');
+    res.affiche = [!el.classList.contains('hidden'), [...el.children].map(c => c.textContent.replace(/\s+/g, ' ').trim()).join(' | '), el.querySelector('.depasse') && el.querySelector('.depasse').textContent.replace(/\s+/g, ' ').trim()];
+    res.reperes = reperesDetailsNutri(2000);
+    // Sans détail : la ligne disparaît.
+    d.meals.lunch = [{ name: 'Pain', grams: 60, kcal: 160, p: 5, c: 30, f: 1 }]; d.meals.dinner = [];
+    updateSummary(d);
+    res.cache = el.classList.contains('hidden');
+    // Une étiquette OpenFoodFacts remplit les détails, la saisie les garde à la quantité près (sodium → sel × 2,5).
+    activeMealId = 'lunch';
+    fillFromOFF({ name: 'Yaourt nature', source: 'off', nutriments: { 'energy-kcal_100g': 60, 'proteins_100g': 4, 'carbohydrates_100g': 5, 'fat_100g': 3, 'fiber_100g': 0, 'sugars_100g': 4.8, 'sodium_100g': 0.04, 'saturated-fat_100g': 2 } });
+    res.champs = ['man-fib100', 'man-suc100', 'man-sel100', 'man-ags100'].map(id => document.getElementById(id).value);
+    document.getElementById('man-grams').value = '150';
+    await validerAjoutManuel();
+    const ajoute = getDay(currentDate).meals.lunch.slice(-1)[0];
+    res.ajoute = [ajoute.name, ajoute.fib, ajoute.suc, ajoute.sel, ajoute.ags, Math.round(ajoute.kcal)];
+    // La table d'aliments : ses colonnes de détails, quand elle en a (le sodium en mg devient du sel).
+    res.ligne = detailsNutriDeLigne({ fib: 'Fibres alimentaires (g/100 g)', suc: 'Sucres (g/100 g)', sodium: 'Sodium (mg/100 g)', ags: 'AG saturés (g/100 g)' },
+      { 'Fibres alimentaires (g/100 g)': '2,5', 'Sucres (g/100 g)': '-', 'Sodium (mg/100 g)': '400', 'AG saturés (g/100 g)': '1.1' });
+    return res;
+  });
+  assert.deepEqual(r.totaux, [15.6, 1.7, 5.42, 9.1, 2, 3, 690]);
+  assert.equal(r.affiche[0], true);
+  assert.match(r.affiche[1], /^Fibres 15,6 g\/30 g \| Sucres 1,7 g\/\d+ g \| Sel 5,42 g\/5 g \| AGS 9,1 g\/\d+ g \| sur 2 aliments sur 3$/);
+  assert.match(r.affiche[2], /^Sel 5,42 g/, 'le sel au-dessus du repère est signalé');
+  assert.deepEqual(r.reperes, { fib: 30, suc: 50, sel: 5, ags: 22 });
+  assert.equal(r.cache, true);
+  assert.deepEqual(r.champs, ['0', '4.8', '0.1', '2']);
+  assert.deepEqual(r.ajoute, ['Yaourt nature', 0, 7.2, 0.15, 3, 90]);
+  assert.deepEqual(r.ligne, { 'fiber_100g': 2.5, 'salt_100g': 1, 'saturated-fat_100g': 1.1 });
+}));
+
+test("aide cru/cuit (lot 15) : pour un féculent ou une viande pesés cuits, l'appli propose l'équivalent cru et ne convertit que sur demande ; rien pour un aliment déjà cuit", () => avecAppli({}, async ({ page }) => {
+  const r = await page.evaluate(() => {
+    const res = {};
+    const nom = document.getElementById('man-name'), g = document.getElementById('man-grams'), note = document.getElementById('man-cru-cuit');
+    const texte = () => note.classList.contains('hidden') ? null : note.textContent.replace(/\s+/g, ' ').trim();
+    nom.value = 'Riz blanc, cru'; g.value = '200'; calculerApercuManuel();
+    res.riz = texte();
+    convertirCuitEnCru();
+    res.converti = [g.value, texte()];
+    annulerConversionCuit();
+    res.annule = [g.value, texte()];
+    nom.value = 'Riz cuit'; calculerApercuManuel();
+    res.cuit = texte();
+    nom.value = 'Poulet, blanc'; g.value = '150'; calculerApercuManuel();
+    res.poulet = texte();
+    nom.value = 'Pomme'; calculerApercuManuel();
+    res.pomme = texte();
+    res.facteurs = ['Pâtes complètes', 'Lentilles vertes', 'Saumon', 'Quinoa', 'Steak haché'].map(n => (aideCruCuit(n) || {}).facteur);
+    return res;
+  });
+  assert.equal(r.riz, 'Valeurs pour le riz cru. Pesé cuit ? 200 g cuit ≈ 71 g cru. Compter 71 g cru');
+  assert.deepEqual(r.converti, ['71', '200 g cuit comptés comme 71 g cru. Revenir à 200 g']);
+  assert.deepEqual(r.annule, ['200', 'Valeurs pour le riz cru. Pesé cuit ? 200 g cuit ≈ 71 g cru. Compter 71 g cru']);
+  assert.equal(r.cuit, null, 'déjà cuit : rien à convertir');
+  assert.equal(r.poulet, 'Valeurs pour la viande cru. Pesé cuit ? 150 g cuit ≈ 200 g cru. Compter 200 g cru');
+  assert.equal(r.pomme, null);
+  assert.deepEqual(r.facteurs, [2.3, 2.5, 0.8, 3, 0.75]);
+}));
+
 test("IA par le serveur : sans clé personnelle, l'IA reste disponible (photo comprise) et chaque demande part avec sa tâche ; l'administration ne distribue plus de clé", () => avecAppli({}, async ({ page }) => {
   const r = await page.evaluate(async () => {
     const appels = [];
