@@ -24,24 +24,24 @@ Branche de travail : `corrections-audit` (dépôt mon-coach). Rien n'est mis en 
 | PERF-01 | P2 | 11 | Premier chargement lourd | À corriger | |
 | DATA-01 | P2 | 12 | Tout dans localStorage | À corriger | IndexedDB retenu par défaut (décision 6) |
 | A11Y-01 | P2 | 13 | Zoom bloqué, taille de texte iOS ignorée | À corriger | |
-| A11Y-02 | P2 | 10 | 18 champs sans libellé, textes < 12 px | À corriger | |
+| A11Y-02 | P2 | 10 | 18 champs sans libellé, textes < 12 px | Tests réussis | `aria-label` sur les 18 champs ; plus aucun texte sous 12 px (règles 11 px et < 0,76 rem relevées) ; `--text-muted` clair #5f5f67 (contraste ≥ 5:1) |
 | MET-01 | P2 | 9 | Protéines surestimées (IMC élevé) | Tests réussis | Masse maigre estimée (Deurenberg) au-delà d'un IMC de 30 : 120 kg → ~170 g au lieu de 264 g |
 | MET-02 | P2 | 15 | Ni fibres, sucres, sel, AGS | À corriger | |
 | MET-03 | P2 | 9 | Âge et taille par défaut silencieux | Tests réussis | `computeTargets().estime` ; ligne « Objectif estimé · indique ton âge et ta taille » sous l'anneau, qui ouvre Mon corps |
 | MET-04 | P2 | 15 | Pas d'aide cru/cuit | À corriger | |
-| UX-01 | P2 | 10 | Héros « 0 série » en début de semaine | À corriger | |
+| UX-01 | P2 | 10 | Héros « 0 série » en début de semaine | Tests réussis | Semaine vide : la séance à faire passe en tête, le bilan de la semaine passée remplace le « 0 » |
 | UX-02 | P3 | 9 | Formats de nombres incohérents | Tests réussis | `nombreFr` groupe avec une espace insécable visible ; « % » insécable sur la carte Calories |
 | UX-03 | P3 | 9 | Deux projections de poids | Corrigée | La courbe dit « dans N j » quand elle ne projette pas jusqu'au poids visé ; aria-label explicite |
-| UX-04 | P3 | 10 | « + » grisé sur Progrès (barre HTML) | À corriger | |
-| DA-01 | P3 | 10/14 | Accent multi-rôles | À corriger | |
+| UX-04 | P3 | 10 | « + » grisé sur Progrès (barre HTML) | Tests réussis | Masqué (à sa place) sur Progrès, Profil et Administration, comme la barre native |
+| DA-01 | P3 | 10/14 | Accent multi-rôles | Corrigée (partie 1) | « Annuler » des feuilles en couleur de texte ; jetons sémantiques complets au lot 14 |
 | MET-05 | P3 | 9 | ml comptés comme g | Tests réussis (saisie manuelle) | `densiteLiquide()` appliquée à la saisie manuelle en ml (valeurs pour 100 g) ; OpenFoodFacts inchangé (valeurs souvent déjà pour 100 ml) |
 | MET-06 | P3 | 9 | Plancher = métabolisme de base | Tests réussis | Plancher jamais sous 1 200 kcal (femme) / 1 500 kcal (homme) ; `plancherRaison` |
 | TECH-04 | P3 | 3 | Copie obsolète dans le dépôt Anqa | Corrigée | Racine du dépôt Anqa réduite à ios-app/, .github/ et un LISEZMOI ; la doc Withings déplacée dans mon-coach |
-| QA-02 | P3 | 4 | Captures du simulateur blanches | Corrigée · CI en cours | Annonce après peinture, image presque vide reprise une fois |
+| QA-02 | P3 | 4 | Captures du simulateur blanches | Tests réussis | Annonce après peinture, image presque vide reprise une fois ; CI #34 : 14 captures, aucune vide |
 | PERF-02 | P3 | 11 | Rendu complet à chaque action | À analyser | Mesure sur appareil d'abord |
 | SEC-09 | P3 | 5 | `est_bloque()` exécutable par tous | À corriger | |
 | DATA-02 | P3 | 12 | Profil : le dernier qui écrit gagne | À corriger | |
-| RESP-01 | P3 | 10 | Animation d'entrée non réduite | À corriger | Rétrogradé après re-mesure (faux positif initial) |
+| RESP-01 | P3 | 10 | Animation d'entrée non réduite | Tests réussis | `.ecran` dans le bloc animations réduites ; `html { overflow-x: clip }` |
 
 ## Lots
 
@@ -77,6 +77,12 @@ Branche de travail : `corrections-audit` (dépôt mon-coach). Rien n'est mis en 
 - Fichiers : `index.html` (`poidsReferenceProteines`, `densiteLiquide`, `ouvrirMonCorps`, `computeTargets`, `nombreFr`, `updateSummary`, `courbePoidsHeros`, `validerAjoutManuel`, carte Calories, HTML de l'anneau, CSS `.objectif-estime`), `tests/appli.test.js`.
 - Tests : nouveau test « calculs (lot 9) » (6 profils, badge, densités, formats, saisie manuelle en ml) ; suite complète verte.
 - Risque résiduel : les cibles de protéines des comptes à IMC > 30 sans mesure de masse grasse baissent ; le plancher relève la cible des petits gabarits en sèche (annoncé par `plancherRaison`, pas encore affiché en toutes lettres).
+
+### Lot 10 — UX-01, UX-04, A11Y-02, DA-01 (partie 1), RESP-01
+
+- Fichiers : `index.html` (`majBoutonPlus`, `renderVitrineMuscu`, 18 champs, règles CSS de tailles, `--text-muted`, bouton Annuler des feuilles, bloc animations réduites, `html`), `tests/appli.test.js`.
+- Tests : nouveau test « interface (lot 10) » (noms accessibles, tailles, « + », héros, contraste, animation, overflow) ; test de navigation adapté (Profil sans « + ») ; suite complète en cours.
+- Captures : Repas, Activité en semaine vide, feuille d'ajout, objectif estimé (envoyées pour accord avant mise en ligne).
 
 ## Actions côté production (à faire par le propriétaire, dans l'éditeur SQL de Supabase)
 

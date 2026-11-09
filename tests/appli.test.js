@@ -3027,8 +3027,10 @@ test('bouton + : l\'action utile de chaque écran', () => avecAppli({}, async ({
     assert.equal(await page.isDisabled('#onglet-plus'), true);
     await page.evaluate(() => actionPlus()); assert.equal(await ouvert(), '');
   }
+  // Profil : pas de + non plus (masqué, à sa place), comme sur la barre native.
   await page.evaluate(() => allerA('reglages'));
-  await page.click('#onglet-plus'); assert.equal(await ouvert(), 'mesures-modal'); await fermer();
+  assert.equal(await page.isDisabled('#onglet-plus'), true);
+  assert.equal(await page.evaluate(() => getComputedStyle(document.getElementById('onglet-plus')).visibility), 'hidden');
   // Séance en cours : plein écran, barre d'onglets cachée ; l'ajout d'exercice
   // passe par le bouton de la séance, « Réduire » ramène à l'écran d'avant.
   await page.evaluate(() => { allerA('seance'); choisirModeSeance('muscu'); demarrerSeanceLibre(); });
@@ -4746,6 +4748,31 @@ test("calculs (lot 9) : protéines sur la masse maigre estimée au-delà d'un IM
     return validerAjoutManuel().then(() => { const it = getDay(currentDate).meals[activeMealId || 'lunch'][n]; return it && [Math.round(it.kcal), it.grams, it.unite]; });
   });
   assert.deepEqual(h, [828, 100, 'ml']);
+}));
+
+test("interface (lot 10) : chaque champ a un nom accessible, aucun texte sous 12 px sur Repas, « + » masqué sur Progrès et Profil, séance à faire en tête d'une semaine vide, contraste du texte secondaire, animation d'entrée réduite, page jamais défilable de côté", () => avecAppli({ natif: true }, async ({ page }) => {
+  const r = await page.evaluate(() => {
+    const sansNom = [...document.querySelectorAll('input:not([type="hidden"]), select, textarea')].filter(i => !(i.id && document.querySelector(`label[for="${i.id}"]`)) && !i.closest('label') && !i.getAttribute('aria-label') && !i.getAttribute('aria-labelledby')).map(i => i.id || i.name || i.className);
+    allerA('repas'); renderApp();
+    const petits = [...new Set([...document.querySelectorAll('#ecran-repas *')].filter(el => el.offsetParent && [...el.childNodes].some(n => n.nodeType === 3 && n.textContent.trim()) && parseFloat(getComputedStyle(el).fontSize) < 11.9).map(el => el.className + ' ' + getComputedStyle(el).fontSize))];
+    const plusRepas = getComputedStyle(document.getElementById('onglet-plus')).visibility;
+    allerA('seance'); choisirModeSeance('muscu'); renderApp();
+    const ordre = [...document.querySelectorAll('#vitrine-muscu > *')].map(e => e.className.split(' ')[0]);
+    const anim = getComputedStyle(document.getElementById('ecran-seance')).animationName;
+    const lum = c => { const [r, g, b] = c.match(/\d+(\.\d+)?/g).slice(0, 3).map(v => { v /= 255; return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4); }); return 0.2126 * r + 0.7152 * g + 0.0722 * b; };
+    const probe = document.createElement('span'); probe.style.color = 'var(--text-muted)'; probe.style.background = 'var(--bg)'; document.body.appendChild(probe);
+    const cs = getComputedStyle(probe); const [a, b] = [lum(cs.color), lum(cs.backgroundColor)].sort((x, y) => y - x); probe.remove();
+    allerA('stats'); const plusStats = [document.getElementById('onglet-plus').disabled, getComputedStyle(document.getElementById('onglet-plus')).visibility];
+    allerA('reglages'); const plusProfil = getComputedStyle(document.getElementById('onglet-plus')).visibility;
+    return { sansNom, petits, ordre, anim, ratio: Math.round((a + 0.05) / (b + 0.05) * 100) / 100, plusStats, plusProfil, plusRepas, clip: getComputedStyle(document.documentElement).overflowX };
+  });
+  assert.deepEqual(r.sansNom, []);
+  assert.deepEqual(r.petits, []);
+  assert.equal(r.ordre[0], 'sdj', 'semaine vide : la séance à faire passe en tête');
+  assert.deepEqual([r.plusStats, r.plusProfil, r.plusRepas], [[true, 'hidden'], 'hidden', 'visible']);
+  assert.ok(r.ratio >= 5, 'contraste du texte secondaire : ' + r.ratio);
+  assert.equal(r.anim, 'none', "animations réduites : l'écran n'est pas animé");
+  assert.equal(r.clip, 'clip');
 }));
 
 test("garde-fous : l'excès des jours d'avant de la semaine est repris sur les jours qui restent ; une journée trop peu notée ne compte pas ; une séance oubliée s'arrête", () => avecAppli({}, async ({ page }) => {
