@@ -4574,6 +4574,43 @@ test("garde-fous : l'excès des jours d'avant de la semaine est repris sur les j
   assert.equal(duree, 60);
 }));
 
+test('garde-fous de saisie : une valeur hors norme est signalée (on garde ou on corrige), une valeur impossible est refusée', () => avecAppli({}, async ({ page }) => {
+  const r = await page.evaluate(async () => {
+    const vus = []; let reponse = false;
+    confirmer = t => { vus.push(t); return Promise.resolve(reponse); };
+    informer = t => { vus.push(t); return Promise.resolve(true); };
+    const attendre = () => new Promise(f => setTimeout(f, 0));
+    const res = {};
+    // Aliment de 2 500 kcal : noté tout de suite, retiré si on ne le garde pas.
+    const n = getDay(currentDate).meals.lunch.length;
+    addItemToMeal('lunch', { name: 'Pizza', grams: 300, kcal: 2500, p: 0, c: 0, f: 0 }, { partager: false });
+    res.ajoute = getDay(currentDate).meals.lunch.length === n + 1;
+    await attendre();
+    res.retire = getDay(currentDate).meals.lunch.length === n;
+    // Pesée impossible : refusée, la feuille reste ouverte.
+    ouvrirSaisieRapide('poids'); document.getElementById('saisie-rapide-champ').value = '750'; validerSaisieRapide();
+    await attendre();
+    res.peseeRefusee = !(getDay(todayStr()).weight === 750);
+    // 70 000 pas : demandé, gardé si on confirme.
+    reponse = true;
+    ouvrirSaisieRapide('pas'); document.getElementById('saisie-rapide-champ').value = '70000'; validerSaisieRapide();
+    await attendre();
+    res.pas = document.getElementById('daily-steps').value === '70000';
+    // Série à 1 000 kg : pas cochée si on corrige.
+    reponse = false;
+    musculationSessionActive = { id: 's1', programmeNom: 'Test', debut: Date.now(), exercices: [{ exerciceId: 'x', nom: 'X', series: [{ poids: 1000, reps: 8, fait: false }] }], notes: '' };
+    basculerSerieSession(0, 0);
+    await attendre();
+    res.serie = musculationSessionActive.exercices[0].series[0].fait === false;
+    musculationSessionActive = null;
+    // Cardio : 42 km de course en 1 h, c'est demandé.
+    res.cardio = !!alerteCardio('course', 60, 42) && !alerteCardio('course', 60, 12);
+    res.messages = vus.length;
+    return res;
+  });
+  assert.deepEqual(r, { ajoute: true, retire: true, peseeRefusee: true, pas: true, serie: true, cardio: true, messages: 4 });
+}));
+
 test("gourde : une bouteille dessinée image par image ; un défilement rapide fait tanguer l'eau, qui s'apaise ensuite", () => avecAppli({ animations: true }, async ({ page }) => {
   await page.evaluate(() => {
     document.body.style.minHeight = '4000px'; allerA('repas'); renderApp();

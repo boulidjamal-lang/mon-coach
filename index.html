@@ -10264,7 +10264,16 @@ function majCalculsCardio() {
   const kcal = br.type && minutes > 0 ? Math.round(kcalSeance(br.type, minutes, poids, 0, br.intensite, { distance: km, bmr: metabolismeDeBase(poids, date) })) : 0;
   majHerosCardio(kcal, a, minutes, km);
 }
-function enregistrerCardio() {
+function alerteCardio(type, minutes, km) {
+  if (minutes > GARDE_FOUS.dureeCardio)
+    return Math.floor(minutes / 60) + ' h ' + String(minutes % 60).padStart(2, '0') + " de séance, c'est très long. Faute de frappe ? (la durée est en minutes)";
+  const max = GARDE_FOUS.vitesseCardio[type];
+  const vitesse = km > 0 ? km / (minutes / 60) : 0;
+  if (max && vitesse > max)
+    return nombreFr(km) + ' km en ' + minutes + ' min, soit ' + nombreFr(vitesse, 0) + " km/h : c'est trop rapide pour cette activité. Vérifie la distance et la durée.";
+  return null;
+}
+function enregistrerCardio(verifie) {
   const br = cardioBrouillon;
   const minutes = Math.round(Number(document.getElementById('cardio-duree').value) || 0);
   if (!br.type) { alert("Choisis l'activité."); return; }
@@ -10272,6 +10281,8 @@ function enregistrerCardio() {
   let date = document.getElementById('cardio-date').value || todayStr();
   if (date > todayStr()) date = todayStr();
   const km = lireDistanceCardio();
+  const alerte = verifie === true ? null : alerteCardio(br.type, minutes, km);
+  if (alerte) { confirmer(alerte, { ok: 'Enregistrer quand même', annuler: 'Corriger' }).then(ok => { if (ok) enregistrerCardio(true); }); return; }
   const note = document.getElementById('cardio-note').value.trim().slice(0, 80);
   let w;
   if (cardioEdition) {
@@ -10523,6 +10534,7 @@ function validerPoidsAliment() {
   if (item) {
     const b = poidsEdition.base;
     const eauAvant = eauDeLaBoisson(item);
+    const avant = { grams: item.grams, kcal: item.kcal, p: item.p, c: item.c, f: item.f };
     item.grams = g;
     item.kcal = b.kcal * g; item.p = b.p * g; item.c = b.c * g; item.f = b.f * g;
     if (eauAvant) item.eauMl = Math.round(g);
@@ -10530,6 +10542,19 @@ function validerPoidsAliment() {
     if (eauAvant) ajusterEauJour(currentDate, item.eauMl - eauAvant);
     invaliderHistorique();
     renderMeals(day); updateSummary(day);
+    const hors = g !== Number(avant.grams) && alimentInhabituel(item);
+    if (hors) {
+      const date = currentDate, eauNouv = eauDeLaBoisson(item);
+      confirmer(questionAliment(item, hors), { ok: 'Garder', annuler: 'Annuler' }).then(ok => {
+        if (ok) return;
+        Object.assign(item, avant);
+        if (eauAvant) item.eauMl = eauAvant;
+        saveData(date);
+        if (eauAvant) ajusterEauJour(date, eauAvant - eauNouv);
+        invaliderHistorique();
+        if (date === currentDate) { const j = getDay(date); renderMeals(j); updateSummary(j); }
+      });
+    }
   }
   poidsEdition = null;
   fermerModal('macros-popup-modal');
@@ -11400,7 +11425,7 @@ function initGourde() {
   document.addEventListener('visibilitychange', lancerGourde);
 }
 
-function ajouterEau(ml) {
+function ajouterEau(ml, verifie) {
   const day = getDay(currentDate);
   const avant = Math.max(0, Number(day.eauMl) || 0);
   day.eauMl = Math.max(0, avant + ml);
@@ -11408,6 +11433,8 @@ function ajouterEau(ml) {
   saveData(currentDate);
   majJaugeEau(day);
   rafraichirCoach();
+  if (verifie !== true && avant <= GARDE_FOUS.eauJour && day.eauMl > GARDE_FOUS.eauJour)
+    informer("Plus de 6 L d'eau aujourd'hui. Au-delà, boire trop peut devenir dangereux (le sel du sang se dilue) : bois selon ta soif.");
 }
 
 /* Une boisson notée en ml compte aussi pour l'hydratation du jour, sauf
@@ -12515,11 +12542,62 @@ async function validerAjoutManuel() {
   fermerModal('manual-modal');
 }
 
+/* =====================================================================
+   GARDE-FOUS DE SAISIE — une valeur hors de l'ordinaire (faute de frappe,
+   zéro de trop, grammes pris pour des kilos) est signalée avant d'être
+   gardée : on garde ou on corrige, rien de plausible n'est bloqué. Seules
+   les valeurs impossibles (pesée de 750 kg, 500 000 pas) sont refusées.
+   ===================================================================== */
+const GARDE_FOUS = {
+  kcalAliment: 1500, grammesAliment: 1500, mlBoisson: 3000, kcalPhoto: 2000,
+  poidsMin: 30, poidsMax: 300, ecartPesee: 3, joursPesee: 14,
+  pasMax: 100000, pasAlerte: 60000,
+  eauAjout: 2000, eauJour: 6000,
+  chargeSerie: 400, repsSerie: 100,
+  dureeCardio: 360,
+  vitesseCardio: { course: 25, cyclisme: 60, natation: 8, marche_rapide: 12, rameur: 25 }
+};
+function alimentInhabituel(item) {
+  const kcal = Number(item && item.kcal) || 0, q = Number(item && item.grams) || 0;
+  const ml = !!item && item.unite === 'ml';
+  if (kcal > GARDE_FOUS.kcalAliment) return nombreFr(kcal, 0) + ' kcal';
+  if (q > (ml ? GARDE_FOUS.mlBoisson : GARDE_FOUS.grammesAliment)) return nombreFr(q, 0) + (ml ? ' ml' : ' g');
+  return null;
+}
+function questionAliment(item, hors) {
+  return hors + ' pour « ' + ((item && item.name) || 'cet aliment') + " » : c'est beaucoup pour un seul aliment. Faute de frappe ?";
+}
+/* Retire un aliment tout juste ajouté, et l'eau qu'il comptait. */
+function retirerAlimentAjoute(date, item) {
+  const day = getDay(date);
+  for (const id of Object.keys(day.meals || {})) {
+    const i = Array.isArray(day.meals[id]) ? day.meals[id].indexOf(item) : -1;
+    if (i >= 0) { day.meals[id].splice(i, 1); break; }
+  }
+  saveData(date);
+  if (eauDeLaBoisson(item)) ajusterEauJour(date, -eauDeLaBoisson(item));
+  invaliderHistorique();
+  if (date === currentDate) { renderMeals(day); updateSummary(day); }
+}
 function addItemToMeal(mealId, item, options) {
-  const day = getDay(currentDate);
+  const day = getDay(currentDate), date = currentDate;
   day.meals[mealId || 'lunch'].push(item);
   saveData(currentDate);
   invaliderHistorique();
+  // Valeur hors de l'ordinaire : l'aliment est noté tout de suite (la saisie
+  // reste immédiate), « Retirer » l'enlève, et rien ne part vers la base
+  // tant qu'il n'est pas confirmé.
+  const hors = alimentInhabituel(item);
+  if (hors) {
+    renderMeals(day); updateSummary(day);
+    confirmer(questionAliment(item, hors), { ok: 'Garder', annuler: 'Retirer' }).then(ok => {
+      if (!ok) { retirerAlimentAjoute(date, item); return; }
+      if (options && options.partager === false) return;
+      enregistrerAlimentDansBase(item, options && options.source);
+      if (date === currentDate) { renderMeals(getDay(date)); updateSummary(getDay(date)); }
+    });
+    return;
+  }
   // Aliment pris tel quel dans NOTRE base (base d'aliments, mes aliments,
   // aliments partagés) ou portion de recette : rien à envoyer. Tout le reste
   // (OpenFoodFacts, USDA, déjà mangé, saisie, photo) part en validation.
@@ -13946,7 +14024,7 @@ function confirmerDetectionGemini() {
 }
 
 function ajouterIngredientsGemini() {
-  const day = getDay(currentDate);
+  const day = getDay(currentDate), date = currentDate, ajoutes = [];
   detectedBufferGemini.forEach(a => {
     const item = {
       name: a.name, grams: a.grams,
@@ -13954,13 +14032,19 @@ function ajouterIngredientsGemini() {
       c: a.c100 * (a.grams / 100), f: a.f100 * (a.grams / 100)
     };
     day.meals[activeMealId || 'lunch'].push(item);
-    enregistrerAlimentDansBase(item, 'photo');
+    ajoutes.push(item);
   });
   saveData(currentDate);
   invaliderHistorique();
   renderMeals(day); updateSummary(day);
   detectedBufferGemini = [];
   fermerModal('ai-modal');
+  // Une photo mal lue (portion multipliée) se voit au total : on demande.
+  const total = ajoutes.reduce((t, it) => t + (Number(it.kcal) || 0), 0);
+  const envoyer = () => ajoutes.forEach(it => enregistrerAlimentDansBase(it, 'photo'));
+  if (total <= GARDE_FOUS.kcalPhoto) { envoyer(); return; }
+  confirmer('La photo donne ' + nombreFr(total, 0) + " kcal en tout : c'est beaucoup pour un repas. Tu gardes ces aliments ?", { ok: 'Garder', annuler: 'Retirer' })
+    .then(ok => { if (ok) envoyer(); else ajoutes.forEach(it => retirerAlimentAjoute(date, it)); });
 }
 
 // Crée la recette repérée par Gemini dans "Mes recettes", y loggue aussitôt
@@ -29272,9 +29356,52 @@ function ouvrirSaisieRapide(mode) {
   document.getElementById('saisie-rapide-plus').onclick = pas(s.pas);
   ouvrirFeuille('feuille-saisie-rapide');
 }
-function validerSaisieRapide() {
-  const v = Number(document.getElementById('saisie-rapide-champ').value);
+function dernierePeseeAvant(date) {
+  const jours = datesTriees(appData);
+  for (let i = dernierIndexAvant(jours, shiftDate(date, -1)); i >= 0; i--) {
+    const w = Number(appData[jours[i]] && appData[jours[i]].weight);
+    if (Number.isFinite(w) && w > 0) return { date: jours[i], poids: w };
+  }
+  return null;
+}
+function alerteSaisieRapide(mode, v) {
+  const G = GARDE_FOUS;
+  if ((mode === 'poids' || mode === 'poidsVise') && v > 0 && (v < G.poidsMin || v > G.poidsMax))
+    return { refus: true, texte: nombreFr(v) + " kg, ce n'est pas possible : vérifie la saisie (le poids est en kg)." };
+  if (mode === 'poids' && v > 0) {
+    const auj = todayStr(), prec = dernierePeseeAvant(auj);
+    const jours = prec ? Math.round((Date.parse(auj) - Date.parse(prec.date)) / 864e5) : Infinity;
+    const ecart = prec ? v - prec.poids : 0;
+    if (jours <= G.joursPesee && Math.abs(ecart) > G.ecartPesee)
+      return { texte: nombreFr(v) + ' kg, soit ' + nombreFr(Math.abs(ecart)) + ' kg de ' + (ecart > 0 ? 'plus' : 'moins') + ' que ta dernière pesée (' + nombreFr(prec.poids) + ' kg, ' + (jours === 1 ? 'hier' : 'il y a ' + jours + ' jours') + '). Tu la gardes ?' };
+  }
+  if (mode === 'pas') {
+    if (v > G.pasMax) return { refus: true, texte: nombreFr(v, 0) + " pas en une journée, ce n'est pas possible : vérifie la saisie." };
+    if (v > G.pasAlerte) return { texte: nombreFr(v, 0) + ' pas, soit environ ' + nombreFr(v * 0.75 / 1000, 0) + ' km à pied dans la journée. Tu confirmes ?' };
+  }
+  if (mode === 'eau' && v > 0) {
+    const total = Math.max(0, Number(getDay(currentDate).eauMl) || 0) + v;
+    if (v > G.eauAjout) return { texte: nombreFr(v, 0) + " ml d'un coup, c'est beaucoup. Faute de frappe ?" };
+    if (total > G.eauJour) return { texte: 'Cela ferait ' + nombreFr(total / 1000) + " L aujourd'hui. Au-delà de 6 L, boire trop peut devenir dangereux. Tu confirmes ?" };
+  }
+  if (mode === 'poidsVise' && v > 0) {
+    const t = Number(userProfile.height) / 100;
+    const imc = t > 1 ? v / (t * t) : 0;
+    if (imc && imc < 18.5)
+      return { texte: 'Avec ' + nombreFr(t, 2) + ' m, ' + nombreFr(v) + " kg donnerait un IMC de " + nombreFr(imc) + " : en dessous de 18,5, c'est de la maigreur, déconseillé pour la santé. Tu gardes cet objectif ?" };
+  }
+  return null;
+}
+function validerSaisieRapide(verifie) {
+  const champ = document.getElementById('saisie-rapide-champ');
+  const v = Number(champ.value);
   if (!(v >= 0)) return;
+  const alerte = verifie === true ? null : alerteSaisieRapide(saisieRapide, v);
+  if (alerte) {
+    const suite = alerte.refus ? informer(alerte.texte).then(() => false) : confirmer(alerte.texte, { ok: 'Garder', annuler: 'Corriger' });
+    suite.then(ok => { if (ok) validerSaisieRapide(true); else { champ.focus(); if (champ.select) champ.select(); } });
+    return;
+  }
   if (saisieRapide === 'poids' && v > 0) {
     const date = todayStr();
     if (!userProfile.mesures) userProfile.mesures = {};
@@ -29287,7 +29414,7 @@ function validerSaisieRapide() {
     sauvegarderParametresJour();
     renderJaugePas(Math.round(v));
   } else if (saisieRapide === 'eau' && v > 0) {
-    ajouterEau(Math.round(v));
+    ajouterEau(Math.round(v), true);
   } else if (saisieRapide === 'poidsVise') {
     userProfile.poidsVise = v > 0 ? Math.round(v * 10) / 10 : null;
     saveData();
@@ -31143,9 +31270,20 @@ function validerPaveSerie(ei, si) {
   ['poids', 'reps'].forEach(champ => { if (set[champ] == null || set[champ] === '') set[champ] = valeurDepartSerie(ei, si, champ); });
   basculerSerieSession(ei, si);
 }
-function basculerSerieSession(ei, si) {
+function basculerSerieSession(ei, si, verifie) {
   const set = musculationSessionActive.exercices[ei] && musculationSessionActive.exercices[ei].series[si];
   if (!set) return;
+  // Charge ou répétitions hors norme (zéro de trop) : on demande avant de
+  // cocher, une seule fois par exercice et par séance.
+  const exo = musculationSessionActive.exercices[ei];
+  if (!set.fait && verifie !== true && !exo.horsNormeOk) {
+    const p = Number(set.poids) || 0, r = Number(set.reps) || 0;
+    if (p > GARDE_FOUS.chargeSerie || r > GARDE_FOUS.repsSerie) {
+      confirmer((p > GARDE_FOUS.chargeSerie ? nombreFr(p) + ' kg' : nombreFr(r, 0) + ' répétitions') + " sur cette série, c'est inhabituel. Faute de frappe ?", { ok: 'Valider la série', annuler: 'Corriger' })
+        .then(ok => { if (ok && musculationSessionActive && musculationSessionActive.exercices[ei] === exo) { exo.horsNormeOk = true; basculerSerieSession(ei, si, true); } });
+      return;
+    }
+  }
   set.fait = !set.fait;
   const clef = ei + '_' + si;
   // RIR : demandé pour une série de travail tout juste cochée ; la demande
