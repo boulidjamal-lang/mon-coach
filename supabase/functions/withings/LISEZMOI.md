@@ -1,152 +1,84 @@
-# Edge Function Withings
+# Fonction serveur « withings » (balance Withings)
 
-La connexion à ta balance Withings est **désactivée par défaut** dans
-l'application (`WITHINGS_PROXY = null` dans `index.html`) : pas par bug,
-mais parce que le maillon manquant — cette Edge Function — n'est pas encore
-déployé sur ton projet Supabase. Ce document explique pourquoi, et comment
-la déployer toi-même (ça prend 5 minutes).
+La connexion à une balance Withings passe par cette Edge Function Supabase,
+versionnée ici (`index.ts`). Elle remplace la fonction `dynamic-responder`
+déployée à la main en 2025, qui n'exigeait aucune connexion, répondait à
+n'importe quel site et renvoyait les jetons au navigateur.
 
-## Pourquoi c'est nécessaire
+## Ce qu'elle garantit
 
-Withings utilise le protocole OAuth2. Pour échanger le code d'autorisation
-contre un jeton d'accès, il faut un `client_secret` — contrairement à la
-clé publique Supabase, ce secret **authentifie l'application elle-même** :
-publié en clair dans `index.html` sur GitHub Pages, n'importe qui pourrait
-se faire passer pour Mon Coach auprès de Withings, qui pourrait alors
-révoquer l'accès de l'appli pour tout le monde.
+- **Le `client_secret` Withings ne quitte pas le serveur** : il vit dans le
+  secret `WITHINGS_CLIENT_SECRET`, jamais dans `index.html` ni dans ce dépôt.
+- **Les jetons d'accès de chaque compte restent sur le serveur**, dans la
+  table `withings_jetons` (SQL n° 10 « Balance Withings » de l'écran
+  Administration › Serveur et SQL). Cette table n'a aucune règle d'accès et
+  aucun droit pour l'appli : seule la fonction (clé de service) la lit et
+  l'écrit. L'appli ne connaît qu'un état — balance reliée ou non — et
+  reçoit les pesées déjà lues.
+- **Chaque appel porte la session Supabase du compte** (vérification du JWT
+  activée au déploiement, puis relue dans la fonction) : un jeton Withings
+  est rangé au nom de ce compte-là, et personne d'autre ne peut le lire ni
+  s'en servir.
+- **Seules les origines de l'appli sont servies** (`https://boulidjamal-lang.github.io`,
+  `capacitor://localhost`, `ionic://localhost` ; d'autres via le secret
+  `WITHINGS_ORIGINES`, séparées par des virgules). Un site tiers reçoit 403.
+- **L'URL de retour est celle du serveur** (`WITHINGS_REDIRECT_URI`, par
+  défaut `https://boulidjamal-lang.github.io/mon-coach/`) : une demande ne
+  peut pas en imposer une autre. Côté appli, chaque demande de connexion
+  part avec un `state` aléatoire gardé sur l'appareil, exigé au retour.
+- **La balance fait partie de Pro**, comme dans l'appli : relier, importer
+  ou lire les pesées exige un abonnement valable (402 sinon).
 
-La solution : ce secret reste **côté serveur**, dans une Edge Function
-Supabase qui fait l'échange à la place du navigateur. Le navigateur ne
-voit jamais que le résultat (le jeton d'accès personnel de ton compte
-Withings, qui lui n'a rien de sensible pour l'appli elle-même).
+## Actions
 
-## 1. Créer une application Withings (si ce n'est pas déjà fait)
+| Action (POST JSON `{ action, … }`) | Réponse | Rôle |
+|---|---|---|
+| `etat` | `{ connecte }` | La balance est-elle reliée à ce compte ? |
+| `connecter` `{ code }` | `{ connecte: true }` | Échange le code OAuth du retour de Withings et garde les jetons |
+| `mesures` | `{ status: 0, body: { measuregrps } }` | Les 10 dernières pesées (format Withings `getmeas`), jeton rafraîchi au besoin ; `409 { connecte: false }` si la connexion a expiré |
+| `deconnecter` | `{ connecte: false }` | Oublie les jetons |
+| `importer` `{ access_token, refresh_token, expire_le, userid }` | `{ connecte: true }` | Reprend le jeton qu'une ancienne version de l'appli gardait sur l'appareil (une fois ; l'appli l'efface ensuite chez elle) |
 
-Sur [developer.withings.com](https://developer.withings.com), crée une
-application. Tu y trouveras un **Client ID** (déjà dans `index.html`,
-constante `WITHINGS_CLIENT_ID`) et un **Client Secret** (à garder pour
-l'étape 3 — ne le colle jamais dans le code de l'appli ni dans une
-conversation, seulement dans la commande `supabase secrets set` ci-dessous).
+Les messages d'erreur renvoyés à l'appli sont rédigés ; la réponse brute de
+Withings reste dans les journaux de la fonction.
 
-Renseigne comme URL de redirection exactement la valeur de
-`WITHINGS_REDIRECT_URI` dans `index.html` (l'URL où l'appli est hébergée).
+## Déployer
 
-## 2. Créer la fonction
-
-Depuis un terminal, à la racine de ton projet Supabase local (ou n'importe
-où si tu utilises seulement la CLI pour ce projet) :
-
-```bash
-supabase functions new withings
-```
-
-Remplace le contenu du fichier généré
-(`supabase/functions/withings/index.ts`) par celui-ci :
-
-```typescript
-// Edge Function Withings : échange le code d'autorisation OAuth (et
-// rafraîchit le jeton) sans jamais exposer le client_secret au navigateur.
-// Le client_secret vit uniquement dans les secrets Supabase (étape 3),
-// jamais dans ce fichier ni dans index.html.
-
-const WITHINGS_CLIENT_ID = '3341d599f2c93e3b754d28ae6fbd69af0e259f1127d2c12c738991dccb012924';
-
-const CORS_HEADERS = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-  'Access-Control-Allow-Methods': 'POST, OPTIONS',
-};
-
-function reponseJson(corps: unknown, status = 200) {
-  return new Response(JSON.stringify(corps), {
-    status,
-    headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' },
-  });
-}
-
-Deno.serve(async (req: Request) => {
-  if (req.method === 'OPTIONS') return new Response('ok', { headers: CORS_HEADERS });
-  if (req.method !== 'POST') return reponseJson({ status: 1, error: 'Méthode non autorisée' }, 405);
-
-  const clientSecret = Deno.env.get('WITHINGS_CLIENT_SECRET');
-  if (!clientSecret) return reponseJson({ status: 1, error: 'WITHINGS_CLIENT_SECRET non configuré côté serveur' }, 500);
-
-  try {
-    const payload = await req.json();
-    const params = new URLSearchParams({
-      action: 'requesttoken',
-      client_id: WITHINGS_CLIENT_ID,
-      client_secret: clientSecret,
-    });
-
-    if (payload.action === 'authorization_code') {
-      if (!payload.code || !payload.redirect_uri) return reponseJson({ status: 1, error: 'code et redirect_uri requis' }, 400);
-      params.set('grant_type', 'authorization_code');
-      params.set('code', payload.code);
-      params.set('redirect_uri', payload.redirect_uri);
-    } else if (payload.action === 'refresh_token') {
-      if (!payload.refresh_token) return reponseJson({ status: 1, error: 'refresh_token requis' }, 400);
-      params.set('grant_type', 'refresh_token');
-      params.set('refresh_token', payload.refresh_token);
-    } else {
-      return reponseJson({ status: 1, error: 'action inconnue' }, 400);
-    }
-
-    const withingsResp = await fetch('https://wbsapi.withings.net/v2/oauth2', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: params.toString(),
-    });
-    const data = await withingsResp.json();
-
-    // Transmis tel quel : index.html attend exactement le format de
-    // réponse Withings ({status, body: {access_token, refresh_token,
-    // expires_in, userid}}), aucune transformation ici.
-    return reponseJson(data);
-  } catch (e) {
-    return reponseJson({ status: 1, error: String(e) }, 500);
-  }
-});
-```
-
-## 3. Enregistrer le secret et déployer
+Depuis la racine du dépôt, avec la CLI Supabase reliée au projet :
 
 ```bash
-# Le client_secret Withings (étape 1) — jamais dans le code, uniquement ici.
+# Le client_secret de l'application Withings (developer.withings.com) —
+# uniquement ici, jamais dans le code ni dans une conversation.
 supabase secrets set WITHINGS_CLIENT_SECRET=xxxxxxxxxxxxxxxxxxxx
 
-# --no-verify-jwt : index.html appelle cette fonction sans jeton Supabase
-# (l'échange OAuth arrive parfois avant que la session Supabase ne soit
-# établie) — sans cette option, Supabase refuserait l'appel avec 401.
-supabase functions deploy withings --no-verify-jwt
+# Vérification du JWT activée (pas de --no-verify-jwt) : l'appli appelle la
+# fonction avec la session du compte (supa.functions.invoke).
+supabase functions deploy withings
 ```
 
-La commande de déploiement affiche l'URL de la fonction, de la forme :
+Puis, dans l'éditeur SQL de Supabase, exécuter le SQL n° 10 « Balance
+Withings » (Administration › Serveur et SQL › Copier le SQL). Il crée la
+table, reprend les jetons que les anciennes versions avaient laissés dans le
+profil, et les retire du profil. Une fois l'appli à jour partout :
 
-```
-https://<ton-projet>.supabase.co/functions/v1/withings
-```
-
-## 4. Activer la connexion dans l'appli
-
-Dans `index.html`, remplace :
-
-```js
-const WITHINGS_PROXY = null;   // ex : 'https://xxxx.supabase.co/functions/v1/withings'
+```bash
+# L'ancienne fonction, ouverte à tous, n'a plus de raison d'exister.
+supabase functions delete dynamic-responder
 ```
 
-par l'URL obtenue à l'étape 3, commite et pousse le changement. Le bouton
-« Connecter ma balance Withings » (Réglages → Profil) devient alors actif.
+Dans le tableau de bord développeur Withings, l'URL de redirection reste
+`https://boulidjamal-lang.github.io/mon-coach/` (la même que
+`WITHINGS_REDIRECT_URI` dans `index.html` et dans la fonction).
 
-## Pour vérifier que ça fonctionne
+## Vérifier
 
-1. Réglages → Connecter ma balance Withings.
-2. Se connecter sur la page Withings qui s'ouvre, autoriser l'accès.
-3. De retour sur l'appli, un message « Balance Withings connectée ! »
-   doit apparaître.
-4. Depuis la modale Mesures, « ⚖️ Importer ma dernière pesée Withings »
-   doit pré-remplir le poids avec la dernière pesée enregistrée.
+1. Réglages › Balance Withings › **Connecter** : la page Withings s'ouvre,
+   puis l'appli affiche « Balance Withings connectée ! ».
+2. Administration › Serveur et SQL : la ligne n° 10 est **OK** (la table
+   existe et refuse même l'administrateur ; « Accès ouvert à tous » signale
+   une table lisible, « Manquant » un SQL pas encore passé).
+3. Mesures › **Importer ma dernière pesée** pré-remplit le poids (et la
+   composition si la balance la donne).
 
-Si une erreur apparaît, le lien « 🔍 Voir la réponse brute de l'API
-(diagnostic) » (Réglages) affiche la réponse exacte renvoyée — utile pour
-comprendre ce qui bloque côté Withings.
+Les tests (`npm run test:fonctions`, `npm run test:sql`, `npm test`)
+couvrent la fonction, la table et l'appli sans rien déployer.

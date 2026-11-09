@@ -16,7 +16,7 @@
      'unsafe-inline' ; la phase 2 les remplace), connexions vers les seuls
      services utilisés, aucun cadre tiers ni plugin. Retirée dans l'app iPhone
      par preparer-www.mjs (tout y est local). -->
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://unpkg.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: blob: https:; media-src 'self' blob: data: https:; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://world.openfoodfacts.org https://api.nal.usda.gov https://wbsapi.withings.net https://generativelanguage.googleapis.com https://boulidjamal-lang.github.io; worker-src 'self' blob:; frame-src 'none'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://unpkg.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: blob: https:; media-src 'self' blob: data: https:; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://world.openfoodfacts.org https://api.nal.usda.gov https://generativelanguage.googleapis.com https://boulidjamal-lang.github.io; worker-src 'self' blob:; frame-src 'none'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'">
   <!-- Le pincement pour zoomer reste permis (accessibilité : texte trop
        petit, vue fatiguée). Seul le zoom par double appui est retiré, en CSS
        (touch-action: manipulation, voir html, body) : taper deux fois vite
@@ -6131,6 +6131,14 @@
         <button class="btn btn-secondaire" type="button" onclick="copierSqlSaison()">Copier le SQL</button>
         </div>
       </div>
+      <div class="adm-sql" data-sql="withings">
+        <button type="button" class="ligne-reglage ligne-reglage--bouton" aria-expanded="false" onclick="basculerSqlAdmin(this)"><span class="adm-num">10</span><span class="ligne-txt"><b>Balance Withings</b><small>Jetons de la balance gardés sur le serveur, jamais dans l'appli</small></span><span class="adm-etat adm-etat--attente" data-etat-sql>&hellip;</span></button>
+        <div class="adm-sql-corps hidden">
+        <p class="note note-explicative">Après « Askēsis Pro » : la table des jetons Withings, fermée à l'appli (même à l'administrateur), et la reprise des jetons que les anciennes versions gardaient dans le profil. Va de pair avec la fonction serveur « withings » (supabase/functions/withings).</p>
+        <div class="bloc-sql" id="bloc-sql-withings"></div>
+        <button class="btn btn-secondaire" type="button" onclick="copierSqlWithings()">Copier le SQL</button>
+        </div>
+      </div>
     </div>
     <p class="note adm-note">Touche une ligne pour voir et copier son SQL, même déjà passé : relancer un script ne rouvre jamais l'accès aux données.</p>
     <div class="reglages-titre">Fonctions serveur et ce téléphone</div>
@@ -7862,25 +7870,24 @@ const SUPA_TABLE_DEFAUT = 'aliments_base';   // ex-« ciqual_aliments », renomm
  GitHub Pages, il permet à n'importe qui de se faire passer pour Mon
  Coach dans un flux d'autorisation. Withings peut révoquer l'app.
 
- L'échange de jeton doit passer par un serveur. Le plus simple ici :
- une Edge Function Supabase (voir WITHINGS_edge_function.md), qui garde
- le secret côté serveur et n'expose qu'un point d'entrée.
-
- En attendant ce déploiement, WITHINGS_PROXY vaut null et la connexion
- Withings est désactivée : mieux vaut une fonction inactive qu'un
- secret publié. Renseigner l'URL de l'Edge Function pour la réactiver.
-
- Le jeton obtenu après connexion (access_token / refresh_token) est,
- lui, réellement personnel : il reste dans le profil du compte connecté
- et n'est jamais partagé entre deux comptes.
+ L'échange de jeton passe par la fonction serveur « withings »
+ (supabase/functions/withings) : elle détient le client_secret, garde les
+ jetons de chaque compte dans une table que l'appli ne peut pas lire
+ (withings_jetons, SQL « Balance Withings ») et lit les pesées à sa place.
+ L'appli ne voit jamais un jeton : elle ne connaît qu'un état (balance
+ reliée ou non) et reçoit les pesées déjà lues.
  ===================================================================== */
 const WITHINGS_CLIENT_ID = '3341d599f2c93e3b754d28ae6fbd69af0e259f1127d2c12c738991dccb012924';
-// URL de l'Edge Function qui détient le secret. null = Withings désactivé.
-const WITHINGS_PROXY = 'https://nhbvmqubwbzrddndisfr.supabase.co/functions/v1/dynamic-responder';
 // Doit correspondre EXACTEMENT à l'URL enregistrée dans le tableau de bord
-// développeur Withings. À changer ici ET là-bas si l'appli déménage.
+// développeur Withings et dans la fonction serveur. À changer aux trois
+// endroits si l'appli déménage.
 const WITHINGS_REDIRECT_URI = 'https://boulidjamal-lang.github.io/mon-coach/';
+// Anciennes versions : le jeton était gardé sur l'appareil sous cette clé.
+// Il est repris par le serveur puis effacé d'ici (reprendreJetonWithingsLocal).
 const WITHINGS_TOKEN_LS = 'mc_withings_token';
+// Garde-fou OAuth (« state ») : la demande de connexion partie de cet
+// appareil, à retrouver au retour de Withings.
+const WITHINGS_STATE_LS = 'mc_withings_state';
 
 /* =====================================================================
    APP iOS
@@ -16857,6 +16864,7 @@ function definirSessionUtilisateur(user) {
     appliquerEtatPro();
     chargerAbonnementPro().then(() => { if (paiementProRecent()) suivrePaiementPro(); });
     verifierIAServeur();
+    rafraichirEtatWithings();
     // La gate de connexion vient de se refermer : c'est le bon moment pour
     // éventuellement proposer l'installation, jamais avant (elle empilerait
     // sa pop-up sur la modale de connexion, obligatoire tant qu'elle est ouverte).
@@ -16869,6 +16877,8 @@ function definirSessionUtilisateur(user) {
     fermerModal('accord-modal');
     monPseudo = null;
     oublierPro();
+    etatWithings = { connecte: false, connu: false };
+    majUIWithings();
     ouvrirModal('compte-modal', true);
   }
   // Le changement d'identifiant ne rejoue pas automatiquement les données
@@ -20959,28 +20969,60 @@ function filtrerStatsCompte() {
 
 /* =====================================================================
    BALANCE WITHINGS
-   Le jeton (access_token/refresh_token) est stocké dans userProfile.withings,
-   comme la clé Gemini : personnel au compte connecté, synchronisé sur tous
-   ses appareils, jamais partagé avec un autre compte sur le même projet
-   Supabase. Repli sur le stockage local si personne n'est connecté.
+   Tout passe par la fonction serveur « withings » (supabase/functions/
+   withings), appelée avec la session du compte : c'est elle qui détient les
+   jetons, rafraîchit l'accès et lit les pesées. L'appli ne garde qu'un
+   état — balance reliée ou non — et ne voit jamais un jeton.
    ===================================================================== */
-function tokenWithings() {
-  if (userProfile.withings) return userProfile.withings;
-  try { return JSON.parse(localStorage.getItem(WITHINGS_TOKEN_LS) || 'null'); } catch (e) { return null; }
+let etatWithings = { connecte: false, connu: false };
+
+async function appelWithings(action, corps) {
+  if (!supa || !supa.functions || !sessionUtilisateur) return { erreur: "Connecte-toi d'abord.", statut: 401 };
+  try {
+    const { data, error } = await supa.functions.invoke('withings', { body: Object.assign({ action }, corps || {}) });
+    if (!error) return data || {};
+    const statut = error.context && typeof error.context.status === 'number' ? error.context.status : 0;
+    let detail = {};
+    try { detail = await error.context.json(); } catch (e) {}
+    const generique = statut === 404 ? 'La connexion Withings attend le déploiement de la fonction serveur « withings ».' : 'Le serveur Withings ne répond pas. Réessaie dans un instant.';
+    return Object.assign({ erreur: generique }, detail || {}, { statut });
+  } catch (e) {
+    return { erreur: 'Le serveur Withings ne répond pas. Réessaie dans un instant.', statut: 0 };
+  }
 }
 
-function enregistrerTokenWithings(t) {
-  userProfile.withings = t;
-  try { localStorage.setItem(WITHINGS_TOKEN_LS, JSON.stringify(t)); } catch (e) {}
-  saveData();
+/* L'état côté serveur (reliée ou non), demandé à la connexion du compte et
+   après chaque changement ; sur le web seulement (dans l'app iPhone, c'est
+   Apple Santé qui apporte les pesées). */
+async function rafraichirEtatWithings() {
+  if (NATIF || !sessionUtilisateur) { etatWithings = { connecte: false, connu: false }; majUIWithings(); return; }
+  await reprendreJetonWithingsLocal();
+  const r = await appelWithings('etat');
+  if (!r.erreur) etatWithings = { connecte: !!r.connecte, connu: true };
   majUIWithings();
 }
 
-function deconnexionWithings() {
-  userProfile.withings = null;
+/* Les anciennes versions gardaient le jeton dans le profil et sur l'appareil.
+   Il part une fois sur le serveur, puis disparaît d'ici ; s'il n'est pas
+   reçu (serveur injoignable), il attend la prochaine fois. */
+async function reprendreJetonWithingsLocal() {
+  let t = userProfile.withings || null;
+  if (!t) { try { t = JSON.parse(localStorage.getItem(WITHINGS_TOKEN_LS) || 'null'); } catch (e) { t = null; } }
+  if (t && t.access_token && t.refresh_token) {
+    const r = await appelWithings('importer', { access_token: t.access_token, refresh_token: t.refresh_token, expire_le: t.expire_le, userid: t.userid });
+    // Refusé pour de bon (illisible, compte sans Pro) : inutile de le garder. Autre échec : on réessaiera.
+    if (r.erreur && r.statut !== 400 && r.statut !== 402) return;
+  }
+  if ('withings' in userProfile) { delete userProfile.withings; saveData(); }
   try { localStorage.removeItem(WITHINGS_TOKEN_LS); } catch (e) {}
-  saveData();
+}
+
+async function deconnexionWithings() {
+  const r = await appelWithings('deconnecter');
+  if (r.erreur) { informer(r.erreur); return; }
+  etatWithings = { connecte: false, connu: true };
   majUIWithings();
+  informer('Balance Withings déconnectée.');
 }
 
 /* =====================================================================
@@ -21061,7 +21103,7 @@ if (NATIF) {
 
 function majUIWithings() {
   majUISante();
-  const t = tokenWithings();
+  const t = etatWithings.connecte;
   const paires = [
     ['withings-deconnecte', 'withings-connecte'],
     ['withings-deconnecte-reglages', 'withings-connecte-reglages']
@@ -21089,15 +21131,32 @@ function majUIWithings() {
    qui contourne l'interception à coup sûr. D'où l'URL posée directement en
    href (voir brancherLiensWithings) plutôt qu'une navigation déclenchée en
    JS. */
-function urlAutorisationWithings() {
+function urlAutorisationWithings(state) {
   const params = new URLSearchParams({
     response_type: 'code',
     client_id: WITHINGS_CLIENT_ID,
-    state: 'moncoach',
+    state: state || 'askesis',
     scope: 'user.metrics',
     redirect_uri: WITHINGS_REDIRECT_URI
   });
   return 'https://account.withings.com/oauth2_user/authorize2?' + params.toString();
+}
+
+/* Nouveau « state » pour une demande de connexion : gardé sur cet appareil,
+   il doit revenir tel quel avec le code, sinon le code est ignoré (un code
+   glissé par un tiers ne relierait pas sa balance à ce compte). */
+function nouvelEtatWithings() {
+  const octets = new Uint8Array(16);
+  try { crypto.getRandomValues(octets); } catch (e) { for (let i = 0; i < octets.length; i++) octets[i] = Math.floor(Math.random() * 256); }
+  const state = Array.from(octets, o => o.toString(16).padStart(2, '0')).join('');
+  try { localStorage.setItem(WITHINGS_STATE_LS, JSON.stringify({ state, le: Date.now() })); } catch (e) {}
+  return state;
+}
+function etatWithingsAttendu(state) {
+  let attendu = null;
+  try { attendu = JSON.parse(localStorage.getItem(WITHINGS_STATE_LS) || 'null'); } catch (e) {}
+  try { localStorage.removeItem(WITHINGS_STATE_LS); } catch (e) {}
+  return !!(attendu && state && attendu.state === state && Date.now() - (Number(attendu.le) || 0) < 15 * 60 * 1000);
 }
 
 /* Pose la vraie URL d'autorisation sur chaque lien "Connecter ma balance" au
@@ -21124,11 +21183,14 @@ function connexionWithings(e) {
     ouvrirPro('withings');
     return false;
   }
-  if (!WITHINGS_PROXY) {
+  if (!sessionUtilisateur) {
     if (e) e.preventDefault();
-    alert("La connexion Withings est momentanément indisponible : elle attend le déploiement de l'Edge Function côté serveur.");
+    informer('Connecte-toi à ton compte pour relier ta balance.');
     return false;
   }
+  // La demande part avec son « state » : le retour de Withings doit le rapporter.
+  const lien = e && e.currentTarget && e.currentTarget.href !== undefined ? e.currentTarget : null;
+  if (lien) lien.href = urlAutorisationWithings(nouvelEtatWithings());
   return true;
 }
 
@@ -21139,63 +21201,27 @@ async function traiterRetourWithings() {
   const params = new URLSearchParams(window.location.search);
   const code = params.get('code');
   if (!code) return;
+  const state = params.get('state');
   // On retire le code de l'URL tout de suite : rechargée par erreur, la page
   // ne doit pas retenter le même code (Withings le refuse une 2e fois).
   window.history.replaceState({}, '', window.location.pathname);
-  if (!WITHINGS_PROXY) {
-    alert("La connexion Withings est desactivee : elle attend le deploiement de l'Edge Function (voir WITHINGS_edge_function.md).");
+  // Le « state » doit être celui de la demande partie de cet appareil.
+  if (!etatWithingsAttendu(state)) {
+    informer('Connexion Withings ignorée : cette demande ne vient pas de cet appareil ou a expiré. Relance « Connecter » depuis Réglages.');
     return;
   }
-  try {
-    // Le secret reste cote serveur : on n'envoie que le code d'autorisation.
-    const resp = await fetch(WITHINGS_PROXY, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        action: 'authorization_code',
-        code, redirect_uri: WITHINGS_REDIRECT_URI
-      })
-    });
-    const data = await resp.json();
-    if (data.status !== 0) throw new Error('Withings a refusé la connexion (code ' + data.status + ').');
-    const b = data.body;
-    enregistrerTokenWithings({
-      access_token: b.access_token, refresh_token: b.refresh_token,
-      expire_le: Date.now() + (b.expires_in - 60) * 1000, userid: b.userid
-    });
-    alert('Balance Withings connectée !');
-  } catch (e) {
-    alert('Connexion à Withings impossible : ' + e.message);
+  // La session du compte arrive parfois un instant après la page.
+  for (let i = 0; i < 50 && !sessionUtilisateur; i++) await new Promise(ok => setTimeout(ok, 200));
+  // Le secret et les jetons restent côté serveur : on n'envoie que le code.
+  const r = await appelWithings('connecter', { code });
+  if (r.erreur) {
+    if (r.code === 'pro_requis') { ouvrirPro('withings'); return; }
+    informer('Connexion à Withings impossible : ' + r.erreur);
+    return;
   }
-}
-
-/* Rafraîchit le jeton si besoin (durée de vie ~3h) et renvoie un access_token
-   valide, ou null si personne n'est connecté / la reconnexion a échoué. */
-async function withingsAccessTokenValide() {
-  let t = tokenWithings();
-  if (!t) return null;
-  if (Date.now() < t.expire_le) return t.access_token;
-  if (!WITHINGS_PROXY) return null;
-  try {
-    const resp = await fetch(WITHINGS_PROXY, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        action: 'refresh_token',
-        refresh_token: t.refresh_token
-      })
-    });
-    const data = await resp.json();
-    if (data.status !== 0) throw new Error('jeton refusé');
-    const b = data.body;
-    t = { access_token: b.access_token, refresh_token: b.refresh_token, expire_le: Date.now() + (b.expires_in - 60) * 1000, userid: b.userid };
-    enregistrerTokenWithings(t);
-    return t.access_token;
-  } catch (e) {
-    // Le refresh_token peut lui aussi expirer (longue inactivité) : dans ce
-    // cas il faut se reconnecter, pas de session à réparer silencieusement.
-    return null;
-  }
+  etatWithings = { connecte: true, connu: true };
+  majUIWithings();
+  informer('Balance Withings connectée !');
 }
 
 /* Convertit une mesure Withings brute ({value, unit}) en nombre décimal :
@@ -21211,7 +21237,7 @@ function valeurMesureWithings(m) {
    CORPS ENTIER : l'API publique de Withings ne fournit aucun détail par
    membre (bras/jambes/tronc), même pour les balances Body Scan qui
    l'affichent dans leur propre appli. */
-const WITHINGS_MEASTYPES = { poids: 1, grassePct: 6, muscleKg: 76, osKg: 88, eauPct: 77 };
+const WITHINGS_MEASTYPES = { poids: 1, grassePct: 6, muscleKg: 76, osKg: 88, eauPct: 77 }; // les mêmes que la fonction serveur demande
 
 /* Va chercher la dernière pesée sur Withings et pré-remplit les champs de
    la modale Mesures (poids + composition globale) — la personne garde la
@@ -21223,12 +21249,15 @@ async function importerPoidsWithings() {
   const texteInitial = bouton ? bouton.textContent : '';
   if (bouton) { bouton.disabled = true; bouton.innerHTML = '<svg class="icone-ui" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 22h14" /><path d="M5 2h14" /><path d="M17 22v-4.172a2 2 0 0 0-.586-1.414L12 12l-4.414 4.414A2 2 0 0 0 7 17.828V22" /><path d="M7 2v4.172a2 2 0 0 0 .586 1.414L12 12l4.414-4.414A2 2 0 0 0 17 6.172V2" /></svg> Récupération…'; }
   try {
-    const token = await withingsAccessTokenValide();
-    if (!token) { alert("La connexion à Withings a expiré ou n'a pas été faite : reconnecte-toi dans Réglages."); return; }
-    const resp = await fetch('https://wbsapi.withings.net/measure?' + new URLSearchParams({
-      action: 'getmeas', meastypes: Object.values(WITHINGS_MEASTYPES).join(','), category: 1
-    }), { headers: { Authorization: 'Bearer ' + token } });
-    const data = await resp.json();
+    // Les pesées sont lues par le serveur, qui détient le jeton (et le
+    // rafraîchit au besoin) : l'appli ne reçoit que les mesures.
+    const data = await appelWithings('mesures');
+    if (data.erreur) {
+      if (data.connecte === false) { etatWithings = { connecte: false, connu: true }; majUIWithings(); }
+      if (data.code === 'pro_requis') { ouvrirPro('withings'); return; }
+      alert(data.erreur);
+      return;
+    }
     if (data.status !== 0 || !data.body || !data.body.measuregrps || !data.body.measuregrps.length) {
       alert("Aucune pesée trouvée sur ton compte Withings.");
       return;
@@ -29808,11 +29837,81 @@ grant execute on function public.defi_quitter(uuid) to authenticated;
 grant execute on function public.defi_score(uuid, numeric) to authenticated;
 grant execute on function public.mes_defis() to authenticated;
 `;
+
+const SQL_WITHINGS = `-- Balance Withings : les jetons de chaque compte restent sur le serveur.
+-- À exécuter une fois dans l'éditeur SQL de Supabase, après « Askēsis Pro ».
+-- Idempotent : relancer ne casse rien.
+
+-- 1) La table des jetons. Aucune règle d'accès et aucun droit pour l'appli :
+--    seule la fonction serveur « withings » (clé de service) la lit et
+--    l'écrit. Personne ne voit un jeton depuis l'appli, pas même l'admin.
+create table if not exists public.withings_jetons (
+  utilisateur   text primary key,
+  access_token  text not null,
+  refresh_token text not null,
+  expire_le     timestamptz not null,
+  userid        text,
+  cree_le       timestamptz not null default now(),
+  maj           timestamptz not null default now()
+);
+alter table public.withings_jetons enable row level security;
+revoke all on table public.withings_jetons from public, anon, authenticated;
+
+-- 2) Les anciennes versions de l'appli gardaient le jeton dans le profil
+--    (donnees -> 'withings'). À chaque écriture du profil, il part dans la
+--    table (le plus récent gagne) et quitte le profil : une ancienne appli
+--    encore ouverte ne peut plus en laisser un.
+create or replace function public.profil_sans_jetons()
+returns trigger language plpgsql security definer set search_path = public as $fn$
+declare
+  w jsonb := new.donnees -> 'withings';
+  exp timestamptz;
+begin
+  if jsonb_typeof(w) = 'object' then
+    if coalesce(w ->> 'access_token', '') <> '' and coalesce(w ->> 'refresh_token', '') <> '' then
+      exp := case when jsonb_typeof(w -> 'expire_le') = 'number' then to_timestamp((w ->> 'expire_le')::numeric / 1000) else now() end;
+      insert into withings_jetons (utilisateur, access_token, refresh_token, expire_le, userid)
+      values (new.utilisateur, w ->> 'access_token', w ->> 'refresh_token', exp, w ->> 'userid')
+      on conflict (utilisateur) do update
+        set access_token = excluded.access_token, refresh_token = excluded.refresh_token,
+            expire_le = excluded.expire_le, userid = excluded.userid, maj = now()
+        where excluded.expire_le > withings_jetons.expire_le;
+    end if;
+    new.donnees := new.donnees - 'withings';
+  end if;
+  return new;
+end;
+$fn$;
+drop trigger if exists profil_sans_jetons on public.profil;
+create trigger profil_sans_jetons before insert or update on public.profil
+  for each row execute function public.profil_sans_jetons();
+-- Les profils déjà enregistrés passent par la même porte.
+update public.profil set donnees = donnees where donnees ? 'withings';
+
+-- 3) Un compte effacé part avec ses jetons.
+create or replace function public.nettoyer_withings()
+returns trigger language plpgsql security definer set search_path = public as $fn$
+begin
+  delete from withings_jetons where utilisateur = old.id::text;
+  return old;
+end;
+$fn$;
+drop trigger if exists nettoyer_withings on auth.users;
+create trigger nettoyer_withings after delete on auth.users
+  for each row execute function public.nettoyer_withings();
+`;
 function copierSqlSaison() {
   if (navigator.clipboard && navigator.clipboard.writeText) {
     navigator.clipboard.writeText(SQL_SAISON).catch(() => informer('Copie ce SQL :', { copie: SQL_SAISON }));
   } else {
     informer('Copie ce SQL :', { copie: SQL_SAISON });
+  }
+}
+function copierSqlWithings() {
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(SQL_WITHINGS).catch(() => informer('Copie ce SQL :', { copie: SQL_WITHINGS }));
+  } else {
+    informer('Copie ce SQL :', { copie: SQL_WITHINGS });
   }
 }
 
@@ -32755,6 +32854,7 @@ window.addEventListener('load', () => {
   document.getElementById('bloc-sql-gymbro-direct').textContent = SQL_GYMBRO_DIRECT;
   document.getElementById('bloc-sql-admin').textContent = SQL_ADMIN;
   document.getElementById('bloc-sql-saison').textContent = SQL_SAISON;
+  document.getElementById('bloc-sql-withings').textContent = SQL_WITHINGS;
   retourPaiementPro();
   // Pas de synchroniser('démarrage') ici : la vérification de session est
   // asynchrone, donc juste après initAuth() sessionUtilisateur est encore
@@ -33557,6 +33657,17 @@ const SONDES_SQL_ADMIN = {
   saison: async () => {
     const [a, b] = await Promise.all([sonderAdmin('rpc', 'gymbro_saisons'), sonderAdmin('rpc', 'mes_defis')]);
     return a === 'ok' && b === 'ok' ? 'ok' : (a === 'inconnu' || b === 'inconnu') ? 'inconnu' : 'ko';
+  },
+  // Sécurité : la table des jetons doit exister ET rester fermée à l'appli,
+  // administrateur compris : une lecture qui passe signale une protection absente.
+  withings: async () => {
+    try {
+      const r = compteRecu(await supa.from('withings_jetons').select('*', { count: 'exact', head: true }));
+      const e = r && r.error;
+      if (!e) return 'ouvert';
+      if (estErreurReseauAdmin(e)) return 'inconnu';
+      return estErreurSqlManquant(e) ? 'ko' : 'ok';
+    } catch (e) { return estErreurSqlManquant(e) ? 'ko' : 'inconnu'; }
   },
   admin: async () => {
     const [a, b] = await Promise.all([sonderAdmin('rpc', 'admin_signalements', { p_traites: true }), sonderAdmin('table', 'erreurs_appli')]);

@@ -10,7 +10,7 @@ const { pathToFileURL } = require('url');
 
 // Une base Supabase en mémoire : tables et fonctions SQL utilisées par les fonctions.
 function fausseBase() {
-  const tables = { abonnements: [], usages_ia: [] };
+  const tables = { abonnements: [], usages_ia: [], withings_jetons: [] };
   const comptes = { 'jeton-libre': 'u-libre', 'jeton-pro': 'u-pro', 'jeton-fondateur': 'u-fondateur' };
   const client = {
     tables,
@@ -26,6 +26,9 @@ function fausseBase() {
           const i = tables[nom].findIndex(l => l.utilisateur === ligne.utilisateur);
           if (i >= 0) tables[nom][i] = { ...tables[nom][i], ...ligne }; else tables[nom].push({ ...ligne });
           return { error: null };
+        },
+        delete() {
+          return { eq: async (c, v) => { for (let i = tables[nom].length - 1; i >= 0; i--) if (tables[nom][i][c] === v) tables[nom].splice(i, 1); return { error: null }; } };
         },
         update(valeurs) {
           return { eq: async (c, v) => { tables[nom].filter(l => l[c] === v).forEach(l => Object.assign(l, valeurs)); return { error: null }; } };
@@ -294,4 +297,103 @@ test('achats Apple : notifications d\'Apple (résiliation, expiration) ; un fond
   const n = journal.length;
   assert.equal((await achatApple(h2, 'jeton-libre', { transactionId: '1000' })).status, 503);
   assert.equal(journal.length, n);
+});
+
+/* ---- Balance Withings : la fonction « withings » garde secret et jetons côté serveur (SEC-03, SEC-08) ---- */
+const envWithings = { SUPABASE_URL: 'https://x.supabase.co', SUPABASE_SERVICE_ROLE_KEY: 'service', WITHINGS_CLIENT_SECRET: 'secret-withings' };
+const appelWithings = async (h, jeton, corps, methode = 'POST', origine) => {
+  const entetes = { Authorization: 'Bearer ' + jeton };
+  if (origine) entetes.Origin = origine;
+  const r = await h(new Request('https://x.supabase.co/functions/v1/withings', { method: methode, headers: entetes, body: methode === 'POST' ? JSON.stringify(corps) : undefined }));
+  return { status: r.status, corps: await r.json(), entetes: Object.fromEntries(r.headers) };
+};
+
+test('fonction « withings » : session exigée, origines de l\'appli seulement, balance réservée à Pro, actions bornées', async () => {
+  const base = fausseBase();
+  globalThis.fetch = async () => { throw new Error('Withings ne doit pas être appelé'); };
+  const h = await chargerFonction('withings', envWithings, base);
+  // Sans session : 401. GET : 405. Site tiers : 403, même avec une session valable.
+  assert.equal((await appelWithings(h, 'jeton-inconnu', { action: 'etat' })).status, 401);
+  assert.equal((await appelWithings(h, 'jeton-pro', { action: 'etat' }, 'GET')).status, 405);
+  assert.equal((await appelWithings(h, 'jeton-pro', { action: 'etat' }, 'POST', 'https://pirate.example')).status, 403);
+  // Origine de l'appli : renvoyée telle quelle (CORS) ; sans origine (serveur à serveur) : la première.
+  const ok = await appelWithings(h, 'jeton-pro', { action: 'etat' }, 'POST', 'capacitor://localhost');
+  assert.deepEqual([ok.status, ok.corps, ok.entetes['access-control-allow-origin'], ok.entetes['vary']], [200, { connecte: false }, 'capacitor://localhost', 'Origin']);
+  assert.equal((await appelWithings(h, 'jeton-pro', { action: 'etat' })).entetes['access-control-allow-origin'], 'https://boulidjamal-lang.github.io');
+  const pre = await h(new Request('https://x.supabase.co/functions/v1/withings', { method: 'OPTIONS', headers: { Origin: 'https://boulidjamal-lang.github.io' } }));
+  assert.deepEqual([pre.status, pre.headers.get('access-control-allow-origin')], [200, 'https://boulidjamal-lang.github.io']);
+  // Sans Pro : relier, importer ou lire sont refusés (402) ; l'état et la déconnexion restent libres.
+  for (const action of ['connecter', 'mesures', 'importer']) {
+    const r = await appelWithings(h, 'jeton-libre', { action, code: 'abc' });
+    assert.deepEqual([r.status, r.corps.code], [402, 'pro_requis'], action);
+  }
+  assert.deepEqual((await appelWithings(h, 'jeton-libre', { action: 'deconnecter' })).corps, { connecte: false });
+  // Action inconnue, code manquant, demande illisible : 400 ; demande trop lourde : 413.
+  base.tables.abonnements.push({ utilisateur: 'u-pro', formule: 'an', statut: 'actif', fin: null });
+  assert.equal((await appelWithings(h, 'jeton-pro', { action: 'danser' })).status, 400);
+  assert.equal((await appelWithings(h, 'jeton-pro', { action: 'connecter' })).status, 400);
+  assert.equal((await h(new Request('https://x.supabase.co/functions/v1/withings', { method: 'POST', headers: { Authorization: 'Bearer jeton-pro' }, body: '{oups' }))).status, 400);
+  assert.equal((await appelWithings(h, 'jeton-pro', { action: 'importer', access_token: 'a'.repeat(20000), refresh_token: 'b', expire_le: 1 })).status, 413);
+  // Sans secret côté serveur : 503, et Withings n'est jamais appelé.
+  const sans = await chargerFonction('withings', { ...envWithings, WITHINGS_CLIENT_SECRET: undefined }, base);
+  assert.equal((await appelWithings(sans, 'jeton-pro', { action: 'connecter', code: 'c' })).status, 503);
+});
+
+test('fonction « withings » : le code OAuth est échangé avec l\'URL de retour du serveur, les jetons restent sur le serveur, les pesées sont lues et le jeton rafraîchi sans que l\'appli en voie un', async () => {
+  const base = fausseBase();
+  base.tables.abonnements.push({ utilisateur: 'u-pro', formule: 'an', statut: 'actif', fin: new Date(Date.now() + 864e5).toISOString() });
+  const appels = [];
+  let refusRefresh = false;
+  globalThis.fetch = async (url, o) => {
+    appels.push({ url: String(url), corps: o && o.body ? Object.fromEntries(new URLSearchParams(o.body)) : null, auth: o && o.headers ? o.headers.Authorization : undefined });
+    if (/v2\/oauth2/.test(String(url))) {
+      const p = Object.fromEntries(new URLSearchParams(o.body));
+      if (p.grant_type === 'refresh_token' && refusRefresh) return new Response(JSON.stringify({ status: 401, error: 'invalid refresh' }));
+      return new Response(JSON.stringify({ status: 0, body: { access_token: 'acces-' + p.grant_type, refresh_token: 'refresh-' + p.grant_type, expires_in: 10800, userid: 42 } }));
+    }
+    return new Response(JSON.stringify({ status: 0, body: { measuregrps: [
+      { date: 1700000000, measures: [{ type: 1, value: 80500, unit: -3 }] },
+      { date: 1700086400, measures: [{ type: 1, value: 80100, unit: -3 }, { type: 6, value: 181, unit: -1 }] }] } }));
+  };
+  const h = await chargerFonction('withings', envWithings, base);
+  const jetons = base.tables.withings_jetons;
+  // Relier : le code part avec le secret et l'URL de retour du serveur (pas celle de la demande) ; la réponse ne contient aucun jeton.
+  let r = await appelWithings(h, 'jeton-pro', { action: 'connecter', code: 'code-123', redirect_uri: 'https://pirate.example/' });
+  assert.deepEqual([r.status, r.corps], [200, { connecte: true }]);
+  assert.deepEqual(appels[0].corps, { action: 'requesttoken', client_id: '3341d599f2c93e3b754d28ae6fbd69af0e259f1127d2c12c738991dccb012924', client_secret: 'secret-withings',
+    grant_type: 'authorization_code', code: 'code-123', redirect_uri: 'https://boulidjamal-lang.github.io/mon-coach/' });
+  assert.deepEqual([jetons.length, jetons[0].utilisateur, jetons[0].access_token, jetons[0].refresh_token, jetons[0].userid], [1, 'u-pro', 'acces-authorization_code', 'refresh-authorization_code', '42']);
+  assert.ok(new Date(jetons[0].expire_le).getTime() > Date.now() + 10_000_000, 'expiration gardée en date');
+  assert.deepEqual((await appelWithings(h, 'jeton-pro', { action: 'etat' })).corps, { connecte: true });
+  // Pesées : le jeton valable sert tel quel ; la plus récente d'abord ; le format Withings est conservé.
+  r = await appelWithings(h, 'jeton-pro', { action: 'mesures' });
+  assert.equal(r.status, 200);
+  assert.deepEqual(r.corps.body.measuregrps.map(g => g.date), [1700086400, 1700000000]);
+  assert.match(appels[1].url, /wbsapi\.withings\.net\/measure\?action=getmeas&meastypes=1%2C6%2C76%2C88%2C77&category=1$/);
+  assert.equal(appels[1].auth, 'Bearer acces-authorization_code');
+  assert.ok(!JSON.stringify(r.corps).includes('acces-'), 'aucun jeton ne sort');
+  // Jeton expiré : rafraîchi d'abord, gardé, puis les pesées.
+  jetons[0].expire_le = new Date(Date.now() - 1000).toISOString();
+  r = await appelWithings(h, 'jeton-pro', { action: 'mesures' });
+  assert.equal(r.status, 200);
+  assert.deepEqual([appels[2].corps.grant_type, appels[2].corps.refresh_token, appels[3].auth], ['refresh_token', 'refresh-authorization_code', 'Bearer acces-refresh_token']);
+  assert.equal(jetons[0].access_token, 'acces-refresh_token');
+  // Rafraîchissement refusé (longue inactivité) : la connexion est oubliée et l'appli le sait.
+  jetons[0].expire_le = new Date(Date.now() - 1000).toISOString();
+  refusRefresh = true;
+  r = await appelWithings(h, 'jeton-pro', { action: 'mesures' });
+  assert.deepEqual([r.status, r.corps.connecte, jetons.length], [409, false, 0]);
+  // Importer le jeton d'une ancienne version : gardé une fois ; un second import ne remplace pas ; un jeton illisible est refusé.
+  r = await appelWithings(h, 'jeton-pro', { action: 'importer', access_token: 'ancien', refresh_token: 'ancien-r', expire_le: Date.now() + 60000, userid: 7 });
+  assert.deepEqual([r.status, r.corps, jetons[0].access_token, jetons[0].userid], [200, { connecte: true }, 'ancien', '7']);
+  await appelWithings(h, 'jeton-pro', { action: 'importer', access_token: 'autre', refresh_token: 'autre-r', expire_le: Date.now() + 60000 });
+  assert.equal(jetons[0].access_token, 'ancien');
+  assert.equal((await appelWithings(h, 'jeton-pro', { action: 'importer', access_token: 'x' })).status, 400);
+  // Déconnecter : plus rien, et les pesées le disent.
+  assert.deepEqual((await appelWithings(h, 'jeton-pro', { action: 'deconnecter' })).corps, { connecte: false });
+  assert.deepEqual([jetons.length, (await appelWithings(h, 'jeton-pro', { action: 'mesures' })).status], [0, 409]);
+  // Withings refuse le code : rien n'est gardé, l'appli reçoit un message, pas la réponse brute.
+  globalThis.fetch = async () => new Response(JSON.stringify({ status: 503, error: 'Invalid Params: secret interne' }));
+  r = await appelWithings(h, 'jeton-pro', { action: 'connecter', code: 'mauvais' });
+  assert.deepEqual([r.status, jetons.length, /secret interne/.test(JSON.stringify(r.corps))], [502, 0, false]);
 });

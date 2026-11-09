@@ -89,3 +89,26 @@ si('gymbros : les séances partagées ne sont visibles que d\'un gymbro accepté
   assert.equal(compte('44444444-4444-4444-8444-444444444444', 'c@test.fr', 'select count(*) from mes_defis();'), 0, 'un tiers ne voit pas le défi');
   assert.equal(compte('44444444-4444-4444-8444-444444444444', 'c@test.fr', `select count(*) from gymbros_defis;`), 0, 'ni directement dans la table');
 });
+
+si('balance Withings (SEC-08) : aucun compte ne lit ni n\'écrit les jetons, un jeton laissé dans le profil part dans la table protégée (le plus récent gagne), un compte effacé emporte le sien', () => {
+  // Un profil écrit par une ancienne version, jeton compris : il ressort sans jeton, le reste intact.
+  enTantQue(A, 'a@test.fr', `insert into profil (utilisateur, donnees) values ('${A}', '{"age":31,"withings":{"access_token":"acc","refresh_token":"ref","expire_le":1800000000000,"userid":"42"}}')
+    on conflict (utilisateur) do update set donnees = excluded.donnees;`);
+  assert.equal(compte(A, 'a@test.fr', `select count(*) from profil where utilisateur = '${A}' and donnees ? 'withings';`), 0, 'plus de jeton dans le profil');
+  assert.equal(compte(A, 'a@test.fr', `select count(*) from profil where utilisateur = '${A}' and donnees ->> 'age' = '31';`), 1, 'le reste du profil est intact');
+  // Personne depuis l'appli (ni A, ni B, ni l'admin, ni un anonyme) ne lit ou n'écrit la table ; le serveur (clé de service), si.
+  for (const [u, e] of [[A, 'a@test.fr'], [B, 'b@test.fr'], [ADM, ADMIN], [null, null]]) {
+    assert.equal(refuse(u, e, 'select count(*) from withings_jetons;'), true, (e || 'anonyme') + ' ne lit pas les jetons');
+    assert.equal(refuse(u, e, `insert into withings_jetons (utilisateur, access_token, refresh_token, expire_le) values ('${u || A}', 'x', 'y', now());`), true, (e || 'anonyme') + " n'écrit pas de jeton");
+  }
+  const serveur = pg.sql(`\\pset tuples_only on\nbegin; set local role service_role; select access_token || '/' || refresh_token || '/' || coalesce(userid, '') from withings_jetons where utilisateur = '${A}'; commit;`);
+  assert.match(serveur, /acc\/ref\/42/);
+  // Un jeton plus récent remplace l'ancien ; un plus ancien, non.
+  enTantQue(A, 'a@test.fr', `update profil set donnees = donnees || '{"withings":{"access_token":"acc2","refresh_token":"ref2","expire_le":1900000000000}}' where utilisateur = '${A}';`);
+  enTantQue(A, 'a@test.fr', `update profil set donnees = donnees || '{"withings":{"access_token":"vieux","refresh_token":"vieux","expire_le":1000}}' where utilisateur = '${A}';`);
+  assert.match(pg.sql(`\\pset tuples_only on\nselect access_token from withings_jetons where utilisateur = '${A}';`), /acc2/);
+  assert.equal(compte(A, 'a@test.fr', `select count(*) from profil where utilisateur = '${A}' and donnees ? 'withings';`), 0);
+  // Le compte effacé emporte son jeton.
+  pg.sql(`delete from auth.users where id = '${A}';`);
+  assert.match(pg.sql(`\\pset tuples_only on\nselect count(*) from withings_jetons where utilisateur = '${A}';`), /^\s*0\s*$/m);
+});

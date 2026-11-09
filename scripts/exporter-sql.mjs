@@ -24,6 +24,7 @@ export const SCRIPTS = [
   ['0007_seances_en_direct', 'SQL_GYMBRO_DIRECT'],
   ['0008_administration', 'SQL_ADMIN'],
   ['0009_saison_et_defis', 'SQL_SAISON'],
+  ['0010_balance_withings', 'SQL_WITHINGS'],
 ];
 
 export async function lireScripts() {
