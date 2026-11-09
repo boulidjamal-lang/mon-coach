@@ -99,13 +99,13 @@ test('les versions des bibliothèques sont figées', () => {
 test('hors ligne : le service worker garde la page, ses données et ses recettes', () => {
   const sw = fs.readFileSync(path.join(RACINE, 'sw.js'), 'utf8');
   const liste = sw.match(/const A_PRECHARGER = \[([^\]]*)\]/)[1];
-  for (const f of ["'index.html'", "'assets/donnees.js'", "'assets/recettes.js'"]) assert.ok(liste.includes(f), f);
+  for (const f of ["'index.html'", "'assets/styles.css'", "'assets/donnees.js'", "'assets/recettes.js'"]) assert.ok(liste.includes(f), f);
   const html = fs.readFileSync(path.join(RACINE, 'index.html'), 'utf8');
   assert.ok(html.includes('<script src="assets/donnees.js"></script>'));
   // Les recettes ne bloquent plus la page : chargées à part, mais toujours préchargées hors ligne.
   assert.ok(!html.includes('<script src="assets/recettes.js"></script>'), 'plus de balise bloquante pour les recettes');
   assert.ok(html.includes("s.src = 'assets/recettes.js'"), 'chargeur à la demande');
-  for (const f of ['assets/donnees.js', 'assets/recettes.js']) assert.ok(fs.existsSync(path.join(RACINE, f)), f);
+  for (const f of ['assets/styles.css', 'assets/donnees.js', 'assets/recettes.js']) assert.ok(fs.existsSync(path.join(RACINE, f)), f);
 });
 
 test('recettes à la demande (lot 11) : la liste se remplit à leur arrivée et une recette se retrouve par son identifiant', () => avecAppli({ recettes: false }, async ({ page }) => {
@@ -1351,6 +1351,26 @@ test("aide cru/cuit (lot 15) : pour un féculent ou une viande pesés cuits, l'a
   assert.equal(r.poulet, 'Valeurs pour la viande cru. Pesé cuit ? 150 g cuit ≈ 200 g cru. Compter 200 g cru');
   assert.equal(r.pomme, null);
   assert.deepEqual(r.facteurs, [2.3, 2.5, 0.8, 3, 0.75]);
+}));
+
+test("feuille de style externe (lot 14) : le CSS vit dans assets/styles.css, la page n'en garde que la règle du dégradé SVG, et les jetons de dessin s'appliquent", () => avecAppli({}, async ({ page }) => {
+  const html = fs.readFileSync(path.join(RACINE, 'index.html'), 'utf8');
+  const css = fs.readFileSync(path.join(RACINE, 'assets', 'styles.css'), 'utf8');
+  const inline = [...html.matchAll(/<style>([\s\S]*?)<\/style>/g)].map(m => m[1].trim());
+  assert.ok(html.includes('<link rel="stylesheet" href="assets/styles.css">'));
+  assert.deepEqual(inline.map(b => b.split('\n').length), [1], 'une seule règle encore dans la page');
+  assert.match(inline[0], /url\(#grad-onglet\)/);
+  assert.ok(css.length > 150000, 'la feuille contient le dessin : ' + css.length + ' octets');
+  assert.ok(!/url\(#/.test(css), 'aucune référence à un élément de la page depuis la feuille');
+  const r = await page.evaluate(() => {
+    const cs = getComputedStyle(document.documentElement);
+    return { bg: cs.getPropertyValue('--bg').trim() !== '', texte: cs.getPropertyValue('--text').trim() !== '', police: getComputedStyle(document.body).fontFamily,
+      // Sous file://, les règles d'une feuille externe ne se lisent pas (origine) : sa présence et ses effets suffisent.
+      feuille: [...document.styleSheets].some(s => (s.href || '').endsWith('assets/styles.css')),
+      onglet: getComputedStyle(document.querySelector('.onglet')).display !== 'inline' };
+  });
+  assert.deepEqual([r.bg, r.texte, r.feuille, r.onglet], [true, true, true, true]);
+  assert.match(r.police, /Inter|Manrope|system-ui|-apple-system/);
 }));
 
 test("IA par le serveur : sans clé personnelle, l'IA reste disponible (photo comprise) et chaque demande part avec sa tâche ; l'administration ne distribue plus de clé", () => avecAppli({}, async ({ page }) => {

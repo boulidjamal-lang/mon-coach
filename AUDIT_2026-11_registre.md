@@ -20,7 +20,7 @@ Branche de travail : `corrections-audit` (dépôt mon-coach). Rien n'est mis en 
 | SEC-06 | P2 | 8 | Accès administrateur total | Tests réussis (phase 1) | Chaque consultation d'un compte, de ses statistiques et chaque export sont consignés dans `journal_admin` (`consultation`, `consultation_stats`, `donnees_exportees` ; import et effacement l'étaient déjà). Phase 2 (lecture par fonctions dédiées à la place de l'accès RLS direct) : décision 6, non engagée |
 | SEC-07 | P2 | 2 | Proxy IA générique | Tests réussis · à déployer | Tâches typées, consigne de rôle imposée, chaque réponse comptée, erreurs génériques ; fonction `ia` à redéployer par le propriétaire |
 | SEC-08 | P2 | 6 | Fonction Withings hors dépôt, sans authentification | Tests réussis | `supabase/functions/withings/index.ts` versionnée : session exigée, origines de l'appli, URL de retour imposée, Pro exigé ; 2 tests de fonction, 1 test SQL, 1 test d'appli ; à déployer (actions côté production) |
-| TECH-01 | P2 | 14 | Monolithe d'un seul fichier | À corriger | Par étapes |
+| TECH-01 | P2 | 14 | Monolithe d'un seul fichier | Tests réussis (étape 1) | Les 4 920 lignes de CSS sortent dans `assets/styles.css` (en-tête : où vivent les jetons de dessin et comment la feuille est organisée) ; la page n'en garde que la règle du dégradé SVG ; préchargée hors ligne et embarquée dans l'app. Index.html : 36 100 → 31 150 lignes. Étapes suivantes (non engagées) : scripts SQL servis depuis `supabase/migrations`, découpage du JavaScript par écran, CSP sans `'unsafe-inline'` |
 | PERF-01 | P2 | 11 | Premier chargement lourd | Tests réussis | `assets/recettes.js` (424 Ko gzip) chargé après le premier affichage ou à la demande, plus en bloquant la page ; toujours préchargé hors ligne par le service worker |
 | DATA-01 | P2 | 12 | Tout dans localStorage | Tests réussis | Couche de stockage : les 5 gros blocs (journées, profil, programmes, historique, exercices perso) dans IndexedDB (`askesis/blocs`), localStorage en simple copie ; un stockage plein n'empêche plus d'enregistrer ; reprise automatique des données d'une ancienne version ; `viderDonneesLocales` vide aussi IndexedDB |
 | A11Y-01 | P2 | 13 | Zoom bloqué, taille de texte iOS ignorée | Tests réussis | Le pincement était déjà permis (balise viewport sans `user-scalable=no`, `touch-action: manipulation` ne retire que le double appui) : commentaire périmé retiré. Taille de texte : la racine (tout le dessin est en rem) suit `--echelle-texte`, mesurée sur `-apple-system-body` (Dynamic Type, iPhone/iPad), bornée 0,85–1,35, remesurée à chaque retour dans l'appli ; sans effet où le mot-clé n'existe pas |
@@ -38,7 +38,7 @@ Branche de travail : `corrections-audit` (dépôt mon-coach). Rien n'est mis en 
 | MET-06 | P3 | 9 | Plancher = métabolisme de base | Tests réussis | Plancher jamais sous 1 200 kcal (femme) / 1 500 kcal (homme) ; `plancherRaison` |
 | TECH-04 | P3 | 3 | Copie obsolète dans le dépôt Anqa | Corrigée | Racine du dépôt Anqa réduite à ios-app/, .github/ et un LISEZMOI ; la doc Withings déplacée dans mon-coach |
 | QA-02 | P3 | 4 | Captures du simulateur blanches | Tests réussis | Annonce après peinture, image presque vide reprise une fois ; CI #34 : 14 captures, aucune vide |
-| PERF-02 | P3 | 11 | Rendu complet à chaque action | À analyser | 19-30 ms par écran mesurés sur poste ; décision sur mesure réelle iPhone (non faite ici) ; traité au lot 14 si nécessaire |
+| PERF-02 | P3 | 11 | Rendu complet à chaque action | Non reproductible dans l'environnement actuel | 19-30 ms par écran mesurés sur poste (Chromium) : aucun blocage mesurable ; la mesure sur iPhone réel n'est pas possible ici. À refaire sur appareil (Safari › Développement › Chronologie) avant toute optimisation |
 | SEC-09 | P3 | 5 | `est_bloque()` exécutable par tous | Non corrigible tel que proposé (faux positif de l'audit) | Le test SQL a montré que les règles l'évaluent avec les droits du compte : la révoquer coupe l'accès de chacun à ses propres lignes. Elle reste exécutable, commentée ; portée limitée (entrée UUID) |
 | DATA-02 | P3 | 12 | Profil : le dernier qui écrit gagne | Tests réussis | `fusionnerProfil` à trois versions (base `bases.profil`, appareil, serveur) : champ changé d'un seul côté → passe ; des deux → le plus récent ; dictionnaires (pesées par date…) fusionnés clé par clé ; suppressions respectées ; la fusion repart au serveur si elle diffère |
 | RESP-01 | P3 | 10 | Animation d'entrée non réduite | Tests réussis | `.ecran` dans le bloc animations réduites ; `html { overflow-x: clip }` |
@@ -131,6 +131,21 @@ Branche de travail : `corrections-audit` (dépôt mon-coach). Rien n'est mis en 
 - Non fait, à dessein : pas d'objectif chiffré par personne ni de colonnes supplémentaires dans `aliments_partages` (les détails voyagent dans les journées) ; les recettes Askēsis ne portent pas ces détails (affichés comme « non renseignés »).
 - Tests : deux tests d'appli ; suite complète 166/166 (lots 13 et 15).
 - Risque résiduel : les facteurs cru/cuit sont des moyennes indicatives (le riz varie de 2,5 à 3) ; la conversion n'est jamais automatique.
+
+### Lot 14 — TECH-01 (étape 1)
+
+- Fichiers : `assets/styles.css` (nouveau, 4 920 lignes, en-tête de repères), `index.html` (`<link rel="stylesheet" href="assets/styles.css">`, un `<style>` d'une règle), `sw.js` (feuille préchargée), `tests/appli.test.js` (test « feuille de style externe (lot 14) », hors-ligne adapté), Anqa `ios-app/scripts/preparer-www.mjs` (feuille copiée dans l'app si présente).
+- Choix : extraction mécanique, sans réécriture (aucune règle modifiée, dé-indentation seulement) ; la règle `stroke: url(#grad-onglet)` reste dans la page (référence à un élément SVG de la page). La détection de nouvelle version (`empreinteDocument`) ne hache que le code resté dans la page : chaque livraison change `VERSION_APPLI`, donc la page, et reste détectée.
+- Tests : test « feuille de style externe (lot 14) » ; suite complète 167/167 (la forme initiale du test lisait les règles CSSOM, refusées sous file:// : corrigée, l'appli n'a pas bougé).
+- Non engagé (décision) : CSP phase 2 (1 000+ gestionnaires `onclick=` à déplacer), découpage du JavaScript, scripts SQL servis depuis les migrations. Un « design system » formel reste à écrire ; les jetons existent déjà dans `:root` et sont documentés en tête de la feuille.
+
+## Bilan final (9 novembre 2026)
+
+- 34 anomalies : 32 corrigées (29 avec un test dédié, 3 validées par la suite complète : UX-03, DA-01 partie 1, TECH-04), 1 écartée comme faux positif par le test SQL (SEC-09), 1 non reproductible dans l'environnement (PERF-02, mesure sur iPhone à faire).
+- Phases 2 prêtes mais non engagées : SEC-05 (retrait de l'e-mail), SEC-06 (lecture par fonctions dédiées), SEC-02 (CSP sans `'unsafe-inline'`), TECH-01 (découpage du JavaScript, SQL servi depuis les migrations), DATA-01 (SQLite natif).
+- Tests au dernier commit : 10 fonctions serveur, 6 SQL (Postgres local), 167 appli (Playwright) — tous verts ; aucun test désactivé.
+- Branche `corrections-audit` de mon-coach (13 commits) et branche de l'app iPhone d'Anqa (3 commits) poussées ; `main` et TestFlight attendent le « Pousse » de l'utilisateur, avec le numéro de version à poser (`VERSION_APPLI`).
+- Rapport final : artefact « Bilan des corrections Anqā » de la session.
 
 ## Actions côté production (à faire par le propriétaire, dans l'éditeur SQL de Supabase)
 
