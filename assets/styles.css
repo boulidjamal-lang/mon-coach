@@ -4957,11 +4957,11 @@ html.app-ios:root {
   --ressort: cubic-bezier(.2, .9, .3, 1); --duree-courte: 260ms; --duree: 380ms;
   /* Le fond système : pas d'ambiance floutée ; le quadrillage fin du site reste
      (demandé), un peu plus marqué qu'au web pour se voir sur le noir de l'OLED. */
-  --ambiance: none; --grille: rgba(0,0,0,.055);
+  --ambiance: none; --grille: rgba(0,0,0,.07);
   /* Les macros, calmées d'un cran : elles ne rivalisent plus avec l'accent. */
   --protein: #e4575f; --carbs: #df9a2d; --fat: #8a6ae0;
 }
-html.app-ios:root[data-theme="dark"] { --protein: #ff7b7b; --carbs: #f5b85c; --fat: #b39cf7; --grille: rgba(255,255,255,.085); }
+html.app-ios:root[data-theme="dark"] { --protein: #ff7b7b; --carbs: #f5b85c; --fat: #b39cf7; --grille: rgba(255,255,255,.15); }
 
 /* Typographie : grand titre 34 pt, sections 22 pt, corps 17, notes 15, légendes 13 ; jamais sous 11. */
 html.app-ios:root body .titre-ecran { font-size: var(--t-grand-titre) !important; font-weight: 700 !important; letter-spacing: -.012em !important; line-height: 1.12; }

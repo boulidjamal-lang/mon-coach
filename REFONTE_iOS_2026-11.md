@@ -150,8 +150,15 @@ Watch, Face ID, Vision, Spotlight, réécriture SwiftUI (voir l'analyse).
 
 ### Retouches après la première livraison
 
-- La grille de fond revient dans l'app, en clair (`rgba(0,0,0,.055)`) et en
-  sombre (`rgba(255,255,255,.085)`), avec le fondu du site.
+- La grille de fond revient dans l'app, en clair (`rgba(0,0,0,.07)`) et en
+  sombre (`rgba(255,255,255,.15)`, bien visible sur le noir), avec le fondu
+  du site.
+- Les trapèzes (`assets/donnees.js`, planches homme et femme) : de dos, le
+  cerf-volant complet, de la nuque aux pointes d'épaules et jusqu'au milieu
+  du dos, dessiné en dernier par-dessus le haut du dos (`ordreDessin`, sans
+  toucher au rang des muscles dont dépendent les faisceaux) ; de face
+  (homme), deux lames douces entre le cou et l'épaule, au-dessus de la
+  clavicule.
 - Le corps : les muscles du mannequin étaient dessinés fibre par fibre et les
   fentes entre fibres hachaient les masses en petit. Chaque fibre porte un
   trait de sa couleur (6 unités) qui referme ces fentes, les muscles sont

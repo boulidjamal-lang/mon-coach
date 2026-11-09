@@ -1706,6 +1706,10 @@ test("corps : les muscles du mannequin sont des masses pleines (contour de leur 
     userProfile.gender = 'f';
     res.femme = [svgSilhouetteGroupe('biceps').includes('#mannequin-femme-face'), document.getElementById('symboles-mannequin').dataset.sexe];
     res.cardio = svgSilhouetteGroupe('cardio').includes('<circle cx="50" cy="17"');
+    // Les trapèzes : le cerf-volant complet (nuque, épaules, pointe au milieu du dos), dessiné en dernier, par-dessus le haut du dos.
+    userProfile.gender = 'm';
+    const dosTrap = silhouetteSVG('dos', { trapezes: 'red', dos: 'blue' }, {});
+    res.trapezes = [dosTrap.includes('M1081 290C1061 299 1031 309 1005 319'), /fill="red"[^<]*\/><\/g><\/svg>$/.test(dosTrap), dosTrap.indexOf('fill="blue"') < dosTrap.lastIndexOf('fill="red"')];
     res.inconnu = svgSilhouetteGroupe('autre').includes('<circle cx="50" cy="17"');
     return res;
   });
@@ -1719,6 +1723,7 @@ test("corps : les muscles du mannequin sont des masses pleines (contour de leur 
   assert.deepEqual(r.femme, [true, 'femme']);
   assert.equal(r.cardio, true);
   assert.equal(r.inconnu, true);
+  assert.deepEqual(r.trapezes, [true, true, true], 'trapèzes complets et dessinés en dernier');
 }));
 
 test("IA par le serveur : sans clé personnelle, l'IA reste disponible (photo comprise) et chaque demande part avec sa tâche ; l'administration ne distribue plus de clé", () => avecAppli({}, async ({ page }) => {
