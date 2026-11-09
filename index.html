@@ -11567,6 +11567,11 @@ function dupliquerAliment(mealId, index) {
     ], x: ou.x, y: ou.y });
   });
 })();
+/* Les programmes : l'appui long sur une carte ouvre ses options (modifier, dupliquer, supprimer), comme le « … ». */
+(function menuDesProgrammes() {
+  // Pas de clic synthétique : celui qui suit l'appui long est avalé (le doigt se lève sur la carte).
+  surAppuiLong('#programmes-liste-container .pc', pc => { const o = pc.querySelector('.pc-options'); if (o && pc.dataset.id) { vibrer('moyen'); ouvrirMenuProgramme(o, pc.dataset.id); } });
+})();
 /* Le cran et l'impact d'iOS : sélecteurs, interrupteurs, action principale. */
 (function haptiqueDesCommandes() {
   if (!NATIF) return;
@@ -23603,7 +23608,7 @@ const GROUPES_BAS = ['quadriceps', 'ischios', 'fessiers', 'mollets', 'adducteurs
 function vignetteProgramme(p, i) {
   const g = groupesProgramme(p);
   const der = dernierePerfProgramme(p.id);
-  return `<div class="pc" style="background:${TEINTES_PROGRAMMES[i % TEINTES_PROGRAMMES.length]}" onclick="apercuProgramme(${argJs(p.id)})">
+  return `<div class="pc" data-id="${escapeHtml(p.id)}" style="background:${TEINTES_PROGRAMMES[i % TEINTES_PROGRAMMES.length]}" onclick="apercuProgramme(${argJs(p.id)})">
     <button type="button" class="carte-action" aria-label="${escapeHtml(p.nom)} : voir et démarrer"></button>
     <button type="button" class="pc-options btn-options-programme" onclick="event.stopPropagation(); ouvrirMenuProgramme(this, ${argJs(p.id)})" title="Modifier, dupliquer, supprimer" aria-label="Options de ${escapeHtml(p.nom)}">⋯</button>
     <span class="tag">${p.exercices.length} exercice${p.exercices.length > 1 ? 's' : ''}</span>

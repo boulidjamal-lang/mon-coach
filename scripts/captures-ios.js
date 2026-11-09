@@ -15,7 +15,7 @@ const SORTIE = process.argv[2] && !process.argv[2].startsWith('--') ? path.resol
 const seulement = (process.argv.find(a => a.startsWith('--seulement=')) || '').split('=')[1];
 const DEMO = process.env.ANQA_DEMO || path.join(RACINE, '..', 'muscu', 'ios-app', 'scripts', 'capture-demo.js');
 const TAILLES = [{ nom: '390', viewport: { width: 390, height: 844 } }, { nom: '430', viewport: { width: 430, height: 932 } }];
-const ECRANS = ['repas', 'seance', 'stats', 'reglages', 'feuille', 'accessoire', 'replie', 'menu'];
+const ECRANS = ['repas', 'seance', 'cardio', 'encours', 'stats', 'reglages', 'feuille', 'accessoire', 'replie', 'menu'];
 
 async function preparerDemo(page) {
   await page.evaluate(() => { window.__captureManuel = true; });
@@ -32,6 +32,8 @@ async function montrer(page, ecran) {
     fermerMenuContextuel();
     window.scrollTo(0, 0);
     if (ecran === 'feuille') { allerA('repas'); renderApp(); ouvrirFeuilleRepas('lunch'); return; }
+    if (ecran === 'cardio') { allerA('seance'); choisirModeSeance('cardio'); renderApp(); return; }
+    if (ecran === 'encours') { allerA('seance'); choisirModeSeance('muscu'); if (musculationProgrammes[0]) await demarrerSeance(musculationProgrammes[0].id); renderApp(); return; }
     if (ecran === 'accessoire') { allerA('seance'); if (musculationProgrammes[0]) await demarrerSeance(musculationProgrammes[0].id); allerA('repas'); renderApp(); return; }
     if (ecran === 'replie') { allerA('seance'); renderApp(); await pause(100); window.scrollTo(0, 420); majTitreReplie(420); return; }
     if (ecran === 'menu') {
@@ -40,6 +42,7 @@ async function montrer(page, ecran) {
       if (ligne) { const r = ligne.getBoundingClientRect(); ligne.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, clientX: r.left + 40, clientY: r.top + 20, pointerId: 1 })); await pause(560); }
       return;
     }
+    if (ecran === 'seance') choisirModeSeance('muscu');
     allerA(ecran); renderApp();
   }, ecran);
   await page.waitForTimeout(700);

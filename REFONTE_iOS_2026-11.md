@@ -57,9 +57,28 @@ session (verdict : hybride assumé — système natif, contenu web redessiné).
   autre quantité, retirer.
 - Tests : « app iOS (refonte C) », « sur le web, Repas garde sa roulette ».
 
-### D — Activité, E — Progrès et Profil, F — Intégrations Apple, G — Validation
+### D — Activité (fait)
 
-À venir ; voir les tâches iOS D à G.
+- `assets/styles.css`, section « REFONTE iOS — D » : héros de la semaine sur
+  le fond système (plus de dégradé ni de quadrillage, le corps qui s'allume à
+  droite, grand chiffre 56 pt arrondi, puces en surfaces) ; la prochaine
+  séance est le seul bloc rose plein de l'écran (`--ios-accent-plein`, texte
+  blanc dans les deux thèmes, bouton lecture blanc) ; programmes en cartes
+  sans ombre ; « Créer et explorer » en liste groupée (icône, titre,
+  sous-titre, chevron, rangées de 58 pt) ; séance en cours en héros nu (état
+  en accent, chrono 44 pt arrondi, avancée), blocs d'exercices en surfaces
+  système, séries de 46 pt, coche faite en accent ; cardio : liste des
+  séances en surfaces, action principale en accent.
+- `index.html` : appui long sur une carte de programme → ses options
+  (modifier, dupliquer, supprimer), sans clic synthétique (le clic qui suit
+  l'appui long est avalé) ; `data-id` sur les cartes.
+- Note : le site applique déjà la charte « sobre » (héros sans halo) à tous ;
+  les règles iOS s'y superposent avec `!important` là où la charte l'impose.
+- Tests : « app iOS (refonte D) », « sur le web, Activité garde ses tuiles ».
+
+### E — Progrès et Profil, F — Intégrations Apple, G — Validation
+
+À venir ; voir les tâches iOS E à G.
 
 ## Vérifier
 

@@ -4742,14 +4742,14 @@ html.app-ios:root, html.app-ios:root[data-theme="light"] {
   --ligne: rgba(60,60,67,.13); --text: #000000; --inv: #000000; --sur-inv: #ffffff;
   --ok: #34c759; --alerte: #ff3b30; --attention: #ff9500; --ok-t: #248a3d; --alerte-t: #d70015; --attention-t: #c93400;
   --ombre-carte: none; --ios-accent: #d6246e; --ios-remplir: rgba(120,120,128,.14); --ios-verre: rgba(255,255,255,.86);
-  --ios-voile: rgba(0,0,0,.26);
+  --ios-voile: rgba(0,0,0,.26); --ios-accent-plein: #d6246e;
 }
 html.app-ios:root[data-theme="dark"] {
   --bg: #000000; --s1: #1c1c1e; --s2: #2c2c2e; --s3: #3a3a3c; --s-fen: #1c1c1e;
   --ligne: rgba(84,84,88,.55); --text: #ffffff; --inv: #ffffff; --sur-inv: #000000; --t3: rgba(235,235,245,.32);
   --ok: #30d158; --alerte: #ff453a; --attention: #ff9f0a; --ok-t: #30d158; --alerte-t: #ff6961; --attention-t: #ffb340;
   --ombre-carte: none; --ios-accent: #ff6aa9; --ios-remplir: rgba(120,120,128,.3); --ios-verre: rgba(30,30,32,.86);
-  --ios-voile: rgba(0,0,0,.5); --corps-contour: #000000;
+  --ios-voile: rgba(0,0,0,.5); --corps-contour: #000000; --ios-accent-plein: #d6246e;
 }
 
 /* Typographie : l'interlettrage de SF Pro est celui du système (pas de
@@ -4975,8 +4975,8 @@ html.app-ios:root body :is(#total-kcals, .reste-kcal, .hx-geant, .cardio-gros, .
 
 /* Boutons : l'action principale est le seul objet rose plein d'un écran ;
    le secondaire, un remplissage teinté ; tout bouton répond par un léger retrait. */
-html.app-ios:root body .btn-primary { background: var(--ios-accent) !important; color: #fff !important; font-weight: 600 !important; }
-html.app-ios:root body .btn-primary:hover { background: var(--ios-accent) !important; filter: brightness(1.04); }
+html.app-ios:root body .btn-primary { background: var(--ios-accent-plein) !important; color: #fff !important; font-weight: 600 !important; }
+html.app-ios:root body .btn-primary:hover { background: var(--ios-accent-plein) !important; filter: brightness(1.04); }
 html.app-ios:root body :is(.btn-secondaire, .btn-analysis) { background: var(--ios-remplir) !important; color: var(--text) !important; font-weight: 600 !important; }
 html.app-ios:root body .btn-analysis { color: var(--ios-accent) !important; }
 html.app-ios:root body :is(.btn, .pilule, .feuille-action, .onglet, .segment button, .coach-action, .action-tuile, .obj-tuile) {
@@ -5066,13 +5066,13 @@ html.app-ios body #ecran-repas .seance-prevue-heros { font-size: var(--t-legende
 html.app-ios body #ecran-repas .coach-carte { padding: 12px 14px; margin: 6px 0 16px; border-radius: 20px; gap: 12px; align-items: flex-start;
   background: color-mix(in srgb, var(--ios-accent) 9%, var(--s1)) !important; box-shadow: none !important; }
 html.app-ios body #ecran-repas .coach-carte::before, html.app-ios body #ecran-repas .coach-carte::after { display: none !important; }
-html.app-ios body #ecran-repas .coach-icone { width: 32px; height: 32px; border-radius: 10px; background: var(--ios-accent) !important; box-shadow: none !important; margin-top: 2px; }
+html.app-ios body #ecran-repas .coach-icone { width: 32px; height: 32px; border-radius: 10px; background: var(--ios-accent-plein) !important; box-shadow: none !important; margin-top: 2px; }
 html.app-ios body #ecran-repas .coach-icone .icone-ui { width: 17px; height: 17px; }
 html.app-ios body #ecran-repas .coach-carte small { background: none !important; -webkit-background-clip: initial !important; -webkit-text-fill-color: var(--ios-accent) !important; color: var(--ios-accent) !important;
   font-size: var(--t-mini) !important; letter-spacing: .06em !important; }
 html.app-ios body #ecran-repas .coach-carte p { font-size: var(--t-note) !important; line-height: 1.38; }
 html.app-ios body #ecran-repas .coach-actions { margin-top: 8px; }
-html.app-ios body #ecran-repas .coach-action { background: var(--ios-accent) !important; color: #fff !important; border-radius: 999px !important; border: 0 !important; }
+html.app-ios body #ecran-repas .coach-action { background: var(--ios-accent-plein) !important; color: #fff !important; border-radius: 999px !important; border: 0 !important; }
 html.app-ios body #ecran-repas .coach-plus { font-size: var(--t-note) !important; }
 
 /* Pas, eau, poids : trois tuiles fixes, le même gabarit ; la roulette et ses inclinaisons ne s'appliquent plus. */
@@ -5148,4 +5148,87 @@ html.app-ios body #ecran-repas #cartes-stats-repas > #bloc-eau { align-items: st
 html.app-ios body #ecran-repas #cartes-stats-repas > #bloc-eau h3 { justify-items: start; text-align: left; margin-right: auto !important; }
 html.app-ios body #ecran-repas #cartes-stats-repas > #bloc-eau .eau-texte { margin-top: auto; }
 html:root.app-ios body #ecran-repas #cartes-stats-repas > #bloc-eau .eau-boutons { top: 8px; right: 8px; }
+
+/* =====================================================================
+   REFONTE iOS — D. ACTIVITÉ
+   Le héros de la semaine sur le fond système (plus de dégradé ni de
+   quadrillage), le corps qui s'allume à droite ; la prochaine séance,
+   seul bloc rose plein de l'écran ; les programmes en cartes (objets qu'on
+   manipule) ; « Créer et explorer » en liste groupée ; la séance en cours
+   avec un héros nu et des blocs d'exercices en surfaces système.
+   ===================================================================== */
+html.app-ios body #ecran-seance .hx { margin: 0 0 14px; padding: 6px 2px 14px; min-height: 0; color: var(--text); --hx-t: var(--text); border-radius: 0; background: none !important; }
+html.app-ios body #ecran-seance .hx::before, html.app-ios body #ecran-seance .hx::after { display: none !important; }
+html.app-ios body #ecran-seance .hx-k { font-size: var(--t-legende); letter-spacing: 0; text-transform: none; opacity: 1; color: var(--text-muted); font-weight: 500; }
+html.app-ios body #ecran-seance .hx-titre { font-size: var(--t-titre2); font-weight: 600; letter-spacing: -.005em; margin-top: 2px; }
+html.app-ios body #ecran-seance .hx-geant { font-family: var(--chiffres); font-size: calc(56px * var(--echelle-texte, 1)); font-weight: 700; letter-spacing: -.03em; margin-top: 8px; line-height: 1;
+  background: none !important; -webkit-background-clip: initial !important; -webkit-text-fill-color: var(--text) !important; color: var(--text) !important; }
+html.app-ios body #ecran-seance .hx-unite { font-size: var(--t-note); font-weight: 500; opacity: 1; color: var(--text-muted); margin-top: 2px; }
+html.app-ios body #ecran-seance .hx-corps { right: -2px; top: 4px; width: 188px; height: 276px; }
+html.app-ios body #ecran-seance .hx-corps svg { filter: none; }
+html.app-ios body #ecran-seance .hx-puces { margin-top: 16px; }
+html.app-ios body #ecran-seance .hx-puce { background: var(--s1) !important; border-radius: 12px; font-size: var(--t-legende); font-weight: 500; padding: 8px 12px; color: var(--text) !important; }
+html.app-ios body #ecran-seance .hx-puce b { font-weight: 600; font-size: var(--t-note); font-family: var(--chiffres); }
+html.app-ios body #ecran-seance .hx-puce i { box-shadow: none; }
+html.app-ios body #ecran-seance .hx-legende { font-size: var(--t-mini); font-weight: 500; color: var(--text-muted); }
+html.app-ios body #ecran-seance .hx-vide { font-size: var(--t-note); font-weight: 400; color: var(--text-muted); }
+html.app-ios body #ecran-seance .hx-vide small { font-size: var(--t-legende); letter-spacing: 0; text-transform: none; font-weight: 500; }
+html.app-ios body #ecran-seance .hx-vide b { font-family: var(--chiffres); font-size: var(--t-titre1); font-weight: 700; color: var(--text); }
+html.app-ios body #ecran-seance .hx-phrase { font-size: var(--t-note); opacity: 1; color: var(--text-muted); font-weight: 400; }
+html.app-ios body #ecran-seance .cp-bouton { top: 4px; }
+
+/* Prochaine séance : le seul bloc rose plein, texte blanc lisible dans les deux thèmes. */
+html.app-ios body #ecran-seance .sdj { background: var(--ios-accent-plein) !important; box-shadow: none !important; border-radius: var(--r-bloc); padding: 18px; min-height: 180px; color: #fff !important; }
+html.app-ios body #ecran-seance .sdj::after { display: none; }
+html.app-ios body #ecran-seance .sdj-corps svg { filter: none; opacity: .92; }
+html.app-ios body #ecran-seance .sdj small { font-size: var(--t-legende) !important; letter-spacing: 0 !important; text-transform: none !important; color: rgba(255,255,255,.88) !important; opacity: 1; font-weight: 500 !important; }
+html.app-ios body #ecran-seance .sdj p { color: rgba(255,255,255,.92) !important; }
+html.app-ios body #ecran-seance .sdj h4 { font-size: var(--t-titre1); font-weight: 700; letter-spacing: -.01em; }
+html.app-ios body #ecran-seance .sdj p { font-size: var(--t-note); font-weight: 400; opacity: .92; }
+html.app-ios body #ecran-seance .sdj-puce { background: rgba(255,255,255,.22) !important; color: #fff !important; font-size: var(--t-legende); font-weight: 500; -webkit-backdrop-filter: none; backdrop-filter: none; }
+html.app-ios body #ecran-seance .sdj-play { background: #fff !important; color: var(--ios-accent-plein) !important; box-shadow: none !important; width: 48px; height: 48px; }
+html.app-ios body #ecran-seance .sdj-play :is(svg, .icone-ui) { color: var(--ios-accent-plein) !important; }
+
+/* Programmes : cartes gardées, sans ombre portée, rayons continus. */
+html.app-ios body #ecran-seance .pc { box-shadow: none; border-radius: var(--r-bloc); }
+html.app-ios body #ecran-seance .pc b { font-size: var(--t-titre3); font-weight: 700; letter-spacing: -.01em; }
+html.app-ios body #ecran-seance .pc small { font-size: var(--t-legende); font-weight: 500; }
+html.app-ios body #ecran-seance .pc .tag { font-size: var(--t-mini); font-weight: 600; -webkit-backdrop-filter: none; backdrop-filter: none; }
+
+/* Créer et explorer : une liste groupée, une rangée par action (icône, titre, sous-titre, chevron). */
+html.app-ios body #ecran-seance .actions-grille { display: block; background: var(--s1); border-radius: var(--r-bloc); overflow: hidden; margin-bottom: 14px; padding: 2px 0; }
+html.app-ios body #ecran-seance .action-tuile { display: grid !important; grid-template-columns: 32px minmax(0, 1fr) 14px; column-gap: 12px; row-gap: 1px; align-items: center; align-content: center;
+  min-height: 58px; padding: 9px 14px !important; border-radius: 0 !important; background: none !important; box-shadow: none !important; width: 100%; }
+html.app-ios body #ecran-seance .action-tuile + .action-tuile { box-shadow: inset 0 .5px 0 var(--ligne) !important; }
+html.app-ios body #ecran-seance .action-tuile:active { transform: none; background: var(--ios-remplir) !important; }
+html.app-ios body #ecran-seance .action-tuile .action-ic { grid-row: 1 / span 2; width: 32px; height: 32px; border-radius: 9px; box-shadow: none; }
+html.app-ios body #ecran-seance .action-tuile .action-ic .icone-ui { width: 17px; height: 17px; }
+html.app-ios body #ecran-seance .action-tuile b { grid-column: 2; margin: 0; font-family: var(--police); font-size: var(--t-corps); font-weight: 400; letter-spacing: 0; line-height: 1.25; }
+html.app-ios body #ecran-seance .action-tuile small { grid-column: 2; font-size: var(--t-legende); font-weight: 400; line-height: 1.25; }
+html.app-ios body #ecran-seance .action-tuile::after { content: '›'; grid-column: 3; grid-row: 1 / span 2; color: var(--text-muted); font-size: 24px; line-height: 1; opacity: .55; text-align: right; }
+
+/* Séance en cours : héros nu (état, titre, chrono arrondi, avancée), exercices en surfaces système, séries de 46 pt. */
+html.app-ios body #ecran-seance .seance-heros { background: none !important; box-shadow: none !important; padding: 4px 2px 10px; border-radius: 0; color: var(--text); grid-template-columns: minmax(0, 1fr) 150px; }
+html.app-ios body #ecran-seance .seance-heros::before, html.app-ios body #ecran-seance .seance-heros::after { display: none !important; }
+html.app-ios body #ecran-seance .sh-etat { font-size: var(--t-legende); letter-spacing: 0; text-transform: none; font-weight: 500; opacity: 1; color: var(--ios-accent); }
+html.app-ios body #ecran-seance .sh-etat i { background: var(--ios-accent); box-shadow: 0 0 0 3px color-mix(in srgb, var(--ios-accent) 25%, transparent); }
+html.app-ios body #ecran-seance .seance-heros h3 { font-size: var(--t-titre2) !important; font-weight: 600 !important; margin: 2px 0 0; }
+html.app-ios body #ecran-seance .sh-chrono { font: 700 calc(44px * var(--echelle-texte, 1))/1 var(--chiffres); letter-spacing: -.02em; }
+html.app-ios body #ecran-seance .sh-prog-t { font-size: var(--t-legende); color: var(--text-muted); opacity: 1; }
+html.app-ios body #ecran-seance .sh-prog-t b { font: 600 var(--t-note) var(--chiffres); }
+html.app-ios body #ecran-seance .sh-prog-b { background: var(--ios-remplir); }
+html.app-ios body #ecran-seance .sh-prog-b i { background: var(--ios-accent); }
+html.app-ios body #ecran-seance .sh-corps { color: var(--text); }
+html.app-ios body #ecran-seance .sh-corps .corps-svg { filter: none; }
+html.app-ios body #ecran-seance .session-exo-bloc { background: var(--s1) !important; box-shadow: none !important; border-radius: var(--r-bloc); padding: 12px 14px 14px; margin-bottom: 12px; }
+html.app-ios body #ecran-seance .session-exo-nom { font-size: var(--t-corps) !important; font-weight: 600 !important; }
+html.app-ios body #ecran-seance .serie-entete span { font-size: var(--t-mini); letter-spacing: 0; text-transform: none; font-weight: 500; }
+html.app-ios body #ecran-seance .serie-ligne { min-height: 46px; padding: 4px 3px; }
+html.app-ios body #ecran-seance .serie-table input { min-height: 40px; font-size: var(--t-corps); border-radius: 10px; background: var(--ios-remplir); border: 0; font-family: var(--chiffres); font-variant-numeric: tabular-nums; }
+html.app-ios body #ecran-seance .serie-check { width: 34px; height: 34px; border-radius: 50%; }
+html.app-ios body #ecran-seance .serie-check.faite { background: var(--ios-accent-plein) !important; color: #fff !important; border-color: transparent !important; }
+html.app-ios body #ecran-seance .serie-ligne:has(.serie-check.faite) { background: color-mix(in srgb, var(--ios-accent) 8%, transparent) !important; border-radius: 10px; }
+html.app-ios body #ecran-seance .serie-check.pop::after { border-color: var(--ios-accent) !important; }
+html.app-ios body #ecran-seance .btn-ajouter-serie { color: var(--ios-accent); font-size: var(--t-note); font-weight: 600; }
+html.app-ios body #ecran-seance .cardio-liste .cardio-seance { background: var(--s1); box-shadow: none; border-radius: 18px; -webkit-backdrop-filter: none; backdrop-filter: none; }
 

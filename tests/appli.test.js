@@ -1520,6 +1520,59 @@ test("sur le web, Repas garde sa roulette de cartes et son héros en carte", () 
   assert.equal(r.eauBoutons, 5);
 }));
 
+test("app iOS (refonte D) : Activité en héros nu, prochaine séance en rose plein lisible, « Créer et explorer » en liste groupée, appui long sur un programme pour ses options ; le site garde ses tuiles et son dégradé", () => avecAppli({ natif: true }, async ({ page }) => {
+  const r = await page.evaluate(async () => {
+    const pause = ms => new Promise(ok => setTimeout(ok, ms));
+    const exo = toutesLesExercices().find(e => e.nom === 'Développé couché avec barre');
+    musculationProgrammes = [{ id: 'p1', nom: 'Push', exercices: [{ exerciceId: exo.id, series: [{ reps: 10, poids: 40 }, { reps: 10, poids: 40 }] }] }];
+    sauvegarderProgrammes();
+    // Deux séries faites cette semaine : le héros montre son grand chiffre.
+    musculationHistorique = [{ id: 'h1', date: todayStr(), programmeId: 'p1', programmeNom: 'Push', exercices: [{ exerciceId: exo.id, nom: exo.nom, series: [{ poids: 40, reps: 10, fait: true }, { poids: 40, reps: 10, fait: true }] }] }];
+    allerA('seance'); choisirModeSeance('muscu'); renderSeance(); await pause(120);
+    const hx = document.querySelector('#ecran-seance .hx');
+    const res = { heroFond: getComputedStyle(hx).backgroundImage, heroHalo: getComputedStyle(hx, '::before').display,
+      geant: (document.querySelector('#ecran-seance .hx-geant, #ecran-seance .hx-vide b') || {}).tagName ? getComputedStyle(document.querySelector('#ecran-seance .hx-geant, #ecran-seance .hx-vide b')).fontFamily : null };
+    const sdj = document.querySelector('#ecran-seance .sdj');
+    res.sdj = sdj ? [getComputedStyle(sdj).backgroundColor, getComputedStyle(sdj).backgroundImage, getComputedStyle(sdj).color] : null;
+    const grille = document.querySelector('#ecran-seance .actions-grille');
+    res.actions = [getComputedStyle(grille).display, getComputedStyle(grille.querySelector('.action-tuile')).display, getComputedStyle(grille.querySelector('.action-tuile'), '::after').content];
+    res.primaire = getComputedStyle(document.querySelector('#ecran-seance .btn-primary')).backgroundColor;
+    // Appui long sur la carte du programme : ses options s'ouvrent.
+    const pc = document.querySelector('#programmes-liste-container .pc'); const rect = pc.getBoundingClientRect();
+    window.__appelsNatifs.length = 0;
+    pc.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, clientX: rect.left + 40, clientY: rect.top + 40, pointerId: 1, button: 0 })); await pause(560);
+    res.options = !document.getElementById('menu-programme-popup').classList.contains('hidden');
+    res.haptique = window.__appelsNatifs.filter(a => a[0] === 'Haptics').map(a => a[1] + ':' + (a[2] && a[2].style || ''));
+    return res;
+  });
+  assert.equal(r.heroFond, 'none', 'héros sans dégradé');
+  assert.equal(r.heroHalo, 'none');
+  assert.ok(r.geant && /rounded/i.test(r.geant), 'chiffre héros arrondi : ' + r.geant);
+  assert.ok(r.sdj, 'une prochaine séance proposée');
+  assert.deepEqual([r.sdj[0], r.sdj[1], r.sdj[2]], ['rgb(214, 36, 110)', 'none', 'rgb(255, 255, 255)'], 'bloc rose plein, texte blanc');
+  assert.deepEqual(r.actions, ['block', 'grid', '"›"']);
+  assert.equal(r.primaire, 'rgb(214, 36, 110)');
+  assert.equal(r.options, true, 'les options du programme s\'ouvrent');
+  assert.ok(r.haptique.includes('impact:MEDIUM'), r.haptique.join(','));
+}));
+
+test("sur le web, Activité garde ses tuiles d'actions et sa prochaine séance en surface neutre (charte sobre), sans menu à l'appui long", () => avecAppli({}, async ({ page }) => {
+  const r = await page.evaluate(async () => {
+    const pause = ms => new Promise(ok => setTimeout(ok, ms));
+    musculationProgrammes = [{ id: 'p1', nom: 'Push', exercices: [{ exerciceId: toutesLesExercices()[0].id, series: [{ reps: 10, poids: 40 }] }] }];
+    sauvegarderProgrammes(); allerA('seance'); choisirModeSeance('muscu'); renderSeance(); await pause(120);
+    const tuile = document.querySelector('#ecran-seance .action-tuile'), sdj = document.querySelector('#ecran-seance .sdj');
+    const pc = document.querySelector('#programmes-liste-container .pc'); const rect = pc.getBoundingClientRect();
+    pc.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, clientX: rect.left + 40, clientY: rect.top + 40, pointerId: 1, button: 0 })); await pause(560);
+    return { actions: getComputedStyle(document.querySelector('#ecran-seance .actions-grille')).display, chevron: getComputedStyle(tuile, '::after').content,
+      sdj: getComputedStyle(sdj).backgroundColor, menu: document.getElementById('menu-programme-popup').classList.contains('hidden') };
+  });
+  assert.equal(r.actions, 'grid');
+  assert.equal(r.chevron, 'none');
+  assert.notEqual(r.sdj, 'rgb(214, 36, 110)');
+  assert.equal(r.menu, true, "pas d'appui long sur le site");
+}));
+
 test("IA par le serveur : sans clé personnelle, l'IA reste disponible (photo comprise) et chaque demande part avec sa tâche ; l'administration ne distribue plus de clé", () => avecAppli({}, async ({ page }) => {
   const r = await page.evaluate(async () => {
     const appels = [];
