@@ -5560,13 +5560,6 @@
       <div class="carte-liste" id="admin-ajustement"></div>
       <div class="reglages-titre">Avancé</div>
       <div class="carte-liste">
-        <div class="ligne-reglage"><span class="action-ic"><svg class="icone-ui" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15.5 7.5 2.3 2.3a1 1 0 0 0 1.4 0l2.1-2.1a1 1 0 0 0 0-1.4L19 4" /><path d="m21 2-9.6 9.6" /><circle cx="7.5" cy="15.5" r="5.5" /></svg></span><span class="ligne-txt"><b>Clé Gemini du compte</b><small id="admin-cle-etat"></small></span>
-          <button type="button" class="pilule" onclick="basculerCleGeminiAdmin()">Modifier</button></div>
-        <div id="admin-cle-edition" class="hidden adm-cle-edition input-group">
-          <input type="text" id="admin-user-gemini-key" placeholder="AIzaSy&hellip;" autocomplete="off" spellcheck="false" aria-label="Clé API Gemini de ce compte">
-          <button class="btn btn-primary" type="button" onclick="definirCleGeminiUtilisateur()">Enregistrer la clé</button>
-          <p class="note">Enregistrée uniquement dans Supabase, jamais dans le code. Vide puis enregistrer retire la clé du compte. Ne sert que tant que la fonction serveur « ia » n'est pas en place.</p>
-        </div>
       </div>
       <div id="admin-zone-sensible">
         <div class="reglages-titre adm-sensible">Zone sensible</div>
@@ -8464,7 +8457,7 @@ function appliquerGeminiKeyEffective() {
   geminiKey = (userProfile.geminiKey || '').trim() || GEMINI_CLE_DEFAUT;
   // Sans clé liée au compte, tout ce qui mène à l'IA disparaît (.ia-seulement)
   // au lieu de mener à un message d'erreur.
-  document.documentElement.classList.toggle('ia-active', !!geminiKey || !!(iaServeur && iaServeur.pret));
+  document.documentElement.classList.toggle('ia-active', iaDisponible());
   const champ = document.getElementById('gemini-key-input');
   if (champ) champ.value = userProfile.geminiKey || '';
   // Purge une éventuelle clé laissée par cet appareil avant ce correctif :
@@ -14043,7 +14036,7 @@ function margeIA(v) {
    indépendants (avant, seule une photo pouvait déclencher l'analyse — pas
    moyen de dire à l'IA ce qu'on a mangé quand on n'a pas de photo). */
 async function analyserRepasGemini() {
-  if (!geminiKey) { showAiError("L'IA n'est pas activée sur ton compte."); return; }
+  if (!iaDisponible()) { showAiError("L'IA n'est pas activée sur ton compte."); return; }
   const file = document.getElementById('ai-file-input').files[0];
   const desc = (document.getElementById('ai-description')?.value || '').trim();
   if (!file && !desc) { showAiError('Ajoute une photo, une description, ou les deux.'); return; }
@@ -14249,7 +14242,7 @@ Objectif: ${t.goal}. Poids: ${t.poids} kg. Pas: ${day.steps}. Eau bue: ${Number(
 Détail de la séance de musculation du jour: ${seanceMuscuDesc}.` : ''}
 Calories consommées: ${totals.kcal} / objectif ${t.target} kcal. Protéines ${totals.p}/${t.protein}g, Glucides ${totals.c}/${t.carbs}g, Lipides ${totals.f}/${t.fat}g.`;
   try {
-    const res = await geminiGenerate([{ text: prompt }]);
+    const res = await geminiGenerate([{ text: prompt }], 'journee');
     loader.classList.add('hidden');
     box.textContent = res.trim(); box.classList.remove('hidden');
   } catch (e) {
@@ -14291,7 +14284,7 @@ Objectif du jour : ${t.goal}.
 Il reste à consommer aujourd'hui : ${reste.kcal} kcal, dont ${reste.p}g de protéines, ${reste.c}g de glucides, ${reste.f}g de lipides.`;
 
   try {
-    const res = await geminiGenerate([{ text: prompt }]);
+    const res = await geminiGenerate([{ text: prompt }], 'recettes');
     loader.classList.add('hidden');
     const recettes = parseJsonArray(res);
     if (!recettes || !recettes.length) {
@@ -14388,7 +14381,7 @@ Musculation : ${seancesPeriode.length} séance${seancesPeriode.length > 1 ? 's' 
 
 Commente d'abord la cohérence entre la prévision et la variation réelle de poids, puis la régularité du suivi (repas et séances), puis donne exactement deux conseils concrets et chiffrés. Si trop de jours ne sont pas renseignés, dis-le au lieu de conclure sur des moyennes fragiles.`;
   try {
-    const res = await geminiGenerate([{ text: prompt }]);
+    const res = await geminiGenerate([{ text: prompt }], 'periode');
     loader.classList.add('hidden');
     box.textContent = res.trim(); box.classList.remove('hidden');
   } catch (err) {
@@ -14475,7 +14468,7 @@ async function geminiParServeur(parts, type, candidats) {
   let statut, corps;
   for (let essai = 0; ; essai++) {
     incrementerIA(type);
-    const { data, error } = await supa.functions.invoke('ia', { body: Object.assign({ parts, modele: GEMINI_MODEL }, candidats > 1 ? { candidats } : {}) });
+    const { data, error } = await supa.functions.invoke('ia', { body: Object.assign({ parts, modele: GEMINI_MODEL, tache: type || 'libre' }, candidats > 1 ? { candidats } : {}) });
     if (!error) { statut = 200; corps = data || {}; break; }
     statut = error.context && typeof error.context.status === 'number' ? error.context.status : 0;
     corps = {};
@@ -16031,15 +16024,18 @@ function majOngletsNatifs() {
 /* Garde des fonctions IA : sans clé liée au compte, leurs boutons sont
    cachés ; si l'une est appelée quand même (écran resté ouvert pendant que
    la clé était retirée), un message clair plutôt qu'une erreur de Google. */
+/* L'IA est disponible par le serveur (fonction « ia », clé côté serveur) ou,
+   à défaut, par une clé personnelle saisie dans les réglages. */
+function iaDisponible() { return !!(iaServeur && iaServeur.pret) || !!geminiKey; }
 function iaIndisponible() {
-  if (geminiKey) return false;
+  if (iaDisponible()) return false;
   alert("L'IA n'est pas activée sur ton compte.");
   return true;
 }
 function majNoteCleIA() {
   const n = document.getElementById('note-cle-ia');
   if (!n) return;
-  n.innerHTML = geminiKey || (iaServeur && iaServeur.pret)
+  n.innerHTML = iaDisponible()
     ? ''
     : `Aucune clé API n'est enregistrée : ajoute-la dans <svg class="icone-ui" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9.671 4.136a2.34 2.34 0 0 1 4.659 0 2.34 2.34 0 0 0 3.319 1.915 2.34 2.34 0 0 1 2.33 4.033 2.34 2.34 0 0 0 0 3.831 2.34 2.34 0 0 1-2.33 4.033 2.34 2.34 0 0 0-3.319 1.915 2.34 2.34 0 0 1-4.659 0 2.34 2.34 0 0 0-3.32-1.915 2.34 2.34 0 0 1-2.33-4.033 2.34 2.34 0 0 0 0-3.831A2.34 2.34 0 0 1 6.35 6.051a2.34 2.34 0 0 0 3.319-1.915" /><circle cx="12" cy="12" r="3" /></svg> Profil pour activer les analyses.`;
 }
@@ -19749,28 +19745,6 @@ async function definirBlocage(utilisateur, type, dejaConfirme) {
   }
 }
 
-/* Affecte la cle Gemini saisie au compte adminUserCourant. Le champ est
-   pre-rempli avec la cle actuelle a l'ouverture de la feuille (voir
-   afficherFeuillUtilisateur()) : on ecrase donc la cle actuelle par la
-   saisie, meme vide (ce qui revient a la retirer). */
-async function definirCleGeminiUtilisateur() {
-  if (!adminUserCourant) return;
-  const champ = document.getElementById('admin-user-gemini-key');
-  if (!champ) return;
-  const cle = champ.value.trim();
-  try {
-    const { error } = await supa.rpc('admin_definir_cle_gemini', { p_utilisateur: adminUserCourant, p_cle: cle });
-    if (error) throw error;
-    if (adminComptes[adminUserCourant]) adminComptes[adminUserCourant].gemini_key = cle;
-    const etatCle = document.getElementById('admin-cle-etat');
-    if (etatCle) etatCle.textContent = cle ? 'Définie · ' + masquerCleAdmin(cle) : (iaServeur ? 'Aucune : l\u2019IA passe par le serveur' : 'Aucune');
-    const edition = document.getElementById('admin-cle-edition');
-    if (edition) edition.classList.add('hidden');
-    alert(cle ? 'Clé enregistrée pour ce compte.' : 'Clé retirée de ce compte.');
-  } catch (e) {
-    alert('Erreur : ' + e.message + ' — as-tu exécuté le tout dernier script SQL (avec admin_definir_cle_gemini) ?');
-  }
-}
 
 /* Suppression définitive : on ne se contente plus d'un confirm() du
    navigateur — cette action est irréversible, donc trois barrières avant
@@ -22075,15 +22049,15 @@ create policy "exercices_perso_musculation par compte" on exercices_perso_muscul
 -- fonction y accède à sa place, mais vérifie elle-même que l'appelant est
 -- bien jambou592@gmail.com avant de renvoyer quoi que ce soit : n'importe
 -- qui d'autre qui l'appellerait recevrait une erreur, jamais de données.
--- drop d'abord : on ajoute une colonne (gemini_key) au type de retour, ce que
--- "create or replace" refuse de faire seul sur une fonction déjà existante.
+-- drop d'abord : le type de retour a changé (la colonne gemini_key a été
+-- retirée : l'administration ne lit ni ne distribue plus aucune clé d'IA), ce
+-- que "create or replace" refuse de faire seul sur une fonction existante.
 drop function if exists public.admin_liste_comptes();
 
 create or replace function public.admin_liste_comptes()
 returns table (
   utilisateur text, email text, cree_le timestamptz, derniere_connexion timestamptz,
-  age int, taille numeric, poids numeric, genre text, nb_journees bigint, maj bigint, statut text,
-  gemini_key text
+  age int, taille numeric, poids numeric, genre text, nb_journees bigint, maj bigint, statut text
 )
 language plpgsql
 security definer
@@ -22105,8 +22079,7 @@ begin
       (p.donnees->>'gender')::text,
       (select count(*) from journees j where j.utilisateur = p.utilisateur)::bigint,
       p.maj::bigint,
-      cb.type::text,
-      (p.donnees->>'geminiKey')::text
+      cb.type::text
     from profil p
     left join auth.users u on u.id::text = p.utilisateur
     left join comptes_bloques cb on cb.utilisateur = p.utilisateur;
@@ -22187,37 +22160,14 @@ end;
 $$;
 grant execute on function public.admin_rattacher_donnees(text, text) to authenticated;
 
--- Affecte (ou retire, avec une chaîne vide) une clé API Gemini au compte
--- p_utilisateur : elle est écrite dans son profil (donnees.geminiKey), donc
--- utilisée uniquement par ce compte, exactement comme s'il l'avait saisie
--- lui-même dans <svg class="icone-ui" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9.671 4.136a2.34 2.34 0 0 1 4.659 0 2.34 2.34 0 0 0 3.319 1.915 2.34 2.34 0 0 1 2.33 4.033 2.34 2.34 0 0 0 0 3.831 2.34 2.34 0 0 1-2.33 4.033 2.34 2.34 0 0 0-3.319 1.915 2.34 2.34 0 0 1-4.659 0 2.34 2.34 0 0 0-3.32-1.915 2.34 2.34 0 0 1-2.33-4.033 2.34 2.34 0 0 0 0-3.831A2.34 2.34 0 0 1 6.35 6.051a2.34 2.34 0 0 0 3.319-1.915" /><circle cx="12" cy="12" r="3" /></svg> Profil. Rien n'est jamais écrit dans le code de
--- l'application : la clé ne transite que par cet appel, réservé à l'admin.
--- maj est aussi mis à jour (horodatage epoch ms, même format que le reste de
--- l'appli) : synchroniser() ne redescend le profil sur l'appareil du compte
--- que si le maj du serveur dépasse celui déjà connu localement — sans ce
--- rafraîchissement, l'admin avait beau enregistrer la clé, l'appareil du
--- compte gardait indéfiniment son ancien profil (donc pas de clé) puisque
--- rien ne semblait avoir changé de son point de vue.
-create or replace function public.admin_definir_cle_gemini(p_utilisateur text, p_cle text)
-returns void
-language plpgsql
-security definer
-set search_path = public
-as $$
-begin
-  if coalesce(auth.jwt() ->> 'email', '') <> 'jambou592@gmail.com' then
-    raise exception 'Accès réservé à l''administrateur';
-  end if;
-  update profil
-    set donnees = jsonb_set(coalesce(donnees, '{}'::jsonb), '{geminiKey}', to_jsonb(coalesce(p_cle, '')), true),
-        maj = (extract(epoch from clock_timestamp()) * 1000)::bigint
-    where utilisateur = p_utilisateur;
-  if not found then
-    raise exception 'Compte introuvable (aucun profil enregistré pour cet utilisateur)';
-  end if;
-end;
-$$;
-grant execute on function public.admin_definir_cle_gemini(text, text) to authenticated;
+-- Plus de clé d'IA distribuée par l'administration : la fonction qui écrivait
+-- une clé Gemini dans le profil d'un compte est supprimée (cette clé partait
+-- ensuite en clair depuis l'appareil, où n'importe qui pouvait la lire). L'IA
+-- passe par la fonction serveur « ia » ; une clé personnelle reste possible
+-- dans les réglages du compte. Pour retirer une clé posée par l'administration
+-- sur un compte donné (jamais en masse sans l'accord de la personne) :
+--   update profil set donnees = donnees - 'geminiKey' where utilisateur = '<identifiant>';
+drop function if exists public.admin_definir_cle_gemini(text, text);
 
 -- Efface VRAIMENT un compte : ses données ET son compte d'authentification
 -- (auth.users), contrairement à "Supprimer" (admin_definir_blocage), qui ne
@@ -23428,17 +23378,20 @@ function svgSilhouetteGroupe(groupe) {
    l'ouverture d'une fiche ; la vignette sert d'image dans les listes.
    [identifiant vidéo, identifiant vignette, page de l'exercice]. */
 const SW_ASSET = 'https://api.smartworkout.app/asset/';
-/* App iPhone : ni vidéo ni image SmartWorkout (contenus d'un autre
-   éditeur, sans licence pour une app vendue sur l'App Store), ni GIF
-   ExerciseDB (usage non commercial seulement), ni image wger (licence
-   propre à chaque image). Le site les garde. Les exercices concernés
-   montrent le schéma de leurs muscles, consignes comprises. */
-const MEDIAS_TIERS = !NATIF;
+/* Site et app : ni vidéo ni image SmartWorkout (contenus d'un autre
+   éditeur, sans licence), ni GIF ExerciseDB (usage non commercial
+   seulement), ni image wger (licence propre à chaque image). Jusqu'au
+   9 novembre 2026, seule l'app iPhone les écartait ; le site, qui vend le
+   même abonnement, les affichait encore (audit LEG-01). Les exercices
+   concernés montrent le schéma de leurs muscles, consignes comprises. Les
+   tables VIDEOS_SMARTWORKOUT et SW_IMAGE_VERS_VIDEO de donnees.js sont vides
+   et le dossier assets/miniatures a été retiré ; les branches qui en
+   dépendaient restent en place pour les vidéos ajoutées dans Administration. */
 function mediaTiersInterdit(url) {
-  return !MEDIAS_TIERS && /smartworkout\.app|exercisedb\.dev|wger\.de/i.test(url || '');
+  return /smartworkout\.app|exercisedb\.dev|wger\.de/i.test(url || '');
 }
-function videoSmartWorkout(id) {
-  return MEDIAS_TIERS ? VIDEOS_SMARTWORKOUT[id] : null;
+function videoSmartWorkout() {
+  return null;
 }
 /* Images SmartWorkout -> vidéo de la même page. Coller par erreur le lien
    de l'image d'une page SmartWorkout (…/asset/image/<id>, celle qu'on
@@ -25919,7 +25872,7 @@ ${r.split.structure ? '- Respecte EXACTEMENT la répartition imposée, y compris
   document.getElementById('ia-programme-formulaire').classList.add('hidden');
   document.getElementById('ia-prog-loader').classList.remove('hidden');
   try {
-    const res = await geminiGenerate([{ text: prompt }]);
+    const res = await geminiGenerate([{ text: prompt }], 'programme');
     const reponse = parseJsonObject(res);
     const idsValides = new Set(exosDisponibles.map(e => e.id));
     const programmes = (reponse && Array.isArray(reponse.programmes) ? reponse.programmes : [])
@@ -33249,7 +33202,6 @@ function ouvrirCompteAdmin(id) {
   afficherAjustementAdmin(id);
   chargerDetailsCompteAdmin(id);
 }
-function masquerCleAdmin(k) { k = String(k || ''); return k.length > 12 ? k.slice(0, 6) + '…' + k.slice(-4) : '••••'; }
 function rendreCompteAdmin(user) {
   const moi = !!(sessionUtilisateur && user.utilisateur === sessionUtilisateur.id);
   const mettre = (id, t) => { const el = document.getElementById(id); if (el) el.textContent = t; };
@@ -33279,12 +33231,6 @@ function rendreCompteAdmin(user) {
   }
   const diag = document.getElementById('admin-compte-diagnostic');
   if (diag) diag.innerHTML = '<div class="ligne-reglage"><span class="ligne-txt"><small>Chargement…</small></span></div>';
-  mettre('admin-cle-etat', user.gemini_key ? 'Définie · ' + masquerCleAdmin(user.gemini_key)
-    : iaServeur ? 'Aucune : l’IA passe par le serveur' : 'Aucune');
-  const champ = document.getElementById('admin-user-gemini-key');
-  if (champ) champ.value = user.gemini_key || '';
-  const edition = document.getElementById('admin-cle-edition');
-  if (edition) edition.classList.add('hidden');
   const sensible = document.getElementById('admin-zone-sensible');
   if (sensible) sensible.classList.toggle('hidden', moi);
   document.querySelectorAll('#admin-vue-compte [data-destructif]').forEach(b => { b.style.display = moi ? 'none' : ''; });
@@ -33297,12 +33243,6 @@ function rendreCompteAdmin(user) {
 function majFaitCompteAdmin(cle, valeur) {
   const b = document.querySelector(`#admin-compte-faits [data-fait="${cle}"] b`);
   if (b) b.textContent = valeur;
-}
-function basculerCleGeminiAdmin() {
-  const e = document.getElementById('admin-cle-edition');
-  if (!e) return;
-  e.classList.toggle('hidden');
-  if (!e.classList.contains('hidden')) { const c = document.getElementById('admin-user-gemini-key'); if (c) c.focus(); }
 }
 async function chargerDetailsCompteAdmin(id) {
   const diag = document.getElementById('admin-compte-diagnostic');

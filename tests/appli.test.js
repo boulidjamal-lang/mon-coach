@@ -442,7 +442,7 @@ test('la bibliothèque s\'ouvre vite et ne lance que quelques vidéos', () => av
   assert.ok(await page.evaluate(() => document.querySelectorAll('#picker-liste-exercices .exo-ligne').length) > 0);
 }));
 
-test("un lien d'image SmartWorkout collé comme vidéo est remplacé par la vraie vidéo", () => avecAppli({}, async ({ page }) => {
+test("un lien SmartWorkout collé comme vidéo n'est plus affiché (site comme app) ; une autre image reste une image", () => avecAppli({}, async ({ page }) => {
   const r = await page.evaluate(() => {
     const IMG_AB_COASTER = 'https://api.smartworkout.app/asset/image/4e939dab-2978-4d2f-82f0-74cafb543e9a';
     const connu = videoExercice({ id: 'x', video: IMG_AB_COASTER });
@@ -452,7 +452,7 @@ test("un lien d'image SmartWorkout collé comme vidéo est remplacé par la vrai
     const vignette = medaillonExercice({ id: 'y', nom: 'Test', groupe: 'abdominaux', materiel: 'poids_corps', video: 'https://exemple.fr/photo.jpg' });
     return { connu, inconnu, vraieVideo, vignetteImg: /^<img/.test(vignette) };
   });
-  assert.equal(r.connu.video, 'https://api.smartworkout.app/asset/video/1e4902a0-05fc-4ab0-8fcd-5e745eb096af.mp4');
+  assert.equal(r.connu, null);
   assert.equal(r.inconnu.video, null);
   assert.equal(r.inconnu.poster, 'https://exemple.fr/photo.jpg');
   assert.equal(r.vraieVideo.video, 'https://exemple.fr/demo.mp4');
@@ -1031,6 +1031,31 @@ test("Administration : une règle d'accès ouverte à tous sur les tables de don
   assert.ok(!/using \(true\)/.test(r.script1), 'le script 1 ne crée plus de règle ouverte');
   assert.match(r.script1, /drop policy if exists "acces journees" on journees;/);
   assert.match(r.script2, /create or replace function public\.admin_regles_ouvertes\(\)/);
+}));
+
+test("IA par le serveur : sans clé personnelle, l'IA reste disponible (photo comprise) et chaque demande part avec sa tâche ; l'administration ne distribue plus de clé", () => avecAppli({}, async ({ page }) => {
+  const r = await page.evaluate(async () => {
+    const appels = [];
+    supa = { functions: { invoke: async (nom, o) => { appels.push([nom, o.body]); return { data: { candidates: [{ content: { parts: [{ text: '[]' }] } }] }, error: null }; } } };
+    sessionUtilisateur = { id: 'u-1', email: 'moi@test.fr' };
+    userProfile.geminiKey = ''; userProfile.accordIA = true;
+    iaServeur = { pret: true, pro: false, restant: 3 };
+    appliquerGeminiKeyEffective();
+    const res = { active: document.documentElement.classList.contains('ia-active'), dispo: iaDisponible(), indispo: iaIndisponible() };
+    res.journee = await geminiTextes([{ text: 'x' }], 'journee', 1);
+    await geminiCandidats([{ text: 'x' }], 'photo', 3);
+    res.appels = appels.map(([nom, b]) => [nom, b.tache, b.candidats || 1]);
+    // Sans serveur ni clé : rien n'est disponible, et la porte de la photo le dit.
+    iaServeur = null; appliquerGeminiKeyEffective();
+    res.sansRien = [iaDisponible(), document.documentElement.classList.contains('ia-active')];
+    res.admin = [document.getElementById('admin-cle-edition'), typeof definirCleGeminiUtilisateur, /drop function if exists public\.admin_definir_cle_gemini/.test(SQL_RLS), /gemini_key text/.test(SQL_RLS)];
+    return res;
+  });
+  assert.deepEqual({ active: r.active, dispo: r.dispo, indispo: r.indispo }, { active: true, dispo: true, indispo: false });
+  assert.deepEqual(r.journee, ['[]']);
+  assert.deepEqual(r.appels, [['ia', 'journee', 1], ['ia', 'photo', 3]]);
+  assert.deepEqual(r.sansRien, [false, false]);
+  assert.deepEqual(r.admin, [null, 'undefined', true, false]);
 }));
 
 test('Administration : signalements (motif, bio, « 2e fois ») ; classer et suspendre les traitent', () => avecAppli({}, async ({ page }) => {
@@ -3051,7 +3076,9 @@ test("séance en cours : en-tête (chrono, avancée, corps) et un mini-cadran pa
 
 test('vidéos HD : préchargées au démarrage de la séance, reprises telles quelles par la fiche et l\'agrandissement', () => avecAppli({}, async ({ page }) => {
   const r = await page.evaluate(() => {
-    const exo = toutesLesExercices().find(e => VIDEOS_SMARTWORKOUT[e.id]);
+    // Une vidéo ajoutée dans Administration (plus aucune vidéo tierce par défaut).
+    const exo = toutesLesExercices().find(e => !e.perso && typeof e.video !== 'string');
+    exo.video = 'https://exemple.fr/demo.mp4';
     const url = videoExercice(exo).video;
     musculationProgrammes.push({ id: 'pv', nom: 'Test', exercices: [{ exerciceId: exo.id, series: [{ poids: 20, reps: 8 }] }], maj: Date.now() });
     allerA('seance'); demarrerSeance('pv');
@@ -4957,7 +4984,7 @@ test("app iOS : ni vidéo SmartWorkout, ni GIF ExerciseDB, ni image wger ; les a
   assert.deepEqual(requetes.filter(u => /smartworkout|exercisedb|wger|miniatures/i.test(u)), []);
 }));
 
-test("site : les vidéos SmartWorkout restent ; chaque image d'exercice cite sa source", () => avecAppli({}, async ({ page }) => {
+test("site : comme l'app, ni vidéo SmartWorkout ni GIF ExerciseDB (schéma des muscles à la place) ; chaque image d'exercice cite sa source", () => avecAppli({}, async ({ page }) => {
   const r = await page.evaluate(() => {
     const fiche = id => {
       afficherFicheExerciceBiblio(id);
@@ -4970,12 +4997,13 @@ test("site : les vidéos SmartWorkout restent ; chaque image d'exercice cite sa 
     return { sw: fiche('sw-crunch-avec-ramene-de-genoux'), repdb: fiche('e1'), illustration: fiche('e336'), photo: fiche('e1001'), gif: fiche('e96'),
       vignette: medaillonExercice(trouverExercice('sw-crunch-avec-ramene-de-genoux'), true) };
   });
-  assert.deepEqual(r.sw, { video: true, source: ['Vidéo : SmartWorkout'] });
+  assert.equal(r.sw.video, false); assert.match(r.sw.source.join(' '), /^En vif, le muscle/);
   assert.deepEqual(r.repdb, { video: false, source: ['Image : RepDB'] });
   assert.deepEqual(r.illustration, { video: false, source: ['Illustration : Everkinetic, adaptée par Bryl Lim (CC BY-SA 4.0)'] });
   assert.deepEqual(r.photo, { video: false, source: ['Image : RepDB'] });
-  assert.deepEqual(r.gif, { video: false, source: ['Animation : ExerciseDB'] });
-  assert.match(r.vignette, /assets\/miniatures\//);
+  assert.equal(r.gif.video, false); assert.match(r.gif.source.join(' '), /^En vif, le muscle/);
+  assert.match(r.vignette, /^<svg/);
+  assert.doesNotMatch(r.vignette, /miniatures|smartworkout/);
 }));
 
 test("app iOS, Pro pas encore en vente : rien n'est verrouillé ni ne parle de Pro, seuls les essais d'IA restent comptés", () => avecAppli({ natif: true }, async ({ page }) => {
