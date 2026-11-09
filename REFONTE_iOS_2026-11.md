@@ -119,9 +119,33 @@ Watch, Face ID, Vision, Spotlight, réécriture SwiftUI (voir l'analyse).
 - Tests : « app iOS (refonte F) », « sur le web, le résumé se calcule mais
   rien n'est publié ».
 
-### G — Validation
+### G — Validation (fait)
 
-À venir ; voir la tâche iOS G.
+- Suite complète verte : 10 fonctions, 6 SQL, 177 interface (dont les
+  tests « refonte B à F » et leurs contreparties « sur le web »).
+- Workflow « App iOS » d'Anqa lancé avec `web: refonte-ios` (run 39) : l'app,
+  l'extension (activité en direct + widgets), les intentions et les modules
+  Santé compilent pour le simulateur ; captures publiées sur `captures-ios`.
+  La passe sombre est complète (Repas, Activité, Progrès, Profil, feuille,
+  accessoire) et confirme le rendu WebKit (SF, chiffres arrondis, accent,
+  surfaces, barre native). La passe claire, premier lancement après le
+  démarrage du simulateur, a rendu une première image blanche et deux images
+  identiques : le script lance désormais l'app une fois à vide avant les
+  passes et reprend une image identique à la précédente (à confirmer au
+  prochain passage).
+- Texte du système à 135 % (Repas, Activité, Progrès) : la mise en page
+  tient, aucun défilement horizontal.
+- Temps de rendu d'un écran en mode app (Chromium, médiane de 7 mesures) :
+  Repas 90 → 100 ms, Activité 57 → 61–80 ms, Progrès 48 → 61–69 ms, Profil
+  58 → 70 ms ; le coût vient de la feuille de style plus grande (+44 Ko,
+  360 règles iOS). Piste si besoin : feuilles iOS par écran, chargées à la
+  demande.
+- Rapport final : artefact « Bilan refonte iOS Anqā »
+  (https://claude.ai/artifact/NFSJ6kfQRbDMRdRowcKzTa) avec les paires
+  avant/après du simulateur.
+- Non vérifiable dans le simulateur, à essayer sur iPhone après TestFlight :
+  poser un widget, Siri, l'écriture dans Santé, l'enregistrement du groupe
+  d'apps à la signature.
 
 ## Vérifier
 
