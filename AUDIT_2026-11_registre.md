@@ -25,17 +25,17 @@ Branche de travail : `corrections-audit` (dépôt mon-coach). Rien n'est mis en 
 | DATA-01 | P2 | 12 | Tout dans localStorage | À corriger | IndexedDB retenu par défaut (décision 6) |
 | A11Y-01 | P2 | 13 | Zoom bloqué, taille de texte iOS ignorée | À corriger | |
 | A11Y-02 | P2 | 10 | 18 champs sans libellé, textes < 12 px | À corriger | |
-| MET-01 | P2 | 9 | Protéines surestimées (IMC élevé) | À corriger | |
+| MET-01 | P2 | 9 | Protéines surestimées (IMC élevé) | Tests réussis | Masse maigre estimée (Deurenberg) au-delà d'un IMC de 30 : 120 kg → ~170 g au lieu de 264 g |
 | MET-02 | P2 | 15 | Ni fibres, sucres, sel, AGS | À corriger | |
-| MET-03 | P2 | 9 | Âge et taille par défaut silencieux | À corriger | |
+| MET-03 | P2 | 9 | Âge et taille par défaut silencieux | Tests réussis | `computeTargets().estime` ; ligne « Objectif estimé · indique ton âge et ta taille » sous l'anneau, qui ouvre Mon corps |
 | MET-04 | P2 | 15 | Pas d'aide cru/cuit | À corriger | |
 | UX-01 | P2 | 10 | Héros « 0 série » en début de semaine | À corriger | |
-| UX-02 | P3 | 9 | Formats de nombres incohérents | À corriger | |
-| UX-03 | P3 | 9 | Deux projections de poids | À corriger | |
+| UX-02 | P3 | 9 | Formats de nombres incohérents | Tests réussis | `nombreFr` groupe avec une espace insécable visible ; « % » insécable sur la carte Calories |
+| UX-03 | P3 | 9 | Deux projections de poids | Corrigée | La courbe dit « dans N j » quand elle ne projette pas jusqu'au poids visé ; aria-label explicite |
 | UX-04 | P3 | 10 | « + » grisé sur Progrès (barre HTML) | À corriger | |
 | DA-01 | P3 | 10/14 | Accent multi-rôles | À corriger | |
-| MET-05 | P3 | 9 | ml comptés comme g | À corriger | |
-| MET-06 | P3 | 9 | Plancher = métabolisme de base | À corriger | |
+| MET-05 | P3 | 9 | ml comptés comme g | Tests réussis (saisie manuelle) | `densiteLiquide()` appliquée à la saisie manuelle en ml (valeurs pour 100 g) ; OpenFoodFacts inchangé (valeurs souvent déjà pour 100 ml) |
+| MET-06 | P3 | 9 | Plancher = métabolisme de base | Tests réussis | Plancher jamais sous 1 200 kcal (femme) / 1 500 kcal (homme) ; `plancherRaison` |
 | TECH-04 | P3 | 3 | Copie obsolète dans le dépôt Anqa | Corrigée | Racine du dépôt Anqa réduite à ios-app/, .github/ et un LISEZMOI ; la doc Withings déplacée dans mon-coach |
 | QA-02 | P3 | 4 | Captures du simulateur blanches | Corrigée · CI en cours | Annonce après peinture, image presque vide reprise une fois |
 | PERF-02 | P3 | 11 | Rendu complet à chaque action | À analyser | Mesure sur appareil d'abord |
@@ -71,6 +71,12 @@ Branche de travail : `corrections-audit` (dépôt mon-coach). Rien n'est mis en 
 
 - Fichiers (Anqa) : `ios-app/scripts/capture-demo.js`, `ios-app/scripts/captures-simulateur.sh`.
 - Validation : prochain passage du workflow iOS (captures non blanches sur la branche `captures-ios`).
+
+### Lot 9 — MET-01, MET-03, MET-05, MET-06, UX-02, UX-03
+
+- Fichiers : `index.html` (`poidsReferenceProteines`, `densiteLiquide`, `ouvrirMonCorps`, `computeTargets`, `nombreFr`, `updateSummary`, `courbePoidsHeros`, `validerAjoutManuel`, carte Calories, HTML de l'anneau, CSS `.objectif-estime`), `tests/appli.test.js`.
+- Tests : nouveau test « calculs (lot 9) » (6 profils, badge, densités, formats, saisie manuelle en ml) ; suite complète verte.
+- Risque résiduel : les cibles de protéines des comptes à IMC > 30 sans mesure de masse grasse baissent ; le plancher relève la cible des petits gabarits en sèche (annoncé par `plancherRaison`, pas encore affiché en toutes lettres).
 
 ## Actions côté production (à faire par le propriétaire, dans l'éditeur SQL de Supabase)
 

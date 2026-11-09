@@ -2432,6 +2432,8 @@
        (d'un bloc : sur un écran trop étroit, ils passent ensemble à la ligne). */
     .reste-kcal em { display: inline-block; white-space: nowrap; font-style: normal; font-size: 0.9rem; font-weight: 700; color: var(--text-muted); margin-left: 2px; letter-spacing: 0; }
     .reste-kcal.depasse { color: var(--danger) !important; }
+    /* Objectif estimé (âge ou taille manquants) : même ligne discrète, touchable. */
+    .objectif-estime { border: 0; background: none; padding: 0; font: inherit; color: var(--accent); text-align: left; cursor: pointer; text-decoration: underline dotted; text-underline-offset: 3px; }
     /* Séance prévue comptée dans l'objectif : une ligne discrète sous « Il te reste ». */
     .seance-prevue-heros { display: flex; align-items: center; gap: 5px; margin-top: 5px; min-width: 0; font-size: 0.72rem; font-weight: 600; color: var(--text-muted); white-space: nowrap; }
     .seance-prevue-heros span { overflow: hidden; text-overflow: ellipsis; }
@@ -5195,6 +5197,8 @@
           <!-- Séance prévue aujourd'hui, déjà comptée dans l'objectif (voir prochainesSeances). -->
           <div class="seance-prevue-heros hidden" id="seance-prevue-heros"></div>
           <div class="seance-prevue-heros hidden" id="semaine-heros"></div>
+          <!-- Âge ou taille pas encore renseignés : l'objectif est calculé sur des valeurs par défaut. -->
+          <button type="button" class="seance-prevue-heros objectif-estime hidden" id="objectif-estime" onclick="event.stopPropagation(); ouvrirMonCorps()">Objectif estimé · indique ton âge et ta taille</button>
           <div class="macros-bar">
           <div class="macro-item" role="button" tabindex="0" aria-label="Protéines : voir la courbe et l'objectif" onclick="event.stopPropagation(); ouvrirMacro('p')" onkeydown="if(event.key==='Enter'){event.stopPropagation(); ouvrirMacro('p');}">
             <i class="macro-point" style="background:var(--protein);color:var(--protein)"></i><span class="macro-lbl">Protéines</span><span class="macro-val" id="total-p">0 / 0 g</span>
@@ -8899,6 +8903,43 @@ function heureSeanceTexte(h) {
   // « vers 19 h », « vers 10 h 30 » : des espaces insécables, comme pour les durées.
   return 'vers ' + hh + '\u00a0h' + (mm ? '\u00a0' + String(mm).padStart(2, '0') : '');
 }
+/* Poids de référence des protéines quand la masse grasse n'est pas mesurée :
+   le poids total surestime les besoins dès que l'IMC dépasse 30 (à 120 kg,
+   264 g par jour). Au-delà, la masse maigre est estimée par la formule de
+   Deurenberg (% de masse grasse = 1,2 IMC + 0,23 âge − 10,8 × homme − 5,4),
+   bornée entre 10 et 60 %. */
+function ouvrirMonCorps() {
+  allerA('reglages');
+  setTimeout(() => {
+    const carte = document.getElementById('carte-corps');
+    if (carte) carte.scrollIntoView({ block: 'start', behavior: 'smooth' });
+    const age = document.getElementById('base-age'), taille = document.getElementById('base-height');
+    const champ = age && !(Number(age.value) > 0) ? age : taille;
+    if (champ) champ.focus();
+  }, 350);
+}
+function poidsReferenceProteines(weight) {
+  const taille = (Number(userProfile.height) || 175) / 100, age = Number(userProfile.age) || 25;
+  const imc = weight / (taille * taille);
+  if (!(imc > 30)) return weight;
+  const grasse = Math.min(60, Math.max(10, 1.2 * imc + 0.23 * age - 10.8 * (userProfile.gender === 'f' ? 0 : 1) - 5.4));
+  return weight * (1 - grasse / 100);
+}
+/* Densité des liquides saisis en ml quand les valeurs sont pour 100 g
+   (saisie manuelle, base d'aliments) : 100 ml d'huile ne pèsent que 92 g. */
+function densiteLiquide(nom) {
+  const n = String(nom || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+  if (/huile/.test(n)) return 0.92;
+  if (/miel/.test(n)) return 1.4;
+  if (/sirop|melasse|caramel liquide/.test(n)) return 1.3;
+  if (/creme fraiche|creme liquide|creme entiere/.test(n)) return 1.0;
+  if (/lait|yaourt a boire|kefir|boisson lactee/.test(n)) return 1.03;
+  if (/jus|nectar|soda|cola|limonade|smoothie/.test(n)) return 1.04;
+  if (/whisky|vodka|rhum|gin|tequila|pastis|cognac|liqueur/.test(n)) return 0.94;
+  if (/vin|champagne|cidre/.test(n)) return 0.99;
+  if (/biere|panache/.test(n)) return 1.01;
+  return 1;
+}
 function computeTargets(day, dateStr, options) {
   const weight = Number(day.weight) || dernierPoidsConnu(dateStr || todayStr());
   const bmr = metabolismeDeBase(weight, dateStr);
@@ -8952,7 +8993,11 @@ function computeTargets(day, dateStr, options) {
   // Le plancher suit l'ajustement quand il baisse : si ton corps dépense 8 %
   // de moins que la formule, son métabolisme de base aussi. Jamais au-dessus
   // de la formule : ça rendrait la sèche plus douce que −20 %.
-  const plancher = Math.round(bmr * (ajustement ? Math.min(1, ajustement.facteur) : 1));
+  const plancherBmr = Math.round(bmr * (ajustement ? Math.min(1, ajustement.facteur) : 1));
+  // Jamais sous 1 200 kcal (femme) ou 1 500 kcal (homme) : en dessous, les
+  // apports essentiels ne sont plus couverts, quel que soit le métabolisme.
+  const plancherMinimum = userProfile.gender === 'f' ? 1200 : 1500;
+  const plancher = Math.max(plancherBmr, plancherMinimum);
   const sousPlancher = target < plancher;
   if (sousPlancher) target = plancher;
   // Ce que la séance prévue ajoute vraiment à l'objectif : après le −20 % /
@@ -8965,7 +9010,8 @@ function computeTargets(day, dateStr, options) {
   // En recomposition, les protéines montent au niveau d'une sèche : c'est
   // elles qui permettent de construire du muscle tout en étant à calories
   // de maintien (voire en léger déficit).
-  const protein = Math.round((masseMaigre || weight) * ((objectif === 'seche' || objectif === 'recomposition') ? 2.2 : 1.8));
+  const refProteines = masseMaigre || poidsReferenceProteines(weight);
+  const protein = Math.round(refProteines * ((objectif === 'seche' || objectif === 'recomposition') ? 2.2 : 1.8));
   // Les lipides ne descendent pas sous 0,8 g/kg (de poids total, pas de masse
   // maigre) : en dessous, c'est hormonal — lié à la taille du corps dans son
   // ensemble, pas seulement au tissu maigre.
@@ -8985,7 +9031,10 @@ function computeTargets(day, dateStr, options) {
     stepsKcal: Math.round(stepsKcal), poids: weight,
     poidsEstime: !(Number(day.weight) > 0),
     goal: objectif,
-    sousPlancher
+    sousPlancher,
+    plancherRaison: plancher > plancherBmr ? 'minimum' : 'metabolisme',
+    // Âge ou taille absents : le métabolisme est calculé sur 25 ans et 175 cm.
+    estime: !(Number(userProfile.age) > 0 && Number(userProfile.height) > 0)
   };
 }
 
@@ -10169,7 +10218,9 @@ function texteMinSec(minutes) {
   if (s === 60) { m++; s = 0; }
   return m + ':' + String(s).padStart(2, '0');
 }
-function nombreFr(v, dec) { return Number(v).toLocaleString('fr-FR', { maximumFractionDigits: dec == null ? 1 : dec }); }
+// Espace insécable classique entre les milliers : la fine (U+202F) de fr-FR
+// disparaît presque dans les petits textes (« 1905 »).
+function nombreFr(v, dec) { return Number(v).toLocaleString('fr-FR', { maximumFractionDigits: dec == null ? 1 : dec }).replace(/\u202f/g, '\u00a0'); }
 /* Allure d'une séance, dans l'unité d'usage de chaque sport : min/km à
    pied, km/h à vélo, min/100 m en natation, min/500 m au rameur.
    `valeur` sert aux graphiques ; `plusPetitMieux` : une allure en min se
@@ -10969,6 +11020,8 @@ function updateSummary(day) {
     elReste.classList.toggle('depasse', reste < 0);
     if (lib) lib.textContent = reste >= 0 ? 'Il te reste' : 'Dépassement';
   }
+  const estime = document.getElementById('objectif-estime');
+  if (estime) estime.classList.toggle('hidden', !t.estime);
 
   document.getElementById('total-p').innerHTML = `<b>${totals.p}</b>/${t.protein} g`;
   document.getElementById('total-c').innerHTML = `<b>${totals.c}</b>/${t.carbs} g`;
@@ -12645,7 +12698,8 @@ async function validerAjoutManuel() {
   // Un aliment à 0 kcal est presque toujours une saisie ratée, pas une intention.
   if (kcal100 <= 0 && !(await confirmer("Aucune calorie renseignée pour cet aliment. L'ajouter quand même à 0 kcal ?", { ok: 'Ajouter à 0 kcal' }))) return;
 
-  const f = g / 100;
+  // Valeurs saisies pour 100 g, quantité en ml : la densité fait le lien.
+  const f = (uniteCourante === 'ml' ? g * densiteLiquide(name) : g) / 100;
   const item = {
     name, grams: g,
     unite: uniteCourante === 'ml' ? 'ml' : 'g',
@@ -30540,11 +30594,11 @@ function courbePoidsHeros(s, e, pr) {
   let proj = '', libFin = '';
   if (finProj != null) {
     proj = `<path d="M${x(der[0]).toFixed(1)} ${y(der[1]).toFixed(1)} L${x(total).toFixed(1)} ${y(finProj).toFixed(1)}" class="pg-h-proj"/><circle cx="${x(total).toFixed(1)}" cy="${y(finProj).toFixed(1)}" r="4" class="pg-h-cible"/>`;
-    libFin = `<text x="${(x(total) + 9).toFixed(1)}" y="${(y(finProj) + 4).toFixed(1)}">${nombreFr(Math.round(finProj * 10) / 10)} kg</text><text x="${(x(total) + 4).toFixed(1)}" y="${h - 3}" text-anchor="middle">${escapeHtml(dateCourtePg(shiftDate(dateIsoPourIndexStats(e), horizon)))}</text>`;
+    libFin = `<text x="${(x(total) + 9).toFixed(1)}" y="${(y(finProj) + 4).toFixed(1)}">${nombreFr(Math.round(finProj * 10) / 10)} kg</text><text x="${(x(total) + 4).toFixed(1)}" y="${h - 3}" text-anchor="middle">${finProj === pr.vise ? escapeHtml(dateCourtePg(shiftDate(dateIsoPourIndexStats(e), horizon))) : 'dans ' + horizon + '\u00a0j'}</text>`;
   }
   const libDebut = `<text x="${pg}" y="${h - 3}">${escapeHtml(dateCourtePg(dateIsoPourIndexStats(s)))}</text>`;
   const libAuj = horizon ? `<text x="${x(n - 1).toFixed(1)}" y="${h - 3}" text-anchor="middle">aujourd'hui</text>` : `<text x="${x(n - 1).toFixed(1)}" y="${h - 3}" text-anchor="end">${escapeHtml(dateCourtePg(dateIsoPourIndexStats(e)))}</text>`;
-  return `<svg class="pg-h-courbe" viewBox="0 0 ${w} ${h}" role="img" aria-label="Courbe de poids : pesées et tendance${finProj != null ? ', projection' : ''}">${points}<path d="${d}" class="pg-h-tend"/>${proj}<circle cx="${x(der[0]).toFixed(1)}" cy="${y(der[1]).toFixed(1)}" r="5" class="pg-h-der"/>${libDebut}${libAuj}${libFin}</svg>`;
+  return `<svg class="pg-h-courbe" viewBox="0 0 ${w} ${h}" role="img" aria-label="Courbe de poids : pesées et tendance${finProj != null ? (finProj === pr.vise ? ', projection jusqu\'au poids visé' : ', projection à ' + horizon + ' jours') : ''}">${points}<path d="${d}" class="pg-h-tend"/>${proj}<circle cx="${x(der[0]).toFixed(1)}" cy="${y(der[1]).toFixed(1)}" r="5" class="pg-h-der"/>${libDebut}${libAuj}${libFin}</svg>`;
 }
 
 function renderResumeProgres() {
@@ -30594,7 +30648,7 @@ function renderResumeProgres() {
       evol: b.deltaPoids != null ? (b.deltaPoids < 0 ? '↘ ' : b.deltaPoids > 0 ? '↗ ' : '') + escapeHtml(fmtSigne(b.deltaPoids, ' kg')) : 'pas de tendance', evolCls: bonSens(b.deltaPoids),
       dessin: pgSpark(lisse, 'var(--text)'), onglet: 'poids' }),
     pgTuile({ titre: 'Calories / jour', valeur: b.joursRemplis ? nombreFr(b.moyConso, 0) : '—', unite: b.joursRemplis ? 'kcal' : '',
-      evol: b.joursRemplis ? `objectif moyen ${nombreFr(b.moyCible, 0)}${b.moyCible ? ' · ' + escapeHtml(fmtSigne((b.moyConso - b.moyCible) / b.moyCible * 100, ' %', 0)) : ''}` : 'aucun repas noté',
+      evol: b.joursRemplis ? `objectif moyen ${nombreFr(b.moyCible, 0)}${b.moyCible ? ' · ' + escapeHtml(fmtSigne((b.moyConso - b.moyCible) / b.moyCible * 100, '\u00a0%', 0)) : ''}` : 'aucun repas noté',
       dessin: b.joursRemplis ? pgJauge(b.moyConso, b.moyCible, 'var(--text)') : '', onglet: 'nutrition' }),
     pgTuile({ titre: 'Volume muscu', valeur: volume >= 1000 ? nombreFr(Math.round(volume / 100) / 10) : nombreFr(Math.round(volume), 0), unite: volume >= 1000 ? 't' : 'kg',
       evol: pctVol != null ? (pctVol >= 0 ? '↗ +' : '↘ −') + Math.abs(pctVol) + ' %' : `${m.seances.length} séance${m.seances.length > 1 ? 's' : ''}`, evolCls: pctVol == null ? '' : pctVol >= 0 ? 'bon' : 'mauvais',

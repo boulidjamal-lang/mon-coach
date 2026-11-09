@@ -4713,6 +4713,42 @@ test('app iOS : Apple Santé remplit les pas et les pesées, sans jamais écrase
   assert.equal(await page.evaluate(() => localStorage.getItem('mc_sante_apple')), null);
 }));
 
+test("calculs (lot 9) : protéines sur la masse maigre estimée au-delà d'un IMC de 30, plancher jamais sous 1 200 / 1 500 kcal, objectif signalé comme estimé sans âge ni taille, densité des liquides, nombres groupés, horizon de la projection", () => avecAppli({}, async ({ page }) => {
+  const r = await page.evaluate(() => {
+    const auj = todayStr();
+    const cibles = (profil, goal) => { Object.assign(userProfile, profil); const j = getDay(auj); j.goal = goal; j.weight = profil.weight; j.workouts = []; j.steps = 0; return computeTargets(j, auj, { sansSemaine: true }); };
+    const obese = cibles({ weight: 120, height: 180, age: 35, gender: 'm' }, 'seche');
+    const normal = cibles({ weight: 80, height: 180, age: 30, gender: 'm' }, 'seche');
+    const petite = cibles({ weight: 50, height: 160, age: 30, gender: 'f' }, 'seche');
+    delete userProfile.age; delete userProfile.height;
+    const inconnu = cibles({ weight: 80, gender: 'm' }, 'maintien');
+    renderApp();
+    const badgeVisible = !document.getElementById('objectif-estime').classList.contains('hidden');
+    const complet = cibles({ weight: 80, height: 180, age: 30, gender: 'm' }, 'maintien');
+    renderApp();
+    const badgeCache = document.getElementById('objectif-estime').classList.contains('hidden');
+    return { obese: [obese.protein, obese.protein * 4 + obese.carbs * 4 + obese.fat * 9 - obese.target], normal: normal.protein, petite: [petite.plancher, petite.target, petite.plancherRaison],
+      estime: [inconnu.estime, complet.estime, badgeVisible, badgeCache],
+      densites: [densiteLiquide("Huile d'olive"), densiteLiquide('Lait demi-écrémé'), densiteLiquide('Miel'), densiteLiquide('Eau')], groupe: nombreFr(1905, 0) };
+  });
+  assert.ok(r.obese[0] >= 150 && r.obese[0] <= 185, 'protéines sur une masse maigre estimée (~76 kg × 2,2), pas 264 g : ' + r.obese[0]);
+  assert.ok(Math.abs(r.obese[1]) <= 2, 'macros cohérentes avec la cible');
+  assert.equal(r.normal, 176);
+  assert.deepEqual(r.petite, [1200, 1200, 'minimum']);
+  assert.deepEqual(r.estime, [true, false, true, true]);
+  assert.deepEqual(r.densites, [0.92, 1.03, 1.4, 1]);
+  assert.equal(r.groupe, '1 905');
+  // Saisie manuelle : 100 ml d'huile à 900 kcal/100 g = 828 kcal, et la quantité reste en ml.
+  const h = await page.evaluate(() => {
+    ouvrirModal('manual-modal'); uniteCourante = 'ml';
+    document.getElementById('man-name').value = "Huile d'olive"; document.getElementById('man-grams').value = 100; document.getElementById('man-kcal100').value = 900;
+    document.getElementById('man-p100').value = 0; document.getElementById('man-c100').value = 0; document.getElementById('man-f100').value = 100;
+    const n = getDay(currentDate).meals[activeMealId || 'lunch'].length;
+    return validerAjoutManuel().then(() => { const it = getDay(currentDate).meals[activeMealId || 'lunch'][n]; return it && [Math.round(it.kcal), it.grams, it.unite]; });
+  });
+  assert.deepEqual(h, [828, 100, 'ml']);
+}));
+
 test("garde-fous : l'excès des jours d'avant de la semaine est repris sur les jours qui restent ; une journée trop peu notée ne compte pas ; une séance oubliée s'arrête", () => avecAppli({}, async ({ page }) => {
   const r = await page.evaluate(() => {
     const auj = todayStr(), lundi = lundiDe(auj), hier = shiftDate(auj, -1);
