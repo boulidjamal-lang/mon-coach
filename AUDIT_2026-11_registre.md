@@ -23,7 +23,7 @@ Branche de travail : `corrections-audit` (dépôt mon-coach). Rien n'est mis en 
 | TECH-01 | P2 | 14 | Monolithe d'un seul fichier | À corriger | Par étapes |
 | PERF-01 | P2 | 11 | Premier chargement lourd | Tests réussis | `assets/recettes.js` (424 Ko gzip) chargé après le premier affichage ou à la demande, plus en bloquant la page ; toujours préchargé hors ligne par le service worker |
 | DATA-01 | P2 | 12 | Tout dans localStorage | Tests réussis | Couche de stockage : les 5 gros blocs (journées, profil, programmes, historique, exercices perso) dans IndexedDB (`askesis/blocs`), localStorage en simple copie ; un stockage plein n'empêche plus d'enregistrer ; reprise automatique des données d'une ancienne version ; `viderDonneesLocales` vide aussi IndexedDB |
-| A11Y-01 | P2 | 13 | Zoom bloqué, taille de texte iOS ignorée | À corriger | |
+| A11Y-01 | P2 | 13 | Zoom bloqué, taille de texte iOS ignorée | Tests réussis | Le pincement était déjà permis (balise viewport sans `user-scalable=no`, `touch-action: manipulation` ne retire que le double appui) : commentaire périmé retiré. Taille de texte : la racine (tout le dessin est en rem) suit `--echelle-texte`, mesurée sur `-apple-system-body` (Dynamic Type, iPhone/iPad), bornée 0,85–1,35, remesurée à chaque retour dans l'appli ; sans effet où le mot-clé n'existe pas |
 | A11Y-02 | P2 | 10 | 18 champs sans libellé, textes < 12 px | Tests réussis | `aria-label` sur les 18 champs ; plus aucun texte sous 12 px (règles 11 px et < 0,76 rem relevées) ; `--text-muted` clair #5f5f67 (contraste ≥ 5:1) |
 | MET-01 | P2 | 9 | Protéines surestimées (IMC élevé) | Tests réussis | Masse maigre estimée (Deurenberg) au-delà d'un IMC de 30 : 120 kg → ~170 g au lieu de 264 g |
 | MET-02 | P2 | 15 | Ni fibres, sucres, sel, AGS | À corriger | |
@@ -117,6 +117,13 @@ Branche de travail : `corrections-audit` (dépôt mon-coach). Rien n'est mis en 
 - Décisions prises : IndexedDB par blocs (mêmes cinq blocs qu'avant, aucune migration de format) plutôt qu'un magasin par journée — pas de changement d'architecture, les lectures restent synchrones après l'ouverture ; localStorage reste écrit tant qu'il a la place pour qu'une ancienne version de l'appli retrouve ses données.
 - Tests : « stockage local (lot 12) », « profil fusionné (lot 12) » ; suite complète 163/163.
 - Risque résiduel : la copie localStorage peut devenir ancienne une fois saturée (une version antérieure de l'appli la lirait telle quelle) ; la fusion du profil sans base (première synchro après la mise à jour) garde tout mais ne peut pas distinguer une suppression d'un ajout.
+
+### Lot 13 — A11Y-01
+
+- Fichiers : `index.html` (règle racine `font-size: calc(clamp(…) * var(--echelle-texte, 1))`, `mesurerTailleTexteSysteme`/`appliquerTailleTexteSysteme` appelées au démarrage, au retour au premier plan et à `pageshow` ; commentaire périmé sur un « filet anti-pincement » retiré), `tests/appli.test.js` (test « taille de texte du système (lot 13) »).
+- Constat corrigé dans le registre : le zoom par pincement n'était pas bloqué (seul le double appui l'est, volontairement) ; l'anomalie réelle était la taille de texte du système ignorée dans l'app iPhone.
+- Limite : l'échelle est bornée à 1,35 (au-delà, les tailles d'accessibilité d'iOS casseraient la mise en page ; le pincement reste là) ; Chromium ne connaît pas `-apple-system-body`, le test vérifie donc la mécanique (variable, bornes, absence d'effet ailleurs), pas la mesure elle-même.
+- Tests : test ciblé ; suite complète passée avec le lot 15.
 
 ## Actions côté production (à faire par le propriétaire, dans l'éditeur SQL de Supabase)
 

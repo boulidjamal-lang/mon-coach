@@ -1258,6 +1258,31 @@ test("profil fusionné (lot 12) : une pesée faite ici et une autre là-bas sont
   assert.equal(r.meme, true);
 }));
 
+test("taille de texte du système (lot 13) : la racine suit l'échelle du téléphone dans les bornes prévues, rien ne bouge là où le mot-clé n'existe pas, et le pincement pour zoomer reste permis", () => avecAppli({}, async ({ page }) => {
+  const r = await page.evaluate(async () => {
+    const racine = document.documentElement;
+    // Le harnais réduit les mouvements : toute transition dure 0,01 ms, la valeur calculée se lit au tour suivant.
+    const tour = () => new Promise(ok => setTimeout(ok, 40));
+    const base = parseFloat(getComputedStyle(racine).fontSize);
+    const res = { supporte: CSS.supports('font', '-apple-system-body'), mesure: mesurerTailleTexteSysteme(), echelleIci: appliquerTailleTexteSysteme(), variableIci: racine.style.getPropertyValue('--echelle-texte') };
+    // Ce qu'un iPhone réglé « plus grand » donnerait : la racine suit, bornée.
+    racine.style.setProperty('--echelle-texte', '1.3'); await tour();
+    res.agrandi = Math.round(parseFloat(getComputedStyle(racine).fontSize) / base * 100) / 100;
+    racine.style.setProperty('--echelle-texte', '0.85'); await tour();
+    res.reduit = Math.round(parseFloat(getComputedStyle(racine).fontSize) / base * 100) / 100;
+    racine.style.removeProperty('--echelle-texte'); await tour();
+    res.retour = parseFloat(getComputedStyle(racine).fontSize) === base;
+    res.bornes = [ECHELLE_TEXTE_MIN, ECHELLE_TEXTE_MAX];
+    const viewport = document.querySelector('meta[name="viewport"]').content;
+    res.zoom = [!/user-scalable\s*=\s*no/.test(viewport), !/maximum-scale/.test(viewport), getComputedStyle(document.documentElement).touchAction];
+    return res;
+  });
+  // Chromium ne connaît pas -apple-system-body : rien n'est appliqué (ni ici, ni sur Android).
+  assert.deepEqual([r.supporte, r.mesure, r.echelleIci, r.variableIci], [false, null, 1, '']);
+  assert.deepEqual([r.agrandi, r.reduit, r.retour, r.bornes], [1.3, 0.85, true, [0.85, 1.35]]);
+  assert.deepEqual(r.zoom, [true, true, 'manipulation'], 'pincement permis, double appui seul retiré');
+}));
+
 test("IA par le serveur : sans clé personnelle, l'IA reste disponible (photo comprise) et chaque demande part avec sa tâche ; l'administration ne distribue plus de clé", () => avecAppli({}, async ({ page }) => {
   const r = await page.evaluate(async () => {
     const appels = [];
