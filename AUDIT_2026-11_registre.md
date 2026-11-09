@@ -26,9 +26,9 @@ Branche de travail : `corrections-audit` (dépôt mon-coach). Rien n'est mis en 
 | A11Y-01 | P2 | 13 | Zoom bloqué, taille de texte iOS ignorée | Tests réussis | Le pincement était déjà permis (balise viewport sans `user-scalable=no`, `touch-action: manipulation` ne retire que le double appui) : commentaire périmé retiré. Taille de texte : la racine (tout le dessin est en rem) suit `--echelle-texte`, mesurée sur `-apple-system-body` (Dynamic Type, iPhone/iPad), bornée 0,85–1,35, remesurée à chaque retour dans l'appli ; sans effet où le mot-clé n'existe pas |
 | A11Y-02 | P2 | 10 | 18 champs sans libellé, textes < 12 px | Tests réussis | `aria-label` sur les 18 champs ; plus aucun texte sous 12 px (règles 11 px et < 0,76 rem relevées) ; `--text-muted` clair #5f5f67 (contraste ≥ 5:1) |
 | MET-01 | P2 | 9 | Protéines surestimées (IMC élevé) | Tests réussis | Masse maigre estimée (Deurenberg) au-delà d'un IMC de 30 : 120 kg → ~170 g au lieu de 264 g |
-| MET-02 | P2 | 15 | Ni fibres, sucres, sel, AGS | À corriger | |
+| MET-02 | P2 | 15 | Ni fibres, sucres, sel, AGS | Tests réussis | Les aliments portent `fib`/`suc`/`sel`/`ags` (g) quand la source les donne : étiquette OpenFoodFacts (`fiber_100g`, `sugars_100g`, `salt_100g` ou sodium × 2,5, `saturated-fat_100g`), colonnes de la table d'aliments détectées (fibres, sucres, sel ou sodium mg, AG saturés), saisie détaillée facultative ; le total du jour les affiche avec les repères ANSES/OMS (fibres ≥ 30 g, sucres ≤ 10 % kcal, sel ≤ 5 g, AGS ≤ 10 % kcal) et dit sur combien d'aliments il repose, jamais un faux 0 |
 | MET-03 | P2 | 9 | Âge et taille par défaut silencieux | Tests réussis | `computeTargets().estime` ; ligne « Objectif estimé · indique ton âge et ta taille » sous l'anneau, qui ouvre Mon corps |
-| MET-04 | P2 | 15 | Pas d'aide cru/cuit | À corriger | |
+| MET-04 | P2 | 15 | Pas d'aide cru/cuit | Tests réussis | Aide dans la saisie : pour un féculent, une légumineuse, une viande ou un poisson pesés cuits alors que les valeurs valent pour le cru, l'équivalent cru est proposé (facteurs CIQUAL indicatifs : riz 2,8, pâtes 2,3, légumineuses 2,4-2,5, viande 0,75, poisson 0,8) ; conversion sur demande seulement, annulable ; rien pour un aliment déjà cuit |
 | UX-01 | P2 | 10 | Héros « 0 série » en début de semaine | Tests réussis | Semaine vide : la séance à faire passe en tête, le bilan de la semaine passée remplace le « 0 » |
 | UX-02 | P3 | 9 | Formats de nombres incohérents | Tests réussis | `nombreFr` groupe avec une espace insécable visible ; « % » insécable sur la carte Calories |
 | UX-03 | P3 | 9 | Deux projections de poids | Corrigée | La courbe dit « dans N j » quand elle ne projette pas jusqu'au poids visé ; aria-label explicite |
@@ -124,6 +124,13 @@ Branche de travail : `corrections-audit` (dépôt mon-coach). Rien n'est mis en 
 - Constat corrigé dans le registre : le zoom par pincement n'était pas bloqué (seul le double appui l'est, volontairement) ; l'anomalie réelle était la taille de texte du système ignorée dans l'app iPhone.
 - Limite : l'échelle est bornée à 1,35 (au-delà, les tailles d'accessibilité d'iOS casseraient la mise en page ; le pincement reste là) ; Chromium ne connaît pas `-apple-system-body`, le test vérifie donc la mécanique (variable, bornes, absence d'effet ailleurs), pas la mesure elle-même.
 - Tests : test ciblé ; suite complète passée avec le lot 15.
+
+### Lot 15 — MET-02, MET-04
+
+- Fichiers : `index.html` (`sumMeals` étendu + `renseignes`/`aliments`, `reperesDetailsNutri`, `afficherDetailNutri` et la ligne `#detail-nutri` sous les macros ; formulaire manuel : `<details>` « Plus de détails » avec 4 champs facultatifs, `valeurFacultative`, `validerAjoutManuel` garde les détails à la quantité près, `fillFromOFF` les remplit ; `detecterSchemaAliments` détecte fibres/sucres/sel/sodium/AG saturés, `detailsNutriDeLigne` les convertit (sodium mg → sel g) ; `AIDE_CRU_CUIT`, `aideCruCuit`, `majAideCruCuit`, `convertirCuitEnCru`, `annulerConversionCuit` ; styles), `tests/appli.test.js` (tests « fibres, sucres, sel et AGS (lot 15) » et « aide cru/cuit (lot 15) »).
+- Non fait, à dessein : pas d'objectif chiffré par personne ni de colonnes supplémentaires dans `aliments_partages` (les détails voyagent dans les journées) ; les recettes Askēsis ne portent pas ces détails (affichés comme « non renseignés »).
+- Tests : deux tests d'appli ; suite complète 166/166 (lots 13 et 15).
+- Risque résiduel : les facteurs cru/cuit sont des moyennes indicatives (le riz varie de 2,5 à 3) ; la conversion n'est jamais automatique.
 
 ## Actions côté production (à faire par le propriétaire, dans l'éditeur SQL de Supabase)
 

@@ -2441,6 +2441,20 @@
        (d'un bloc : sur un écran trop étroit, ils passent ensemble à la ligne). */
     .reste-kcal em { display: inline-block; white-space: nowrap; font-style: normal; font-size: 0.9rem; font-weight: 700; color: var(--text-muted); margin-left: 2px; letter-spacing: 0; }
     .reste-kcal.depasse { color: var(--danger) !important; }
+    /* Fibres, sucres, sel, AGS du jour (MET-02) */
+    .detail-nutri { display: flex; flex-wrap: wrap; gap: 4px 12px; margin-top: 8px; font-size: 0.76rem; color: var(--text-muted); line-height: 1.35; }
+    .detail-nutri b { color: var(--text); font-weight: 600; }
+    .detail-nutri small { font-size: 0.92em; }
+    .detail-nutri .depasse b { color: var(--danger); }
+    .detail-nutri .manque b { color: var(--attention, #d97706); }
+    .detail-nutri-source { flex-basis: 100%; }
+    .man-cru-cuit { margin: -4px 0 12px; line-height: 1.4; }
+    .man-cru-cuit .pilule { margin-left: 6px; }
+    .man-details { margin-bottom: 14px; }
+    .man-details summary { cursor: pointer; font-size: 0.86rem; color: var(--text-muted); padding: 4px 0; }
+    .man-details summary small { font-size: 0.92em; }
+    .man-details-grille { display: grid; grid-template-columns: 1fr 1fr; gap: 10px 12px; margin-top: 8px; }
+    .man-details-grille .input-group { margin-bottom: 0; }
     /* Objectif estimé (âge ou taille manquants) : même ligne discrète, touchable. */
     .objectif-estime { border: 0; background: none; padding: 0; font: inherit; color: var(--accent); text-align: left; cursor: pointer; text-decoration: underline dotted; text-underline-offset: 3px; white-space: normal !important; overflow: visible !important; line-height: 1.3; }
     /* Séance prévue comptée dans l'objectif : une ligne discrète sous « Il te reste ». */
@@ -5220,6 +5234,8 @@
             <i class="macro-point" style="background:var(--fat);color:var(--fat)"></i><span class="macro-lbl">Lipides</span><span class="macro-val" id="total-f">0 / 0 g</span>
           </div>
           </div>
+          <!-- Fibres, sucres, sel, AGS : seulement quand des aliments du jour les portent (voir afficherDetailNutri). -->
+          <div class="detail-nutri hidden" id="detail-nutri" aria-live="polite"></div>
         </div>
       </div>
     </div>
@@ -5967,7 +5983,7 @@
     <div class="input-group" id="groupe-recherche-aliment" style="position: relative; z-index: 30;">
       <label for="man-name">Rechercher un aliment</label>
       <input type="text" id="man-name" placeholder="ex : poulet, riz, œuf, banane…" autocomplete="off"
-             oninput="verifierOFFAuto()" onfocus="verifierOFFAuto()">
+             oninput="verifierOFFAuto(); majAideCruCuit()" onfocus="verifierOFFAuto()">
       <div id="zone-code" class="hidden"></div>
     </div>
 
@@ -5996,6 +6012,20 @@
         <input type="text" id="man-f100" placeholder="/100g" inputmode="decimal" oninput="calculerApercuManuel()">
       </div>
     </div>
+
+    <!-- Pesé cuit alors que les valeurs valent pour le cru (ou l'inverse) : voir majAideCruCuit. -->
+    <p class="note man-cru-cuit hidden" id="man-cru-cuit" aria-live="polite"></p>
+
+    <!-- Fibres, sucres, sel, acides gras saturés : facultatifs, remplis d'eux-mêmes depuis l'étiquette quand elle les donne. -->
+    <details class="man-details" id="man-details">
+      <summary>Plus de détails <small>(fibres, sucres, sel, AGS — facultatif)</small></summary>
+      <div class="man-details-grille">
+        <div class="input-group"><label for="man-fib100">Fibres</label><input type="text" id="man-fib100" placeholder="g/100g" inputmode="decimal"></div>
+        <div class="input-group"><label for="man-suc100">dont sucres</label><input type="text" id="man-suc100" placeholder="g/100g" inputmode="decimal"></div>
+        <div class="input-group"><label for="man-sel100">Sel</label><input type="text" id="man-sel100" placeholder="g/100g" inputmode="decimal"></div>
+        <div class="input-group"><label for="man-ags100">dont saturés</label><input type="text" id="man-ags100" placeholder="g/100g" inputmode="decimal"></div>
+      </div>
+    </details>
 
     <div id="man-preview" class="apercu-macros" aria-live="polite"></div>
 
@@ -9234,12 +9264,45 @@ function correctionMaintenance(dateStr) {
   return memo.get(lundi) || null;
 }
 
+/* Fibres, sucres, sel et acides gras saturés (MET-02) ne sont connus que
+   pour les aliments qui les portent (étiquette OpenFoodFacts, colonnes de la
+   table d'aliments, saisie détaillée) : le total dit sur combien d'aliments
+   il repose, jamais un faux « 0 g de sel ». */
+const DETAILS_NUTRI = ['fib', 'suc', 'sel', 'ags'];
 function sumMeals(day) {
-  let kcal = 0, p = 0, c = 0, f = 0;
+  let kcal = 0, p = 0, c = 0, f = 0, fib = 0, suc = 0, sel = 0, ags = 0, renseignes = 0, aliments = 0;
   MEALS.forEach(m => day.meals[m].forEach(it => {
     kcal += Number(it.kcal) || 0; p += Number(it.p) || 0; c += Number(it.c) || 0; f += Number(it.f) || 0;
+    aliments++;
+    if (DETAILS_NUTRI.some(k => it[k] != null && it[k] !== '')) {
+      renseignes++;
+      fib += Number(it.fib) || 0; suc += Number(it.suc) || 0; sel += Number(it.sel) || 0; ags += Number(it.ags) || 0;
+    }
   }));
-  return { kcal: Math.round(kcal), p: Math.round(p), c: Math.round(c), f: Math.round(f) };
+  return { kcal: Math.round(kcal), p: Math.round(p), c: Math.round(c), f: Math.round(f),
+    fib: Math.round(fib * 10) / 10, suc: Math.round(suc * 10) / 10, sel: Math.round(sel * 100) / 100, ags: Math.round(ags * 10) / 10, renseignes, aliments };
+}
+/* Repères du jour : fibres ≥ 30 g (ANSES), sucres ≤ 10 % des calories
+   (OMS, en g : kcal × 0,10 / 4), sel ≤ 5 g (OMS), acides gras saturés
+   ≤ 10 % des calories (ANSES, en g : kcal × 0,10 / 9). */
+function reperesDetailsNutri(kcalObjectif) {
+  const k = Math.max(0, Number(kcalObjectif) || 0);
+  return { fib: 30, suc: Math.round(k * 0.10 / 4), sel: 5, ags: Math.round(k * 0.10 / 9) };
+}
+function afficherDetailNutri(totals, cibles) {
+  const el = document.getElementById('detail-nutri');
+  if (!el) return;
+  if (!totals || !totals.renseignes) { el.classList.add('hidden'); el.innerHTML = ''; return; }
+  const rep = reperesDetailsNutri(cibles && cibles.target);
+  const g = (v, dec) => nombreFr(v, dec) + '\u00a0g';
+  const ligne = (cle, libelle, dec, sens) => {
+    const v = totals[cle], r = rep[cle];
+    const hors = sens === 'max' ? v > r : v < r;
+    return `<span class="${hors ? (sens === 'max' ? 'depasse' : 'manque') : ''}" title="${libelle} : ${sens === 'max' ? 'au plus' : 'au moins'} ${g(r, 0)} par jour">${libelle} <b>${g(v, dec)}</b><small>/${g(r, 0)}</small></span>`;
+  };
+  el.innerHTML = ligne('fib', 'Fibres', 1, 'min') + ligne('suc', 'Sucres', 1, 'max') + ligne('sel', 'Sel', 2, 'max') + ligne('ags', 'AGS', 1, 'max')
+    + `<small class="detail-nutri-source">${totals.renseignes < totals.aliments ? `sur ${accord(totals.renseignes, 'aliment')} sur ${totals.aliments}` : 'tous les aliments renseignés'}</small>`;
+  el.classList.remove('hidden');
 }
 function mealKcal(day, mealId) {
   return Math.round(day.meals[mealId].reduce((s, it) => s + (Number(it.kcal) || 0), 0));
@@ -11129,6 +11192,7 @@ function updateSummary(day) {
   document.getElementById('total-p').innerHTML = `<b>${totals.p}</b>/${t.protein} g`;
   document.getElementById('total-c').innerHTML = `<b>${totals.c}</b>/${t.carbs} g`;
   document.getElementById('total-f').innerHTML = `<b>${totals.f}</b>/${t.fat} g`;
+  afficherDetailNutri(totals, t);
   majAnneau('kcal', totals.kcal, t.target);
   majAnneau('p', totals.p, t.protein);
   majAnneau('c', totals.c, t.carbs);
@@ -12501,6 +12565,14 @@ function fillFromOFF(product) {
   document.getElementById('man-p100').value = round1(n['proteins_100g']);
   document.getElementById('man-c100').value = round1(n['carbohydrates_100g']);
   document.getElementById('man-f100').value = round1(n['fat_100g']);
+  // Fibres, sucres, sel (ou sodium × 2,5), acides gras saturés : quand l'étiquette les donne.
+  const detail = (cle, v) => { const el = document.getElementById(cle); if (el) el.value = v == null || v === '' || !Number.isFinite(Number(v)) ? '' : String(Math.round(Number(v) * 100) / 100); };
+  detail('man-fib100', n['fiber_100g']);
+  detail('man-suc100', n['sugars_100g']);
+  detail('man-sel100', n['salt_100g'] != null ? n['salt_100g'] : n['sodium_100g'] != null ? Number(n['sodium_100g']) * 2.5 : null);
+  detail('man-ags100', n['saturated-fat_100g']);
+  manConversionCuit = null;
+  majAideCruCuit();
   /* Reprendre la quantité de la dernière fois, c'est le vrai gain : la plupart
      du temps on remange la même portion et il n'y a plus rien à taper. */
   if (product.grammes > 0) document.getElementById('man-grams').value = product.grammes;
@@ -12781,7 +12853,74 @@ function nombreChamp(id) {
   return Number.isFinite(n) ? n : 0;
 }
 
+/* Champ facultatif : null quand rien n'est saisi (≠ 0, qui est une valeur). */
+function valeurFacultative(id) {
+  const el = document.getElementById(id);
+  if (!el || String(el.value).trim() === '') return null;
+  const n = nombreChamp(id);
+  return Number.isFinite(n) && n >= 0 ? n : null;
+}
+
+/* =====================================================================
+   AIDE CRU / CUIT (MET-04)
+   Les valeurs des tables et des étiquettes valent le plus souvent pour
+   l'aliment cru, alors qu'on pèse l'assiette cuite. Féculents et
+   légumineuses gonflent d'eau (le riz pèse ~2,8 fois plus cuit) ; viandes
+   et poissons en perdent (~25 %). Facteurs indicatifs poids cuit / poids
+   cru, d'après les couples cru/cuit de la table CIQUAL. L'aide ne convertit
+   jamais toute seule : elle propose, la personne choisit.
+   ===================================================================== */
+const AIDE_CRU_CUIT = [
+  { motif: /\b(riz|basmati)\b/i, facteur: 2.8, nom: 'le riz' },
+  { motif: /\b(p[aâ]tes?|spaghettis?|penne|macaronis?|tagliatelles?|fusillis?|coquillettes?|nouilles?|lasagnes?|vermicelles?|farfalles?)\b/i, facteur: 2.3, nom: 'les pâtes' },
+  { motif: /\bquinoa\b/i, facteur: 3, nom: 'le quinoa' },
+  { motif: /\bboulgh?our\b/i, facteur: 2.6, nom: 'le boulgour' },
+  { motif: /\b(semoule|couscous)\b/i, facteur: 2.6, nom: 'la semoule' },
+  { motif: /\blentilles?\b/i, facteur: 2.5, nom: 'les lentilles' },
+  { motif: /\b(pois chiches?|haricots? (?:secs?|rouges?|blancs?|noirs?)|flageolets?|f[eè]ves? s[eè]ches?)\b/i, facteur: 2.4, nom: 'les légumineuses' },
+  { motif: /\b(poulet|dinde|b[oœ]uf|boeuf|veau|porc|agneau|steak|escalopes?|cuisses?|viande|hach[ée]e?)\b/i, facteur: 0.75, nom: 'la viande' },
+  { motif: /\b(saumon|cabillaud|colin|lieu|thon frais|truite|dorade|merlu|poisson|crevettes?)\b/i, facteur: 0.8, nom: 'le poisson' },
+];
+const CUIT_DEJA = /\b(cuit|cuite|cuits|cuites|bouilli|bouillie|grill[ée]e?s?|po[êe]l[ée]e?s?|vapeur|frite?s?|saut[ée]e?s?|r[ôo]tie?s?)\b/i;
+function aideCruCuit(nom) {
+  const n = String(nom || '');
+  if (!n || (CUIT_DEJA.test(n) && !/\bcrue?s?\b/i.test(n))) return null;
+  return AIDE_CRU_CUIT.find(a => a.motif.test(n)) || null;
+}
+let manConversionCuit = null;   // { nom, cuit, cru } après une conversion acceptée
+function majAideCruCuit() {
+  const note = document.getElementById('man-cru-cuit');
+  if (!note) return;
+  const nom = document.getElementById('man-name').value.trim();
+  if (manConversionCuit && manConversionCuit.nom !== nom) manConversionCuit = null;
+  const aide = aideCruCuit(nom), g = nombreChamp('man-grams');
+  if (!aide || !(g > 0)) { note.classList.add('hidden'); note.innerHTML = ''; return; }
+  if (manConversionCuit) {
+    note.innerHTML = `${nombreFr(manConversionCuit.cuit, 0)}\u00a0g cuit comptés comme <b>${nombreFr(manConversionCuit.cru, 0)}\u00a0g cru</b>. <button type="button" class="pilule" onclick="annulerConversionCuit()">Revenir à ${nombreFr(manConversionCuit.cuit, 0)}\u00a0g</button>`;
+  } else {
+    const cru = Math.max(1, Math.round(g / aide.facteur));
+    note.innerHTML = `Valeurs pour ${aide.nom} <b>cru</b>. Pesé cuit\u00a0? ${nombreFr(g, 0)}\u00a0g cuit ≈ ${nombreFr(cru, 0)}\u00a0g cru. <button type="button" class="pilule" onclick="convertirCuitEnCru()">Compter ${nombreFr(cru, 0)}\u00a0g cru</button>`;
+  }
+  note.classList.remove('hidden');
+}
+function convertirCuitEnCru() {
+  const nom = document.getElementById('man-name').value.trim();
+  const aide = aideCruCuit(nom), g = nombreChamp('man-grams');
+  if (!aide || !(g > 0)) return;
+  const cru = Math.max(1, Math.round(g / aide.facteur));
+  manConversionCuit = { nom, cuit: g, cru };
+  document.getElementById('man-grams').value = String(cru);
+  calculerApercuManuel();
+}
+function annulerConversionCuit() {
+  if (!manConversionCuit) return;
+  document.getElementById('man-grams').value = String(manConversionCuit.cuit);
+  manConversionCuit = null;
+  calculerApercuManuel();
+}
+
 function calculerApercuManuel() {
+  majAideCruCuit();
   const g = nombreChamp('man-grams');
   const f = g / 100;
   const kcal = nombreChamp('man-kcal100') * f;
@@ -12811,6 +12950,13 @@ async function validerAjoutManuel() {
     c: nombreChamp('man-c100') * f,
     f: nombreChamp('man-f100') * f
   };
+  // Détails facultatifs (fibres, sucres, sel, AGS) : seulement ce qui est renseigné.
+  [['fib', 'man-fib100'], ['suc', 'man-suc100'], ['sel', 'man-sel100'], ['ags', 'man-ags100']].forEach(([cle, id]) => {
+    const v = valeurFacultative(id);
+    if (v != null) item[cle] = Math.round(v * f * 100) / 100;
+  });
+  if (manConversionCuit && manConversionCuit.cru === g) item.cuit = manConversionCuit.cuit;
+  manConversionCuit = null;
   // Le code-barres suit l'aliment quand il vient d'OpenFoodFacts ou de
   // l'historique : c'est ce qui permet de retrouver le produit exact plus tard.
   if (codeCourant) item.code = codeCourant;
@@ -21902,6 +22048,21 @@ let schemaAliments = null;
 
 // Les motifs sont classés par ordre de préférence : « energie_kcal » doit
 // l'emporter sur « energie_kj », qui n'est pas la même unité.
+/* Fibres, sucres, sel et AG saturés d'une ligne de la table d'aliments, en
+   g/100 g, seulement pour les colonnes qu'elle a (le sodium, en mg dans la
+   table CIQUAL, devient du sel : × 2,5 / 1000). Clés au format OpenFoodFacts. */
+function detailsNutriDeLigne(s, a) {
+  const d = {};
+  const valeur = col => { if (!col || a[col] == null || a[col] === '' || a[col] === '-') return null; const n = nombreSouple(a[col]); return Number.isFinite(n) ? n : null; };
+  const fib = valeur(s.fib), suc = valeur(s.suc), ags = valeur(s.ags);
+  let sel = valeur(s.sel);
+  if (sel == null && s.sodium) { const na = valeur(s.sodium); if (na != null) sel = /mg/i.test(String(s.sodium)) ? na * 2.5 / 1000 : na * 2.5; }
+  if (fib != null) d['fiber_100g'] = fib;
+  if (suc != null) d['sugars_100g'] = suc;
+  if (sel != null) d['salt_100g'] = Math.round(sel * 1000) / 1000;
+  if (ags != null) d['saturated-fat_100g'] = ags;
+  return d;
+}
 function choisirColonne(colonnes, motifs, exclure) {
   for (const motif of motifs) {
     for (const col of colonnes) {
@@ -21944,7 +22105,13 @@ async function detecterSchemaAliments(force) {
        primaire, sinon la clé pointerait sur le code-barres. */
     codeBarre: choisirColonne(colonnes, ['code barre', 'codebarre', 'barcode', 'ean', 'gencod']),
     cle: choisirColonne(colonnes, ['code', 'id'], ['barre', 'barcode', 'ean', 'gencod']),
-    source: choisirColonne(colonnes, ['source', 'origine'])
+    source: choisirColonne(colonnes, ['source', 'origine']),
+    // Détails (MET-02), présents dans la table CIQUAL complète : facultatifs.
+    fib: choisirColonne(colonnes, ['fibre', 'fiber']),
+    suc: choisirColonne(colonnes, ['sucre', 'sugar']),
+    sel: choisirColonne(colonnes, ['sel chlorure', 'sel ', 'salt'], ['selen']),
+    sodium: choisirColonne(colonnes, ['sodium']),
+    ags: choisirColonne(colonnes, ['ag satur', 'satur'])
   };
   return schemaAliments;
 }
@@ -22084,12 +22251,12 @@ async function chercherAlimentsSupabase(q) {
       badge: (s.source && a[s.source] === 'perso') ? '<svg class="icone-ui" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11.525 2.295a.53.53 0 0 1 .95 0l2.31 4.679a2.123 2.123 0 0 0 1.595 1.16l5.166.756a.53.53 0 0 1 .294.904l-3.736 3.638a2.123 2.123 0 0 0-.611 1.878l.882 5.14a.53.53 0 0 1-.771.56l-4.618-2.428a2.122 2.122 0 0 0-1.973 0L6.396 21.01a.53.53 0 0 1-.77-.56l.881-5.139a2.122 2.122 0 0 0-.611-1.879L2.16 9.795a.53.53 0 0 1 .294-.906l5.165-.755a2.122 2.122 0 0 0 1.597-1.16z" /></svg>' : '<svg class="icone-ui" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 21h10" /><path d="M12 21a9 9 0 0 0 9-9H3a9 9 0 0 0 9 9Z" /><path d="M11.38 12a2.4 2.4 0 0 1-.4-4.77 2.4 2.4 0 0 1 3.2-2.77 2.4 2.4 0 0 1 3.47-.63 2.4 2.4 0 0 1 3.37 3.37 2.4 2.4 0 0 1-1.1 3.7 2.51 2.51 0 0 1 .03 1.1" /><path d="m13 12 4-4" /><path d="M10.9 7.25A3.99 3.99 0 0 0 4 10c0 .73.2 1.41.54 2" /></svg>',
       source: (s.source && a[s.source] === 'perso') ? 'perso' : 'base',
       code: s.codeBarre ? (a[s.codeBarre] || '') : '',
-      nutriments: {
+      nutriments: Object.assign({
         'energy-kcal_100g': s.kcal ? nombreSouple(a[s.kcal]) : 0,
         'proteins_100g': s.prot ? nombreSouple(a[s.prot]) : 0,
         'carbohydrates_100g': s.gluc ? nombreSouple(a[s.gluc]) : 0,
         'fat_100g': s.lip ? nombreSouple(a[s.lip]) : 0
-      }
+      }, detailsNutriDeLigne(s, a))
     })).filter(a => a.name);
     if (cacheAliments.size > 60) cacheAliments.clear();
     cacheAliments.set(t, res);
