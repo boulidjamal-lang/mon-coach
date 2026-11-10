@@ -370,7 +370,7 @@ void main() {
       texRep = gl.createTexture(); gl.bindTexture(gl.TEXTURE_2D, texRep); gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA8, REP, REP, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
       gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
       gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, texRep, 0);
-      profRep = gl.createRenderbuffer(); gl.bindRenderbuffer(gl.RENDERBUFFER, profRep); gl.renderbufferStorage(gl.RENDERBUFFER, gl.DEPTH_COMPONENT16, REP, REP);
+      profRep = gl.createRenderbuffer(); gl.bindRenderbuffer(gl.RENDERBUFFER, profRep); gl.renderbufferStorage(gl.RENDERBUFFER, gl.DEPTH_COMPONENT24, REP, REP);
       gl.framebufferRenderbuffer(gl.FRAMEBUFFER, gl.DEPTH_ATTACHMENT, gl.RENDERBUFFER, profRep);
       gl.bindFramebuffer(gl.FRAMEBUFFER, null);
       texSale = true;
@@ -576,7 +576,7 @@ void main() {
       gl.bindTexture(gl.TEXTURE_2D, t); gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA8, l, h, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
       gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
       gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, t, 0);
-      gl.bindRenderbuffer(gl.RENDERBUFFER, prof); gl.renderbufferStorage(gl.RENDERBUFFER, gl.DEPTH_COMPONENT16, l, h);
+      gl.bindRenderbuffer(gl.RENDERBUFFER, prof); gl.renderbufferStorage(gl.RENDERBUFFER, gl.DEPTH_COMPONENT24, l, h);
       gl.framebufferRenderbuffer(gl.FRAMEBUFFER, gl.DEPTH_ATTACHMENT, gl.RENDERBUFFER, prof);
       gl.viewport(0, 0, l, h); gl.clearColor(0, 0, 0, 0); gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
       const m = matrices(); preparer(m, true);
@@ -585,19 +585,31 @@ void main() {
       const px = new Uint8Array(l * h * 4); gl.readPixels(0, 0, l, h, gl.RGBA, gl.UNSIGNED_BYTE, px);
       gl.bindFramebuffer(gl.FRAMEBUFFER, null); gl.bindVertexArray(null);
       gl.deleteFramebuffer(cadre); gl.deleteTexture(t); gl.deleteRenderbuffer(prof);
-      // Résumé par structure et par côté : nombre de points, et un point sûr (le plus proche du barycentre).
-      const vus = {};
+      // Résumé par structure et par côté : nombre de points, et un point sûr — le plus enfoncé dans la tache du muscle
+      // (le plus loin de son bord) ; à égalité, le plus proche du barycentre. « marge » : distance de ce point au bord.
+      const etiq = new Int32Array(l * h), cles = [null], rang = {}, vus = {};
       for (let j = 0; j < h; j++) for (let i = 0; i < l; i++) {
         const o = (j * l + i) * 4; if (!px[o + 1] || px[o] >= NB) continue;
-        const k = S[px[o]].id + '|' + (px[o + 1] - 1 ? 'droit' : 'gauche'), v = vus[k] || (vus[k] = { n: 0, sx: 0, sy: 0, pts: [] });
-        v.n++; v.sx += i; v.sy += j; v.pts.push(i, j);
+        const k = S[px[o]].id + '|' + (px[o + 1] - 1 ? 'droit' : 'gauche');
+        let r = rang[k]; if (!r) { r = rang[k] = cles.length; cles.push(k); vus[k] = { n: 0, sx: 0, sy: 0 }; }
+        etiq[j * l + i] = r; const v = vus[k]; v.n++; v.sx += i; v.sy += j;
       }
-      for (const k in vus) {
-        const v = vus[k], cx = v.sx / v.n, cy = v.sy / v.n; let dm = 1e9, bx = 0, by = 0;
-        for (let q = 0; q < v.pts.length; q += 2) { const d = (v.pts[q] - cx) * (v.pts[q] - cx) + (v.pts[q + 1] - cy) * (v.pts[q + 1] - cy); if (d < dm) { dm = d; bx = v.pts[q]; by = v.pts[q + 1]; } }
-        vus[k] = { n: v.n, x: (bx + 0.5) * pas, y: (h - by - 0.5) * pas };
+      const bord = new Uint16Array(l * h), LOIN = 65535;   // distance au bord de la tache, en points de la carte (deux balayages)
+      for (let j = 0; j < h; j++) for (let i = 0; i < l; i++) {
+        const q = j * l + i, r = etiq[q]; if (!r) continue;
+        bord[q] = (i === 0 || j === 0 || i === l - 1 || j === h - 1 || etiq[q - 1] !== r || etiq[q + 1] !== r || etiq[q - l] !== r || etiq[q + l] !== r) ? 1 : LOIN;
       }
-      return vus;
+      for (let j = 1; j < h - 1; j++) for (let i = 1; i < l - 1; i++) { const q = j * l + i; if (bord[q] > 1) bord[q] = Math.min(bord[q], bord[q - 1] + 1, bord[q - l] + 1); }
+      for (let j = h - 2; j > 0; j--) for (let i = l - 2; i > 0; i--) { const q = j * l + i; if (bord[q] > 1) bord[q] = Math.min(bord[q], bord[q + 1] + 1, bord[q + l] + 1); }
+      const choix = {};
+      for (let j = 0; j < h; j++) for (let i = 0; i < l; i++) {
+        const q = j * l + i, r = etiq[q]; if (!r) continue;
+        const k = cles[r], v = vus[k], dx = i - v.sx / v.n, dy = j - v.sy / v.n, d = dx * dx + dy * dy, c = choix[k];
+        if (!c || bord[q] > c.b || (bord[q] === c.b && d < c.d)) choix[k] = { b: bord[q], d, i, j };
+      }
+      const res = {};
+      for (const k in choix) { const c = choix[k]; res[k] = { n: vus[k].n, x: (c.i + 0.5) * pas, y: (h - c.j - 0.5) * pas, marge: (c.b - 0.5) * pas }; }
+      return res;
     }
 
     /* ----- Boucle d'animation : elle ne tourne que lorsqu'il y a quelque chose à animer ----- */
@@ -609,6 +621,10 @@ void main() {
       demande = 0;
       if (!vivant) return;
       let encore = false;
+      // Durée écoulée depuis l'image précédente, en soixantièmes de seconde : les fondus et l'élan vont à la même
+      // vitesse sur un écran à 60 ou à 120 images par seconde (après une pause, on repart d'un pas normal).
+      const ecart = t - tPrec, pas16 = ecart > 0 && ecart < 100 ? ecart / 16.7 : 1;
+      const fondu = base => reduit ? 1 : 1 - Math.pow(1 - base, pas16);
       if (transition) {
         const k = reduit ? 1 : borne((t - transition.t0) / transition.duree, 0, 1), e = 1 - Math.pow(1 - k, 3);
         cam.az = transition.de.az + (transition.a.az - transition.de.az) * e;
@@ -617,25 +633,25 @@ void main() {
         for (let i = 0; i < 3; i++) cam.cible[i] = transition.de.cible[i] + (transition.a.cible[i] - transition.de.cible[i]) * e;
         if (k >= 1) { transition = null; cam.az = ((cam.az + 180) % 360 + 360) % 360 - 180; } else encore = true;
       } else if (!enMain && (Math.abs(elan.az) > 0.02 || Math.abs(elan.el) > 0.02)) {
-        cam.az += elan.az; cam.el = borne(cam.el + elan.el, -80, 80); elan.az *= 0.92; elan.el *= 0.88; encore = true;
+        cam.az += elan.az * pas16; cam.el = borne(cam.el + elan.el * pas16, -80, 80); elan.az *= Math.pow(0.92, pas16); elan.el *= Math.pow(0.88, pas16); encore = true;
       }
       // Un exercice en cours : la pose est recalculée à chaque image.
       if (animation && animation(t / 1000)) encore = true;
       // Surbrillance et estompe : fondus doux.
+      const pas = fondu(0.16);
       for (let i = 0; i < NB; i++) {
         const cb = i === choisi ? 1 : 0, ce = i === choisi ? 0 : estompeCible;
         if (brillance[i] !== cb || estompe[i] !== ce) {
-          const pas = reduit ? 1 : 0.16;
           brillance[i] = Math.abs(cb - brillance[i]) < 0.02 ? cb : brillance[i] + (cb - brillance[i]) * pas;
           estompe[i] = Math.abs(ce - estompe[i]) < 0.02 ? ce : estompe[i] + (ce - estompe[i]) * pas;
           texSale = true; if (brillance[i] !== cb || estompe[i] !== ce) encore = true;
         }
       }
       for (const k of ['haut', 'bas']) if (margesVues[k] !== marges[k]) {
-        margesVues[k] = reduit || Math.abs(marges[k] - margesVues[k]) < 0.5 ? marges[k] : margesVues[k] + (marges[k] - margesVues[k]) * 0.2;
+        margesVues[k] = reduit || Math.abs(marges[k] - margesVues[k]) < 0.5 ? marges[k] : margesVues[k] + (marges[k] - margesVues[k]) * fondu(0.2);
         if (margesVues[k] !== marges[k]) encore = true;
       }
-      if (estompeOs !== estompeCible) { estompeOs = Math.abs(estompeCible - estompeOs) < 0.02 ? estompeCible : estompeOs + (estompeCible - estompeOs) * (reduit ? 1 : 0.16); texSale = true; if (estompeOs !== estompeCible) encore = true; }
+      if (estompeOs !== estompeCible) { estompeOs = Math.abs(estompeCible - estompeOs) < 0.02 ? estompeCible : estompeOs + (estompeCible - estompeOs) * pas; texSale = true; if (estompeOs !== estompeCible) encore = true; }
       const mouvement = encore || enMain;
       if (mouvement) {
         const dt = t - tPrec;
@@ -685,14 +701,16 @@ void main() {
       reinitialiser(duree) { entier = true; allerA({ az: 0, el: 4, dist: distanceEntiere(), cible: centreCorps }, duree); },
       camera: () => ({ az: cam.az, el: cam.el, dist: cam.dist, cible: cam.cible.slice() }),
       placer(a) { if (a.dist != null || a.cible) entier = false; Object.assign(cam, { az: a.az != null ? a.az : cam.az, el: a.el != null ? a.el : cam.el, dist: a.dist != null ? a.dist : cam.dist }); if (a.cible) cam.cible = a.cible.slice(); transition = null; demander(); },
-      // Cadre un muscle : il vient au centre, à la bonne distance, vu du côté où il se montre le mieux.
-      cadrer(id, duree) {
+      // Cadre un muscle : il vient au centre, à la bonne distance. « cote » ('gauche' ou 'droit') dit lequel des deux ;
+      // sans lui, celui du côté où se tient la caméra (de face ou de dos : le gauche).
+      cadrer(id, duree, cote) {
         const i = api.indice(id); if (i < 0) return;
         entier = false;
-        const s = S[i], cote = (cam.az > 0 && cam.az < 180) ? -1 : 1;
-        const libre = Math.max(0.3, 1 - (marges.haut + marges.bas) * densite() / haut);
-        const d = borne(distancePour(s.rayon * 2 * 2.3 / libre), 0.5, distanceEntiere());
-        allerA({ dist: d, cible: [s.centre[0] * (Math.abs(s.centre[0]) < 0.04 ? 0 : cote), s.centre[1], s.centre[2]] }, duree);
+        const s = S[i], signe = cote === 'droit' ? -1 : cote === 'gauche' ? 1 : (cam.az < 0 && cam.az > -180) ? -1 : 1;
+        // Le muscle (sa sphère englobante) prend 62 % de la hauteur restée libre, sans dépasser 85 % de la largeur.
+        const libre = Math.max(0.3, 1 - (marges.haut + marges.bas) * densite() / haut), diam = Math.max(s.rayon * 2, 0.05);
+        const d = borne(Math.max(distancePour(diam / (0.62 * libre)), distancePour(diam / (0.85 * larg / haut))), 0.5, distanceEntiere());
+        allerA({ dist: d, cible: [s.centre[0] * (Math.abs(s.centre[0]) < 0.04 || !s.pair ? 0 : signe), s.centre[1], s.centre[2]] }, duree);
       },
       // Pose du corps : une matrice 3×4 par articulation (12 nombres, par lignes), dans l'ordre de `squelette`.
       // Sans argument : retour à la position de repos.
@@ -795,7 +813,7 @@ void main() {
       },
       redessiner: demander,
       tailler,
-      mesures: () => ({ images: nbImages, dernierTempsMs: dernierTemps, largeur: larg, hauteur: haut, pixels: pp, echelleMouvement, triangles: E.triangles, sommets: E.sommets, appelsDeDessin: 1 + 2 * (transparents ? 2 : 1) }),
+      mesures: () => ({ enCours: !!demande || !!transition, images: nbImages, dernierTempsMs: dernierTemps, largeur: larg, hauteur: haut, pixels: pp, echelleMouvement, triangles: E.triangles, sommets: E.sommets, appelsDeDessin: 1 + 2 * (transparents ? 2 : 1) }),
       detruire() {
         vivant = false; if (demande) cancelAnimationFrame(demande);
         clearTimeout(minuterieNet); document.removeEventListener('visibilitychange', visible);
@@ -830,6 +848,10 @@ void main() {
   function activerGestes(a, surTouche) {
     const t = a.toile, i = a._, cam = i.cam, doigts = new Map();
     let depart = null, pince = null, bouge = false, multi = false, derniere = null, vit = { az: 0, el: 0 };
+    // L'instant du geste lui-même, pas celui où la page a pu s'en occuper : une image longue à calculer entre deux
+    // touches ne doit pas faire rater une double touche.
+    const quand = e => (e && e.timeStamp > 0) ? e.timeStamp : performance.now();
+    let dernierMvt = 0;
     const distMin = 0.30;
     const parPixel = () => 2 * cam.dist * Math.tan(i.champ / 2) / t.clientHeight;
     function bornerCible() {
@@ -854,8 +876,8 @@ void main() {
       if (e.pointerType === 'mouse' && e.button > 2) return;
       try { t.setPointerCapture(e.pointerId); } catch (err) {}
       doigts.set(e.pointerId, { x: e.clientX, y: e.clientY });
-      i.arreter(); i.tenir(true); i.elan.az = i.elan.el = 0; vit = { az: 0, el: 0 };
-      if (doigts.size === 1) { depart = { x: e.clientX, y: e.clientY, t: performance.now(), bouton: e.button, maj: e.shiftKey }; bouge = false; multi = false; }
+      i.arreter(); i.tenir(true); i.elan.az = i.elan.el = 0; vit = { az: 0, el: 0 }; dernierMvt = quand(e);
+      if (doigts.size === 1) { depart = { x: e.clientX, y: e.clientY, t: quand(e), bouton: e.button, maj: e.shiftKey }; bouge = false; multi = false; }
       else { multi = true; const p = [...doigts.values()]; pince = { d: Math.hypot(p[0].x - p[1].x, p[0].y - p[1].y), x: (p[0].x + p[1].x) / 2, y: (p[0].y + p[1].y) / 2 }; }
     }
     function glisse(e) {
@@ -867,8 +889,12 @@ void main() {
         bouge = true;
         if (depart.bouton === 2 || depart.maj) deplacer(dx, dy);
         else {
-          vit.az = -dx * 0.42; vit.el = dy * 0.30;
-          cam.az += vit.az; cam.el = i.borne(cam.el + vit.el, -75, 80);
+          // Vitesse du geste ramenée à un soixantième de seconde (lissée) : l'élan est le même quelle que soit la
+          // cadence à laquelle l'appareil livre les mouvements du doigt.
+          const tm = quand(e), k = i.borne(16.7 / Math.max(4, tm - dernierMvt), 0.25, 3), daz = -dx * 0.42, del = dy * 0.30;
+          dernierMvt = tm;
+          vit.az = vit.az * 0.4 + daz * k * 0.6; vit.el = vit.el * 0.4 + del * k * 0.6;
+          cam.az += daz; cam.el = i.borne(cam.el + del, -75, 80);
         }
         i.demander();
       } else if (doigts.size >= 2 && pince) {
@@ -886,7 +912,7 @@ void main() {
       if (doigts.size === 1) { pince = null; return; }
       if (doigts.size) return;
       i.tenir(false);
-      const maintenant = performance.now();
+      const maintenant = quand(e);
       if (depart && !bouge && !multi && e.type !== 'pointercancel' && maintenant - depart.t < 500) {
         const r = t.getBoundingClientRect(), x = e.clientX - r.left, y = e.clientY - r.top;
         const double = derniere && maintenant - derniere.t < 340 && Math.hypot(x - derniere.x, y - derniere.y) < 30;
@@ -896,7 +922,8 @@ void main() {
         derniere = double ? null : { t: maintenant, x, y, touche };
         surTouche(touche, !!double, { x, y });
       } else if (bouge && !multi && depart && depart.bouton !== 2 && !depart.maj) {
-        i.elan.az = vit.az; i.elan.el = vit.el;      // l'élan prolonge le geste, puis retombe
+        // L'élan prolonge le geste, puis retombe ; aucun élan si le doigt s'était arrêté avant de se lever.
+        if (maintenant - dernierMvt < 90) { i.elan.az = vit.az; i.elan.el = vit.el; }
         i.demander();
       }
       depart = null;
@@ -1080,7 +1107,7 @@ void main() {
     const indice = el('div', 'atlas-indice atlas-verre', 'Touche un muscle · glisse pour tourner');
     [haut, couches, bas, indice, fiche, index].forEach(n => racine.appendChild(n));
 
-    let mode = null, carte = {}, choisi = null, isoleGroupe = false;
+    let mode = null, carte = {}, choisi = null, coteChoisi = null, isoleGroupe = false;   // coteChoisi : le côté touché ('gauche' ou 'droit'), s'il y en a un
     // Un exercice à montrer ({ mouvement }) : dans le mode « exercice », le corps l'exécute en boucle.
     let anim = null, lecture = !(window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches);
     function majLecture() {
@@ -1148,12 +1175,12 @@ void main() {
     function choisir(id, opts) {
       const s = id == null ? null : S[a.indice(id)] || null;
       if (!s && choisi && a.isoles()) { a.isoler(null); isoleGroupe = false; }
-      choisi = s; a.choisir(s ? s.id : null);
+      choisi = s; coteChoisi = (s && opts && opts.cote) || null; a.choisir(s ? s.id : null);
       if (s) { dessinerFiche(); fiche.setAttribute('data-ouverte', ''); racine.setAttribute('data-fiche', ''); }
       else { fiche.removeAttribute('data-ouverte'); racine.removeAttribute('data-fiche'); }
       indice.removeAttribute('data-vu');
       majCouches(); majLecture();
-      requestAnimationFrame(() => { majMarges(); if (s && opts && opts.cadrer) a.cadrer(s.id); });
+      requestAnimationFrame(() => { majMarges(); if (s && opts && opts.cadrer) a.cadrer(s.id, undefined, coteChoisi); });
       if (o.surChoix) o.surChoix(s);
     }
     // Amène une structure à l'écran, où qu'elle soit (masquée, retirée avec sa couche, ou enfouie sous d'autres).
@@ -1169,8 +1196,9 @@ void main() {
     activerGestes(a, (touche, double) => {
       if (!touche || touche.os) { if (double) { if (anim) anim.cadrer(); else a.reinitialiser(); return; } if (choisi) choisir(null); return; }
       const s = touche.structure;
-      if (double) { if (!choisi || choisi.id !== s.id) choisir(s.id); a.cadrer(s.id); return; }
-      if (choisi && choisi.id === s.id) choisir(null); else choisir(s.id);
+      // Double touche : le muscle est choisi (s'il ne l'était pas) puis cadré, une fois la place de la fiche connue.
+      if (double) { if (!choisi || choisi.id !== s.id) choisir(s.id, { cadrer: true, cote: touche.cote }); else { coteChoisi = touche.cote; a.cadrer(s.id, undefined, coteChoisi); } return; }
+      if (choisi && choisi.id === s.id) choisir(null); else choisir(s.id, { cote: touche.cote });
     });
     a.surImage = cam => { majVues(cam); if (o.surImage) o.surImage(cam); };
 
@@ -1189,8 +1217,8 @@ void main() {
       const b = e.target.closest('button[data-action]'); if (!b || !choisi) return;
       const act = b.dataset.action, s = choisi;
       if (act === 'fermer') choisir(null);
-      else if (act === 'centrer') a.cadrer(s.id);
-      else if (act === 'isoler') { const iso = a.isoles(), seul = iso && iso.length === 1 && iso[0] === s.id; a.isoler(seul ? null : [s.id]); isoleGroupe = false; if (!seul) a.cadrer(s.id); majCouches(); dessinerFiche(); }
+      else if (act === 'centrer') a.cadrer(s.id, undefined, coteChoisi);
+      else if (act === 'isoler') { const iso = a.isoles(), seul = iso && iso.length === 1 && iso[0] === s.id; a.isoler(seul ? null : [s.id]); isoleGroupe = false; if (!seul) a.cadrer(s.id, undefined, coteChoisi); majCouches(); dessinerFiche(); }
       else if (act === 'groupe') { const g = o.groupe && o.groupe(s), actif = a.isoles() && isoleGroupe; a.isoler(actif || !g ? null : g.ids); isoleGroupe = !actif && !!g; majCouches(); dessinerFiche(); }
       else if (act === 'masquer') { a.masquer(s.id); choisir(null); }
     });
