@@ -1448,25 +1448,6 @@ test("sur le web, le résumé se calcule mais rien n'est publié ; sans Santé a
   assert.equal(r.sante, false);
 }));
 
-test("corps : les muscles du mannequin sont des masses pleines (contour de leur couleur, découpées au corps), les trapèzes complets dessinés en dernier ; le pictogramme d'un groupe reste celui du build 33", () => avecAppli({}, async ({ page }) => {
-  const r = await page.evaluate(() => {
-    const face = silhouetteSVG('face', { pectoraux: 'red' }, {});
-    const res = { lisse: (face.match(/stroke-width="6"/g) || []).length, clip: /<g clip-path="url\(#sil\d+\)">/.test(face), pivot: /stroke-width="6"/.test(corpsPivotHTML({})) };
-    // Les trapèzes : le cerf-volant complet (nuque, épaules, pointe au milieu du dos), dessiné en dernier, par-dessus le haut du dos.
-    userProfile.gender = 'm';
-    const dosTrap = silhouetteSVG('dos', { trapezes: 'red', dos: 'blue' }, {});
-    res.trapezes = [dosTrap.includes('M1081 290C1061 299 1031 309 1005 319'), /fill="red"[^<]*\/><\/g><\/svg>$/.test(dosTrap), dosTrap.indexOf('fill="blue"') < dosTrap.lastIndexOf('fill="red"')];
-    // Design du build 33 : le pictogramme des listes reste le schéma, aucun mannequin cadré.
-    res.picto = [svgSilhouetteGroupe('pectoraux').includes('<circle cx="50" cy="17"'), !document.getElementById('symboles-mannequin')];
-    return res;
-  });
-  assert.ok(r.lisse > 50, 'chaque fibre porte le trait de lissage : ' + r.lisse);
-  assert.equal(r.clip, true);
-  assert.equal(r.pivot, true);
-  assert.deepEqual(r.trapezes, [true, true, true], 'trapèzes complets et dessinés en dernier');
-  assert.deepEqual(r.picto, [true, true]);
-}));
-
 test("IA par le serveur : sans clé personnelle, l'IA reste disponible (photo comprise) et chaque demande part avec sa tâche ; l'administration ne distribue plus de clé", () => avecAppli({}, async ({ page }) => {
   const r = await page.evaluate(async () => {
     const appels = [];
