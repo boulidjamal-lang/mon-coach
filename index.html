@@ -3084,7 +3084,7 @@ const URL_SITE_WEB = 'https://boulidjamal-lang.github.io/mon-coach/';
      encore envoyé (au plus toutes les 10 min, après une synchro réussie).
    Variables en var : ces fonctions peuvent servir avant la fin du chargement.
    ===================================================================== */
-const VERSION_APPLI = '2026-11-10.5';  // date de mise en ligne (.5 : cinquième du jour ; astuces sur place à la place de la visite guidée)
+const VERSION_APPLI = '2026-11-10.6';  // date de mise en ligne (.6 : sixième du jour ; l'eau de la gourde suit les mouvements du téléphone)
 var DERNIERE_SYNCHRO_LS = 'mc_derniere_synchro';
 function libelleVersion(v, court) {
   const d = new Date(String(v || VERSION_APPLI).slice(0, 10) + 'T12:00:00');
@@ -6376,7 +6376,9 @@ function majJaugeEau(day) {
    La surface est une vraie simulation : une rangée de ressorts dont chacun
    tire ses voisins. Une éclaboussure y fait des ondes qui se propagent,
    rebondissent sur les parois et s'amortissent ; par-dessus, une houle lente
-   et l'inclinaison de l'eau, qui tangue quand la page défile vite.
+   et l'inclinaison de l'eau, qui tangue quand la page défile vite et suit le
+   téléphone : penché, le niveau reste à l'horizontale ; secoué, l'eau
+   clapote (voir orientationGourde).
    Versement : le bouchon se dévisse et se pose de côté, un filet tombe en
    accélérant et frappe la surface (ondes, gouttes qui retombent, bulles) ;
    le niveau monte et le total défile tant que l'eau coule, puis le bouchon
@@ -6392,7 +6394,8 @@ const moteurGourde = {
   toile: null, ctx: null, dpr: 1, raf: 0, dernier: 0, reste: 0, visible: true, sombre: false, chemins: null,
   part: 0.04, cible: 0.04, vPart: 0, h: new Float32Array(GOURDE_N + 1), v: new Float32Array(GOURDE_N + 1),
   gauche: new Float32Array(GOURDE_N + 1), droite: new Float32Array(GOURDE_N + 1),
-  incl: 0, vIncl: 0, gouttes: [], bulles: [], bouchon: 0, eclat: 0, ok: 0, vOk: 0, t: 0, etat: '', elt: null
+  incl: 0, vIncl: 0, gouttes: [], bulles: [], bouchon: 0, eclat: 0, ok: 0, vOk: 0, t: 0, etat: '', elt: null,
+  inclTel: 0, vTel: 0, inclCible: 0, haut: null, sensAxes: 0
 };
 function ecranRepasGourde() { try { return ecranActif === 'repas'; } catch (e) { return false; } }
 function cibleOkGourde() { const g = moteurGourde.elt; return g && g.classList.contains('atteint') ? 1 : 0; }
@@ -6443,15 +6446,26 @@ function couleursGourde(sombre, atteint) {
   if (atteint) c.trait = sombre ? 'rgba(52,211,153,.75)' : 'rgba(16,185,129,.7)';
   return c;
 }
-/* La ligne de la surface : le niveau, l'inclinaison, les ondes simulées, la
-   houle lente (trois vagues qui glissent) et le ménisque contre le verre. */
+/* Bouteille penchée avec peu d'eau : la surface passerait sous le fond d'un
+   côté. L'eau se rassemble alors dans le coin bas, avec le même volume qu'à
+   plat (un triangle de même aire que la couche d'eau à plat).
+   Renvoie la hauteur de la surface au milieu de la bouteille. */
+function pivotGourde(ySurf, pente) {
+  const L = GOURDE_XD - GOURDE_XG, prof = GOURDE_VIDE - ySurf, p = Math.abs(pente);
+  if (p < 1e-4 || p * L / 2 <= prof) return ySurf;
+  const base = Math.min(L, Math.sqrt(2 * Math.max(0, prof) * L / p));
+  return GOURDE_VIDE - p * (base - L / 2);
+}
+/* La ligne de la surface : le niveau, l'inclinaison (tangage et téléphone
+   penché), les ondes simulées, la houle lente (trois vagues qui glissent) et
+   le ménisque contre le verre. */
 function surfaceGourde(ySurf) {
-  const m = moteurGourde, pts = [], t = m.t / 1000;
+  const m = moteurGourde, pts = [], t = m.t / 1000, pente = m.incl + m.inclTel, yMilieu = pivotGourde(ySurf, pente);
   for (let i = 0; i <= GOURDE_N; i++) {
     const x = GOURDE_XG + (GOURDE_XD - GOURDE_XG) * i / GOURDE_N;
     const houle = 0.42 * Math.sin(x * 0.21 + t * 1.6) + 0.26 * Math.sin(x * 0.47 - t * 2.3 + 1.3) + 0.12 * Math.sin(x * 0.93 + t * 3.1);
     const menisque = -0.75 * (Math.exp(-(x - GOURDE_XG) / 1.3) + Math.exp(-(GOURDE_XD - x) / 1.3));
-    pts.push([x, ySurf + m.incl * (x - GOURDE_X) + m.h[i] + houle + menisque]);
+    pts.push([x, yMilieu + pente * (x - GOURDE_X) + m.h[i] + houle + menisque]);
   }
   return pts;
 }
@@ -6643,6 +6657,9 @@ function pasGourde() {
     for (let i = 0; i <= n; i++) { if (i > 0) h[i - 1] += gauche[i]; if (i < n) h[i + 1] += droite[i]; }
   }
   m.vIncl += -0.006 * m.incl - 0.035 * m.vIncl; m.incl += m.vIncl;
+  // Le téléphone penché : la surface rejoint l'horizontale avec l'inertie de
+  // l'eau (elle dépasse un peu, puis revient).
+  m.vTel += -0.03 * (m.inclTel - m.inclCible) - 0.11 * m.vTel; m.inclTel += m.vTel;
   if (!gourdeAnim) { m.vPart += (m.cible - m.part) * 0.02 - m.vPart * 0.2; m.part += m.vPart; }
   const cibleOk = cibleOkGourde();
   m.vOk += (cibleOk - m.ok) * 0.09 - m.vOk * 0.28; m.ok += m.vOk;
@@ -6666,7 +6683,8 @@ function energieGourde() {
   const m = moteurGourde;
   let e = 0;
   for (let i = 0; i <= GOURDE_N; i++) e += Math.abs(m.h[i]) + Math.abs(m.v[i]);
-  return e + Math.abs(m.incl) * 60 + Math.abs(m.vIncl) * 600 + Math.abs(m.cible - m.part) * 80 + Math.abs(m.vPart) * 400
+  return e + Math.abs(m.incl) * 60 + Math.abs(m.vIncl) * 600 + Math.abs(m.inclTel - m.inclCible) * 60 + Math.abs(m.vTel) * 600
+    + Math.abs(m.cible - m.part) * 80 + Math.abs(m.vPart) * 400
     + (m.gouttes.length + m.bulles.length) + Math.abs(cibleOkGourde() - m.ok) * 10 + Math.abs(m.vOk) * 50 + (m.bouchon > 0 ? 1 : 0);
 }
 
@@ -6828,11 +6846,12 @@ function lancerGourde() {
   const m = moteurGourde;
   if (!m.ctx || m.raf || !gourdeAnimee()) return;
   m.raf = requestAnimationFrame(boucleGourde);
+  capteursGourde(true);
 }
 function boucleGourde(now) {
   const m = moteurGourde;
   m.raf = 0;
-  if (!m.toile || !m.toile.isConnected) return;
+  if (!m.toile || !m.toile.isConnected) { capteursGourde(false); return; }
   const agitee = !!gourdeAnim || energieGourde() > 0.6;
   // Au repos, 30 images par seconde suffisent à la houle.
   if (agitee || !m.dernier || now - m.dernier >= 31) {
@@ -6847,6 +6866,7 @@ function boucleGourde(now) {
     majEtatGourde();
   }
   if (gourdeAnimee()) m.raf = requestAnimationFrame(boucleGourde);
+  else capteursGourde(false);
 }
 /* L'eau tangue quand la page défile vite (sur Repas, la gourde à l'écran). */
 function tangageGourde() {
@@ -6858,6 +6878,86 @@ function tangageGourde() {
   impulsionGourde(vitesse > 0 ? GOURDE_XG + 2 : GOURDE_XD - 2, Math.max(-1.2, Math.min(1.2, vitesse * 0.5)));
   lancerGourde();
 }
+
+/* L'eau suit le téléphone : penché, le niveau reste à l'horizontale (la
+   surface s'incline dans la bouteille, avec l'inertie de l'eau) ; secoué,
+   l'eau clapote. Le capteur d'orientation donne le haut du monde, vu dans le
+   plan de l'écran : la surface lui est perpendiculaire. Posé à plat ou tenu
+   à l'envers, rien ne penche. Les capteurs ne sont écoutés que pendant que
+   la gourde s'anime (Repas, à l'écran, hors mouvement réduit).
+   Sur iPhone, ils demandent une autorisation : l'app l'accorde d'elle-même,
+   sans fenêtre (voir autoriserCapteursApp) ; Safari afficherait une fenêtre
+   système, qu'on ne montre pas (voir le reflet, en fin de page). */
+const GOURDE_PENTE_MAX = 1.1;
+var capteursGourdeActifs = false;
+function capteursGourde(actifs) {
+  if (actifs === capteursGourdeActifs) return;
+  capteursGourdeActifs = actifs;
+  const f = actifs ? 'addEventListener' : 'removeEventListener';
+  window[f]('deviceorientation', orientationGourde);
+  window[f]('devicemotion', secousseGourde);
+  // Hors de l'écran, plus de mesure : au retour, la bouteille repart droite.
+  if (!actifs) moteurGourde.inclCible = 0;
+}
+function angleEcranGourde() {
+  const o = screen.orientation;
+  return ((o && typeof o.angle === 'number' ? o.angle : Number(window.orientation) || 0) * Math.PI) / 180;
+}
+/* Le haut du monde : dans le repère de l'appareil (x à droite, y vers son
+   haut, z hors de l'écran), puis dans celui de l'écran affiché (qui tourne
+   avec lui en paysage). */
+function hautGourde(beta, gamma) {
+  const b = beta * Math.PI / 180, g = gamma * Math.PI / 180, a = angleEcranGourde();
+  const x = -Math.cos(b) * Math.sin(g), y = Math.sin(b), z = Math.cos(b) * Math.cos(g);
+  return { appareil: [x, y, z], x: x * Math.cos(a) - y * Math.sin(a), y: x * Math.sin(a) + y * Math.cos(a) };
+}
+function penteVoulueGourde(beta, gamma) {
+  const h = hautGourde(beta, gamma);
+  // À plat (le haut sort de l'écran) ou à l'envers : l'effet s'efface.
+  const poids = Math.max(0, Math.min(1, (h.y - 0.12) / 0.3));
+  if (!poids) return 0;
+  return poids * Math.max(-GOURDE_PENTE_MAX, Math.min(GOURDE_PENTE_MAX, h.x / Math.max(h.y, 0.12)));
+}
+function orientationGourde(e) {
+  if (e.beta == null || e.gamma == null) return;
+  const m = moteurGourde;
+  m.haut = hautGourde(e.beta, e.gamma).appareil;
+  m.inclCible = penteVoulueGourde(e.beta, e.gamma);
+}
+/* Une secousse : l'eau, en retard sur la bouteille, monte du côté opposé au
+   mouvement ; un coup vers le haut ou le bas la fait frémir. Le sens des
+   axes de l'accéléromètre varie selon les navigateurs : on le cale une fois
+   sur l'orientation (la pesanteur mesurée doit pointer vers le haut). */
+function secousseGourde(e) {
+  const m = moteurGourde, a = e.acceleration, g = e.accelerationIncludingGravity;
+  if (!a || a.x == null || a.y == null) return;
+  if (!m.sensAxes && m.haut && g && g.x != null && g.y != null) {
+    const p = g.x * m.haut[0] + g.y * m.haut[1] + (g.z || 0) * m.haut[2];
+    if (Math.abs(p) > 7) m.sensAxes = p > 0 ? 1 : -1;
+  }
+  const s = m.sensAxes || 1, an = angleEcranGourde();
+  const ax = s * (a.x * Math.cos(an) - a.y * Math.sin(an)), ay = s * (a.x * Math.sin(an) + a.y * Math.cos(an));
+  if (Math.abs(ax) > 0.8) m.vIncl += Math.max(-0.012, Math.min(0.012, ax * 0.0012));
+  if (Math.abs(ay) > 1.2) impulsionGourde(GOURDE_XG + Math.random() * (GOURDE_XD - GOURDE_XG), Math.max(-1, Math.min(1, ay * 0.12)));
+}
+/* App iPhone : l'accès aux capteurs de mouvement se demande pendant un
+   toucher, et l'app l'accorde elle-même, sans fenêtre (Capacitor répond à la
+   place de l'utilisateur). On le demande donc au premier toucher. */
+(function autoriserCapteursApp() {
+  if (!NATIF) return;
+  const demander = () => {
+    document.removeEventListener('touchend', demander, true);
+    document.removeEventListener('click', demander, true);
+    try {
+      if (typeof DeviceOrientationEvent === 'undefined' || typeof DeviceOrientationEvent.requestPermission !== 'function') return;
+      DeviceOrientationEvent.requestPermission().then(() => {
+        if (typeof DeviceMotionEvent !== 'undefined' && typeof DeviceMotionEvent.requestPermission === 'function') DeviceMotionEvent.requestPermission().catch(() => {});
+      }).catch(() => {});
+    } catch (e) {}
+  };
+  document.addEventListener('touchend', demander, true);
+  document.addEventListener('click', demander, true);
+})();
 function initGourde() {
   const m = moteurGourde, toile = document.getElementById('gourde-toile');
   if (!toile || m.toile === toile) return;
@@ -31333,6 +31433,9 @@ function fermerFeuilles() {
   var capteur = false;
   window.addEventListener('deviceorientation', function (e) {
     if (e.gamma === null && e.beta === null) return;
+    // Dans l'app, les capteurs sont autorisés pour la gourde : le reflet,
+    // lui, reste fixe comme avant sur iPhone.
+    if (typeof NATIF !== 'undefined' && NATIF) return;
     capteur = true;
     poser(50 - (e.gamma || 0) * 1.1, 20 - (e.beta || 0) * 0.5);
   }, { passive: true });
