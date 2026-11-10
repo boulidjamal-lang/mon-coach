@@ -939,6 +939,7 @@ void main() {
   background:radial-gradient(ellipse 85% 60% at 50% 44%,var(--a-halo,#1d1d22) 0%,var(--a-fond) 74%)}
 .atlas[data-clair]{--a-halo:#ffffff}
 .atlas *{box-sizing:border-box}
+.atlas [hidden]{display:none!important}
 .atlas button{appearance:none;-webkit-appearance:none;margin:0;font:inherit;color:inherit;cursor:pointer;touch-action:manipulation}
 .atlas-toile{position:absolute;inset:0;width:100%;height:100%;display:block;outline:none;cursor:grab}
 .atlas-toile:active{cursor:grabbing}
@@ -963,9 +964,9 @@ void main() {
 .atlas-legende{display:flex;flex-wrap:wrap;justify-content:center;gap:4px 12px;font-size:11.5px;font-weight:600;color:var(--a-muet);max-width:420px}
 .atlas-legende span{display:inline-flex;align-items:center;gap:5px;white-space:nowrap}
 .atlas-legende i{width:9px;height:9px;border-radius:50%;flex:none}
-.atlas-barre{display:flex;align-items:center;gap:8px;max-width:100%}
+.atlas-barre{display:flex;align-items:center;gap:6px;max-width:100%}
 .atlas-vues{display:flex;border-radius:22px;padding:3px;gap:1px;min-width:0}
-.atlas-vues button{height:38px;padding:0 13px;border:0;border-radius:19px;background:transparent;color:var(--a-muet);font-size:13px;font-weight:600;letter-spacing:-.01em;white-space:nowrap;transition:background .18s,color .18s}
+.atlas-vues button{height:38px;padding:0 11px;border:0;border-radius:19px;background:transparent;color:var(--a-muet);font-size:13px;font-weight:600;letter-spacing:-.01em;white-space:nowrap;transition:background .18s,color .18s}
 .atlas-vues button[aria-pressed="true"]{background:var(--a-inv);color:var(--a-sur-inv)}
 .atlas-retablir{height:30px;padding:0 12px;border-radius:15px;font-size:12px;font-weight:600;color:var(--text,#f5f5f7)}
 .atlas-fiche{position:absolute;left:0;right:0;bottom:0;max-height:52%;display:flex;flex-direction:column;border-radius:22px 22px 0 0;background:var(--s-fen,var(--a-carte));border-top:1px solid var(--a-ligne);box-shadow:0 -18px 44px -18px rgba(0,0,0,.45);transform:translateY(105%);transition:transform .32s cubic-bezier(.2,.8,.2,1);padding:8px 18px max(14px,env(safe-area-inset-bottom));-webkit-user-select:text;user-select:text}
@@ -1002,12 +1003,16 @@ void main() {
 .atlas-indice[data-vu]{opacity:1}
 .atlas[data-fiche] .atlas-bas{opacity:0;pointer-events:none;transform:translateY(12px)}
 .atlas[data-fiche] .atlas-bas>*{pointer-events:none}
+.atlas-credit{margin:0;font-size:10px;line-height:1.2;color:var(--a-muet);opacity:.75;text-align:center;pointer-events:none}
 .atlas-sr{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
-@media (max-width:360px){.atlas-vues button{padding:0 10px;font-size:12.5px}}
+@media (max-width:400px){.atlas-vues button{padding:0 9px;font-size:12.5px}.atlas-barre{gap:5px}}
+@media (max-width:350px){.atlas-vues button{padding:0 7px;font-size:12px}.atlas-rond{width:40px;height:40px}}
 @media (prefers-reduced-motion:reduce){.atlas-fiche,.atlas-index,.atlas-bas,.atlas-indice{transition:none}}
 `;
   const IC = {
     retour: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 4v5h5"/></svg>',
+    pause: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14M16 5v14"/></svg>',
+    lecture: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4.5v15l12-7.5Z"/></svg>',
     liste: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 6h13M8 12h13M8 18h13M3.5 6h.01M3.5 12h.01M3.5 18h.01"/></svg>',
     os: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M17 10c.7-.7 1.69 0 2.5 0a2.5 2.5 0 1 0 0-5 .5.5 0 0 1-.5-.5 2.5 2.5 0 1 0-5 0c0 .81.7 1.8 0 2.5l-7 7c-.7.7-1.69 0-2.5 0a2.5 2.5 0 0 0 0 5c.28 0 .5.22.5.5a2.5 2.5 0 1 0 5 0c0-.81-.7-1.8 0-2.5Z"/></svg>',
     voile: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 3 8l9 5 9-5-9-5Z"/><path d="m3 13 9 5 9-5" stroke-dasharray="2.5 3"/></svg>',
@@ -1062,8 +1067,10 @@ void main() {
     const vues = el('div', 'atlas-vues atlas-verre'); vues.setAttribute('role', 'group'); vues.setAttribute('aria-label', 'Vue');
     [['face', 'Face', 'Vue de face'], ['dos', 'Dos', 'Vue de dos'], ['gauche', 'Gauche', 'Profil gauche'], ['droite', 'Droite', 'Profil droit']].forEach(([id, nom, aria]) => { const b = el('button', '', nom); b.type = 'button'; b.dataset.vue = id; b.setAttribute('aria-label', aria); vues.appendChild(b); });
     const bRetour = el('button', 'atlas-rond atlas-verre', IC.retour); bRetour.type = 'button'; bRetour.setAttribute('aria-label', 'Revenir à la vue de départ');
-    barre.appendChild(bIndex); barre.appendChild(vues); barre.appendChild(bRetour);
-    bas.appendChild(retablir); bas.appendChild(legende); bas.appendChild(barre);
+    const bLecture = el('button', 'atlas-rond atlas-verre', IC.pause); bLecture.type = 'button'; bLecture.hidden = true; bLecture.setAttribute('aria-label', 'Mettre le mouvement en pause');
+    barre.appendChild(bIndex); barre.appendChild(vues); barre.appendChild(bLecture); barre.appendChild(bRetour);
+    const credit = el('p', 'atlas-credit', echap(o.credit || 'Modèle 3D : Z-Anatomy, BodyParts3D — CC BY-SA 4.0'));
+    bas.appendChild(retablir); bas.appendChild(legende); bas.appendChild(barre); bas.appendChild(credit);
 
     /* ----- Fiche du muscle choisi ----- */
     const fiche = el('div', 'atlas-fiche'); fiche.setAttribute('role', 'region'); fiche.setAttribute('aria-label', 'Muscle choisi'); fiche.setAttribute('aria-live', 'polite');
@@ -1074,6 +1081,23 @@ void main() {
     [haut, couches, bas, indice, fiche, index].forEach(n => racine.appendChild(n));
 
     let mode = null, carte = {}, choisi = null, isoleGroupe = false;
+    // Un exercice à montrer ({ mouvement }) : dans le mode « exercice », le corps l'exécute en boucle.
+    let anim = null, lecture = !(window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches);
+    function majLecture() {
+      bLecture.innerHTML = lecture ? IC.pause : IC.lecture;
+      bLecture.setAttribute('aria-label', lecture ? 'Mettre le mouvement en pause' : 'Lancer le mouvement');
+      if (!anim) return;
+      if (lecture && !choisi) anim.demarrer(); else { anim.arreter(); if (!lecture) anim.rendre(0, 0.5); }
+    }
+    function majExercice() {
+      const ex = o.exercice, actif = !!(ex && ex.mouvement && window.AnqaMouvements && mode === (ex.mode || 'exercice'));
+      if (actif && !anim) {
+        try { anim = window.AnqaMouvements.creerAnimation(a, { mouvement: ex.mouvement }, { clair: o.clair }); } catch (e) { anim = null; }
+        if (anim) { anim.rendre(0, lecture ? 0 : 0.5); anim.cadrer(0); }
+      } else if (!actif && anim) { anim.quitter(); anim = null; a.quitterScene(); a.reinitialiser(0); }
+      bLecture.hidden = !anim;
+      majLecture();
+    }
     const etat = () => ({ mode, choisi: choisi && choisi.id, couche: a.couche(), fantomes: a.fantomes(), isoles: a.isoles(), masques: a.masques() });
 
     function majMarges(immediat) {
@@ -1105,7 +1129,7 @@ void main() {
     }
     function choisirMode(id) {
       if (!o.modes.some(m => m.id === id)) id = o.modes[0].id;
-      mode = id; appliquerCarte();
+      mode = id; appliquerCarte(); majExercice();
       if (o.surMode) o.surMode(id);
     }
     function dessinerFiche() {
@@ -1128,7 +1152,7 @@ void main() {
       if (s) { dessinerFiche(); fiche.setAttribute('data-ouverte', ''); racine.setAttribute('data-fiche', ''); }
       else { fiche.removeAttribute('data-ouverte'); racine.removeAttribute('data-fiche'); }
       indice.removeAttribute('data-vu');
-      majCouches();
+      majCouches(); majLecture();
       requestAnimationFrame(() => { majMarges(); if (s && opts && opts.cadrer) a.cadrer(s.id); });
       if (o.surChoix) o.surChoix(s);
     }
@@ -1143,7 +1167,7 @@ void main() {
     }
 
     activerGestes(a, (touche, double) => {
-      if (!touche || touche.os) { if (double) { a.reinitialiser(); return; } if (choisi) choisir(null); return; }
+      if (!touche || touche.os) { if (double) { if (anim) anim.cadrer(); else a.reinitialiser(); return; } if (choisi) choisir(null); return; }
       const s = touche.structure;
       if (double) { if (!choisi || choisi.id !== s.id) choisir(s.id); a.cadrer(s.id); return; }
       if (choisi && choisi.id === s.id) choisir(null); else choisir(s.id);
@@ -1158,7 +1182,8 @@ void main() {
     });
     bVoile.addEventListener('click', () => { a.fantomes(!a.fantomes()); majCouches(); });
     vues.addEventListener('click', e => { const b = e.target.closest('button'); if (b) a.vue(b.dataset.vue); });
-    bRetour.addEventListener('click', () => { a.toutAfficher(); isoleGroupe = false; majCouches(); a.reinitialiser(); });
+    bRetour.addEventListener('click', () => { a.toutAfficher(); isoleGroupe = false; majCouches(); if (anim) anim.cadrer(); else a.reinitialiser(); });
+    bLecture.addEventListener('click', () => { lecture = !lecture; majLecture(); });
     retablir.addEventListener('click', () => { const k = a.couche(); a.toutAfficher(); a.couche(k); isoleGroupe = false; majCouches(); if (choisi) dessinerFiche(); });
     fiche.addEventListener('click', e => {
       const b = e.target.closest('button[data-action]'); if (!b || !choisi) return;
@@ -1195,9 +1220,10 @@ void main() {
     });
 
     majCouches();
-    choisirMode(o.mode || o.modes[0].id);
     majMarges(true);
     a.reinitialiser(0);
+    choisirMode(o.mode || o.modes[0].id);
+    majMarges(true);
     let vu = false; try { vu = !!localStorage.getItem('anqa_atlas_indice'); } catch (e) {}
     if (!vu) { setTimeout(() => indice.setAttribute('data-vu', ''), 700); setTimeout(() => indice.removeAttribute('data-vu'), 5200); try { localStorage.setItem('anqa_atlas_indice', '1'); } catch (e) {} }
     const surTaille = () => majMarges();
@@ -1209,7 +1235,9 @@ void main() {
       fantomes(v) { a.fantomes(v); majCouches(); },
       rafraichir: appliquerCarte,
       theme(clair) { o.clair = !!clair; racine.toggleAttribute('data-clair', o.clair); a.theme({ clair: o.clair, accent: o.accent || (o.clair ? '#db2777' : '#f472b6') }); appliquerCarte(); },
-      detruire() { window.removeEventListener('resize', surTaille); a.detruire(); racine.remove(); }
+      animation: () => anim,
+      lecture(v) { if (v != null) { lecture = !!v; majLecture(); } return lecture; },
+      detruire() { window.removeEventListener('resize', surTaille); if (anim) { anim.quitter(); anim = null; } a.detruire(); racine.remove(); }
     };
   }
 
