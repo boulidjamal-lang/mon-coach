@@ -5327,3 +5327,44 @@ html.app-ios.sans-verre body :is(.toast-annuler, .celebration-carte) { backgroun
 :root[data-theme="dark"] .picto-corps { --corps-contour: color-mix(in srgb, var(--text) 13%, transparent); --corps-neutre: color-mix(in srgb, var(--text) 28%, transparent); }
 .exo-ligne-vignette svg.picto-corps { width: 96%; height: 96%; }
 
+
+/* =====================================================================
+   ATLAS MUSCULAIRE 3D — fenêtre plein écran et accès.
+   L'interface posée sur le corps (modes, couches, vues, fiche) a ses
+   styles dans assets/atlas/atlas3d.js ; ici, ce qui tient à l'appli.
+   ===================================================================== */
+.modal-atlas { padding: 0 !important; }
+html:root body .modal-atlas .atlas-fenetre { max-width: none; width: 100%; height: 100vh; height: 100dvh; max-height: none; border-radius: 0; padding: env(safe-area-inset-top, 0px) 0 0;
+  display: flex; flex-direction: column; overflow: hidden; touch-action: none; background: var(--bg) !important; box-shadow: none; }
+.atlas-entete { margin: 0 !important; padding: 12px 16px 8px; flex: none; }
+.atlas-entete h3 { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.atlas-scene { position: relative; flex: 1; min-height: 0; }
+.atlas-attente { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; padding: 24px; text-align: center; color: var(--text-muted); font-size: .9rem; }
+.atlas-attente small { display: block; margin-top: 4px; font-size: .8rem; }
+.atlas-attente i { width: 26px; height: 26px; border-radius: 50%; border: 2.5px solid var(--s3); border-top-color: var(--text); animation: atlasTourne .8s linear infinite; }
+@keyframes atlasTourne { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .atlas-attente i { animation: none; } }
+@media (min-width: 720px) {
+  .modal-atlas { padding: 24px !important; }
+  html:root body .modal-atlas .atlas-fenetre { max-width: 560px; height: min(92vh, 940px); border-radius: 26px; padding-top: 0; box-shadow: var(--ombre-haute); }
+}
+/* Dans la fiche d'un muscle : ce que l'entraînement en dit. */
+.atlas-lien + .atlas-lien { margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--ligne); }
+.atlas-lien-tete { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; margin-bottom: 6px; }
+.atlas-lien-tete b { font-size: .95rem; font-weight: 700; }
+.atlas-lien-tete span { font-size: .75rem; color: var(--text-muted); text-align: right; }
+.atlas-ligne { margin: 4px 0 0; font-size: .84rem; line-height: 1.45; }
+.atlas-ligne--muette { color: var(--text-muted); }
+.atlas-ligne--alerte { color: var(--attention-t); }
+.atlas-liste { list-style: none; margin: 8px 0 0; padding: 0; font-size: .8rem; }
+.atlas-liste li { display: flex; justify-content: space-between; gap: 10px; padding: 5px 0; border-top: 1px solid var(--ligne); }
+.atlas-liste li span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--text-muted); }
+.atlas-liste li b { font-weight: 600; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.atlas .zone-ligne { margin: 0; }
+/* Accès à l'atlas. */
+.btn-atlas { display: inline-flex; align-items: center; justify-content: center; gap: 8px; }
+.btn-atlas .icone-ui { width: 16px; height: 16px; flex: none; }
+.btn-atlas.btn { width: 100%; margin: 4px 0 12px; }
+.fiche-bloc .btn-atlas.btn { margin: 10px 0 4px; }
+.hx--pivot > .cp-bouton--atlas { top: 54px; }
+.cp-bouton--atlas svg { width: 14px; height: 14px; }

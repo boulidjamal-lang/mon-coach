@@ -2684,6 +2684,17 @@
   </div>
 </div>
 
+<!-- Atlas musculaire 3D : le corps écorché, plein écran (voir « ATLAS MUSCULAIRE 3D » dans le script). -->
+<div id="atlas-modal" class="modal modal-atlas" role="dialog" aria-modal="true" aria-labelledby="titre-atlas">
+  <div class="modal-content atlas-fenetre">
+    <div class="modal-entete atlas-entete">
+      <h3 id="titre-atlas">Atlas musculaire</h3>
+      <button class="close-modal" onclick="fermerAtlas()" aria-label="Fermer">&times;</button>
+    </div>
+    <div id="atlas-scene" class="atlas-scene"></div>
+  </div>
+</div>
+
 <!-- ================= SÉANCE — Assistant de création de programme par IA ================= -->
 <div id="ia-programme-modal" class="modal" role="dialog" aria-modal="true" aria-labelledby="titre-ia-programme">
   <div class="modal-content" style="max-width:560px;">
@@ -7410,6 +7421,7 @@ function fermerModal(id) {
   if (id === 'accord-modal' && accordObligatoire) return;
   if (id === 'modal-bienvenue' && bilanForce) return;
   if (id === 'fiche-exercice-modal') { arreterAnimationFiche(); if (typeof fermerCourbePleinEcran === 'function') fermerCourbePleinEcran(); }
+  if (id === 'atlas-modal' && typeof fermerSceneAtlas === 'function') fermerSceneAtlas();
   // Sinon, fermer la séance/le programme en cours d'édition sans avoir
   // choisi d'option laissait le petit menu de type de série flotter,
   // orphelin, par-dessus tout le reste de l'appli.
@@ -20245,53 +20257,55 @@ const RAPPEL_FAISCEAUX = {
   biceps: 'curl incliné (coude derrière le corps) → longue portion, curl au pupitre ou concentré → courte portion, curl marteau → brachial',
   triceps: 'extensions au-dessus de la tête → longue portion, pushdowns, dips et développés prise serrée → vastes latéral et médial'
 };
-function alertesFaisceaux(groupe, f, total) {
+/* Avis sur l'équilibre des faisceaux d'un groupe : pour chacun, le faisceau en retard et la phrase à afficher. */
+function avisFaisceaux(groupe, f, total) {
   const v = cle => f[cle] || 0;
   const alertes = [];
   if (total < SERIES_MIN_FAISCEAUX) return alertes;
   if (groupe === 'epaules') {
     if (v('delt_post') < v('delt_ant') * 0.5)
-      alertes.push('Le deltoïde postérieur reçoit moins de la moitié du travail de l\'antérieur (les développés pectoraux sollicitent aussi l\'antérieur). Ajoute de l\'oiseau ou du face pull : l\'épaule sera plus équilibrée et mieux protégée.');
+      alertes.push({ faisceau: 'delt_post', texte: 'Le deltoïde postérieur reçoit moins de la moitié du travail de l\'antérieur (les développés pectoraux sollicitent aussi l\'antérieur). Ajoute de l\'oiseau ou du face pull : l\'épaule sera plus équilibrée et mieux protégée.' });
     if (v('delt_lat') < total * 0.2)
-      alertes.push('Le deltoïde latéral est peu ciblé, alors que c\'est lui qui élargit les épaules. Ajoute des élévations latérales.');
+      alertes.push({ faisceau: 'delt_lat', texte: 'Le deltoïde latéral est peu ciblé, alors que c\'est lui qui élargit les épaules. Ajoute des élévations latérales.' });
   } else if (groupe === 'pectoraux') {
     if (v('pec_haut') < total * 0.25)
-      alertes.push('Le haut des pectoraux est peu ciblé. Ajoute un développé ou un écarté incliné.');
+      alertes.push({ faisceau: 'pec_haut', texte: 'Le haut des pectoraux est peu ciblé. Ajoute un développé ou un écarté incliné.' });
   } else if (groupe === 'dos') {
     if (v('dos_largeur') < total * 0.35)
-      alertes.push('Il y a peu de tirages verticaux. Ajoute des tractions ou du tirage vertical pour la largeur du dos.');
+      alertes.push({ faisceau: 'dos_largeur', texte: 'Il y a peu de tirages verticaux. Ajoute des tractions ou du tirage vertical pour la largeur du dos.' });
     if (v('dos_epaisseur') < total * 0.35)
-      alertes.push('Il y a peu de rowings. Ajoute du rowing pour l\'épaisseur du milieu du dos.');
+      alertes.push({ faisceau: 'dos_epaisseur', texte: 'Il y a peu de rowings. Ajoute du rowing pour l\'épaisseur du milieu du dos.' });
   } else if (groupe === 'quadriceps') {
     if (v('quad_droit') < total * 0.2)
-      alertes.push('Le droit fémoral travaille peu dans les squats et la presse. Ajoute du leg extension.');
+      alertes.push({ faisceau: 'quad_droit', texte: 'Le droit fémoral travaille peu dans les squats et la presse. Ajoute du leg extension.' });
   } else if (groupe === 'ischios') {
     if (v('isch_biceps') < total * 0.4)
-      alertes.push('Tes ischios travaillent surtout en flexion du genou. Ajoute un mouvement de hanche (soulevé de terre roumain, good morning).');
+      alertes.push({ faisceau: 'isch_biceps', texte: 'Tes ischios travaillent surtout en flexion du genou. Ajoute un mouvement de hanche (soulevé de terre roumain, good morning).' });
     if (v('isch_semi') < total * 0.4)
-      alertes.push('Tes ischios travaillent surtout en extension de hanche. Ajoute du leg curl.');
+      alertes.push({ faisceau: 'isch_semi', texte: 'Tes ischios travaillent surtout en extension de hanche. Ajoute du leg curl.' });
   } else if (groupe === 'fessiers') {
     if (v('fes_moyen') < total * 0.2)
-      alertes.push('Le moyen fessier est peu ciblé (stabilité du bassin et des genoux). Ajoute de l\'abduction de hanche ou des exercices sur une jambe.');
+      alertes.push({ faisceau: 'fes_moyen', texte: 'Le moyen fessier est peu ciblé (stabilité du bassin et des genoux). Ajoute de l\'abduction de hanche ou des exercices sur une jambe.' });
   } else if (groupe === 'mollets') {
     const mollet = v('mol_gastro') + v('mol_soleaire');
     if (mollet >= SERIES_MIN_FAISCEAUX && v('mol_soleaire') < mollet * 0.3)
-      alertes.push('Le soléaire est peu travaillé. Ajoute des mollets assis (genoux pliés).');
+      alertes.push({ faisceau: 'mol_soleaire', texte: 'Le soléaire est peu travaillé. Ajoute des mollets assis (genoux pliés).' });
     if (mollet >= SERIES_MIN_FAISCEAUX && v('mol_gastro') < mollet * 0.3)
-      alertes.push('Les gastrocnémiens sont peu travaillés. Ajoute des mollets debout, jambes tendues.');
+      alertes.push({ faisceau: 'mol_gastro', texte: 'Les gastrocnémiens sont peu travaillés. Ajoute des mollets debout, jambes tendues.' });
   } else if (groupe === 'biceps') {
     if (v('bic_long') < total * 0.3)
-      alertes.push('La longue portion est peu ciblée. Ajoute un curl incliné (coude derrière le corps).');
+      alertes.push({ faisceau: 'bic_long', texte: 'La longue portion est peu ciblée. Ajoute un curl incliné (coude derrière le corps).' });
     if (v('bic_court') < total * 0.3)
-      alertes.push('La courte portion est peu ciblée. Ajoute un curl au pupitre ou un curl concentré.');
+      alertes.push({ faisceau: 'bic_court', texte: 'La courte portion est peu ciblée. Ajoute un curl au pupitre ou un curl concentré.' });
     if (v('bic_brachial') < total * 0.18)
-      alertes.push('Le brachial est peu ciblé. Ajoute du curl marteau.');
+      alertes.push({ faisceau: 'bic_brachial', texte: 'Le brachial est peu ciblé. Ajoute du curl marteau.' });
   } else if (groupe === 'triceps') {
     if (v('tri_long') < total * 0.3)
-      alertes.push('La longue portion, la plus grosse du triceps, travaille surtout bras au-dessus de la tête. Ajoute une extension au-dessus de la tête.');
+      alertes.push({ faisceau: 'tri_long', texte: 'La longue portion, la plus grosse du triceps, travaille surtout bras au-dessus de la tête. Ajoute une extension au-dessus de la tête.' });
   }
   return alertes;
 }
+function alertesFaisceaux(groupe, f, total) { return avisFaisceaux(groupe, f, total).map(a => a.texte); }
 function detailFaisceauxHTML(groupe, f) {
   const liste = FAISCEAUX[groupe];
   if (!liste) return '';
@@ -20340,6 +20354,7 @@ function renderZonesMuscu(idCible) {
   let html = `<div class="titre-section">Cette semaine · ${fmt(lundi)} – ${fmt(decalerJours(lundi, 6))}</div>
     <p class="note" style="margin:0 0 6px;">Seules les séries de travail comptent (proches de l'échec) : 1 pour le muscle principal de l'exercice, 0,5 pour ses muscles secondaires. Les séries marquées « Échauffement » et celles trop légères par rapport à ton 1RM récent (plus de ${RIR_MAX_SERIE_TRAVAIL} répétitions en réserve estimées) sont ignorées.</p>
 `;
+  html += boutonAtlasHTML('semaine', null, 'Voir sur le corps en 3D');
   html += actifs.length
     ? actifs.map(g => ligneZoneHTML(g, semaine[g]) + detailFaisceauxHTML(g, faisceaux)).join('')
     : '<p class="note">Aucune série faite cette semaine pour l\'instant.</p>';
@@ -22183,6 +22198,7 @@ function afficherFicheExerciceBiblio(id, options) {
     <div class="fiche-bloc-titre">Muscles sollicités</div>
     <div class="fiche-muscles"><span class="principal">${escapeHtml(GROUPES_MUSCULAIRES[e.groupe] || '')}</span>${(e.secondaires || []).filter(g => g !== e.groupe && GROUPES_MUSCULAIRES[g]).map(g => `<span>${escapeHtml(GROUPES_MUSCULAIRES[g])}</span>`).join('')}</div>
     ${faisceauxFicheHTML(e)}
+    ${boutonAtlasHTML('exercice', e.id, MOUVEMENTS_3D[e.id] ? 'Voir le mouvement en 3D' : 'Voir les muscles en 3D')}
     <div class="fiche-record" style="margin-top:6px;"><span>Matériel</span><b>${MATERIELS[e.materiel].ic} ${escapeHtml(MATERIELS[e.materiel].label)}</b></div>
   </div>`;
 
@@ -23731,6 +23747,289 @@ function couleursSemaine() {
   return { series, couleurs: couleursZones(series) };
 }
 
+/* =====================================================================
+   ATLAS MUSCULAIRE 3D — le corps écorché en trois dimensions
+   (assets/atlas : moteur, mouvements et modèle ; voir son LISEZMOI).
+   Chaque muscle y est un objet à part entière : on le touche, il se nomme,
+   on retire les couches pour voir les muscles profonds, et le corps sait
+   exécuter quelques exercices. Ses couleurs viennent des données réelles
+   de l'entraînement, par les mêmes calculs que les écrans existants
+   (séries de travail, zones, faisceaux) : rien n'est inventé, et un muscle
+   sans donnée reste neutre.
+   Chargé à la demande. Sans WebGL 2, les boutons d'accès n'apparaissent
+   pas : le mannequin dessiné reste seul.
+   ===================================================================== */
+const ATLAS_FICHIERS = { moteur: 'assets/atlas/atlas3d.js', mouvements: 'assets/atlas/atlas-mouvements.js', modele: 'assets/atlas/atlas.bin' };
+/* Exercices dont le corps sait exécuter le mouvement (les autres montrent leurs muscles, corps immobile). */
+const MOUVEMENTS_3D = {
+  e265: 'squat', 'sw-squat-avec-barre-haute': 'squat', 'sw-squat-avec-barre-basse': 'squat',
+  e1: 'developpeCouche', 'sw-developpe-couche-avec-arret': 'developpeCouche',
+  e29: 'souleveDeTerre', e20: 'traction', 'sw-tractions-prise-large': 'traction', e13: 'pompe',
+  e338: 'curl', 'sw-curl-avec-halteres-en-supination': 'curl', e42: 'elevationsLaterales', e24: 'rowing'
+};
+const MODES_ATLAS = [['exercice', 'Exercice'], ['semaine', 'Semaine'], ['seance', 'Dernière séance'], ['frequence', 'Fréquence'], ['progression', 'Progression'], ['equilibre', 'Équilibre'], ['anatomie', 'Anatomie']];
+/* Part de la couleur du groupe que prend un muscle selon son rôle dans ce groupe. */
+const POIDS_ROLE_ATLAS = { principal: 1, synergiste: 0.6, stabilisateur: 0.35 };
+const LIBELLES_ROLE_ATLAS = { principal: 'muscle moteur', synergiste: "muscle d'appoint", stabilisateur: 'stabilisateur' };
+const JOURS_ATLAS = 28;
+let atlasMonte = null, atlasScripts = {}, atlasExercice = null, atlasDonnees = null;
+
+function atlasDisponible() { return typeof WebGL2RenderingContext !== 'undefined'; }
+function chargerScriptAtlas(src) {
+  if (!atlasScripts[src]) atlasScripts[src] = new Promise((ok, ko) => {
+    const s = document.createElement('script');
+    s.src = src;
+    s.onload = ok;
+    s.onerror = () => { delete atlasScripts[src]; s.remove(); ko(new Error('script')); };
+    document.head.appendChild(s);
+  });
+  return atlasScripts[src];
+}
+function couleurCssAtlas(nom, repli) {
+  const v = getComputedStyle(document.documentElement).getPropertyValue(nom).trim();
+  return /^#[0-9a-f]{6}$/i.test(v) ? v : repli;
+}
+/* Mélange de deux couleurs « #rrggbb » : t = 0 donne a, t = 1 donne b. */
+function melangerCouleurs(a, b, t) {
+  const n = h => [1, 3, 5].map(i => parseInt(h.slice(i, i + 2), 16));
+  const x = n(a), y = n(b);
+  return '#' + x.map((v, i) => Math.round(v + (y[i] - v) * t).toString(16).padStart(2, '0')).join('');
+}
+
+/* Ce que l'atlas montre, calculé une fois à l'ouverture sur l'historique réel :
+   - semaine : séries de travail par groupe et par faisceau, semaine en cours (séance active comprise) ;
+   - seance : la dernière séance (ou celle en cours), séries directes et indirectes par groupe ;
+   - frequence, derniere : jours d'entraînement par groupe sur 28 jours, et dernière date ;
+   - progression : meilleur 1RM estimé des 28 derniers jours contre les 28 précédents, mêmes exercices ;
+   - equilibre : volume moyen par semaine sur 28 jours, et faisceaux en retard d'après les règles des faisceaux. */
+function donneesAtlas() {
+  const auj = todayStr(), lundi = lundiDeLaSemaine(auj);
+  const faisceauxSemaine = {};
+  const semaine = seriesSemaine(lundi, true, null, faisceauxSemaine);
+  const debut = decalerJours(auj, -(JOURS_ATLAS - 1)), avantDebut = decalerJours(auj, -(2 * JOURS_ATLAS - 1));
+  const cache = new Map();
+  const jours = {}, derniere = {}, volume = {}, faisceaux = {};
+  musculationHistorique.forEach(h => {
+    if (!h || !h.date || h.date > auj) return;
+    const parGroupe = ajouterSeriesParGroupe({}, h.exercices, { date: h.date, historique: musculationHistorique, cache, faisceaux: h.date >= debut ? faisceaux : null });
+    Object.keys(parGroupe).forEach(g => {
+      if (parGroupe[g] < 1) return;
+      if (!derniere[g] || h.date > derniere[g]) derniere[g] = h.date;
+      if (h.date >= debut) (jours[g] = jours[g] || new Set()).add(h.date);
+    });
+    if (h.date >= debut) Object.keys(parGroupe).forEach(g => { volume[g] = (volume[g] || 0) + parGroupe[g]; });
+  });
+  // Dernière séance : celle en cours, sinon toutes les séances du dernier jour d'entraînement.
+  const seance = { date: null, enCours: false, directs: {}, indirects: {} };
+  const compter = (exercices, date) => (exercices || []).forEach(e => {
+    const exo = trouverExercice(e.exerciceId);
+    if (!exo) return;
+    const ref = reference1RMExercice(e.exerciceId, date, musculationHistorique, exercices, cache);
+    const n = (e.series || []).filter(x => estSerieDeTravail(x, ref)).length;
+    if (!n) return;
+    if (ZONES_VOLUME[exo.groupe]) seance.directs[exo.groupe] = (seance.directs[exo.groupe] || 0) + n;
+    (exo.secondaires || []).forEach(g => { if (g !== exo.groupe && ZONES_VOLUME[g]) seance.indirects[g] = (seance.indirects[g] || 0) + n; });
+  });
+  if (musculationSessionActive && (musculationSessionActive.exercices || []).some(e => (e.series || []).some(x => x.fait))) {
+    seance.date = auj; seance.enCours = true; compter(musculationSessionActive.exercices, auj);
+  } else {
+    const dates = musculationHistorique.map(h => h && h.date).filter(d => d && d <= auj).sort();
+    seance.date = dates.length ? dates[dates.length - 1] : null;
+    if (seance.date) musculationHistorique.filter(h => h.date === seance.date).forEach(h => compter(h.exercices, h.date));
+  }
+  // Progression : par groupe, les exercices faits dans les deux périodes, et le rapport de leur meilleur 1RM estimé.
+  const recent = musculationHistorique.filter(h => h && h.date >= debut && h.date <= auj), avant = musculationHistorique.filter(h => h && h.date >= avantDebut && h.date < debut);
+  const progression = {};
+  [...new Set(recent.flatMap(h => (h.exercices || []).map(e => e.exerciceId)))].forEach(id => {
+    const exo = trouverExercice(id);
+    if (!exo || !ZONES_VOLUME[exo.groupe]) return;
+    const a = meilleur1RM(id, avant), b = meilleur1RM(id, recent);
+    if (a && b) (progression[exo.groupe] = progression[exo.groupe] || []).push({ nom: libelleExercice(exo), avant: a.valeur, apres: b.valeur, rapport: b.valeur / a.valeur });
+  });
+  Object.keys(progression).forEach(g => {
+    const r = progression[g].map(x => x.rapport).sort((x, y) => x - y), m = r.length % 2 ? r[(r.length - 1) / 2] : (r[r.length / 2 - 1] + r[r.length / 2]) / 2;
+    progression[g] = { exercices: progression[g], evolution: m - 1 };
+  });
+  // Équilibre : faisceaux en retard dans leur groupe (règles des faisceaux, sur 28 jours).
+  const retards = {};
+  Object.keys(FAISCEAUX).forEach(g => {
+    const total = FAISCEAUX[g].reduce((s, [cle]) => s + (faisceaux[cle] || 0), 0);
+    avisFaisceaux(g, faisceaux, total).forEach(a => { retards[a.faisceau] = a.texte; });
+  });
+  return { auj, lundi, semaine, faisceauxSemaine, seance, jours, derniere, volume, faisceaux, progression, retards, entraine: Object.keys(volume).some(g => volume[g] > 0) };
+}
+
+/* « d'aujourd'hui », « d'hier », « du 3 novembre » : une date dans une phrase. */
+function dateDansPhraseAtlas(iso) {
+  const t = formatDateDisplay(iso).toLowerCase();
+  return (/^(aujourd|hier|avant-hier)/.test(t) ? "d'" : 'du ') + t;
+}
+/* Couleurs neutres du corps quand il sert de carte (les couleurs sont réservées aux données). */
+function neutresAtlas() {
+  return themeClairActif() ? { muscle: '#c9c9d0', tendon: '#e3e3e8', os: '#dadadf' } : { muscle: '#6c6c75', tendon: '#9d9da5', os: '#8c8c94' };
+}
+/* Niveaux des faisceaux d'un exercice, tous groupes confondus : 2 = principal, 1 = un peu (comme sur sa fiche). */
+function niveauxFaisceauxExercice(exo) {
+  const tous = {};
+  groupesAFaisceaux(exo).forEach(g => Object.assign(tous, niveauxFaisceauxManuels(exo, g) || niveauxDepuisPoids(repartitionFaisceauxEstimee(exo, g))));
+  return tous;
+}
+/* Pour une structure, la teinte que donne chacun de ses liens (groupe, faisceau, rôle) dans le mode demandé :
+   { c: couleur, k: force de 0 à 1 } ou null quand il n'y a rien à montrer. */
+function teinteLienAtlas(mode, lien, D) {
+  const g = lien.groupe, rose = couleurCssAtlas('--corps-cible', '#f472b6');
+  if (mode === 'semaine') {
+    const n = D.semaine[g] || 0;
+    if (!(n > 0)) return null;
+    // Comme sur la figure des faisceaux : plus le faisceau a de séries dans son groupe, plus sa couleur est franche.
+    let k = 1;
+    if (lien.faisceau && FAISCEAUX[g]) { const max = Math.max(...FAISCEAUX[g].map(([cle]) => D.faisceauxSemaine[cle] || 0)); if (max > 0) k = 0.3 + 0.7 * (D.faisceauxSemaine[lien.faisceau] || 0) / max; }
+    return { c: ZONES_INFO[cleZoneVolume(g, n)].couleur, k };
+  }
+  if (mode === 'seance') return D.seance.directs[g] ? { c: rose, k: 1 } : D.seance.indirects[g] ? { c: rose, k: 0.45 } : null;
+  if (mode === 'frequence') { const n = D.jours[g] ? D.jours[g].size : 0; return n ? { c: rose, k: 0.3 + 0.7 * Math.min(1, n / (3 * JOURS_ATLAS / 7)) } : null; }
+  if (mode === 'progression') {
+    const p = D.progression[g];
+    if (!p) return null;
+    return { c: p.evolution >= 0.02 ? couleurCssAtlas('--ok', '#32d74b') : p.evolution <= -0.02 ? couleurCssAtlas('--attention', '#ff9f0a') : (themeClairActif() ? '#7d8799' : '#8e98ab'), k: 1 };
+  }
+  if (mode === 'equilibre') {
+    if (lien.faisceau && D.retards[lien.faisceau]) return { c: couleurCssAtlas('--attention', '#ff9f0a'), k: 1 };
+    if (D.entraine && ZONES_VOLUME[g] && cleZoneVolume(g, (D.volume[g] || 0) * 7 / JOURS_ATLAS) === 'sous') return { c: ZONES_INFO.sous.couleur, k: 1 };
+    return null;
+  }
+  if (mode === 'exercice' && atlasExercice) {
+    const exo = atlasExercice.exo, principal = g === exo.groupe, secondaire = !principal && (exo.secondaires || []).includes(g);
+    if (!principal && !secondaire) return null;
+    const niveaux = atlasExercice.niveaux || (atlasExercice.niveaux = niveauxFaisceauxExercice(exo));
+    let k = principal ? 1 : 0.45;
+    // Les faisceaux de la fiche de l'exercice : principal, un peu, ou à peine.
+    if (lien.faisceau && groupesAFaisceaux(exo).includes(g)) k *= niveaux[lien.faisceau] === 2 ? 1 : niveaux[lien.faisceau] === 1 ? 0.55 : 0.25;
+    return { c: rose, k };
+  }
+  return null;
+}
+/* Les couleurs de tout le corps pour un mode : appelée par l'atlas à chaque changement de mode. */
+function carteAtlas(mode, structures) {
+  const D = atlasDonnees;
+  if (mode === 'anatomie' || !D) return { estompe: 0.7 };
+  const N = neutresAtlas(), couleurs = {};
+  structures.forEach(s => {
+    let mieux = null;
+    s.app.forEach(lien => { const t = teinteLienAtlas(mode, lien, D); if (t) { const k = t.k * POIDS_ROLE_ATLAS[lien.role]; if (!mieux || k > mieux.k) mieux = { c: t.c, k }; } });
+    if (mieux) couleurs[s.id] = melangerCouleurs(N.muscle, mieux.c, Math.max(0.18, Math.min(1, mieux.k)));
+  });
+  const carte = { couleurs, muscle: N.muscle, tendon: N.tendon, os: N.os, tendons: 0.3, estompe: 0.5 };
+  const rose = couleurCssAtlas('--corps-cible', '#f472b6'), date = iso => formatDateDisplay(iso).toLowerCase();
+  if (mode === 'semaine') {
+    carte.legende = ['sous', 'mv', 'mev', 'mav', 'mrv'].map(k => ({ c: ZONES_INFO[k].couleur, t: ZONES_INFO[k].court }));
+    carte.note = Object.keys(couleurs).length ? '' : 'Aucune série de travail cette semaine pour l\'instant.';
+  } else if (mode === 'seance') {
+    carte.legende = [{ c: rose, t: 'Travaillé directement' }, { c: melangerCouleurs(N.muscle, rose, 0.45), t: 'Sollicité aussi' }];
+    carte.note = D.seance.date ? (D.seance.enCours ? 'Séance en cours' : 'Séance ' + dateDansPhraseAtlas(D.seance.date)) : 'Aucune séance enregistrée pour l\'instant.';
+  } else if (mode === 'frequence') {
+    carte.legende = [{ c: melangerCouleurs(N.muscle, rose, 0.3), t: 'Rarement' }, { c: melangerCouleurs(N.muscle, rose, 0.65), t: '1 à 2 fois par semaine' }, { c: rose, t: '3 fois et plus' }];
+    carte.note = D.entraine ? `Jours d'entraînement de chaque muscle sur ${JOURS_ATLAS} jours` : `Aucune séance sur les ${JOURS_ATLAS} derniers jours.`;
+  } else if (mode === 'progression') {
+    carte.legende = [{ c: couleurCssAtlas('--ok', '#32d74b'), t: 'En progrès' }, { c: themeClairActif() ? '#7d8799' : '#8e98ab', t: 'Stable' }, { c: couleurCssAtlas('--attention', '#ff9f0a'), t: 'En recul' }];
+    carte.note = Object.keys(D.progression).length ? `Force estimée (1RM) des ${JOURS_ATLAS} derniers jours, comparée aux ${JOURS_ATLAS} précédents, sur les mêmes exercices`
+      : `Pas encore de comparaison possible : il faut les mêmes exercices sur deux périodes de ${JOURS_ATLAS} jours.`;
+  } else if (mode === 'equilibre') {
+    carte.legende = [{ c: couleurCssAtlas('--attention', '#ff9f0a'), t: 'Faisceau en retard dans son groupe' }, { c: ZONES_INFO.sous.couleur, t: 'Sous le volume d\'entretien' }];
+    carte.note = !D.entraine ? `Aucune séance sur les ${JOURS_ATLAS} derniers jours.` : Object.keys(couleurs).length ? `Sur ${JOURS_ATLAS} jours` : `Rien à signaler sur ${JOURS_ATLAS} jours.`;
+  } else if (mode === 'exercice' && atlasExercice) {
+    carte.legende = [{ c: rose, t: 'Muscle principal' }, { c: melangerCouleurs(N.muscle, rose, 0.45), t: 'Travaille aussi' }];
+    carte.note = atlasExercice.mouvement ? '' : 'Mouvement pas encore animé pour cet exercice : ses muscles, corps au repos.';
+  }
+  return carte;
+}
+/* Le groupe d'une structure, pour l'isoler avec ses voisins : son premier lien. */
+function groupeAtlas(s) {
+  if (!s.app.length || !atlasMonte) return null;
+  const g = s.app[0].groupe;
+  return { nom: GROUPES_MUSCULAIRES[g] || g, ids: atlasMonte.atlas.structures.filter(x => x.app.some(a => a.groupe === g)).map(x => x.id) };
+}
+/* Ce que la fiche d'un muscle dit de l'entraînement, dans le mode affiché. */
+function ficheAtlas(s, mode) {
+  const D = atlasDonnees;
+  if (!D) return '';
+  if (!s.app.length) return `<p class="atlas-ligne atlas-ligne--muette">${s.type === 'muscle' ? "Ce muscle n'a pas de suivi dédié dans Anqā : aucun exercice de la base ne le compte à part." : 'Structure fibreuse, montrée pour situer les muscles.'}</p>`;
+  const series = n => `${formatSeries(n)} série${arrondiSeries(n) >= 2 ? 's' : ''}`, date = iso => formatDateDisplay(iso).toLowerCase();
+  return s.app.map(lien => {
+    const g = lien.groupe, fx = lien.faisceau && (FAISCEAUX[g] || []).find(x => x[0] === lien.faisceau);
+    let corps = '';
+    if (mode === 'semaine' || mode === 'anatomie') {
+      corps = ligneZoneHTML(g, D.semaine[g] || 0, true);
+      const total = fx ? FAISCEAUX[g].reduce((t, [cle]) => t + (D.faisceauxSemaine[cle] || 0), 0) : 0;
+      if (fx && total > 0) corps += `<p class="atlas-ligne">${escapeHtml(fx[1])} : environ ${series(D.faisceauxSemaine[lien.faisceau] || 0)}, soit ${Math.round((D.faisceauxSemaine[lien.faisceau] || 0) / total * 100)} % du groupe (estimation d'après le type de mouvement).</p>`;
+    } else if (mode === 'seance') {
+      const d = D.seance.directs[g] || 0, i = D.seance.indirects[g] || 0, quand = D.seance.enCours ? 'Séance en cours' : D.seance.date ? 'Séance ' + dateDansPhraseAtlas(D.seance.date) : '';
+      corps = `<p class="atlas-ligne">${!D.seance.date ? 'Aucune séance enregistrée pour l\'instant.' : d ? `${quand} : ${series(d)} de travail en muscle principal${i ? `, et ${series(i)} en muscle secondaire` : ''}.` : i ? `${quand} : sollicité indirectement (${series(i)} où il est muscle secondaire).` : `${quand} : pas travaillé.`}</p>`;
+    } else if (mode === 'frequence') {
+      const n = D.jours[g] ? D.jours[g].size : 0, parSem = n * 7 / JOURS_ATLAS;
+      corps = `<p class="atlas-ligne">${n ? `${n} jour${n > 1 ? 's' : ''} d'entraînement sur ${JOURS_ATLAS} jours, soit ${String(Math.round(parSem * 10) / 10).replace('.', ',')} par semaine.` : `Pas travaillé sur les ${JOURS_ATLAS} derniers jours.`}${D.derniere[g] ? ` Dernière fois : ${date(D.derniere[g])}.` : ''}</p>`;
+    } else if (mode === 'progression') {
+      const p = D.progression[g];
+      corps = p ? `<p class="atlas-ligne">Force estimée : ${p.evolution >= 0 ? '+' : '−'}${String(Math.round(Math.abs(p.evolution) * 1000) / 10).replace('.', ',')} % en ${JOURS_ATLAS} jours (${p.exercices.length} exercice${p.exercices.length > 1 ? 's' : ''} comparé${p.exercices.length > 1 ? 's' : ''}).</p>
+        <ul class="atlas-liste">${p.exercices.slice(0, 4).map(x => `<li><span>${escapeHtml(x.nom)}</span><b>${Math.round(x.avant)} → ${Math.round(x.apres)} kg</b></li>`).join('')}</ul>`
+        : `<p class="atlas-ligne atlas-ligne--muette">Pas de comparaison possible : aucun exercice de ce groupe fait sur les deux périodes de ${JOURS_ATLAS} jours.</p>`;
+    } else if (mode === 'equilibre') {
+      const moyenne = (D.volume[g] || 0) * 7 / JOURS_ATLAS, retard = lien.faisceau && D.retards[lien.faisceau];
+      corps = `<p class="atlas-ligne">En moyenne ${series(moyenne)} par semaine sur ${JOURS_ATLAS} jours${ZONES_VOLUME[g] ? ` : ${ZONES_INFO[cleZoneVolume(g, moyenne)].nom.toLowerCase()}` : ''}.</p>${retard ? `<p class="atlas-ligne atlas-ligne--alerte">${escapeHtml(retard)}</p>` : ''}`;
+    } else if (mode === 'exercice' && atlasExercice) {
+      const exo = atlasExercice.exo, niveau = lien.faisceau && groupesAFaisceaux(exo).includes(g) ? niveauxFaisceauxExercice(exo)[lien.faisceau] : null;
+      corps = `<p class="atlas-ligne">${g === exo.groupe ? 'Groupe principal de cet exercice' : (exo.secondaires || []).includes(g) ? 'Groupe qui travaille aussi dans cet exercice' : 'Groupe peu sollicité par cet exercice'}${niveau === 2 ? ' ; ce faisceau est le plus sollicité' : niveau === 1 ? ' ; ce faisceau travaille un peu' : ''}.</p>`;
+    }
+    return `<div class="atlas-lien"><div class="atlas-lien-tete"><b>${escapeHtml(GROUPES_MUSCULAIRES[g] || g)}</b><span>${LIBELLES_ROLE_ATLAS[lien.role]}${fx ? ' · ' + escapeHtml(fx[2]) : ''}</span></div>${corps}</div>`;
+  }).join('');
+}
+
+/* Ouvre l'atlas. mode : 'semaine', 'seance', 'frequence', 'progression', 'equilibre' ou 'anatomie' ;
+   options.exercice : identifiant d'un exercice dont montrer les muscles (et le mouvement, s'il est animé). */
+async function ouvrirAtlas(mode, options) {
+  const opts = options || {};
+  if (!atlasDisponible()) { informer("L'atlas en 3D demande un appareil plus récent. Le corps dessiné reste là."); return; }
+  const exo = opts.exercice ? trouverExercice(opts.exercice) : null;
+  atlasExercice = exo ? { exo, mouvement: MOUVEMENTS_3D[exo.id] || null } : null;
+  const scene = document.getElementById('atlas-scene');
+  fermerSceneAtlas();
+  document.getElementById('titre-atlas').textContent = exo ? libelleExercice(exo) : 'Atlas musculaire';
+  scene.innerHTML = '<div class="atlas-attente" role="status"><i aria-hidden="true"></i>Chargement du corps…</div>';
+  ouvrirModal('atlas-modal', true);
+  try {
+    const [tampon] = await Promise.all([
+      fetch(ATLAS_FICHIERS.modele).then(r => { if (!r.ok) throw new Error('modèle'); return r.arrayBuffer(); }),
+      chargerScriptAtlas(ATLAS_FICHIERS.moteur),
+      atlasExercice && atlasExercice.mouvement ? chargerScriptAtlas(ATLAS_FICHIERS.mouvements) : null
+    ]);
+    if (!document.getElementById('atlas-modal').classList.contains('show')) return;   // refermé pendant le chargement
+    atlasDonnees = donneesAtlas();
+    scene.innerHTML = '';
+    const modes = MODES_ATLAS.filter(([id]) => id !== 'exercice' || atlasExercice).map(([id, nom]) => ({ id, nom }));
+    atlasMonte = AnqaAtlas.monter(scene, tampon, {
+      clair: themeClairActif(), accent: couleurCssAtlas('--corps-cible', '#f472b6'), modes,
+      mode: atlasExercice ? 'exercice' : (modes.some(m => m.id === mode) ? mode : 'semaine'),
+      carte: carteAtlas, fiche: ficheAtlas, groupe: groupeAtlas,
+      exercice: atlasExercice && atlasExercice.mouvement ? { mouvement: atlasExercice.mouvement } : null
+    });
+  } catch (e) {
+    console.warn('[Atlas]', e && e.message);
+    fermerSceneAtlas();
+    scene.innerHTML = '<div class="atlas-attente" role="alert">L\'atlas ne peut pas s\'afficher pour le moment.<small>Vérifie ta connexion, puis rouvre-le.</small></div>';
+  }
+}
+function fermerSceneAtlas() {
+  if (atlasMonte) { try { atlasMonte.detruire(); } catch (e) {} atlasMonte = null; }
+  atlasDonnees = null;
+}
+function fermerAtlas() { fermerModal('atlas-modal'); }
+/* Bouton d'accès à l'atlas : rien du tout si l'appareil ne sait pas l'afficher. */
+function boutonAtlasHTML(mode, exercice, libelle, classe) {
+  if (!atlasDisponible()) return '';
+  return `<button type="button" class="${classe || 'btn btn-secondaire'} btn-atlas" onclick="event.stopPropagation(); ouvrirAtlas(${argJs(mode)}${exercice ? `, { exercice: ${argJs(exercice)} }` : ''})">
+    <svg class="icone-ui" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2 3 7v10l9 5 9-5V7z"/><path d="M3 7l9 5 9-5M12 12v10"/></svg><b>${escapeHtml(libelle)}</b></button>`;
+}
+
 /* ---------- Musculation ---------- */
 function groupesProgramme(p) {
   const g = {};
@@ -23830,7 +24129,7 @@ function renderVitrineMuscu() {
   const hx = `
     <div class="hx hx--pivot" onclick="ouvrirStats('muscu')">
       <button type="button" class="carte-action" aria-label="Ta semaine de musculation : voir le détail"></button>
-      <div class="hx-corps">${corpsPivotHTML(couleurs)}</div>${boutonCorpsPivotHTML()}
+      <div class="hx-corps">${corpsPivotHTML(couleurs)}</div>${boutonCorpsPivotHTML()}${boutonAtlasHTML('semaine', null, '3D', 'cp-bouton cp-bouton--atlas')}
       <div class="hx-k">${libelleSemaine(auj)} · Musculation</div><div class="hx-titre">Ta semaine</div>
       ${total ? `<div class="hx-geant" data-compte="${total}">${total}</div><div class="hx-unite">série${total > 1 ? 's' : ''} · ${seancesSem.length} séance${seancesSem.length > 1 ? 's' : ''}</div>`
         : `<div class="hx-vide">${totalPrec ? `<small>Semaine passée</small><b>${totalPrec}</b> série${totalPrec > 1 ? 's' : ''} · ${seancesPrec.length} séance${seancesPrec.length > 1 ? 's' : ''}` : 'Ta première série de la semaine allume le corps.'}</div>`}
