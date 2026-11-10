@@ -42,10 +42,13 @@ layout(location=0) in vec3 a_pos;
 layout(location=1) in vec2 a_ombreTendon;
 layout(location=2) in vec2 a_nor;
 layout(location=3) in float a_num;
+layout(location=4) in uvec4 a_os;
+layout(location=5) in vec4 a_poids;
 uniform vec3 u_min, u_etendue;
 uniform mat4 u_vp;
-uniform float u_miroir, u_cote, u_passe;
+uniform float u_cote, u_passe;
 uniform sampler2D u_etats;
+uniform highp sampler2D u_os;      // la pose : une matrice 3×4 par articulation (ligne 0 : côté gauche, ligne 1 : son miroir)
 out vec3 v_pos, v_nor;
 out float v_ombre, v_tendon;
 flat out vec4 v_teinte, v_etat;
@@ -67,8 +70,16 @@ void main() {
   bool voile = v_etat.g > 0.25 && v_etat.g < 0.75;
   bool plein = presence >= 0.99 && !voile;
   bool voir = u_passe == 1.0 ? (presence > 0.004 && !plein) : plein;
-  vec3 p = u_min + a_pos * u_etendue; p.x *= u_miroir;
-  vec3 n = octa(a_nor); n.x *= u_miroir;
+  // Chaque sommet suit jusqu'à quatre articulations ; au repos, les matrices sont l'identité (ou le miroir).
+  vec4 r0 = vec4(0.0), r1 = vec4(0.0), r2 = vec4(0.0);
+  for (int k = 0; k < 4; k++) {
+    float w = a_poids[k];
+    if (w > 0.0) { int j = int(a_os[k]) * 3; r0 += w * texelFetch(u_os, ivec2(j, cote), 0); r1 += w * texelFetch(u_os, ivec2(j + 1, cote), 0); r2 += w * texelFetch(u_os, ivec2(j + 2, cote), 0); }
+  }
+  vec4 p4 = vec4(u_min + a_pos * u_etendue, 1.0);
+  vec3 p = vec3(dot(r0, p4), dot(r1, p4), dot(r2, p4));
+  vec3 n0 = octa(a_nor);
+  vec3 n = normalize(vec3(dot(r0.xyz, n0), dot(r1.xyz, n0), dot(r2.xyz, n0)));
   v_pos = p; v_nor = n;
   v_ombre = a_ombreTendon.x; v_tendon = a_ombreTendon.y;
   gl_Position = voir ? u_vp * vec4(p, 1.0) : vec4(2.0, 2.0, 2.0, 1.0);
@@ -179,17 +190,66 @@ out vec2 v_p;
 void main() { v_p = a_p; gl_Position = u_vp * vec4(u_centre.x + a_p.x * u_taille.x, u_centre.y, u_centre.z + a_p.y * u_taille.y, 1.0); }`;
   const SOL_P = `#version 300 es
 precision highp float;
-in vec2 v_p; uniform float u_clair; uniform vec2 u_pieds; out vec4 o;
+in vec2 v_p; uniform float u_clair, u_force; uniform vec2 u_pieds; out vec4 o;
 void main() {
   // Ombre de contact : dense sous chaque pied, large et légère autour.
   float large = smoothstep(1.0, 0.0, length(v_p)) ;
   vec2 q = vec2(abs(v_p.x) - u_pieds.x, (v_p.y - 0.08) * 0.62);
   float pied = smoothstep(u_pieds.y, 0.0, length(q));
-  float a = large * large * 0.20 + pied * pied * 0.42;
+  float a = (large * large * 0.20 + pied * pied * 0.42 * step(0.0, u_pieds.x)) * u_force;
   vec3 c = mix(vec3(0.0), vec3(0.05, 0.07, 0.12), u_clair);
   a *= mix(0.85, 0.50, u_clair);
   o = vec4(c * a, a);
 }`;
+
+  // Le matériel (barre, haltères, banc) : des formes simples, éclairées comme le corps.
+  const OBJ_S = `#version 300 es
+precision highp float;
+layout(location=0) in vec3 a_p;
+layout(location=1) in vec3 a_n;
+uniform mat4 u_vp; uniform vec4 u_q; uniform vec3 u_t, u_s;
+out vec3 v_pos, v_nor;
+vec3 tourner(vec3 v, vec4 q) { return v + 2.0 * cross(q.xyz, cross(q.xyz, v) + q.w * v); }
+void main() { vec3 w = tourner(a_p * u_s, u_q) + u_t; v_pos = w; v_nor = tourner(a_n / u_s, u_q); gl_Position = u_vp * vec4(w, 1.0); }`;
+  const OBJ_P = `#version 300 es
+precision highp float;
+in vec3 v_pos, v_nor;
+uniform vec3 u_cam, u_couleur; uniform mat3 u_lum; uniform float u_metal, u_clair;
+out vec4 o;
+float ggx(float nh, float r) { float a = r * r, a2 = a * a, d = nh * nh * (a2 - 1.0) + 1.0; return a2 / (3.14159 * d * d); }
+void main() {
+  vec3 N = normalize(v_nor), V = normalize(u_cam - v_pos);
+  float nv = max(dot(N, V), 0.0);
+  vec3 base = pow(u_couleur, vec3(2.2));
+  vec3 ciel = mix(vec3(0.20, 0.205, 0.225), vec3(0.30, 0.31, 0.34), u_clair), sol = mix(vec3(0.075, 0.062, 0.058), vec3(0.17, 0.155, 0.145), u_clair);
+  vec3 lumiere = mix(sol, ciel, N.y * 0.5 + 0.5), reflets = vec3(0.0);
+  float rug = mix(0.6, 0.3, u_metal), f0 = mix(0.04, 0.7, u_metal);
+  vec3 dirs[3] = vec3[3](normalize(vec3(-0.55, 0.66, 0.52)), normalize(vec3(0.80, 0.06, 0.60)), normalize(vec3(0.30, 0.50, -0.81)));
+  vec3 cols[3] = vec3[3](vec3(1.00, 0.955, 0.90) * 0.98, vec3(0.78, 0.87, 1.00) * 0.26, vec3(1.00, 0.97, 0.94) * 0.62);
+  for (int i = 0; i < 3; i++) {
+    vec3 L = u_lum * dirs[i]; float nl = max(dot(N, L), 0.0);
+    lumiere += cols[i] * nl;
+    vec3 H = normalize(L + V); float nh = max(dot(N, H), 0.0), vh = max(dot(V, H), 0.0);
+    float F = f0 + (1.0 - f0) * pow(1.0 - vh, 5.0);
+    reflets += cols[i] * ggx(nh, rug) * F * 0.25 / (mix(nl, 1.0, rug * 0.5) * mix(nv, 1.0, rug * 0.5) + 0.05) * nl;
+  }
+  vec3 c = base * mix(1.0, 0.35, u_metal) * lumiere + reflets * mix(vec3(1.0), base, u_metal) + pow(1.0 - nv, 3.0) * 0.04;
+  c = c / (1.0 + max(max(c.r, c.g), c.b) * 0.25);
+  o = vec4(pow(c, vec3(1.0 / 2.2)), 1.0);
+}`;
+  /* Formes de base : un cylindre (rayon 1, hauteur 1, le long de Y) et une boîte (côté 1), positions puis normales. */
+  function formesDeBase() {
+    const cyl = [], N = 28;
+    for (let i = 0; i < N; i++) {
+      const a0 = i / N * 2 * Math.PI, a1 = (i + 1) / N * 2 * Math.PI, c0 = Math.cos(a0), s0 = Math.sin(a0), c1 = Math.cos(a1), s1 = Math.sin(a1);
+      cyl.push(c0, -0.5, s0, c0, 0, s0, c0, 0.5, s0, c0, 0, s0, c1, 0.5, s1, c1, 0, s1, c0, -0.5, s0, c0, 0, s0, c1, 0.5, s1, c1, 0, s1, c1, -0.5, s1, c1, 0, s1);
+      cyl.push(0, 0.5, 0, 0, 1, 0, c1, 0.5, s1, 0, 1, 0, c0, 0.5, s0, 0, 1, 0, 0, -0.5, 0, 0, -1, 0, c0, -0.5, s0, 0, -1, 0, c1, -0.5, s1, 0, -1, 0);
+    }
+    const boite = [];
+    for (const [n, u, v] of [[[1, 0, 0], [0, 1, 0], [0, 0, 1]], [[-1, 0, 0], [0, 0, 1], [0, 1, 0]], [[0, 1, 0], [0, 0, 1], [1, 0, 0]], [[0, -1, 0], [1, 0, 0], [0, 0, 1]], [[0, 0, 1], [1, 0, 0], [0, 1, 0]], [[0, 0, -1], [0, 1, 0], [1, 0, 0]]])
+      for (const [a, b] of [[-1, -1], [1, -1], [1, 1], [-1, -1], [1, 1], [-1, 1]]) boite.push(0.5 * (n[0] + a * u[0] + b * v[0]), 0.5 * (n[1] + a * u[1] + b * v[1]), 0.5 * (n[2] + a * u[2] + b * v[2]), n[0], n[1], n[2]);
+    return { cylindre: new Float32Array(cyl), boite: new Float32Array(boite) };
+  }
 
   function programme(gl, vs, fs) {
     const faire = (type, src) => { const s = gl.createShader(type); gl.shaderSource(s, src); gl.compileShader(s); if (!gl.getShaderParameter(s, gl.COMPILE_STATUS)) throw new Error('atlas : ' + gl.getShaderInfoLog(s)); return s; };
@@ -253,10 +313,35 @@ void main() {
     let estompeCible = 0, estompeOs = 0;
     const texels = new Uint8Array(256 * 4 * 4);
     let texSale = true;
+    // La pose : pour chaque articulation, une matrice 3×4 (rotation et déplacement), rangée par lignes. La seconde
+    // rangée sert au côté dessiné en miroir : la matrice de l'articulation jumelle, précédée du miroir.
+    const SQ = E.squelette || [], NJ = Math.max(1, SQ.length);
+    const pose = new Float32Array(NJ * 3 * 4 * 2);
+    let poseSale = true;
+    function ecrirePose(mats) {
+      for (let i = 0; i < NJ; i++) {
+        const j = SQ.length ? SQ[i].jumeau : i;
+        for (let k = 0; k < 12; k++) {
+          pose[i * 12 + k] = mats ? mats[i * 12 + k] : (k % 5 === 0 ? 1 : 0);
+          const v = mats ? mats[j * 12 + k] : (k % 5 === 0 ? 1 : 0);
+          pose[NJ * 12 + i * 12 + k] = k % 4 === 0 ? -v : v;
+        }
+      }
+      poseSale = true;
+    }
+    ecrirePose(null);
 
-    let prog, progRep, progSol, vao, vaoSol, tex, tamponSommets, tamponIndices, tamponSol, cadreRep = null, texRep, profRep;
+    let prog, progRep, progSol, progObj, vaoObj = {}, vao, vaoSol, tex, texOs, tamponSommets, tamponIndices, tamponSol, cadreRep = null, texRep, profRep;
     function installer() {
-      prog = programme(gl, SOMMETS, PIXELS); progRep = programme(gl, SOMMETS, PIXELS_REPERAGE); progSol = programme(gl, SOL_S, SOL_P);
+      prog = programme(gl, SOMMETS, PIXELS); progRep = programme(gl, SOMMETS, PIXELS_REPERAGE); progSol = programme(gl, SOL_S, SOL_P); progObj = programme(gl, OBJ_S, OBJ_P);
+      const formes = formesDeBase(); vaoObj = {};
+      for (const nom in formes) {
+        const v = gl.createVertexArray(); gl.bindVertexArray(v);
+        const t = gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER, t); gl.bufferData(gl.ARRAY_BUFFER, formes[nom], gl.STATIC_DRAW);
+        gl.enableVertexAttribArray(0); gl.vertexAttribPointer(0, 3, gl.FLOAT, false, 24, 0);
+        gl.enableVertexAttribArray(1); gl.vertexAttribPointer(1, 3, gl.FLOAT, false, 24, 12);
+        vaoObj[nom] = { vao: v, n: formes[nom].length / 6 };
+      }
       vao = gl.createVertexArray(); gl.bindVertexArray(vao);
       tamponSommets = gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER, tamponSommets); gl.bufferData(gl.ARRAY_BUFFER, M.sommets, gl.STATIC_DRAW);
       const pas = E.octetsParSommet;
@@ -264,6 +349,8 @@ void main() {
       gl.enableVertexAttribArray(1); gl.vertexAttribPointer(1, 2, gl.UNSIGNED_BYTE, true, pas, 6);
       gl.enableVertexAttribArray(2); gl.vertexAttribPointer(2, 2, gl.BYTE, true, pas, 8);
       gl.enableVertexAttribArray(3); gl.vertexAttribPointer(3, 1, gl.UNSIGNED_BYTE, false, pas, 10);
+      gl.enableVertexAttribArray(4); gl.vertexAttribIPointer(4, 4, gl.UNSIGNED_BYTE, pas, 12);
+      gl.enableVertexAttribArray(5); gl.vertexAttribPointer(5, 4, gl.UNSIGNED_BYTE, true, pas, 16);
       tamponIndices = gl.createBuffer(); gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, tamponIndices); gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, M.indices(), gl.STATIC_DRAW);
       vaoSol = gl.createVertexArray(); gl.bindVertexArray(vaoSol);
       tamponSol = gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER, tamponSol); gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 1, -1, -1, 1, 1, 1]), gl.STATIC_DRAW);
@@ -273,6 +360,11 @@ void main() {
       gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
       gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
       gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA8, 256, 4, 0, gl.RGBA, gl.UNSIGNED_BYTE, texels);
+      texOs = gl.createTexture(); gl.bindTexture(gl.TEXTURE_2D, texOs);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+      gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA32F, NJ * 3, 2, 0, gl.RGBA, gl.FLOAT, pose);
+      poseSale = false;
       // Petite image hors écran pour repérer la structure sous le doigt.
       cadreRep = gl.createFramebuffer(); gl.bindFramebuffer(gl.FRAMEBUFFER, cadreRep);
       texRep = gl.createTexture(); gl.bindTexture(gl.TEXTURE_2D, texRep); gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA8, REP, REP, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
@@ -321,6 +413,12 @@ void main() {
       texSale = false;
     }
 
+    function envoyerPose() {
+      gl.bindTexture(gl.TEXTURE_2D, texOs);
+      gl.texSubImage2D(gl.TEXTURE_2D, 0, 0, 0, NJ * 3, 2, gl.RGBA, gl.FLOAT, pose);
+      poseSale = false;
+    }
+
     /* ----- Caméra : elle tourne autour du corps ----- */
     const cam = { az: 0, el: 4, dist: 1, cible: centreCorps.slice() };
     let larg = 1, haut = 1, pp = 1;
@@ -360,7 +458,7 @@ void main() {
       const pr = n === 2 ? progRep : prog;
       gl.uniform1f(pr.u.u_passe, n);
       for (let cote = 0; cote < 2; cote++) {
-        gl.uniform1f(pr.u.u_miroir, cote ? -1 : 1); gl.uniform1f(pr.u.u_cote, cote);
+        gl.uniform1f(pr.u.u_cote, cote);
         gl.frontFace(cote ? gl.CW : gl.CCW);
         gl.drawElements(gl.TRIANGLES, M.nbIndices, gl.UNSIGNED_INT, 0);
       }
@@ -370,6 +468,7 @@ void main() {
       const pr = reperage ? progRep : prog;
       gl.useProgram(pr.p);
       gl.bindVertexArray(vao);
+      gl.activeTexture(gl.TEXTURE1); gl.bindTexture(gl.TEXTURE_2D, texOs); gl.uniform1i(pr.u.u_os, 1);
       gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, tex); gl.uniform1i(pr.u.u_etats, 0);
       gl.uniformMatrix4fv(pr.u.u_vp, false, m.vp);
       gl.uniform3fv(pr.u.u_min, E.boite.min); gl.uniform3fv(pr.u.u_etendue, E.boite.etendue);
@@ -383,10 +482,12 @@ void main() {
       gl.uniform1f(prog.u.u_estompe, opt.estompe);
     }
     let nbImages = 0, dernierTemps = 0;
+    let objets = [], ombreSol = null, animation = null, scene = null;
     function dessiner() {
       if (gl.isContextLost()) return;
       const t0 = performance.now();
       if (texSale) ecrireTexture();
+      if (poseSale) envoyerPose();
       const m = matrices();
       gl.bindFramebuffer(gl.FRAMEBUFFER, null);
       gl.viewport(0, 0, toile.width, toile.height);
@@ -395,15 +496,37 @@ void main() {
       gl.disable(gl.DEPTH_TEST); gl.enable(gl.BLEND); gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
       gl.useProgram(progSol.p); gl.bindVertexArray(vaoSol);
       gl.uniformMatrix4fv(progSol.u.u_vp, false, m.vp);
-      gl.uniform3f(progSol.u.u_centre, 0, E.boite.min[1] + 0.002, centreCorps[2]);
-      gl.uniform2f(progSol.u.u_taille, 0.62, 0.50);
-      gl.uniform2f(progSol.u.u_pieds, 0.17, 0.30);
+      if (ombreSol) {
+        gl.uniform3f(progSol.u.u_centre, ombreSol.centre[0], 0.002, ombreSol.centre[1]);
+        gl.uniform2f(progSol.u.u_taille, ombreSol.taille[0] * 1.5, ombreSol.taille[1] * 1.5);
+        gl.uniform2f(progSol.u.u_pieds, -1, 0.30); gl.uniform1f(progSol.u.u_force, ombreSol.force == null ? 1 : ombreSol.force);
+      } else {
+        gl.uniform3f(progSol.u.u_centre, 0, E.boite.min[1] + 0.002, centreCorps[2]);
+        gl.uniform2f(progSol.u.u_taille, 0.62, 0.50);
+        gl.uniform2f(progSol.u.u_pieds, 0.17, 0.30); gl.uniform1f(progSol.u.u_force, 1);
+      }
       gl.uniform1f(progSol.u.u_clair, opt.clair ? 1 : 0);
       if (cam.el > -2) gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
       // Les structures pleines, puis les fantômes par-dessus (sans écrire la profondeur).
       preparer(m);
       gl.enable(gl.DEPTH_TEST); gl.depthFunc(gl.LEQUAL); gl.depthMask(true); gl.disable(gl.BLEND); gl.disable(gl.CULL_FACE);
       passe(m, 0);
+      if (objets.length) {
+        // Le matériel de l'exercice.
+        gl.useProgram(progObj.p); gl.enable(gl.CULL_FACE); gl.cullFace(gl.BACK);
+        gl.uniformMatrix4fv(progObj.u.u_vp, false, m.vp); gl.uniform3fv(progObj.u.u_cam, m.oeil);
+        const co = Math.cos(m.az), si = Math.sin(m.az);
+        gl.uniformMatrix3fv(progObj.u.u_lum, false, [co, 0, -si, 0, 1, 0, si, 0, co]); gl.uniform1f(progObj.u.u_clair, opt.clair ? 1 : 0);
+        for (const f of objets) {
+          const v = vaoObj[f.forme]; if (!v) continue;
+          gl.bindVertexArray(v.vao);
+          gl.uniform4fv(progObj.u.u_q, f.q); gl.uniform3fv(progObj.u.u_t, f.p); gl.uniform3fv(progObj.u.u_s, f.s);
+          gl.uniform3f(progObj.u.u_couleur, f.couleur[0] / 255, f.couleur[1] / 255, f.couleur[2] / 255); gl.uniform1f(progObj.u.u_metal, f.metal || 0);
+          gl.drawArrays(gl.TRIANGLES, 0, v.n);
+        }
+        gl.disable(gl.CULL_FACE);
+        preparer(m);
+      }
       if (transparents) {
         gl.enable(gl.BLEND); gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA); gl.depthMask(false); gl.enable(gl.CULL_FACE); gl.cullFace(gl.BACK);
         passe(m, 1);
@@ -418,6 +541,7 @@ void main() {
     function reperer(xCss, yCss) {
       if (gl.isContextLost()) return null;
       if (texSale) ecrireTexture();
+      if (poseSale) envoyerPose();
       const x = xCss / toile.clientWidth * larg, y = (1 - yCss / toile.clientHeight) * haut;   // en pixels de l'image, origine en bas
       const m = matrices([Math.round(x - REP / 2), Math.round(y - REP / 2), REP, REP]);
       gl.bindFramebuffer(gl.FRAMEBUFFER, cadreRep);
@@ -444,6 +568,7 @@ void main() {
     function carteReperage(pas) {
       if (gl.isContextLost()) return null;
       if (texSale) ecrireTexture();
+      if (poseSale) envoyerPose();
       pas = pas || 4;
       const l = Math.max(1, Math.round(toile.clientWidth / pas)), h = Math.max(1, Math.round(toile.clientHeight / pas));
       const cadre = gl.createFramebuffer(), t = gl.createTexture(), prof = gl.createRenderbuffer();
@@ -494,6 +619,8 @@ void main() {
       } else if (!enMain && (Math.abs(elan.az) > 0.02 || Math.abs(elan.el) > 0.02)) {
         cam.az += elan.az; cam.el = borne(cam.el + elan.el, -80, 80); elan.az *= 0.92; elan.el *= 0.88; encore = true;
       }
+      // Un exercice en cours : la pose est recalculée à chaque image.
+      if (animation && animation(t / 1000)) encore = true;
       // Surbrillance et estompe : fondus doux.
       for (let i = 0; i < NB; i++) {
         const cb = i === choisi ? 1 : 0, ce = i === choisi ? 0 : estompeCible;
@@ -567,6 +694,73 @@ void main() {
         const d = borne(distancePour(s.rayon * 2 * 2.3 / libre), 0.5, distanceEntiere());
         allerA({ dist: d, cible: [s.centre[0] * (Math.abs(s.centre[0]) < 0.04 ? 0 : cote), s.centre[1], s.centre[2]] }, duree);
       },
+      // Pose du corps : une matrice 3×4 par articulation (12 nombres, par lignes), dans l'ordre de `squelette`.
+      // Sans argument : retour à la position de repos.
+      squelette: SQ,
+      poser(mats) { ecrirePose(mats || null); demander(); },
+      // Pose donnée par des rotations locales : { nom d'articulation: [x, y, z, w] } (quaternion, repère du parent),
+      // et, au besoin, un déplacement du bassin. Sert aux essais et aux poses simples.
+      poserRotations(rot, deplacement) {
+        const mats = new Float32Array(NJ * 12), R = [], C = [];
+        for (let i = 0; i < NJ; i++) {
+          const a = SQ[i], q = (rot && rot[a.nom]) || [0, 0, 0, 1], x = q[0], y = q[1], z = q[2], w = q[3];
+          const l = [1 - 2 * (y * y + z * z), 2 * (x * y - z * w), 2 * (x * z + y * w), 2 * (x * y + z * w), 1 - 2 * (x * x + z * z), 2 * (y * z - x * w), 2 * (x * z - y * w), 2 * (y * z + x * w), 1 - 2 * (x * x + y * y)];
+          let r, c;
+          if (a.parent < 0) { r = l; c = [a.centre[0] + (deplacement ? deplacement[0] : 0), a.centre[1] + (deplacement ? deplacement[1] : 0), a.centre[2] + (deplacement ? deplacement[2] : 0)]; }
+          else {
+            const rp = R[a.parent], cp = C[a.parent], d = [a.centre[0] - SQ[a.parent].centre[0], a.centre[1] - SQ[a.parent].centre[1], a.centre[2] - SQ[a.parent].centre[2]];
+            r = new Array(9);
+            for (let u = 0; u < 3; u++) for (let v = 0; v < 3; v++) r[u * 3 + v] = rp[u * 3] * l[v] + rp[u * 3 + 1] * l[3 + v] + rp[u * 3 + 2] * l[6 + v];
+            c = [cp[0] + rp[0] * d[0] + rp[1] * d[1] + rp[2] * d[2], cp[1] + rp[3] * d[0] + rp[4] * d[1] + rp[5] * d[2], cp[2] + rp[6] * d[0] + rp[7] * d[1] + rp[8] * d[2]];
+          }
+          R.push(r); C.push(c);
+          for (let u = 0; u < 3; u++) {
+            mats[i * 12 + u * 4] = r[u * 3]; mats[i * 12 + u * 4 + 1] = r[u * 3 + 1]; mats[i * 12 + u * 4 + 2] = r[u * 3 + 2];
+            mats[i * 12 + u * 4 + 3] = c[u] - (r[u * 3] * a.centre[0] + r[u * 3 + 1] * a.centre[1] + r[u * 3 + 2] * a.centre[2]);
+          }
+        }
+        ecrirePose(mats); demander();
+        return { mats, centres: C };
+      },
+      // Matériel : liste de formes { forme: 'cylindre' | 'boite', s (tailles), q (rotation), p (position), couleur, metal }.
+      objets(liste) { objets = liste || []; demander(); },
+      // Ombre au sol : par défaut sous les pieds ; pendant un exercice, sous toute la scène ({ centre, taille, force }).
+      ombre(o) { ombreSol = o || null; demander(); },
+      // Fonction appelée à chaque image (temps en secondes) tant qu'elle renvoie vrai : l'animation d'un exercice.
+      animer(fn) { animation = fn || null; if (animation) demander(); },
+      // Cadre une boîte de la scène (min, max) depuis une vue ({ az, el }) : tout tient dans la zone libre de l'écran.
+      cadrerBoite(mini, maxi, vue, duree) {
+        entier = false;
+        const c = [(mini[0] + maxi[0]) / 2, (mini[1] + maxi[1]) / 2, (mini[2] + maxi[2]) / 2];
+        const az = (vue && vue.az != null ? vue.az : cam.az) * Math.PI / 180, el = (vue && vue.el != null ? vue.el : cam.el) * Math.PI / 180;
+        const arriere = [Math.sin(az) * Math.cos(el), Math.sin(el), Math.cos(az) * Math.cos(el)], droite = norme(croix([0, 1, 0], arriere)), dessus = croix(arriere, droite);
+        const libre = Math.max(0.3, 1 - (marges.haut + marges.bas) * densite() / haut), tv = Math.tan(champ / 2) * libre * 0.96, th = Math.tan(champ / 2) * (larg / haut) * 0.96;
+        let d = 0.5;
+        for (let k = 0; k < 8; k++) {
+          const q = [(k & 1 ? maxi[0] : mini[0]) - c[0], (k & 2 ? maxi[1] : mini[1]) - c[1], (k & 4 ? maxi[2] : mini[2]) - c[2]];
+          const x = q[0] * droite[0] + q[1] * droite[1] + q[2] * droite[2], y = q[0] * dessus[0] + q[1] * dessus[1] + q[2] * dessus[2], z = q[0] * arriere[0] + q[1] * arriere[1] + q[2] * arriere[2];
+          d = Math.max(d, z + Math.abs(x) / th, z + Math.abs(y) / tv);
+        }
+        scene = { centre: c, demi: [(maxi[0] - mini[0]) / 2, (maxi[1] - mini[1]) / 2, (maxi[2] - mini[2]) / 2], dist: d };
+        allerA({ az: vue && vue.az != null ? vue.az : cam.az, el: vue && vue.el != null ? vue.el : cam.el, dist: d, cible: c }, duree);
+      },
+      quitterScene() { scene = null; },
+      // Points de la surface du corps au repos (un sommet sur six des structures des régions demandées), avec leurs
+      // articulations et leurs poids : pour mesurer le corps posé (où passe une barre devant les jambes, etc.).
+      peau(regions) {
+        const vue = new DataView(M.sommets.buffer, M.sommets.byteOffset, M.sommets.byteLength), pas = E.octetsParSommet, P = [], J = [], W = [];
+        for (const s of S) {
+          if (regions && !regions.includes(s.region)) continue;
+          for (let v = s.sommets; v < s.sommets + s.nbSommets; v += 6) {
+            const o = v * pas;
+            for (let k = 0; k < 3; k++) P.push(E.boite.min[k] + vue.getUint16(o + k * 2, true) / 65535 * E.boite.etendue[k]);
+            for (let k = 0; k < 4; k++) { J.push(vue.getUint8(o + 12 + k)); W.push(vue.getUint8(o + 16 + k) / 255); }
+          }
+        }
+        const bassin = SQ.length ? SQ[0].centre : centreCorps; let zDos = Infinity;
+        for (let i = 0; i < P.length; i += 3) if (P[i + 1] > bassin[1] - 0.05 && P[i + 1] < bassin[1] + 0.45 && P[i + 2] < zDos) zDos = P[i + 2];
+        return { n: P.length / 3, P: Float32Array.from(P), J: Uint8Array.from(J), W: Float32Array.from(W), dos: bassin[2] - zDos };
+      },
       choisir(id) { choisi = id == null ? -1 : api.indice(id); estompeCible = choisi >= 0 ? 1 : 0; demander(); },
       choisi: () => choisi >= 0 ? S[choisi] : null,
       // Couleurs de carte : { identifiant: '#rrggbb' }. Une structure absente reprend sa couleur naturelle.
@@ -578,7 +772,7 @@ void main() {
       },
       couche(k) { if (k != null) { coucheMin = borne(Math.round(k), 1, E.couches + 1); texSale = true; demander(); } return coucheMin; },
       fantomes(v) { if (v != null) { fantomes = !!v; texSale = true; demander(); } return fantomes; },
-      squelette(v) { if (v != null) { squelette = !!v; texSale = true; demander(); } return squelette; },
+      voirSquelette(v) { if (v != null) { squelette = !!v; texSale = true; demander(); } return squelette; },
       isoler(ids) { isoles = ids && ids.length ? new Set(ids.map(api.indice).filter(i => i >= 0)) : null; texSale = true; demander(); },
       isoles: () => isoles ? [...isoles].map(i => S[i].id) : null,
       masquer(id, v) { const i = api.indice(id); if (i >= 0) { etat[i].masque = v !== false; texSale = true; demander(); } },
@@ -611,7 +805,7 @@ void main() {
         toile.remove();
       },
       // Accès bas niveau pour les gestes (voir activerGestes).
-      _: { cam, borne, distanceEntiere, distancePour, hauteur, centreCorps, demander, elan, tenir(v) { enMain = v; }, arreter() { transition = null; }, enTransition: () => !!transition, libre() { entier = false; }, entier: () => entier, champ, taille: () => [toile.clientWidth, toile.clientHeight], matrices, boite: E.boite }
+      _: { cam, borne, distanceEntiere, distancePour, hauteur, centreCorps, demander, elan, tenir(v) { enMain = v; }, arreter() { transition = null; }, enTransition: () => !!transition, libre() { entier = false; }, entier: () => entier, champ, taille: () => [toile.clientWidth, toile.clientHeight], matrices, boite: E.boite, scene: () => scene }
     };
 
     function perdu(e) { e.preventDefault(); if (demande) { cancelAnimationFrame(demande); demande = 0; } }
@@ -640,14 +834,14 @@ void main() {
     const parPixel = () => 2 * cam.dist * Math.tan(i.champ / 2) / t.clientHeight;
     function bornerCible() {
       // Déplacement contrôlé : plus on est près, plus on peut s'écarter du centre ; de loin, le corps reste au milieu.
-      const dE = i.distanceEntiere(), k = i.borne((dE - cam.dist) / (dE * 0.45), 0, 1), b = i.boite, c = i.centreCorps;
-      const demi = [b.min[0] + b.etendue[0], b.etendue[1] / 2, b.etendue[2] / 2];
+      const sc = i.scene(), dE = sc ? sc.dist : i.distanceEntiere(), k = i.borne((dE - cam.dist) / (dE * 0.45), 0, 1), b = i.boite, c = sc ? sc.centre : i.centreCorps;
+      const demi = sc ? sc.demi : [b.min[0] + b.etendue[0], b.etendue[1] / 2, b.etendue[2] / 2];
       for (let n = 0; n < 3; n++) cam.cible[n] = i.borne(cam.cible[n], c[n] - demi[n] * k, c[n] + demi[n] * k);
     }
     function zoomer(facteur, x, y) {
       // Le point sous les doigts (ou le pointeur) reste en place pendant le zoom.
       const m = i.matrices(), r = t.getBoundingClientRect(), dx = x - r.left - r.width / 2, dy = r.height / 2 - (y - r.top);
-      const avant = parPixel(), dist = i.borne(cam.dist * facteur, distMin, i.distanceEntiere() * 1.12), apres = avant * dist / cam.dist;
+      const sc = i.scene(), avant = parPixel(), dist = i.borne(cam.dist * facteur, distMin, (sc ? sc.dist : i.distanceEntiere()) * 1.12), apres = avant * dist / cam.dist;
       for (let n = 0; n < 3; n++) cam.cible[n] += (m.droite[n] * dx + m.dessus[n] * dy) * (avant - apres);
       cam.dist = dist; bornerCible(); i.libre();
     }
@@ -696,8 +890,11 @@ void main() {
       if (depart && !bouge && !multi && e.type !== 'pointercancel' && maintenant - depart.t < 500) {
         const r = t.getBoundingClientRect(), x = e.clientX - r.left, y = e.clientY - r.top;
         const double = derniere && maintenant - derniere.t < 340 && Math.hypot(x - derniere.x, y - derniere.y) < 30;
-        derniere = double ? null : { t: maintenant, x, y };
-        surTouche(a.reperer(x, y), !!double, { x, y });
+        // Seconde touche d'une double touche : c'est la structure de la première qui compte (le corps a pu se
+        // recadrer entre les deux, quand la fiche s'ouvre).
+        const touche = double ? derniere.touche : a.reperer(x, y);
+        derniere = double ? null : { t: maintenant, x, y, touche };
+        surTouche(touche, !!double, { x, y });
       } else if (bouge && !multi && depart && depart.bouton !== 2 && !depart.maj) {
         i.elan.az = vit.az; i.elan.el = vit.el;      // l'élan prolonge le geste, puis retombe
         i.demander();

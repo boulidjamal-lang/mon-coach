@@ -14,7 +14,13 @@ fetch(q.get('modele') || '../donnees/atlas.bin').then(r => r.arrayBuffer()).then
   if (q.get('choisi')) a.choisir(q.get('choisi'));
   if (q.get('isoler')) a.isoler(q.get('isoler').split(','));
   if (q.get('masquer')) q.get('masquer').split(',').forEach(id => a.masquer(id));
-  if (q.get('sansos')) a.squelette(false);
+  if (q.get('sansos')) a.voirSquelette(false);
+  // pose d'essai : pose=ulna.G:x:-90,tibia.G:x:90 … (articulation : axe : degrés)
+  if (q.get('pose')) {
+    const rot = {};
+    for (const morceau of q.get('pose').split(',')) { const [nom, axe, deg] = morceau.split(':'), h = +deg * Math.PI / 360, s = Math.sin(h); rot[nom] = [axe === 'x' ? s : 0, axe === 'y' ? s : 0, axe === 'z' ? s : 0, Math.cos(h)]; }
+    a.poserRotations(rot);
+  }
   setTimeout(() => { window.pret = true; }, 400);
 }).catch(e => { document.body.textContent = String(e && e.stack || e); window.pret = true; window.erreur = String(e); });
 </script></body></html>

@@ -1,0 +1,178 @@
+abaisseur_de_l_angle_de_la_bouche              tete
+abaisseur_de_la_levre_inferieure               tete
+abaisseur_du_septum_nasal                      tete
+buccinateur                                    tete
+corrugateur_du_sourcil                         tete
+elevateur_de_l_angle_de_la_bouche              tete
+elevateur_de_la_levre_superieure               tete
+elevateur_naso_labial                          tete
+frontal                                        tete
+grand_zygomatique                              tete
+masseter_partie_profonde                       tete
+masseter_partie_superficielle                  tete
+mentonnier                                     tete
+nasal                                          tete
+occipital                                      tete
+orbiculaire_de_l_oeil_partie_orbitaire         tete
+orbiculaire_de_l_oeil_partie_palpebrale        tete
+orbiculaire_de_la_bouche                       tete
+petit_zygomatique                              tete
+procerus                                       tete
+risorius                                       tete
+temporal                                       tete
+temporo_parietal                               tete
+epineux_de_la_tete                             tete cou3 thorax cou1 cou2
+epineux_du_cou                                 cou1 thorax cou2 cou3
+ilio_costal_du_cou                             thorax clavicule.G cou1 cou2
+longissimus_de_la_tete                         tete cou3 thorax cou2 cou1
+longissimus_du_cou                             thorax cou1 cou2 cou3
+multifide_du_cou                               cou3 cou2 cou1 thorax
+omo_hyoidien                                   clavicule.G thorax cou2
+scalene_anterieur                              thorax cou1 cou2
+scalene_moyen                                  thorax cou1 cou2 cou3
+scalene_posterieur                             thorax cou1 cou2
+semi_epineux_du_cou                            thorax cou1 cou2
+splenius_de_la_tete                            tete cou3 cou2 cou1 thorax
+splenius_du_cou                                thorax cou3 cou1 cou2
+sterno_cleido_mastoidien                       tete clavicule.G cou3 cou2 cou1 thorax
+sterno_hyoidien                                clavicule.G cou2 thorax
+deltoide_anterieur                             humerus.G clavicule.G thorax
+deltoide_lateral                               humerus.G clavicule.G
+deltoide_posterieur                            humerus.G clavicule.G
+grand_rond                                     humerus.G thorax clavicule.G
+infra_epineux                                  humerus.G clavicule.G
+petit_rond                                     humerus.G clavicule.G
+subscapulaire                                  humerus.G clavicule.G thorax
+supra_epineux                                  humerus.G clavicule.G
+dentele_anterieur                              thorax clavicule.G
+pectoral_abdominal                             humerus.G thorax
+pectoral_claviculaire                          humerus.G thorax clavicule.G
+pectoral_sternal                               humerus.G thorax clavicule.G
+intercostaux_externes                          thorax clavicule.G
+intercostaux_internes                          thorax
+petit_pectoral                                 clavicule.G thorax
+subclavier                                     clavicule.G thorax
+carre_lombes                                   thorax bassin L4 L3 L2 L5 L1
+dentele_postero_inferieur                      thorax L3 L2 L1
+dentele_postero_superieur                      thorax clavicule.G cou1
+elevateur_scapula                              clavicule.G thorax cou1 cou2 cou3
+epineux_thorax                                 L2 L1 thorax L3
+grand_dorsal                                   humerus.G L1 thorax bassin L3 L4 L2 L5 clavicule.G
+grand_rhomboide                                clavicule.G thorax
+ilio_costal_lombes                             L4 L5 bassin L3 L2 thorax clavicule.G
+ilio_costal_thorax                             thorax clavicule.G
+longissimus_thorax                             thorax clavicule.G L2 L4 L3 L5 L1 bassin
+multifide_lombes                               L5 L4 L3 L2 L1 thorax
+multifide_thorax                               thorax cou1
+petit_rhomboide                                clavicule.G thorax cou1
+semi_epineux_du_thorax                         thorax
+trapeze_inferieur                              clavicule.G thorax
+trapeze_moyen                                  clavicule.G thorax cou1
+trapeze_superieur                              clavicule.G tete thorax cou1 cou2 cou3
+grand_droit_abdomen                            thorax bassin L4 L5 L3
+ligne_blanche                                  thorax L2 L3 L4 L5 bassin
+oblique_externe                                thorax bassin
+oblique_interne                                bassin thorax
+pyramidal                                      bassin
+transverse_abdomen                             thorax bassin L3 L4 L5
+carre_femoral                                  femur.G bassin
+grand_fessier                                  femur.G bassin
+grand_psoas                                    femur.G bassin L5 L4 L3 L2 L1 thorax
+iliaque                                        bassin femur.G
+jumeau_inferieur                               femur.G bassin
+jumeau_superieur                               femur.G bassin
+moyen_fessier                                  femur.G bassin
+obturateur_externe                             femur.G bassin
+obturateur_interne                             femur.G bassin
+petit_fessier                                  femur.G bassin
+piriforme                                      femur.G bassin
+tenseur_fascia_lata                            femur.G bassin
+ancone                                         humerus.G radius.G ulna.G
+biceps_court                                   humerus.G thorax clavicule.G
+biceps_long                                    radius.G ulna.G humerus.G clavicule.G
+brachial                                       humerus.G radius.G ulna.G
+coraco_brachial                                humerus.G clavicule.G
+triceps_long                                   ulna.G humerus.G thorax clavicule.G
+triceps_lateral                                humerus.G ulna.G
+triceps_medial                                 humerus.G ulna.G
+brachio_radial                                 radius.G humerus.G
+carre_pronateur                                radius.G ulna.G
+court_extenseur_pouce                          doigt1-2.G doigt1-1.G radius.G ulna.G main.G
+court_extenseur_radial_carpe                   main.G radius.G ulna.G humerus.G
+extenseur_index                                doigt2-2.G doigt2-1.G main.G doigt2-3.G radius.G ulna.G
+extenseur_doigts                               humerus.G radius.G ulna.G main.G doigt2-1.G doigt2-2.G doigt3-1.G doigt3-2.G doigt4-1.G doigt5-1.G doigt4-2.G doigt5-2.G
+extenseur_petit_doigt                          doigt5-1.G main.G ulna.G radius.G humerus.G
+extenseur_ulnaire_carpe_humeral                main.G ulna.G radius.G humerus.G
+extenseur_ulnaire_carpe_ulnaire                main.G ulna.G
+flechisseur_profond_doigts                     radius.G ulna.G doigt2-3.G doigt2-2.G doigt2-1.G main.G doigt3-1.G doigt3-2.G doigt3-3.G doigt4-1.G doigt4-2.G doigt5-1.G doigt4-3.G doigt5-2.G doigt5-3.G
+flechisseur_radial_carpe                       doigt1-1.G main.G radius.G ulna.G humerus.G
+flechisseur_superficiel_doigts_humero_ulnaire  doigt5-2.G humerus.G doigt5-1.G ulna.G main.G doigt4-2.G radius.G doigt4-1.G doigt3-1.G doigt3-2.G doigt2-1.G doigt2-2.G
+flechisseur_superficiel_doigts_radial          ulna.G radius.G
+flechisseur_ulnaire_carpe_humeral              ulna.G humerus.G main.G
+flechisseur_ulnaire_carpe_ulnaire              ulna.G humerus.G
+long_abducteur_pouce                           doigt1-1.G main.G radius.G ulna.G
+long_extenseur_pouce                           doigt1-2.G doigt1-3.G doigt1-1.G main.G radius.G ulna.G
+long_extenseur_radial_carpe                    main.G radius.G humerus.G
+long_flechisseur_pouce                         doigt1-3.G doigt1-2.G doigt1-1.G main.G radius.G
+long_palmaire                                  main.G doigt4-1.G ulna.G radius.G doigt5-1.G humerus.G
+rond_pronateur_humeral                         radius.G humerus.G ulna.G
+rond_pronateur_ulnaire                         ulna.G radius.G
+supinateur                                     humerus.G radius.G ulna.G
+abducteur_du_petit_doigt                       main.G doigt5-1.G
+adducteur_du_pouce_chef_oblique                doigt1-2.G doigt1-1.G main.G
+adducteur_du_pouce_chef_transverse             doigt1-2.G doigt1-1.G main.G
+court_abducteur_du_pouce                       doigt1-1.G main.G
+court_flechisseur_du_petit_doigt               main.G doigt5-1.G
+court_flechisseur_du_pouce_chef_profond        doigt1-1.G main.G
+court_flechisseur_du_pouce_chef_superficiel    doigt1-1.G main.G
+interosseux_dorsaux_de_la_main                 doigt4-1.G main.G doigt3-1.G doigt1-1.G doigt2-1.G
+interosseux_palmaires                          main.G doigt5-1.G
+lombricaux_de_la_main                          doigt2-1.G main.G doigt3-1.G doigt4-1.G doigt5-1.G doigt5-2.G
+opposant_du_petit_doigt                        main.G
+opposant_du_pouce                              doigt1-1.G main.G
+biceps_femoral_court                           tibia.G femur.G
+biceps_femoral_long                            tibia.G femur.G bassin
+court_adducteur                                femur.G bassin
+droit_femoral                                  femur.G bassin tibia.G
+gracile                                        tibia.G bassin femur.G
+grand_adducteur                                femur.G bassin
+long_adducteur                                 femur.G bassin
+pectine                                        femur.G bassin
+petit_adducteur                                femur.G bassin
+sartorius                                      tibia.G femur.G bassin
+semi_membraneux                                tibia.G femur.G bassin
+semi_tendineux                                 tibia.G femur.G bassin
+tractus_ilio_tibial                            femur.G bassin tibia.G
+vaste_intermediaire                            femur.G tibia.G
+vaste_lateral                                  femur.G tibia.G
+vaste_medial                                   femur.G tibia.G
+court_fibulaire                                pied.G tibia.G
+gastrocnemien_lateral                          tibia.G femur.G
+gastrocnemien_medial                           tibia.G femur.G
+long_extenseur_de_l_hallux                     tibia.G pied.G orteils.G
+long_extenseur_des_orteils                     tibia.G
+long_fibulaire                                 tibia.G pied.G
+long_flechisseur_de_l_hallux                   tibia.G pied.G orteils.G
+long_flechisseur_des_orteils                   orteils.G tibia.G pied.G
+plantaire                                      tibia.G femur.G pied.G
+poplite                                        femur.G tibia.G
+soleaire                                       tibia.G
+tendon_calcaneen                               pied.G tibia.G
+tibial_anterieur                               pied.G tibia.G
+tibial_posterieur                              pied.G tibia.G
+troisieme_fibulaire                            tibia.G pied.G
+abducteur_de_l_hallux                          pied.G orteils.G
+abducteur_du_petit_orteil                      pied.G orteils.G
+adducteur_de_l_hallux_chef_oblique             pied.G
+adducteur_de_l_hallux_chef_transverse          pied.G
+carre_plantaire                                pied.G
+court_extenseur_de_l_hallux                    pied.G orteils.G
+court_extenseur_des_orteils                    pied.G orteils.G
+court_flechisseur_de_l_hallux_chef_lateral     pied.G orteils.G
+court_flechisseur_de_l_hallux_chef_medial      pied.G orteils.G
+court_flechisseur_des_orteils                  orteils.G pied.G
+court_flechisseur_du_petit_orteil              orteils.G pied.G
+interosseux_dorsaux_du_pied                    pied.G orteils.G
+interosseux_plantaires                         pied.G orteils.G
+lombricaux_du_pied                             pied.G orteils.G
+opposant_du_petit_orteil                       pied.G

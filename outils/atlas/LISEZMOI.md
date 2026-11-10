@@ -13,9 +13,17 @@ Ces outils ne sont pas chargés par l'appli : ils servent à refaire `assets/atl
    identifiants une fois attribués.
 5. `node outils/preparer.mjs <dossier des .bin> donnees/atlas.bin 0.5` : allège (erreur en mm), ouvre la gaine des
    droits, range en couches (épluchage par lancers de rayons ; retouches dans `donnees/couches-forcees.json`),
-   calcule l'ombrage de relief et écrit le fichier compact. Copier ensuite le résultat dans `assets/atlas/`.
+   calcule l'ombrage de relief, articule le corps et écrit le fichier compact. Copier ensuite le résultat dans
+   `assets/atlas/`.
 
-Contrôles : `appli/essai.html` et `appli/essai-ui.html` (pages d'essai), `outils/planche.cjs` (planches de vues),
+Le mouvement : `outils/articuler.mjs` construit le squelette de mouvement (59 articulations) à partir des centres
+d'articulation de Z-Biomechanics (`donnees/rig-biomeca.json`, tiré de `Z-Biomechanics.7z` du même dépôt par
+`outils/extraire_rig.py`), fait suivre chaque pièce d'os par son articulation et attache chaque sommet de muscle aux
+os les plus proches (diffusion le long du muscle ; `rapport/attaches.txt` liste les articulations de chaque muscle).
+`assets/atlas/atlas-mouvements.js` contient le solveur de pose, les mouvements et le matériel.
+
+Contrôles : `appli/essai.html`, `appli/essai-ui.html` et `appli/essai-mouvement.html` (pages d'essai),
+`outils/video-mouvement.cjs` (vidéo d'un mouvement), `outils/planche.cjs` (planches de vues),
 `outils/essais-fonctionnels.cjs` (gestes, sélection, couches, index, reprise du contexte graphique).
 
 `rapport/sources.json` : comparaison des sources anatomiques étudiées (liens, licences, ce qui a été réellement
