@@ -5415,6 +5415,77 @@ test("gourde : une bouteille dessinée image par image ; un défilement rapide f
   await page.waitForFunction(() => document.getElementById('gourde').dataset.calme === '1', null, { timeout: 8000 });
 }));
 
+test("gourde : l'eau suit le téléphone — penché, le niveau reste à l'horizontale ; peu d'eau, elle se rassemble dans le coin ; secoué, elle clapote ; à plat, à l'envers ou hors de l'écran, rien ne penche", () => avecAppli({ animations: true }, async ({ page }) => {
+  // Navigateur (Safari) : aucune demande d'autorisation, donc aucune fenêtre système.
+  await page.evaluate(() => {
+    window.__demandes = [];
+    DeviceOrientationEvent.requestPermission = () => { window.__demandes.push('orientation'); return Promise.resolve('granted'); };
+    document.body.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+  });
+  assert.deepEqual(await page.evaluate(() => window.__demandes), []);
+  await page.evaluate(() => {
+    allerA('repas'); renderApp();
+    getDay(currentDate).eauMl = 1000; majJaugeEau();
+    document.getElementById('bloc-eau').scrollIntoView({ block: 'center' });
+  });
+  const calme = (v, timeout) => page.waitForFunction(v => document.getElementById('gourde').dataset.calme === v, v, { timeout });
+  await page.waitForFunction(() => document.getElementById('gourde').dataset.calme === '1' && capteursGourdeActifs, null, { timeout: 4000 });
+  const pencher = (beta, gamma) => page.evaluate(([b, g]) => window.dispatchEvent(new DeviceOrientationEvent('deviceorientation', { alpha: 0, beta: b, gamma: g })), [beta, gamma]);
+  // La surface près de chaque paroi (la houle et le ménisque comptent peu).
+  const surface = () => page.evaluate(() => {
+    const p = surfaceGourde(ySurfaceGourde(moteurGourde.part));
+    return { gauche: p[2][1], droite: p[GOURDE_N - 2][1], fondDroite: GOURDE_VIDE - p[GOURDE_N][1], cible: moteurGourde.inclCible, pente: moteurGourde.inclTel };
+  });
+  // Téléphone penché, côté droit plus bas : l'eau reste à l'horizontale, elle monte donc côté droit de la bouteille.
+  await pencher(60, 30);
+  await calme('0', 2000);
+  await calme('1', 6000);
+  let r = await surface();
+  assert.ok(Math.abs(r.cible + 0.2887) < 0.005, 'pente voulue : ' + r.cible);
+  assert.ok(r.gauche - r.droite > 6, 'surface plus haute à droite : ' + JSON.stringify(r));
+  // Presque vide : l'eau se rassemble dans le coin bas, sans disparaître.
+  await page.evaluate(() => { getDay(currentDate).eauMl = 0; majJaugeEau(); });
+  await page.waitForFunction(() => Math.abs(moteurGourde.part - moteurGourde.cible) < 0.002 && Math.abs(moteurGourde.vPart) < 0.001, null, { timeout: 6000 });
+  r = await surface();
+  assert.ok(r.fondDroite > 4, "de l'eau dans le coin droit : " + JSON.stringify(r));
+  // À plat sur la table, ou tenu à l'envers : rien ne penche.
+  for (const [beta, gamma] of [[0, 30], [-60, 20]]) {
+    await pencher(beta, gamma);
+    await page.waitForFunction(() => Math.abs(moteurGourde.inclTel) < 0.01 && Math.abs(moteurGourde.vTel) < 0.002, null, { timeout: 6000 });
+    assert.equal(await page.evaluate(() => moteurGourde.inclCible), 0);
+  }
+  // Une secousse : l'eau clapote, puis s'apaise.
+  await page.evaluate(() => { getDay(currentDate).eauMl = 1000; majJaugeEau(); });
+  await pencher(60, 0);
+  await calme('1', 8000);
+  await page.evaluate(() => window.dispatchEvent(new DeviceMotionEvent('devicemotion', {
+    acceleration: { x: 9, y: 0, z: 0 }, accelerationIncludingGravity: { x: 9, y: 8.5, z: 4.9 }, rotationRate: { alpha: 0, beta: 0, gamma: 0 }, interval: 16 })));
+  await calme('0', 2000);
+  assert.equal(await page.evaluate(() => moteurGourde.sensAxes), 1);
+  await calme('1', 8000);
+  // Hors de l'écran Repas : les capteurs ne sont plus écoutés, la bouteille repart droite.
+  await page.evaluate(() => allerA('stats'));
+  await page.waitForFunction(() => !capteursGourdeActifs, null, { timeout: 2000 });
+  await pencher(60, 30);
+  assert.equal(await page.evaluate(() => moteurGourde.inclCible), 0);
+}));
+
+test("app iOS : l'accès aux capteurs (pour la gourde) se demande au premier toucher, une seule fois, sans fenêtre ; le reflet des cartes reste fixe", () => avecAppli({ natif: true, animations: true }, async ({ page }) => {
+  await page.evaluate(() => {
+    window.__demandes = [];
+    DeviceOrientationEvent.requestPermission = () => { window.__demandes.push('orientation'); return Promise.resolve('granted'); };
+    DeviceMotionEvent.requestPermission = () => { window.__demandes.push('mouvement'); return Promise.resolve('granted'); };
+    document.body.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+  });
+  await page.evaluate(() => document.body.dispatchEvent(new MouseEvent('click', { bubbles: true })));
+  assert.deepEqual(await page.evaluate(() => window.__demandes), ['orientation', 'mouvement']);
+  const reflet = () => page.evaluate(() => document.documentElement.style.getPropertyValue('--lx'));
+  const avant = await reflet();
+  await page.evaluate(() => window.dispatchEvent(new DeviceOrientationEvent('deviceorientation', { alpha: 0, beta: 40, gamma: 30 })));
+  await page.waitForTimeout(400);
+  assert.equal(await reflet(), avant);
+}));
+
 test("app iOS : le scanner de l'app (macro, mise au point rapide) remplace la caméra du navigateur ; l'ancien module reste en secours", () => avecAppli({ natif: true }, async ({ page }) => {
   await page.evaluate(() => {
     window.__reponsesNatives['Scanner.scanner'] = { code: '3017620422003' };
