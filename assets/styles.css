@@ -702,50 +702,58 @@ body.sur-stats .date-nav, body.sur-reglages .date-nav, body.sur-admin .date-nav 
 body.couche-ouverte { overflow: hidden; touch-action: none; }
 /* --- Tour guidé : voile plein écran + trou lumineux sur l'élément visé.
    Le trou est purement visuel (box-shadow géant autour d'un rectangle
-   transparent) : rien n'est peint par-dessus la cible, elle reste
-   visible telle quelle. Le voile, lui, capte tous les clics/touchers
-   pour empêcher d'agir pour de vrai sur l'appli pendant la visite. */
+   transparent) : rien n'est peint par-dessus la cible, elle reste visible
+   telle quelle. Le voile capte tous les touchers (un toucher = étape
+   suivante) pour empêcher d'agir pour de vrai sur l'appli pendant la
+   visite. Le projecteur se pose sans transition : faire glisser une ombre
+   plein écran coûte cher sur iPhone. La carte reste posée en bas (en haut
+   quand l'élément montré est en bas) ; seul son texte change, en fondu. */
 .tour-overlay { position: fixed; inset: 0; z-index: 10000; }
 .tour-overlay.hidden { display: none; }
-.tour-voile { position: fixed; inset: 0; background: transparent; pointer-events: auto; touch-action: none; }
+.tour-voile { position: fixed; inset: 0; background: transparent; pointer-events: auto; touch-action: none; cursor: pointer; -webkit-tap-highlight-color: transparent; }
 .tour-spot {
-  position: fixed; pointer-events: none; border-radius: 16px;
-  /* Liseré + halo de la couleur de l'appli autour de l'élément montré :
-     visible même en thème sombre, où le voile seul se confond avec le
-     fond déjà sombre de la page. */
-  box-shadow: 0 0 0 2px var(--primary), 0 0 18px 4px color-mix(in srgb, var(--primary) 45%, transparent), 0 0 0 9999px rgba(6, 10, 18, 0.74);
-  transition: left 0.28s cubic-bezier(0.16, 1, 0.3, 1), top 0.28s cubic-bezier(0.16, 1, 0.3, 1),
-    width 0.28s cubic-bezier(0.16, 1, 0.3, 1), height 0.28s cubic-bezier(0.16, 1, 0.3, 1);
-  z-index: 9001;
+  position: fixed; left: 50%; top: 50%; width: 0; height: 0; pointer-events: none; border-radius: 18px; z-index: 9001;
+  box-shadow: 0 0 0 2px var(--primary), 0 0 0 9999px rgba(6, 10, 18, 0.72);
 }
+.tour-spot.sans-cible { box-shadow: 0 0 0 9999px rgba(6, 10, 18, 0.72); }
+:root[data-theme="dark"] .tour-spot { box-shadow: 0 0 0 2px var(--primary), 0 0 0 9999px rgba(0, 0, 0, 0.82); }
+:root[data-theme="dark"] .tour-spot.sans-cible { box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.82); }
 .tour-bulle {
-  position: fixed; width: min(92vw, 340px); z-index: 9002;
-  background: var(--verre-fort);
-  -webkit-backdrop-filter: blur(var(--verre-flou)) saturate(var(--verre-sat));
-  backdrop-filter: blur(var(--verre-flou)) saturate(var(--verre-sat));
-  border-radius: 20px; padding: 16px 18px; box-shadow: var(--ombre-haute);
-  transition: left 0.28s cubic-bezier(0.16, 1, 0.3, 1), top 0.28s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.22s ease;
+  position: fixed; z-index: 9002; left: 0; right: 0; margin: 0 auto;
+  width: min(calc(100% - 24px - env(safe-area-inset-left, 0px) - env(safe-area-inset-right, 0px)), 420px);
+  bottom: calc(14px + env(safe-area-inset-bottom, 0px));
+  background: var(--s1, #ffffff); color: var(--text);
+  border: 1px solid var(--ligne, rgba(0, 0, 0, 0.08));
+  border-radius: 24px; padding: 4px 16px 14px;
+  box-shadow: 0 18px 50px rgba(0, 0, 0, 0.3);
 }
-/* Thème sombre : voile plus dense et bulle opaque, bordée, pour que le
-   texte de la page ne transparaisse pas à travers. */
-:root[data-theme="dark"] .tour-spot {
-  box-shadow: 0 0 0 2px var(--primary), 0 0 22px 6px color-mix(in srgb, var(--primary) 55%, transparent), 0 0 0 9999px rgba(0, 0, 0, 0.84);
+.tour-bulle:focus { outline: none; }
+.tour-bulle.en-haut { bottom: auto; top: calc(14px + env(safe-area-inset-top, 0px)); }
+.tour-bulle.au-centre { bottom: auto; top: 50%; transform: translateY(-50%); }
+.tour-tete { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 44px; }
+.tour-points { display: flex; flex-wrap: wrap; gap: 5px; min-width: 0; }
+.tour-points i { display: block; width: 6px; height: 6px; border-radius: 99px; background: var(--ligne, rgba(0, 0, 0, 0.14)); transition: width 0.18s ease, background-color 0.18s ease; }
+.tour-points i.fait { background: var(--text-muted); }
+.tour-points i.actuel { width: 18px; background: var(--primary); }
+.tour-compteur { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.tour-passer { background: none; border: 0; color: var(--text-muted); font-size: 0.85rem; font-weight: 700; cursor: pointer; min-height: 44px; padding: 0 2px 0 8px; }
+.tour-corps { transition: opacity 0.16s ease; }
+.tour-bulle h3 { margin: 0 0 4px; font-size: 1.08rem; font-weight: 800; letter-spacing: -0.01em; }
+.tour-bulle p { margin: 0; font-size: 0.92rem; line-height: 1.45; color: var(--text-muted); }
+.tour-actions { display: flex; align-items: center; gap: 10px; margin-top: 14px; }
+.tour-retour {
+  flex: none; width: 46px; height: 46px; border-radius: 99px; display: grid; place-items: center; cursor: pointer;
+  background: transparent; color: var(--text); border: 1px solid var(--ligne, rgba(0, 0, 0, 0.12));
 }
-:root[data-theme="dark"] .tour-bulle {
-  background: #1a1e27; -webkit-backdrop-filter: none; backdrop-filter: none;
-  border: 1px solid rgba(255, 255, 255, 0.14); box-shadow: 0 18px 50px rgba(0, 0, 0, 0.6);
-}
-:root[data-theme="dark"] .tour-bulle p { color: #c3c8d2; }
-.tour-barre-piste { height: 3px; background: var(--verre-brd); border-radius: 99px; overflow: hidden; margin-bottom: 10px; }
-.tour-barre { height: 100%; width: 0; background: var(--primary); border-radius: 99px; transition: width 0.3s; }
-.tour-compteur {
-  font-size: 0.68rem; font-weight: 700; text-transform: uppercase;
-  letter-spacing: 0.8px; color: var(--text-muted); margin-bottom: 4px;
-}
-.tour-bulle h3 { margin: 0 0 6px; font-size: 1rem; font-weight: 800; }
-.tour-bulle p { margin: 0; font-size: 0.85rem; line-height: 1.5; color: var(--text-muted); }
-.tour-actions { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: 14px; }
-.tour-passer { background: none; border: 0; color: var(--text-muted); font-size: 0.78rem; font-weight: 700; cursor: pointer; padding: 6px 2px; }
+.tour-retour .icone-ui { width: 20px; height: 20px; }
+.tour-retour[hidden] { display: none; }
+.tour-bulle .tour-suivant { flex: 1; width: auto; min-height: 46px; margin: 0; }
+/* Pendant la visite : écrans et feuilles sans animation d'entrée (la carte
+   et le projecteur se posent tout de suite), et pas de flou sous les
+   feuilles, déjà assombries par le voile. */
+html.tour-en-cours .ecran, html.tour-en-cours .feuille-contenu { animation: none !important; }
+html.tour-en-cours .feuille { -webkit-backdrop-filter: none; backdrop-filter: none; }
+@media (prefers-reduced-motion: reduce) { .tour-corps, .tour-points i { transition: none; } }
 
 /* --- MODALES --- */
 .modal {
