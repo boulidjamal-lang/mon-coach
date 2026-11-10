@@ -941,6 +941,47 @@ for (const visite of ['generale', 'muscu']) {
   }));
 }
 
+test("visite guidée : courte, écrans dans l'ordre, texte immédiat, carte qui ne cache pas l'élément montré", () => avecAppli({}, async ({ page }) => {
+  const r = await page.evaluate(() => {
+    const res = {};
+    for (const type of ['generale', 'muscu']) {
+      demarrerTourGuide(type === 'muscu' ? 'muscu' : undefined);
+      const etapes = tourListe.length, ecrans = [], couvertes = [], lentes = [];
+      for (let k = 0; k < etapes; k++) {
+        tourEtape = k; afficherEtapeTour();
+        // Rien n'attend : le titre est déjà là au retour de l'appel.
+        if (document.getElementById('tour-titre').textContent !== tourListe[k].titre) lentes.push(k);
+        const e = tourListe[k].ecran;
+        if (e && ecrans[ecrans.length - 1] !== e) ecrans.push(e);
+        const c = tourCible;
+        if (c) {
+          const a = c.getBoundingClientRect(), b = document.getElementById('tour-bulle').getBoundingClientRect();
+          const recouvert = Math.max(0, Math.min(a.bottom, b.bottom) - Math.max(a.top, b.top)) * Math.max(0, Math.min(a.right, b.right) - Math.max(a.left, b.left));
+          // Un élément qui tient dans la moitié de l'écran ne doit pas être caché par la carte.
+          if (a.height < innerHeight / 2 && recouvert > 0.15 * a.width * a.height) couvertes.push(tourListe[k].titre);
+        }
+      }
+      res[type] = { etapes, ecrans, couvertes, lentes };
+      fermerTourGuide();
+    }
+    return res;
+  });
+  assert.ok(r.generale.etapes <= 13, 'visite générale : ' + r.generale.etapes + ' étapes');
+  assert.deepEqual(r.generale.ecrans, ['repas', 'seance', 'stats', 'reglages']);
+  assert.deepEqual(r.muscu.ecrans, ['seance', 'stats']);
+  for (const v of ['generale', 'muscu']) assert.deepEqual([r[v].lentes, r[v].couvertes], [[], []], v);
+  // Toucher le voile avance, les flèches du clavier aussi, Échap ferme.
+  await page.evaluate(() => demarrerTourGuide());
+  await page.click('#tour-voile', { position: { x: 10, y: 300 } });
+  await page.keyboard.press('ArrowRight');
+  const avant = await page.evaluate(() => tourEtape);
+  await page.keyboard.press('ArrowLeft');
+  const apres = await page.evaluate(() => [tourEtape, document.getElementById('tour-precedent').hidden]);
+  await page.keyboard.press('Escape');
+  const fin = await page.evaluate(() => [tourActif, document.getElementById('tour-overlay').classList.contains('hidden'), document.documentElement.classList.contains('tour-en-cours')]);
+  assert.deepEqual([avant, apres, fin], [2, [1, false], [false, true, false]]);
+}));
+
 test('Administration : les comptes en liste (pseudo, état, recherche, filtres), puis la page d\'un compte', () => avecAppli({}, async ({ page }) => {
   await installerFauxAdmin(page, () => Object.assign({ 'rpc:admin_liste_comptes': [
       { utilisateur: 'admin', email: 'moi@x.fr', maj: Date.now(), nb_journees: 40 },
