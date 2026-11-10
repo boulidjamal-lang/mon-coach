@@ -23201,13 +23201,15 @@ function figureCorpsSVG(vue, c, femme, x) {
   const planche = MANNEQUIN[femme ? 'femme' : 'homme'];
   // Un tracé par <path> : certains commencent en coordonnées relatives
   // (« m »), les mettre bout à bout les décalerait.
-  const muscles = planche[vue].map(([slug, traces]) => {
+  const muscles = ordreDessin(planche[vue]).map(([slug, traces]) => {
     const g = GROUPE_PAR_SLUG[slug];
     const fill = g ? c(g) : 'var(--corps-neutre)';
-    return traces.map(d => `<path d="${d}" fill="${fill}"/>`).join('');
+    return traces.map(d => `<path d="${d}" fill="${fill}"${LISSAGE_MUSCLE(fill)}/>`).join('');
   }).join('');
+  const id = 'fig' + (++compteurSilhouette);
   return `<svg x="${x}" y="0" width="205" height="440" viewBox="${planche.vb[vue]}">
-    <path d="${planche.contour[vue]}" fill="var(--corps-contour)"/>${muscles}</svg>`;
+    <defs><clipPath id="${id}"><path d="${planche.contour[vue]}"/></clipPath></defs>
+    <path d="${planche.contour[vue]}" fill="var(--corps-contour)"/><g clip-path="url(#${id})">${muscles}</g></svg>`;
 }
 /* Faisceaux sur le mannequin. Chaque pièce : [faisceau, n° du muscle dans
    MANNEQUIN[sexe][vue], n° du tracé, rectangle de découpe ou null]. Les
@@ -23328,12 +23330,25 @@ function silhouetteSVG(vue, couleurs, opts) {
   const planche = MANNEQUIN[femmeProfil() ? 'femme' : 'homme'];
   const neutre = opts.neutre || 'var(--corps-neutre)';
   const contour = opts.contour || 'var(--corps-contour)';
-  const muscles = planche[vue].map(([slug, traces]) => {
+  const muscles = ordreDessin(planche[vue]).map(([slug, traces]) => {
     const g = GROUPE_PAR_SLUG[slug];
     const f = (g && couleurs[g]) || neutre;
-    return traces.map(d => `<path d="${d}" fill="${f}"/>`).join('');
+    return traces.map(d => `<path d="${d}" fill="${f}"${LISSAGE_MUSCLE(f)}/>`).join('');
   }).join('');
-  return `<svg viewBox="${opts.vb || planche.vb[vue]}" preserveAspectRatio="xMidYMid meet" aria-hidden="true"><path d="${planche.contour[vue]}" fill="${contour}"/>${muscles}</svg>`;
+  const id = 'sil' + (++compteurSilhouette);
+  return `<svg viewBox="${opts.vb || planche.vb[vue]}" preserveAspectRatio="xMidYMid meet" aria-hidden="true"><defs><clipPath id="${id}"><path d="${planche.contour[vue]}"/></clipPath></defs><path d="${planche.contour[vue]}" fill="${contour}"/><g clip-path="url(#${id})">${muscles}</g></svg>`;
+}
+/* Les muscles du mannequin sont dessinés fibre par fibre ; en petit, les
+   fentes entre fibres hachaient les masses (« mal dessiné »). Un trait de la
+   couleur du muscle, de 6 unités, referme ces fentes : chaque muscle redevient
+   une masse pleine aux bords doux, les groupes restent séparés par le corps. */
+var compteurSilhouette = 0;
+function LISSAGE_MUSCLE(f) { return ` stroke="${f}" stroke-width="6" stroke-linejoin="round"`; }
+/* Les trapèzes recouvrent le haut du dos (muscle superficiel) : dessinés en
+   dernier, quel que soit leur rang dans la planche (les faisceaux, eux,
+   repèrent les muscles par leur rang : la planche ne bouge pas). */
+function ordreDessin(muscles) {
+  return muscles.filter(([slug]) => slug !== 'trapezius').concat(muscles.filter(([slug]) => slug === 'trapezius'));
 }
 // Cadrages de la vue de face (homme et femme partagent à peu près la même planche de coordonnées)
 const CADRES_SILHOUETTE = { torse: '120 150 520 760', jambes: '120 650 520 760', buste: '100 160 560 720' };
@@ -23387,10 +23402,10 @@ function corpsPivotHTML(couleurs) {
   const planche = MANNEQUIN[femmeProfil() ? 'femme' : 'homme'];
   const id = 'cp' + (++compteurCorpsPivot);
   const vue = v => {
-    const muscles = planche[v].map(([slug, traces]) => {
+    const muscles = ordreDessin(planche[v]).map(([slug, traces]) => {
       const g = GROUPE_PAR_SLUG[slug];
       const f = (g && couleurs[g]) || 'var(--corps-neutre)';
-      return traces.map(d => `<path d="${d}" fill="${f}"/>`).join('');
+      return traces.map(d => `<path d="${d}" fill="${f}"${LISSAGE_MUSCLE(f)}/>`).join('');
     }).join('');
     const [x, y, w, h] = planche.vb[v].split(' ').map(Number);
     return `<svg class="cp-vue cp-${v}" viewBox="${planche.vb[v]}" preserveAspectRatio="xMidYMid meet" aria-hidden="true">
@@ -23400,7 +23415,7 @@ function corpsPivotHTML(couleurs) {
           <stop offset="0" stop-color="#000" stop-opacity="0"/><stop offset=".5" stop-color="#000" stop-opacity="0"/><stop offset="1" stop-color="#000" stop-opacity="0"/>
         </linearGradient>
       </defs>
-      <path d="${planche.contour[v]}" fill="var(--corps-contour)"/>${muscles}
+      <path d="${planche.contour[v]}" fill="var(--corps-contour)"/><g clip-path="url(#${id}-${v}-c)">${muscles}</g>
       <rect x="${x}" y="${y}" width="${w}" height="${h}" fill="url(#${id}-${v}-o)" clip-path="url(#${id}-${v}-c)"/>
     </svg>`;
   };
