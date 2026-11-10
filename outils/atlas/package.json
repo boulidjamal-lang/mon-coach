@@ -1,0 +1,11 @@
+{
+  "name": "anqa-atlas-outils",
+  "private": true,
+  "description": "Outils de fabrication du modèle de l'atlas 3D (hors appli).",
+  "type": "commonjs",
+  "dependencies": {
+    "meshoptimizer": "0.22.0",
+    "three": "0.170.0",
+    "three-mesh-bvh": "0.8.3"
+  }
+}

@@ -1,0 +1,2734 @@
+{
+ "regions": {
+  "tete": "Tête",
+  "cou": "Cou",
+  "epaule": "Épaule",
+  "thorax": "Thorax",
+  "dos": "Dos",
+  "abdomen": "Abdomen",
+  "bassin": "Bassin et hanche",
+  "bras": "Bras",
+  "avant_bras": "Avant-bras",
+  "main": "Main",
+  "cuisse": "Cuisse",
+  "jambe": "Jambe",
+  "pied": "Pied"
+ },
+ "muscles": [
+  {
+   "id": "abaisseur_de_l_angle_de_la_bouche",
+   "nom": "Abaisseur de l'angle de la bouche",
+   "latin": "Depressor anguli oris",
+   "anglais": "Depressor anguli oris",
+   "ta2": "2076",
+   "type": "muscle",
+   "region": "tete",
+   "source": "Depressor anguli oris",
+   "pair": true,
+   "app": []
+  },
+  {
+   "id": "abaisseur_de_la_levre_inferieure",
+   "nom": "Abaisseur de la lèvre inférieure",
+   "latin": "Depressor labii inferioris",
+   "anglais": "Depressor labii inferioris",
+   "ta2": "2083",
+   "type": "muscle",
+   "region": "tete",
+   "source": "Depressor labii inferioris",
+   "pair": true,
+   "app": []
+  },
+  {
+   "id": "abaisseur_du_septum_nasal",
+   "nom": "Abaisseur du septum nasal",
+   "latin": "Depressor septi nasi",
+   "anglais": "Depressor septi nasi",
+   "ta2": "2065",
+   "type": "muscle",
+   "region": "tete",
+   "source": "Depressor septi nasi",
+   "pair": true,
+   "app": []
+  },
+  {
+   "id": "buccinateur",
+   "nom": "Buccinateur",
+   "latin": "Musculus buccinator",
+   "anglais": "Bucinator",
+   "ta2": "2086",
+   "type": "muscle",
+   "region": "tete",
+   "source": "Bucinator",
+   "pair": true,
+   "app": []
+  },
+  {
+   "id": "corrugateur_du_sourcil",
+   "nom": "Corrugateur du sourcil",
+   "latin": "Musculus corrugator supercilii",
+   "anglais": "Corrugator supercilii",
+   "ta2": "2071",
+   "type": "muscle",
+   "region": "tete",
+   "source": "Corrugator supercilii",
+   "pair": true,
+   "app": []
+  },
+  {
+   "id": "elevateur_de_l_angle_de_la_bouche",
+   "nom": "Élévateur de l'angle de la bouche",
+   "latin": "Levator anguli oris",
+   "anglais": "Levator anguli oris",
+   "ta2": "2084",
+   "type": "muscle",
+   "region": "tete",
+   "source": "Levator anguli oris",
+   "pair": true,
+   "app": []
+  },
+  {
+   "id": "elevateur_de_la_levre_superieure",
+   "nom": "Élévateur de la lèvre supérieure",
+   "latin": "Levator labii superioris",
+   "anglais": "Levator labii superioris",
+   "ta2": "2081",
+   "type": "muscle",
+   "region": "tete",
+   "source": "Levator labii superioris",
+   "pair": true,
+   "app": []
+  },
+  {
+   "id": "elevateur_naso_labial",
+   "nom": "Élévateur naso-labial",
+   "latin": "Levator nasolabialis",
+   "anglais": "Levator nasolabialis",
+   "ta2": "2082",
+   "type": "muscle",
+   "region": "tete",
+   "source": "Levator nasolabialis",
+   "pair": true,
+   "app": []
+  },
+  {
+   "id": "frontal",
+   "nom": "Frontal",
+   "latin": "Musculus frontalis",
+   "anglais": "Frontalis muscle",
+   "ta2": "2056",
+   "type": "muscle",
+   "region": "tete",
+   "source": "Frontalis muscle",
+   "pair": true,
+   "app": []
+  },
+  {
+   "id": "grand_zygomatique",
+   "nom": "Grand zygomatique",
+   "latin": "Musculus zygomaticus major",
+   "anglais": "Zygomaticus major muscle",
+   "ta2": "2079",
+   "type": "muscle",
+   "region": "tete",
+   "source": "Zygomaticus major muscle",
+   "pair": true,
+   "app": []
+  },
+  {
+   "id": "masseter_partie_profonde",
+   "nom": "Masséter · partie profonde",
+   "latin": "Pars profunda masseteris",
+   "anglais": "Deep part of masseter",
+   "ta2": "2107",
+   "type": "muscle",
+   "region": "tete",
+   "source": "Deep part of masseter",
+   "pair": true,
+   "app": []
+  },
+  {
+   "id": "masseter_partie_superficielle",
+   "nom": "Masséter · partie superficielle",
+   "latin": "Pars superficialis masseteris",
+   "anglais": "Superficial part of masseter",
+   "ta2": "2106",
+   "type": "muscle",
+   "region": "tete",
+   "source": "Superficial part of masseter",
+   "pair": true,
+   "app": []
+  },
+  {
+   "id": "mentonnier",
+   "nom": "Mentonnier",
+   "latin": "Musculus mentalis",
+   "anglais": "Mentalis muscle",
+   "ta2": "2087",
+   "type": "muscle",
+   "region": "tete",
+   "source": "Mentalis muscle",
+   "pair": true,
+   "app": []
+  },
+  {
+   "id": "nasal",
+   "nom": "Nasal",
+   "latin": "Musculus nasalis",
+   "anglais": "Nasalis muscle",
+   "ta2": "2062",
+   "type": "muscle",
+   "region": "tete",
+   "source": "Nasalis muscle",
+   "pair": true,
+   "app": []
+  },
+  {
+   "id": "occipital",
+   "nom": "Occipital",
+   "latin": "Musculus occipitalis",
+   "anglais": "Occipitalis muscle",
+   "ta2": "2057",
+   "type": "muscle",
+   "region": "tete",
+   "source": "Occipitalis muscle",
+   "pair": true,
+   "app": []
+  },
+  {
+   "id": "orbiculaire_de_l_oeil_partie_orbitaire",
+   "nom": "Orbiculaire de l'œil · partie orbitaire",
+   "latin": "Pars orbitalis musculi orbicularis oculi",
+   "anglais": "Orbital part of orbicularis oculi",
+   "ta2": "2070",
+   "type": "muscle",
+   "region": "tete",
+   "source": "Orbital part of orbicularis oculi",
+   "pair": true,
+   "app": []
+  },
+  {
+   "id": "orbiculaire_de_l_oeil_partie_palpebrale",
+   "nom": "Orbiculaire de l'œil · partie palpébrale",
+   "latin": "Pars palpebralis musculi orbicularis oculi",
+   "anglais": "Palpebral part of orbicularis oculi",
+   "ta2": "2067",
+   "type": "muscle",
+   "region": "tete",
+   "source": "Palpebral part of orbicularis oculi",
+   "pair": true,
+   "app": []
+  },
+  {
+   "id": "orbiculaire_de_la_bouche",
+   "nom": "Orbiculaire de la bouche",
+   "latin": "Musculus orbicularis oris",
+   "anglais": "Orbicularis oris muscle",
+   "ta2": "2073",
+   "type": "muscle",
+   "region": "tete",
+   "source": "Orbicularis oris muscle",
+   "pair": true,
+   "app": []
+  },
+  {
+   "id": "petit_zygomatique",
+   "nom": "Petit zygomatique",
+   "latin": "Musculus zygomaticus minor",
+   "anglais": "Zygomaticus minor muscle",
+   "ta2": "2080",
+   "type": "muscle",
+   "region": "tete",
+   "source": "Zygomaticus minor muscle",
+   "pair": true,
+   "app": []
+  },
+  {
+   "id": "procerus",
+   "nom": "Procérus",
+   "latin": "Musculus procerus",
+   "anglais": "Procerus muscle",
+   "ta2": "2061",
+   "type": "muscle",
+   "region": "tete",
+   "source": "Procerus muscle",
+   "pair": true,
+   "app": []
+  },
+  {
+   "id": "risorius",
+   "nom": "Risorius",
+   "latin": "Musculus risorius",
+   "anglais": "Risorius muscle",
+   "ta2": "2078",
+   "type": "muscle",
+   "region": "tete",
+   "source": "Risorius muscle",
+   "pair": true,
+   "app": []
+  },
+  {
+   "id": "temporal",
+   "nom": "Temporal",
+   "latin": "Musculus temporalis",
+   "anglais": "Temporalis muscle",
+   "ta2": "2108",
+   "type": "muscle",
+   "region": "tete",
+   "source": "Temporalis muscle",
+   "pair": true,
+   "app": []
+  },
+  {
+   "id": "temporo_parietal",
+   "nom": "Temporo-pariétal",
+   "latin": "Musculus temporoparietalis",
+   "anglais": "Temporoparietalis muscle",
+   "ta2": "2058",
+   "type": "muscle",
+   "region": "tete",
+   "source": "Temporoparietalis muscle",
+   "pair": true,
+   "app": []
+  },
+  {
+   "id": "epineux_de_la_tete",
+   "nom": "Épineux de la tête",
+   "latin": "Musculus spinalis capitis",
+   "anglais": "Spinalis capitis muscle",
+   "ta2": "2270",
+   "type": "muscle",
+   "region": "cou",
+   "source": "Spinalis capitis muscle",
+   "pair": true,
+   "app": []
+  },
+  {
+   "id": "epineux_du_cou",
+   "nom": "Épineux du cou",
+   "latin": "Musculus spinalis colli",
+   "anglais": "Spinalis colli muscle",
+   "ta2": "2269",
+   "type": "muscle",
+   "region": "cou",
+   "source": "Spinalis colli muscle",
+   "pair": true,
+   "app": []
+  },
+  {
+   "id": "ilio_costal_du_cou",
+   "nom": "Ilio-costal du cou",
+   "latin": "Musculus iliocostalis colli",
+   "anglais": "Iliocostalis colli muscle",
+   "ta2": "2261",
+   "type": "muscle",
+   "region": "cou",
+   "source": "Iliocostalis colli muscle",
+   "pair": true,
+   "app": []
+  },
+  {
+   "id": "longissimus_de_la_tete",
+   "nom": "Longissimus de la tête",
+   "latin": "Musculus longissimus capitis",
+   "anglais": "Longissimus capitis muscle",
+   "ta2": "2266",
+   "type": "muscle",
+   "region": "cou",
+   "source": "Longissimus capitis muscle",
+   "pair": true,
+   "app": []
+  },
+  {
+   "id": "longissimus_du_cou",
+   "nom": "Longissimus du cou",
+   "latin": "Musculus longissimus colli",
+   "anglais": "Longissimus colli muscle",
+   "ta2": "2265",
+   "type": "muscle",
+   "region": "cou",
+   "source": "Longissimus colli muscle",
+   "pair": true,
+   "app": []
+  },
+  {
+   "id": "multifide_du_cou",
+   "nom": "Multifide du cou",
+   "latin": "Musculus multifidus colli",
+   "anglais": "Multifidus colli muscle",
+   "ta2": "2279",
+   "type": "muscle",
+   "region": "cou",
+   "source": "Multifidus colli muscle",
+   "pair": true,
+   "app": []
+  },
+  {
+   "id": "omo_hyoidien",
+   "nom": "Omo-hyoïdien",
+   "latin": "Musculus omohyoideus",
+   "anglais": "Omohyoid muscle",
+   "ta2": "2169",
+   "type": "muscle",
+   "region": "cou",
+   "source": "Omohyoid muscle",
+   "pair": true,
+   "app": []
+  },
+  {
+   "id": "scalene_anterieur",
+   "nom": "Scalène antérieur",
+   "latin": "Musculus scalenus anterior",
+   "anglais": "Scalenus anterior muscle",
+   "ta2": "2152",
+   "type": "muscle",
+   "region": "cou",
+   "source": "Scalenus anterior muscle",
+   "pair": true,
+   "app": []
+  },
+  {
+   "id": "scalene_moyen",
+   "nom": "Scalène moyen",
+   "latin": "Musculus scalenus medius",
+   "anglais": "Scalenus medius muscle",
+   "ta2": "2153",
+   "type": "muscle",
+   "region": "cou",
+   "source": "Scalenus medius muscle",
+   "pair": true,
+   "app": []
+  },
+  {
+   "id": "scalene_posterieur",
+   "nom": "Scalène postérieur",
+   "latin": "Musculus scalenus posterior",
+   "anglais": "Scalenus posterior muscle",
+   "ta2": "2154",
+   "type": "muscle",
+   "region": "cou",
+   "source": "Scalenus posterior muscle",
+   "pair": true,
+   "app": []
+  },
+  {
+   "id": "semi_epineux_du_cou",
+   "nom": "Semi-épineux du cou",
+   "latin": "Musculus semispinalis colli",
+   "anglais": "Semispinalis colli muscle",
+   "ta2": "2282",
+   "type": "muscle",
+   "region": "cou",
+   "source": "Semispinalis colli muscle",
+   "pair": true,
+   "app": []
+  },
+  {
+   "id": "splenius_de_la_tete",
+   "nom": "Splénius de la tête",
+   "latin": "Musculus splenius capitis",
+   "anglais": "Splenius capitis muscle",
+   "ta2": "2273",
+   "type": "muscle",
+   "region": "cou",
+   "source": "Splenius capitis muscle",
+   "pair": true,
+   "app": []
+  },
+  {
+   "id": "splenius_du_cou",
+   "nom": "Splénius du cou",
+   "latin": "Musculus splenius colli",
+   "anglais": "Splenius colli muscle",
+   "ta2": "2274",
+   "type": "muscle",
+   "region": "cou",
+   "source": "Splenius colli muscle",
+   "pair": true,
+   "app": []
+  },
+  {
+   "id": "sterno_cleido_mastoidien",
+   "nom": "Sterno-cléido-mastoïdien",
+   "latin": "Musculus sternocleidomastoideus",
+   "anglais": "Sternocleidomastoid muscle",
+   "ta2": "2156",
+   "type": "muscle",
+   "region": "cou",
+   "source": "Sternocleidomastoid muscle",
+   "pair": true,
+   "app": []
+  },
+  {
+   "id": "sterno_hyoidien",
+   "nom": "Sterno-hyoïdien",
+   "latin": "Musculus sternohyoideus",
+   "anglais": "Sternohyoid muscle",
+   "ta2": "2168",
+   "type": "muscle",
+   "region": "cou",
+   "source": "Sternohyoid muscle",
+   "pair": true,
+   "app": []
+  },
+  {
+   "id": "deltoide_anterieur",
+   "nom": "Deltoïde antérieur",
+   "latin": "Pars clavicularis musculi deltoidei",
+   "anglais": "Clavicular part of deltoid muscle",
+   "ta2": "2453",
+   "type": "muscle",
+   "region": "epaule",
+   "source": "Clavicular part of deltoid muscle",
+   "pair": true,
+   "app": [
+    {
+     "groupe": "epaules",
+     "faisceau": "delt_ant",
+     "role": "principal"
+    }
+   ]
+  },
+  {
+   "id": "deltoide_lateral",
+   "nom": "Deltoïde latéral",
+   "latin": "Pars acromialis musculi deltoidei",
+   "anglais": "Acromial part of deltoid muscle",
+   "ta2": "2454",
+   "type": "muscle",
+   "region": "epaule",
+   "source": "Acromial part of deltoid muscle",
+   "pair": true,
+   "app": [
+    {
+     "groupe": "epaules",
+     "faisceau": "delt_lat",
+     "role": "principal"
+    }
+   ]
+  },
+  {
+   "id": "deltoide_posterieur",
+   "nom": "Deltoïde postérieur",
+   "latin": "Pars spinalis scapularis musculi deltoidei",
+   "anglais": "Scapular spinal part of deltoid muscle",
+   "ta2": "2455",
+   "type": "muscle",
+   "region": "epaule",
+   "source": "Scapular spinal part of deltoid muscle",
+   "pair": true,
+   "app": [
+    {
+     "groupe": "epaules",
+     "faisceau": "delt_post",
+     "role": "principal"
+    }
+   ]
+  },
+  {
+   "id": "grand_rond",
+   "nom": "Grand rond",
+   "latin": "Musculus teres major",
+   "anglais": "Teres major muscle",
+   "ta2": "2462",
+   "type": "muscle",
+   "region": "epaule",
+   "source": "Teres major muscle",
+   "pair": true,
+   "app": [
+    {
+     "groupe": "dos",
+     "faisceau": "dos_largeur",
+     "role": "synergiste"
+    }
+   ]
+  },
+  {
+   "id": "infra_epineux",
+   "nom": "Infra-épineux",
+   "latin": "Musculus infraspinatus",
+   "anglais": "Infraspinatus muscle",
+   "ta2": "2458",
+   "type": "muscle",
+   "region": "epaule",
+   "source": "Infraspinatus muscle",
+   "pair": true,
+   "app": [
+    {
+     "groupe": "epaules",
+     "faisceau": null,
+     "role": "stabilisateur"
+    }
+   ]
+  },
+  {
+   "id": "petit_rond",
+   "nom": "Petit rond",
+   "latin": "Musculus teres minor",
+   "anglais": "Teres minor muscle",
+   "ta2": "2459",
+   "type": "muscle",
+   "region": "epaule",
+   "source": "Teres minor muscle",
+   "pair": true,
+   "app": [
+    {
+     "groupe": "epaules",
+     "faisceau": null,
+     "role": "stabilisateur"
+    }
+   ]
+  },
+  {
+   "id": "subscapulaire",
+   "nom": "Subscapulaire",
+   "latin": "Musculus subscapularis",
+   "anglais": "Subscapularis muscle",
+   "ta2": "2460",
+   "type": "muscle",
+   "region": "epaule",
+   "source": "Subscapularis muscle",
+   "pair": true,
+   "app": [
+    {
+     "groupe": "epaules",
+     "faisceau": null,
+     "role": "stabilisateur"
+    }
+   ]
+  },
+  {
+   "id": "supra_epineux",
+   "nom": "Supra-épineux",
+   "latin": "Musculus supraspinatus",
+   "anglais": "Supraspinatus muscle",
+   "ta2": "2457",
+   "type": "muscle",
+   "region": "epaule",
+   "source": "Supraspinatus muscle",
+   "pair": true,
+   "app": [
+    {
+     "groupe": "epaules",
+     "faisceau": null,
+     "role": "stabilisateur"
+    }
+   ]
+  },
+  {
+   "id": "dentele_anterieur",
+   "nom": "Grand dentelé",
+   "latin": "Musculus serratus anterior",
+   "anglais": "Serratus anterior muscle",
+   "ta2": "2307",
+   "type": "muscle",
+   "region": "thorax",
+   "source": "Serratus anterior muscle",
+   "pair": true,
+   "app": [
+    {
+     "groupe": "pectoraux",
+     "faisceau": null,
+     "role": "stabilisateur"
+    }
+   ]
+  },
+  {
+   "id": "pectoral_abdominal",
+   "nom": "Grand pectoral · faisceau abdominal",
+   "latin": "Pars abdominalis musculi pectoralis majoris",
+   "anglais": "Abdominal part of pectoralis major muscle",
+   "ta2": null,
+   "type": "muscle",
+   "region": "thorax",
+   "source": "(Abdominal part of pectoralis major muscle)",
+   "pair": true,
+   "app": [
+    {
+     "groupe": "pectoraux",
+     "faisceau": "pec_bas",
+     "role": "principal"
+    }
+   ]
+  },
+  {
+   "id": "pectoral_claviculaire",
+   "nom": "Grand pectoral · faisceau claviculaire",
+   "latin": "Pars clavicularis musculi pectoralis majoris",
+   "anglais": "Clavicular head of pectoralis major muscle",
+   "ta2": "2302",
+   "type": "muscle",
+   "region": "thorax",
+   "source": "Clavicular head of pectoralis major muscle",
+   "pair": true,
+   "app": [
+    {
+     "groupe": "pectoraux",
+     "faisceau": "pec_haut",
+     "role": "principal"
+    }
+   ]
+  },
+  {
+   "id": "pectoral_sternal",
+   "nom": "Grand pectoral · faisceau sternal",
+   "latin": "Pars sternocostalis musculi pectoralis majoris",
+   "anglais": "Sternocostal head of pectoralis major muscle",
+   "ta2": "2303",
+   "type": "muscle",
+   "region": "thorax",
+   "source": "Sternocostal head of pectoralis major muscle",
+   "pair": true,
+   "app": [
+    {
+     "groupe": "pectoraux",
+     "faisceau": "pec_milieu",
+     "role": "principal"
+    }
+   ]
+  },
+  {
+   "id": "intercostaux_externes",
+   "nom": "Intercostaux externes",
+   "latin": "Musculi intercostales externi",
+   "anglais": "External intercostal muscles",
+   "ta2": "2311",
+   "type": "muscle",
+   "region": "thorax",
+   "source": "External intercostal muscles",
+   "pair": true,
+   "app": []
+  },
+  {
+   "id": "intercostaux_internes",
+   "nom": "Intercostaux internes",
+   "latin": "Musculi intercostales interni",
+   "anglais": "Internal intercostal muscles",
+   "ta2": "2312",
+   "type": "muscle",
+   "region": "thorax",
+   "source": "Internal intercostal muscles",
+   "pair": true,
+   "app": []
+  },
+  {
+   "id": "petit_pectoral",
+   "nom": "Petit pectoral",
+   "latin": "Musculus pectoralis minor",
+   "anglais": "Pectoralis minor muscle",
+   "ta2": "2305",
+   "type": "muscle",
+   "region": "thorax",
+   "source": "Pectoralis minor muscle",
+   "pair": true,
+   "app": [
+    {
+     "groupe": "pectoraux",
+     "faisceau": null,
+     "role": "synergiste"
+    }
+   ]
+  },
+  {
+   "id": "subclavier",
+   "nom": "Subclavier",
+   "latin": "Musculus subclavius",
+   "anglais": "Subclavius muscle",
+   "ta2": "2306",
+   "type": "muscle",
+   "region": "thorax",
+   "source": "Subclavius muscle",
+   "pair": true,
+   "app": []
+  },
+  {
+   "id": "carre_lombes",
+   "nom": "Carré des lombes",
+   "latin": "Musculus quadratus lumborum",
+   "anglais": "Quadratus lumborum muscle",
+   "ta2": "2382",
+   "type": "muscle",
+   "region": "dos",
+   "source": "Quadratus lumborum muscle",
+   "pair": true,
+   "app": [
+    {
+     "groupe": "lombaires",
+     "faisceau": null,
+     "role": "synergiste"
+    }
+   ]
+  },
+  {
+   "id": "dentele_postero_inferieur",
+   "nom": "Dentelé postéro-inférieur",
+   "latin": "Musculus serratus posterior inferior",
+   "anglais": "Serratus posterior inferior muscle",
+   "ta2": "2235",
+   "type": "muscle",
+   "region": "dos",
+   "source": "Serratus posterior inferior muscle",
+   "pair": true,
+   "app": []
+  },
+  {
+   "id": "dentele_postero_superieur",
+   "nom": "Dentelé postéro-supérieur",
+   "latin": "Musculus serratus posterior superior",
+   "anglais": "Serratus posterior superior muscle",
+   "ta2": "2236",
+   "type": "muscle",
+   "region": "dos",
+   "source": "Serratus posterior superior muscle",
+   "pair": true,
+   "app": []
+  },
+  {
+   "id": "elevateur_scapula",
+   "nom": "Élévateur de la scapula",
+   "latin": "Levator scapulae",
+   "anglais": "Levator scapulae",
+   "ta2": "2234",
+   "type": "muscle",
+   "region": "dos",
+   "source": "Levator scapulae",
+   "pair": true,
+   "app": [
+    {
+     "groupe": "trapezes",
+     "faisceau": null,
+     "role": "synergiste"
+    }
+   ]
+  },
+  {
+   "id": "epineux_thorax",
+   "nom": "Épineux du thorax",
+   "latin": "Musculus spinalis thoracis",
+   "anglais": "Spinalis thoracis muscle",
+   "ta2": "2268",
+   "type": "muscle",
+   "region": "dos",
+   "source": "Spinalis thoracis muscle",
+   "pair": true,
+   "app": [
+    {
+     "groupe": "lombaires",
+     "faisceau": null,
+     "role": "principal"
+    }
+   ]
+  },
+  {
+   "id": "grand_dorsal",
+   "nom": "Grand dorsal",
+   "latin": "Musculus latissimus dorsi",
+   "anglais": "Latissimus dorsi muscle",
+   "ta2": "2231",
+   "type": "muscle",
+   "region": "dos",
+   "source": "Latissimus dorsi muscle",
+   "pair": true,
+   "app": [
+    {
+     "groupe": "dos",
+     "faisceau": "dos_largeur",
+     "role": "principal"
+    }
+   ]
+  },
+  {
+   "id": "grand_rhomboide",
+   "nom": "Grand rhomboïde",
+   "latin": "Musculus rhomboideus major",
+   "anglais": "Rhomboid major muscle",
+   "ta2": "2232",
+   "type": "muscle",
+   "region": "dos",
+   "source": "Rhomboid major muscle",
+   "pair": true,
+   "app": [
+    {
+     "groupe": "dos",
+     "faisceau": "dos_epaisseur",
+     "role": "principal"
+    }
+   ]
+  },
+  {
+   "id": "ilio_costal_lombes",
+   "nom": "Ilio-costal des lombes",
+   "latin": "Musculus iliocostalis lumborum",
+   "anglais": "Iliocostalis lumborum muscle",
+   "ta2": "2258",
+   "type": "muscle",
+   "region": "dos",
+   "source": "Iliocostalis lumborum muscle",
+   "pair": true,
+   "app": [
+    {
+     "groupe": "lombaires",
+     "faisceau": null,
+     "role": "principal"
+    }
+   ]
+  },
+  {
+   "id": "ilio_costal_thorax",
+   "nom": "Ilio-costal du thorax",
+   "latin": "Musculus iliocostalis thoracis",
+   "anglais": "Iliocostalis thoracis muscle",
+   "ta2": "2260",
+   "type": "muscle",
+   "region": "dos",
+   "source": "Iliocostalis thoracis muscle",
+   "pair": true,
+   "app": [
+    {
+     "groupe": "lombaires",
+     "faisceau": null,
+     "role": "principal"
+    }
+   ]
+  },
+  {
+   "id": "longissimus_thorax",
+   "nom": "Longissimus du thorax",
+   "latin": "Musculus longissimus thoracis",
+   "anglais": "Longissimus thoracis muscle",
+   "ta2": "2263",
+   "type": "muscle",
+   "region": "dos",
+   "source": "Longissimus thoracis muscle",
+   "pair": true,
+   "app": [
+    {
+     "groupe": "lombaires",
+     "faisceau": null,
+     "role": "principal"
+    }
+   ]
+  },
+  {
+   "id": "multifide_lombes",
+   "nom": "Multifide des lombes",
+   "latin": "Musculus multifidus lumborum",
+   "anglais": "Multifidus lumborum muscle",
+   "ta2": "2277",
+   "type": "muscle",
+   "region": "dos",
+   "source": "Multifidus lumborum muscle",
+   "pair": true,
+   "app": [
+    {
+     "groupe": "lombaires",
+     "faisceau": null,
+     "role": "stabilisateur"
+    }
+   ]
+  },
+  {
+   "id": "multifide_thorax",
+   "nom": "Multifide du thorax",
+   "latin": "Musculus multifidus thoracis",
+   "anglais": "Multifidus thoracis muscle",
+   "ta2": "2278",
+   "type": "muscle",
+   "region": "dos",
+   "source": "Multifidus thoracis muscle",
+   "pair": true,
+   "app": [
+    {
+     "groupe": "lombaires",
+     "faisceau": null,
+     "role": "stabilisateur"
+    }
+   ]
+  },
+  {
+   "id": "petit_rhomboide",
+   "nom": "Petit rhomboïde",
+   "latin": "Musculus rhomboideus minor",
+   "anglais": "Rhomboid minor muscle",
+   "ta2": "2233",
+   "type": "muscle",
+   "region": "dos",
+   "source": "Rhomboid minor muscle",
+   "pair": true,
+   "app": [
+    {
+     "groupe": "dos",
+     "faisceau": "dos_epaisseur",
+     "role": "principal"
+    }
+   ]
+  },
+  {
+   "id": "semi_epineux_du_thorax",
+   "nom": "Semi-épineux du thorax",
+   "latin": "Musculus semispinalis thoracis",
+   "anglais": "Semispinalis thoracis muscle",
+   "ta2": "2281",
+   "type": "muscle",
+   "region": "dos",
+   "source": "Semispinalis thoracis muscle",
+   "pair": true,
+   "app": []
+  },
+  {
+   "id": "trapeze_inferieur",
+   "nom": "Trapèze inférieur",
+   "latin": "Pars ascendens musculi trapezii",
+   "anglais": "Ascending (inferior) part of trapezius muscle",
+   "ta2": "2227",
+   "type": "muscle",
+   "region": "dos",
+   "source": "Descending part of trapezius muscle",
+   "pair": true,
+   "app": [
+    {
+     "groupe": "dos",
+     "faisceau": "dos_epaisseur",
+     "role": "principal"
+    },
+    {
+     "groupe": "trapezes",
+     "faisceau": null,
+     "role": "synergiste"
+    }
+   ]
+  },
+  {
+   "id": "trapeze_moyen",
+   "nom": "Trapèze moyen",
+   "latin": "Pars transversa musculi trapezii",
+   "anglais": "Transverse part of trapezius muscle",
+   "ta2": "2228",
+   "type": "muscle",
+   "region": "dos",
+   "source": "Transverse part of trapezius muscle",
+   "pair": true,
+   "app": [
+    {
+     "groupe": "dos",
+     "faisceau": "dos_epaisseur",
+     "role": "principal"
+    },
+    {
+     "groupe": "trapezes",
+     "faisceau": null,
+     "role": "synergiste"
+    }
+   ]
+  },
+  {
+   "id": "trapeze_superieur",
+   "nom": "Trapèze supérieur",
+   "latin": "Pars descendens musculi trapezii",
+   "anglais": "Descending (superior) part of trapezius muscle",
+   "ta2": "2229",
+   "type": "muscle",
+   "region": "dos",
+   "source": "Ascending part of trapezius muscle",
+   "pair": true,
+   "app": [
+    {
+     "groupe": "trapezes",
+     "faisceau": null,
+     "role": "principal"
+    }
+   ]
+  },
+  {
+   "id": "grand_droit_abdomen",
+   "nom": "Grand droit de l'abdomen",
+   "latin": "Musculus rectus abdominis",
+   "anglais": "Rectus abdominis muscle",
+   "ta2": "2357",
+   "type": "muscle",
+   "region": "abdomen",
+   "source": "Rectus abdominis muscle",
+   "pair": true,
+   "app": [
+    {
+     "groupe": "abdos",
+     "faisceau": null,
+     "role": "principal"
+    }
+   ]
+  },
+  {
+   "id": "ligne_blanche",
+   "nom": "Ligne blanche",
+   "latin": "Linea alba",
+   "anglais": "Linea alba",
+   "ta2": null,
+   "type": "tendon",
+   "region": "abdomen",
+   "source": "Linea alba",
+   "pair": false,
+   "app": []
+  },
+  {
+   "id": "oblique_externe",
+   "nom": "Oblique externe",
+   "latin": "Musculus obliquus externus abdominis",
+   "anglais": "External abdominal oblique muscle",
+   "ta2": "2364",
+   "type": "muscle",
+   "region": "abdomen",
+   "source": "External abdominal oblique muscle",
+   "pair": true,
+   "app": [
+    {
+     "groupe": "abdos",
+     "faisceau": null,
+     "role": "principal"
+    }
+   ]
+  },
+  {
+   "id": "oblique_interne",
+   "nom": "Oblique interne",
+   "latin": "Musculus obliquus internus abdominis",
+   "anglais": "Internal abdominal oblique muscle",
+   "ta2": "2373",
+   "type": "muscle",
+   "region": "abdomen",
+   "source": "Internal abdominal oblique muscle",
+   "pair": true,
+   "app": [
+    {
+     "groupe": "abdos",
+     "faisceau": null,
+     "role": "synergiste"
+    }
+   ]
+  },
+  {
+   "id": "pyramidal",
+   "nom": "Pyramidal",
+   "latin": "Musculus pyramidalis",
+   "anglais": "Pyramidalis muscle",
+   "ta2": "2363",
+   "type": "muscle",
+   "region": "abdomen",
+   "source": "Pyramidalis muscle",
+   "pair": true,
+   "app": [
+    {
+     "groupe": "abdos",
+     "faisceau": null,
+     "role": "synergiste"
+    }
+   ]
+  },
+  {
+   "id": "transverse_abdomen",
+   "nom": "Transverse de l'abdomen",
+   "latin": "Musculus transversus abdominis",
+   "anglais": "Transversus abdominis muscle",
+   "ta2": "2375",
+   "type": "muscle",
+   "region": "abdomen",
+   "source": "Transversus abdominis muscle",
+   "pair": true,
+   "app": [
+    {
+     "groupe": "abdos",
+     "faisceau": null,
+     "role": "stabilisateur"
+    }
+   ]
+  },
+  {
+   "id": "carre_femoral",
+   "nom": "Carré fémoral",
+   "latin": "Musculus quadratus femoris",
+   "anglais": "Quadratus femoris muscle",
+   "ta2": "2608",
+   "type": "muscle",
+   "region": "bassin",
+   "source": "Quadratus femoris muscle",
+   "pair": true,
+   "app": [
+    {
+     "groupe": "fessiers",
+     "faisceau": null,
+     "role": "stabilisateur"
+    }
+   ]
+  },
+  {
+   "id": "grand_fessier",
+   "nom": "Grand fessier",
+   "latin": "Musculus gluteus maximus",
+   "anglais": "Gluteus maximus muscle",
+   "ta2": "2598",
+   "type": "muscle",
+   "region": "bassin",
+   "source": "Gluteus maximus muscle",
+   "pair": true,
+   "app": [
+    {
+     "groupe": "fessiers",
+     "faisceau": "fes_grand",
+     "role": "principal"
+    }
+   ]
+  },
+  {
+   "id": "grand_psoas",
+   "nom": "Grand psoas",
+   "latin": "Psoas major",
+   "anglais": "Psoas major",
+   "ta2": "2595",
+   "type": "muscle",
+   "region": "bassin",
+   "source": "Psoas major",
+   "pair": true,
+   "app": [
+    {
+     "groupe": "abdos",
+     "faisceau": null,
+     "role": "synergiste"
+    }
+   ]
+  },
+  {
+   "id": "iliaque",
+   "nom": "Iliaque",
+   "latin": "Musculus iliacus",
+   "anglais": "Iliacus muscle",
+   "ta2": "2594",
+   "type": "muscle",
+   "region": "bassin",
+   "source": "Iliacus muscle",
+   "pair": true,
+   "app": [
+    {
+     "groupe": "abdos",
+     "faisceau": null,
+     "role": "synergiste"
+    }
+   ]
+  },
+  {
+   "id": "jumeau_inferieur",
+   "nom": "Jumeau inférieur",
+   "latin": "Musculus gemellus inferior",
+   "anglais": "Inferior gemellus muscle",
+   "ta2": "2607",
+   "type": "muscle",
+   "region": "bassin",
+   "source": "Inferior gemellus muscle",
+   "pair": true,
+   "app": [
+    {
+     "groupe": "fessiers",
+     "faisceau": null,
+     "role": "stabilisateur"
+    }
+   ]
+  },
+  {
+   "id": "jumeau_superieur",
+   "nom": "Jumeau supérieur",
+   "latin": "Musculus gemellus superior",
+   "anglais": "Superior gemellus muscle",
+   "ta2": "2606",
+   "type": "muscle",
+   "region": "bassin",
+   "source": "Superior gemellus muscle",
+   "pair": true,
+   "app": [
+    {
+     "groupe": "fessiers",
+     "faisceau": null,
+     "role": "stabilisateur"
+    }
+   ]
+  },
+  {
+   "id": "moyen_fessier",
+   "nom": "Moyen fessier",
+   "latin": "Musculus gluteus medius",
+   "anglais": "Gluteus medius muscle",
+   "ta2": "2599",
+   "type": "muscle",
+   "region": "bassin",
+   "source": "Gluteus medius muscle",
+   "pair": true,
+   "app": [
+    {
+     "groupe": "fessiers",
+     "faisceau": "fes_moyen",
+     "role": "principal"
+    }
+   ]
+  },
+  {
+   "id": "obturateur_externe",
+   "nom": "Obturateur externe",
+   "latin": "Obturator externus",
+   "anglais": "Obturator externus",
+   "ta2": "2636",
+   "type": "muscle",
+   "region": "bassin",
+   "source": "Obturator externus",
+   "pair": true,
+   "app": [
+    {
+     "groupe": "fessiers",
+     "faisceau": null,
+     "role": "stabilisateur"
+    }
+   ]
+  },
+  {
+   "id": "obturateur_interne",
+   "nom": "Obturateur interne",
+   "latin": "Obturator internus",
+   "anglais": "Obturator internus",
+   "ta2": "2605",
+   "type": "muscle",
+   "region": "bassin",
+   "source": "Obturator internus",
+   "pair": true,
+   "app": [
+    {
+     "groupe": "fessiers",
+     "faisceau": null,
+     "role": "stabilisateur"
+    }
+   ]
+  },
+  {
+   "id": "petit_fessier",
+   "nom": "Petit fessier",
+   "latin": "Musculus gluteus minimus",
+   "anglais": "Gluteus minimus muscle",
+   "ta2": "2600",
+   "type": "muscle",
+   "region": "bassin",
+   "source": "Gluteus minimus muscle",
+   "pair": true,
+   "app": [
+    {
+     "groupe": "fessiers",
+     "faisceau": "fes_moyen",
+     "role": "synergiste"
+    }
+   ]
+  },
+  {
+   "id": "piriforme",
+   "nom": "Piriforme",
+   "latin": "Musculus piriformis",
+   "anglais": "Piriformis muscle",
+   "ta2": "2604",
+   "type": "muscle",
+   "region": "bassin",
+   "source": "Piriformis muscle",
+   "pair": true,
+   "app": [
+    {
+     "groupe": "fessiers",
+     "faisceau": null,
+     "role": "stabilisateur"
+    }
+   ]
+  },
+  {
+   "id": "tenseur_fascia_lata",
+   "nom": "Tenseur du fascia lata",
+   "latin": "Musculus tensor fasciae latae",
+   "anglais": "Tensor fasciae latae",
+   "ta2": null,
+   "type": "muscle",
+   "region": "bassin",
+   "source": "Tensor fasciae latae",
+   "pair": true,
+   "app": [
+    {
+     "groupe": "fessiers",
+     "faisceau": null,
+     "role": "synergiste"
+    }
+   ]
+  },
+  {
+   "id": "ancone",
+   "nom": "Anconé",
+   "latin": "Musculus anconeus",
+   "anglais": "Anconeus muscle",
+   "ta2": "2510",
+   "type": "muscle",
+   "region": "bras",
+   "source": "Anconeus muscle",
+   "pair": true,
+   "app": [
+    {
+     "groupe": "triceps",
+     "faisceau": null,
+     "role": "synergiste"
+    }
+   ]
+  },
+  {
+   "id": "biceps_court",
+   "nom": "Biceps brachial · courte portion",
+   "latin": "Caput breve musculi bicipitis brachii",
+   "anglais": "Short head of biceps brachii",
+   "ta2": "2466",
+   "type": "muscle",
+   "region": "bras",
+   "source": "Short head of biceps brachii",
+   "pair": true,
+   "app": [
+    {
+     "groupe": "biceps",
+     "faisceau": "bic_court",
+     "role": "principal"
+    }
+   ]
+  },
+  {
+   "id": "biceps_long",
+   "nom": "Biceps brachial · longue portion",
+   "latin": "Caput longum musculi bicipitis brachii",
+   "anglais": "Long head of biceps brachii",
+   "ta2": "2465",
+   "type": "muscle",
+   "region": "bras",
+   "source": "Long head of biceps brachii",
+   "pair": true,
+   "app": [
+    {
+     "groupe": "biceps",
+     "faisceau": "bic_long",
+     "role": "principal"
+    }
+   ]
+  },
+  {
+   "id": "brachial",
+   "nom": "Brachial",
+   "latin": "Musculus brachialis",
+   "anglais": "Brachialis muscle",
+   "ta2": "2469",
+   "type": "muscle",
+   "region": "bras",
+   "source": "Brachialis muscle",
+   "pair": true,
+   "app": [
+    {
+     "groupe": "biceps",
+     "faisceau": "bic_brachial",
+     "role": "principal"
+    }
+   ]
+  },
+  {
+   "id": "coraco_brachial",
+   "nom": "Coraco-brachial",
+   "latin": "Musculus coracobrachialis",
+   "anglais": "Coracobrachialis muscle",
+   "ta2": "2468",
+   "type": "muscle",
+   "region": "bras",
+   "source": "Coracobrachialis muscle",
+   "pair": true,
+   "app": [
+    {
+     "groupe": "biceps",
+     "faisceau": null,
+     "role": "synergiste"
+    }
+   ]
+  },
+  {
+   "id": "triceps_long",
+   "nom": "Triceps · longue portion",
+   "latin": "Caput longum musculi tricipitis brachii",
+   "anglais": "Long head of triceps brachii",
+   "ta2": "2472",
+   "type": "muscle",
+   "region": "bras",
+   "source": "Long head of triceps brachii",
+   "pair": true,
+   "app": [
+    {
+     "groupe": "triceps",
+     "faisceau": "tri_long",
+     "role": "principal"
+    }
+   ]
+  },
+  {
+   "id": "triceps_lateral",
+   "nom": "Triceps · vaste latéral",
+   "latin": "Caput laterale musculi tricipitis brachii",
+   "anglais": "Lateral head of triceps brachii",
+   "ta2": "2473",
+   "type": "muscle",
+   "region": "bras",
+   "source": "Lateral head of triceps brachii",
+   "pair": true,
+   "app": [
+    {
+     "groupe": "triceps",
+     "faisceau": "tri_lat",
+     "role": "principal"
+    }
+   ]
+  },
+  {
+   "id": "triceps_medial",
+   "nom": "Triceps · vaste médial",
+   "latin": "Caput mediale musculi tricipitis caput brachii",
+   "anglais": "Medial head of triceps brachii",
+   "ta2": "2474",
+   "type": "muscle",
+   "region": "bras",
+   "source": "Medial head of triceps brachii",
+   "pair": true,
+   "app": [
+    {
+     "groupe": "triceps",
+     "faisceau": "tri_med",
+     "role": "principal"
+    }
+   ]
+  },
+  {
+   "id": "brachio_radial",
+   "nom": "Brachio-radial",
+   "latin": "Musculus brachioradialis",
+   "anglais": "Brachioradialis muscle",
+   "ta2": "2496",
+   "type": "muscle",
+   "region": "avant_bras",
+   "source": "Brachioradialis muscle",
+   "pair": true,
+   "app": [
+    {
+     "groupe": "avant_bras",
+     "faisceau": null,
+     "role": "principal"
+    },
+    {
+     "groupe": "biceps",
+     "faisceau": "bic_brachial",
+     "role": "synergiste"
+    }
+   ]
+  },
+  {
+   "id": "carre_pronateur",
+   "nom": "Carré pronateur",
+   "latin": "Pronator quadratus",
+   "anglais": "Pronator quadratus",
+   "ta2": "2493",
+   "type": "muscle",
+   "region": "avant_bras",
+   "source": "Pronator quadratus",
+   "pair": true,
+   "app": [
+    {
+     "groupe": "avant_bras",
+     "faisceau": null,
+     "role": "synergiste"
+    }
+   ]
+  },
+  {
+   "id": "court_extenseur_pouce",
+   "nom": "Court extenseur du pouce",
+   "latin": "Extensor brevis pollicis",
+   "anglais": "Extensor pollicis brevis",
+   "ta2": "2518",
+   "type": "muscle",
+   "region": "avant_bras",
+   "source": "Extensor pollicis brevis",
+   "pair": true,
+   "app": [
+    {
+     "groupe": "avant_bras",
+     "faisceau": null,
+     "role": "synergiste"
+    }
+   ]
+  },
+  {
+   "id": "court_extenseur_radial_carpe",
+   "nom": "Court extenseur radial du carpe",
+   "latin": "Extensor radialis brevis carpi",
+   "anglais": "Extensor carpi radialis brevis",
+   "ta2": "2499",
+   "type": "muscle",
+   "region": "avant_bras",
+   "source": "Extensor carpi radialis brevis",
+   "pair": true,
+   "app": [
+    {
+     "groupe": "avant_bras",
+     "faisceau": null,
+     "role": "principal"
+    }
+   ]
+  },
+  {
+   "id": "extenseur_index",
+   "nom": "Extenseur de l'index",
+   "latin": "Extensor indicis",
+   "anglais": "Extensor indicis",
+   "ta2": "2515",
+   "type": "muscle",
+   "region": "avant_bras",
+   "source": "Extensor indicis",
+   "pair": true,
+   "app": [
+    {
+     "groupe": "avant_bras",
+     "faisceau": null,
+     "role": "synergiste"
+    }
+   ]
+  },
+  {
+   "id": "extenseur_doigts",
+   "nom": "Extenseur des doigts",
+   "latin": "Extensor digitorum",
+   "anglais": "Extensor digitorum",
+   "ta2": "2500",
+   "type": "muscle",
+   "region": "avant_bras",
+   "source": "Extensor digitorum",
+   "pair": true,
+   "app": [
+    {
+     "groupe": "avant_bras",
+     "faisceau": null,
+     "role": "principal"
+    }
+   ]
+  },
+  {
+   "id": "extenseur_petit_doigt",
+   "nom": "Extenseur du petit doigt",
+   "latin": "Extensor digiti minimi",
+   "anglais": "Extensor digiti minimi",
+   "ta2": "2506",
+   "type": "muscle",
+   "region": "avant_bras",
+   "source": "Extensor digiti minimi",
+   "pair": true,
+   "app": [
+    {
+     "groupe": "avant_bras",
+     "faisceau": null,
+     "role": "synergiste"
+    }
+   ]
+  },
+  {
+   "id": "extenseur_ulnaire_carpe_humeral",
+   "nom": "Extenseur ulnaire du carpe · chef huméral",
+   "latin": "Caput humerale extensoris ulnaris carpi",
+   "anglais": "Humeral head of extensor carpi ulnaris",
+   "ta2": "2508",
+   "type": "muscle",
+   "region": "avant_bras",
+   "source": "Humeral head of extensor carpi ulnaris",
+   "pair": true,
+   "app": [
+    {
+     "groupe": "avant_bras",
+     "faisceau": null,
+     "role": "principal"
+    }
+   ]
+  },
+  {
+   "id": "extenseur_ulnaire_carpe_ulnaire",
+   "nom": "Extenseur ulnaire du carpe · chef ulnaire",
+   "latin": "Caput ulnare extensoris ulnaris carpi",
+   "anglais": "Ulnar head of extensor carpi ulnaris",
+   "ta2": "2509",
+   "type": "muscle",
+   "region": "avant_bras",
+   "source": "Ulnar head of extensor carpi ulnaris",
+   "pair": true,
+   "app": [
+    {
+     "groupe": "avant_bras",
+     "faisceau": null,
+     "role": "principal"
+    }
+   ]
+  },
+  {
+   "id": "flechisseur_profond_doigts",
+   "nom": "Fléchisseur profond des doigts",
+   "latin": "Flexor profundus digitorum",
+   "anglais": "Flexor digitorum profundus",
+   "ta2": "2491",
+   "type": "muscle",
+   "region": "avant_bras",
+   "source": "Flexor digitorum profundus",
+   "pair": true,
+   "app": [
+    {
+     "groupe": "avant_bras",
+     "faisceau": null,
+     "role": "synergiste"
+    }
+   ]
+  },
+  {
+   "id": "flechisseur_radial_carpe",
+   "nom": "Fléchisseur radial du carpe",
+   "latin": "Flexor radialis carpi",
+   "anglais": "Flexor carpi radialis",
+   "ta2": "2481",
+   "type": "muscle",
+   "region": "avant_bras",
+   "source": "Flexor carpi radialis",
+   "pair": true,
+   "app": [
+    {
+     "groupe": "avant_bras",
+     "faisceau": null,
+     "role": "principal"
+    }
+   ]
+  },
+  {
+   "id": "flechisseur_superficiel_doigts_humero_ulnaire",
+   "nom": "Fléchisseur superficiel des doigts · chef huméro-ulnaire",
+   "latin": "Caput humeroulnare flexoris superficialis digitorum",
+   "anglais": "Humero-ulnar head of flexor digitorum superficialis",
+   "ta2": "2487",
+   "type": "muscle",
+   "region": "avant_bras",
+   "source": "Humero-ulnar head of flexor digitorum superficialis",
+   "pair": true,
+   "app": [
+    {
+     "groupe": "avant_bras",
+     "faisceau": null,
+     "role": "principal"
+    }
+   ]
+  },
+  {
+   "id": "flechisseur_superficiel_doigts_radial",
+   "nom": "Fléchisseur superficiel des doigts · chef radial",
+   "latin": "Caput radiale flexoris superficialis digitorum",
+   "anglais": "Radial head of flexor digitorum superficialis",
+   "ta2": "2488",
+   "type": "muscle",
+   "region": "avant_bras",
+   "source": "Radial head of flexor digitorum superficialis",
+   "pair": true,
+   "app": [
+    {
+     "groupe": "avant_bras",
+     "faisceau": null,
+     "role": "principal"
+    }
+   ]
+  },
+  {
+   "id": "flechisseur_ulnaire_carpe_humeral",
+   "nom": "Fléchisseur ulnaire du carpe · chef huméral",
+   "latin": "Caput humerale flexoris ulnaris carpi",
+   "anglais": "Humeral head of flexor carpi ulnaris",
+   "ta2": "2484",
+   "type": "muscle",
+   "region": "avant_bras",
+   "source": "Humeral head of flexor carpi ulnaris",
+   "pair": true,
+   "app": [
+    {
+     "groupe": "avant_bras",
+     "faisceau": null,
+     "role": "principal"
+    }
+   ]
+  },
+  {
+   "id": "flechisseur_ulnaire_carpe_ulnaire",
+   "nom": "Fléchisseur ulnaire du carpe · chef ulnaire",
+   "latin": "Caput ulnare flexoris ulnaris carpi",
+   "anglais": "Ulnar head of flexor carpi ulnaris",
+   "ta2": "2485",
+   "type": "muscle",
+   "region": "avant_bras",
+   "source": "Ulnar head of flexor carpi ulnaris",
+   "pair": true,
+   "app": [
+    {
+     "groupe": "avant_bras",
+     "faisceau": null,
+     "role": "principal"
+    }
+   ]
+  },
+  {
+   "id": "long_abducteur_pouce",
+   "nom": "Long abducteur du pouce",
+   "latin": "Abductor longus pollicis",
+   "anglais": "Abductor pollicis longus",
+   "ta2": "2517",
+   "type": "muscle",
+   "region": "avant_bras",
+   "source": "Abductor pollicis longus",
+   "pair": true,
+   "app": [
+    {
+     "groupe": "avant_bras",
+     "faisceau": null,
+     "role": "synergiste"
+    }
+   ]
+  },
+  {
+   "id": "long_extenseur_pouce",
+   "nom": "Long extenseur du pouce",
+   "latin": "Extensor longus pollicis",
+   "anglais": "Extensor pollicis longus",
+   "ta2": "2516",
+   "type": "muscle",
+   "region": "avant_bras",
+   "source": "Extensor pollicis longus",
+   "pair": true,
+   "app": [
+    {
+     "groupe": "avant_bras",
+     "faisceau": null,
+     "role": "synergiste"
+    }
+   ]
+  },
+  {
+   "id": "long_extenseur_radial_carpe",
+   "nom": "Long extenseur radial du carpe",
+   "latin": "Extensor radialis longus carpi",
+   "anglais": "Extensor carpi radialis longus",
+   "ta2": "2497",
+   "type": "muscle",
+   "region": "avant_bras",
+   "source": "Extensor carpi radialis longus",
+   "pair": true,
+   "app": [
+    {
+     "groupe": "avant_bras",
+     "faisceau": null,
+     "role": "principal"
+    }
+   ]
+  },
+  {
+   "id": "long_flechisseur_pouce",
+   "nom": "Long fléchisseur du pouce",
+   "latin": "Flexor longus pollicis",
+   "anglais": "Flexor pollicis longus",
+   "ta2": "2492",
+   "type": "muscle",
+   "region": "avant_bras",
+   "source": "Flexor pollicis longus",
+   "pair": true,
+   "app": [
+    {
+     "groupe": "avant_bras",
+     "faisceau": null,
+     "role": "synergiste"
+    }
+   ]
+  },
+  {
+   "id": "long_palmaire",
+   "nom": "Long palmaire",
+   "latin": "Musculus palmaris longus",
+   "anglais": "Palmaris longus muscle",
+   "ta2": "2482",
+   "type": "muscle",
+   "region": "avant_bras",
+   "source": "Palmaris longus muscle",
+   "pair": true,
+   "app": [
+    {
+     "groupe": "avant_bras",
+     "faisceau": null,
+     "role": "principal"
+    }
+   ]
+  },
+  {
+   "id": "rond_pronateur_humeral",
+   "nom": "Rond pronateur · chef huméral",
+   "latin": "Caput superficiale pronatoris teretis",
+   "anglais": "Superficial head of pronator teres",
+   "ta2": "2479",
+   "type": "muscle",
+   "region": "avant_bras",
+   "source": "Superficial head of pronator teres",
+   "pair": true,
+   "app": [
+    {
+     "groupe": "avant_bras",
+     "faisceau": null,
+     "role": "synergiste"
+    }
+   ]
+  },
+  {
+   "id": "rond_pronateur_ulnaire",
+   "nom": "Rond pronateur · chef ulnaire",
+   "latin": "Caput profundum pronatoris teretis",
+   "anglais": "Deep head of pronator teres",
+   "ta2": "2480",
+   "type": "muscle",
+   "region": "avant_bras",
+   "source": "Deep head of pronator teres",
+   "pair": true,
+   "app": [
+    {
+     "groupe": "avant_bras",
+     "faisceau": null,
+     "role": "synergiste"
+    }
+   ]
+  },
+  {
+   "id": "supinateur",
+   "nom": "Supinateur",
+   "latin": "Supinator",
+   "anglais": "Supinator",
+   "ta2": "2512",
+   "type": "muscle",
+   "region": "avant_bras",
+   "source": "Supinator",
+   "pair": true,
+   "app": [
+    {
+     "groupe": "avant_bras",
+     "faisceau": null,
+     "role": "synergiste"
+    }
+   ]
+  },
+  {
+   "id": "abducteur_du_petit_doigt",
+   "nom": "Abducteur du petit doigt",
+   "latin": "Abductor digiti minimi manus",
+   "anglais": "Abductor digiti minimi of hand",
+   "ta2": "2529",
+   "type": "muscle",
+   "region": "main",
+   "source": "Abductor digiti minimi of hand",
+   "pair": true,
+   "app": []
+  },
+  {
+   "id": "adducteur_du_pouce_chef_oblique",
+   "nom": "Adducteur du pouce · chef oblique",
+   "latin": "Caput obliquum adductoris pollicis",
+   "anglais": "Oblique head of adductor pollicis",
+   "ta2": "2527",
+   "type": "muscle",
+   "region": "main",
+   "source": "Oblique head of adductor pollicis",
+   "pair": true,
+   "app": []
+  },
+  {
+   "id": "adducteur_du_pouce_chef_transverse",
+   "nom": "Adducteur du pouce · chef transverse",
+   "latin": "Caput transversum adductoris pollicis",
+   "anglais": "Transverse head of adductor pollicis",
+   "ta2": "2528",
+   "type": "muscle",
+   "region": "main",
+   "source": "Transverse head of adductor pollicis",
+   "pair": true,
+   "app": []
+  },
+  {
+   "id": "court_abducteur_du_pouce",
+   "nom": "Court abducteur du pouce",
+   "latin": "Abductor brevis pollicis",
+   "anglais": "Abductor pollicis brevis",
+   "ta2": "2521",
+   "type": "muscle",
+   "region": "main",
+   "source": "Abductor pollicis brevis",
+   "pair": true,
+   "app": []
+  },
+  {
+   "id": "court_flechisseur_du_petit_doigt",
+   "nom": "Court fléchisseur du petit doigt",
+   "latin": "Flexor digiti minimi manus",
+   "anglais": "Flexor digiti minimi of hand",
+   "ta2": "2530",
+   "type": "muscle",
+   "region": "main",
+   "source": "Flexor digiti minimi of hand",
+   "pair": true,
+   "app": []
+  },
+  {
+   "id": "court_flechisseur_du_pouce_chef_profond",
+   "nom": "Court fléchisseur du pouce · chef profond",
+   "latin": "Caput profundum flexoris brevis pollicis",
+   "anglais": "Deep head of flexor pollicis brevis",
+   "ta2": "2524",
+   "type": "muscle",
+   "region": "main",
+   "source": "Deep head of flexor pollicis brevis",
+   "pair": true,
+   "app": []
+  },
+  {
+   "id": "court_flechisseur_du_pouce_chef_superficiel",
+   "nom": "Court fléchisseur du pouce · chef superficiel",
+   "latin": "Caput superficiale flexoris brevis pollicis",
+   "anglais": "Superficial head of flexor pollicis brevis",
+   "ta2": "2523",
+   "type": "muscle",
+   "region": "main",
+   "source": "Superficial head of flexor pollicis brevis",
+   "pair": true,
+   "app": []
+  },
+  {
+   "id": "interosseux_dorsaux_de_la_main",
+   "nom": "Interosseux dorsaux de la main",
+   "latin": "Musculi interossei dorsales manus",
+   "anglais": "Dorsal interossei muscles of hand",
+   "ta2": "2533",
+   "type": "muscle",
+   "region": "main",
+   "source": "Dorsal interossei muscles of hand",
+   "pair": true,
+   "app": []
+  },
+  {
+   "id": "interosseux_palmaires",
+   "nom": "Interosseux palmaires",
+   "latin": "Musculi interossei palmares",
+   "anglais": "Palmar interossei muscles",
+   "ta2": "2534",
+   "type": "muscle",
+   "region": "main",
+   "source": "Palmar interossei muscles",
+   "pair": true,
+   "app": []
+  },
+  {
+   "id": "lombricaux_de_la_main",
+   "nom": "Lombricaux de la main",
+   "latin": "Musculi lumbricales manus",
+   "anglais": "Lumbrical muscles of hand",
+   "ta2": "2532",
+   "type": "muscle",
+   "region": "main",
+   "source": "Lumbrical muscles of hand",
+   "pair": true,
+   "app": []
+  },
+  {
+   "id": "opposant_du_petit_doigt",
+   "nom": "Opposant du petit doigt",
+   "latin": "Musculus opponens digiti minimi manus",
+   "anglais": "Opponens digiti minimi muscle of hand",
+   "ta2": "2531",
+   "type": "muscle",
+   "region": "main",
+   "source": "Opponens digiti minimi muscle of hand",
+   "pair": true,
+   "app": []
+  },
+  {
+   "id": "opposant_du_pouce",
+   "nom": "Opposant du pouce",
+   "latin": "Musculus opponens pollicis",
+   "anglais": "Opponens pollicis muscle",
+   "ta2": "2525",
+   "type": "muscle",
+   "region": "main",
+   "source": "Opponens pollicis muscle",
+   "pair": true,
+   "app": []
+  },
+  {
+   "id": "biceps_femoral_court",
+   "nom": "Biceps fémoral · courte portion",
+   "latin": "Caput breve musculi bicipitis femoris",
+   "anglais": "Short head of biceps femoris",
+   "ta2": "2640",
+   "type": "muscle",
+   "region": "cuisse",
+   "source": "Short head of biceps femoris",
+   "pair": true,
+   "app": [
+    {
+     "groupe": "ischios",
+     "faisceau": "isch_biceps",
+     "role": "principal"
+    }
+   ]
+  },
+  {
+   "id": "biceps_femoral_long",
+   "nom": "Biceps fémoral · longue portion",
+   "latin": "Caput longum musculi bicipitis femoris",
+   "anglais": "Long head of biceps femoris",
+   "ta2": "2639",
+   "type": "muscle",
+   "region": "cuisse",
+   "source": "Long head of biceps femoris",
+   "pair": true,
+   "app": [
+    {
+     "groupe": "ischios",
+     "faisceau": "isch_biceps",
+     "role": "principal"
+    }
+   ]
+  },
+  {
+   "id": "court_adducteur",
+   "nom": "Court adducteur",
+   "latin": "Adductor brevis",
+   "anglais": "Adductor brevis",
+   "ta2": "2629",
+   "type": "muscle",
+   "region": "cuisse",
+   "source": "Adductor brevis",
+   "pair": true,
+   "app": [
+    {
+     "groupe": "adducteurs",
+     "faisceau": null,
+     "role": "principal"
+    }
+   ]
+  },
+  {
+   "id": "droit_femoral",
+   "nom": "Droit fémoral",
+   "latin": "Musculus rectus femoris",
+   "anglais": "Rectus femoris muscle",
+   "ta2": "2614",
+   "type": "muscle",
+   "region": "cuisse",
+   "source": "Rectus femoris muscle",
+   "pair": true,
+   "app": [
+    {
+     "groupe": "quadriceps",
+     "faisceau": "quad_droit",
+     "role": "principal"
+    }
+   ]
+  },
+  {
+   "id": "gracile",
+   "nom": "Gracile",
+   "latin": "Musculus gracilis",
+   "anglais": "Gracilis muscle",
+   "ta2": "2635",
+   "type": "muscle",
+   "region": "cuisse",
+   "source": "Gracilis muscle",
+   "pair": true,
+   "app": [
+    {
+     "groupe": "adducteurs",
+     "faisceau": null,
+     "role": "principal"
+    }
+   ]
+  },
+  {
+   "id": "grand_adducteur",
+   "nom": "Grand adducteur",
+   "latin": "Adductor magnus",
+   "anglais": "Adductor magnus",
+   "ta2": "2630",
+   "type": "muscle",
+   "region": "cuisse",
+   "source": "Adductor magnus",
+   "pair": true,
+   "app": [
+    {
+     "groupe": "adducteurs",
+     "faisceau": null,
+     "role": "principal"
+    }
+   ]
+  },
+  {
+   "id": "long_adducteur",
+   "nom": "Long adducteur",
+   "latin": "Adductor longus",
+   "anglais": "Adductor longus",
+   "ta2": "2628",
+   "type": "muscle",
+   "region": "cuisse",
+   "source": "Adductor longus",
+   "pair": true,
+   "app": [
+    {
+     "groupe": "adducteurs",
+     "faisceau": null,
+     "role": "principal"
+    }
+   ]
+  },
+  {
+   "id": "pectine",
+   "nom": "Pectiné",
+   "latin": "Musculus pectineus",
+   "anglais": "Pectineus muscle",
+   "ta2": "2627",
+   "type": "muscle",
+   "region": "cuisse",
+   "source": "Pectineus muscle",
+   "pair": true,
+   "app": [
+    {
+     "groupe": "adducteurs",
+     "faisceau": null,
+     "role": "synergiste"
+    }
+   ]
+  },
+  {
+   "id": "petit_adducteur",
+   "nom": "Petit adducteur",
+   "latin": "Musculus adductor minimus",
+   "anglais": "Adductor minimus muscle",
+   "ta2": null,
+   "type": "muscle",
+   "region": "cuisse",
+   "source": "(Adductor minimus)",
+   "pair": true,
+   "app": [
+    {
+     "groupe": "adducteurs",
+     "faisceau": null,
+     "role": "synergiste"
+    }
+   ]
+  },
+  {
+   "id": "sartorius",
+   "nom": "Sartorius",
+   "latin": "Musculus sartorius",
+   "anglais": "Sartorius muscle",
+   "ta2": "2610",
+   "type": "muscle",
+   "region": "cuisse",
+   "source": "Sartorius muscle",
+   "pair": true,
+   "app": []
+  },
+  {
+   "id": "semi_membraneux",
+   "nom": "Semi-membraneux",
+   "latin": "Musculus semimembranosus",
+   "anglais": "Semimembranosus muscle",
+   "ta2": "2642",
+   "type": "muscle",
+   "region": "cuisse",
+   "source": "Semimembranosus muscle",
+   "pair": true,
+   "app": [
+    {
+     "groupe": "ischios",
+     "faisceau": "isch_semi",
+     "role": "principal"
+    }
+   ]
+  },
+  {
+   "id": "semi_tendineux",
+   "nom": "Semi-tendineux",
+   "latin": "Musculus semitendinosus",
+   "anglais": "Semitendinosus muscle",
+   "ta2": "2641",
+   "type": "muscle",
+   "region": "cuisse",
+   "source": "Semitendinosus muscle",
+   "pair": true,
+   "app": [
+    {
+     "groupe": "ischios",
+     "faisceau": "isch_semi",
+     "role": "principal"
+    }
+   ]
+  },
+  {
+   "id": "tractus_ilio_tibial",
+   "nom": "Tractus ilio-tibial",
+   "latin": "Tractus iliotibialis",
+   "anglais": "Iliotibial tract",
+   "ta2": null,
+   "type": "aponevrose",
+   "region": "cuisse",
+   "source": "Iliotibial tract",
+   "pair": true,
+   "app": []
+  },
+  {
+   "id": "vaste_intermediaire",
+   "nom": "Vaste intermédiaire",
+   "latin": "Musculus vastus intermedius",
+   "anglais": "Vastus intermedius muscle",
+   "ta2": "2619",
+   "type": "muscle",
+   "region": "cuisse",
+   "source": "Vastus intermedius muscle",
+   "pair": true,
+   "app": [
+    {
+     "groupe": "quadriceps",
+     "faisceau": null,
+     "role": "principal"
+    }
+   ]
+  },
+  {
+   "id": "vaste_lateral",
+   "nom": "Vaste latéral",
+   "latin": "Musculus vastus lateralis",
+   "anglais": "Vastus lateralis muscle",
+   "ta2": "2618",
+   "type": "muscle",
+   "region": "cuisse",
+   "source": "Vastus lateralis muscle",
+   "pair": true,
+   "app": [
+    {
+     "groupe": "quadriceps",
+     "faisceau": "quad_ext",
+     "role": "principal"
+    }
+   ]
+  },
+  {
+   "id": "vaste_medial",
+   "nom": "Vaste médial",
+   "latin": "Musculus vastus medialis",
+   "anglais": "Vastus medialis muscle",
+   "ta2": "2620",
+   "type": "muscle",
+   "region": "cuisse",
+   "source": "Vastus medialis muscle",
+   "pair": true,
+   "app": [
+    {
+     "groupe": "quadriceps",
+     "faisceau": "quad_int",
+     "role": "principal"
+    }
+   ]
+  },
+  {
+   "id": "court_fibulaire",
+   "nom": "Court fibulaire",
+   "latin": "Musculus fibularis brevis",
+   "anglais": "Fibularis brevis muscle",
+   "ta2": "2653",
+   "type": "muscle",
+   "region": "jambe",
+   "source": "Fibularis brevis muscle",
+   "pair": true,
+   "app": []
+  },
+  {
+   "id": "gastrocnemien_lateral",
+   "nom": "Gastrocnémien latéral",
+   "latin": "Caput laterale musculi gastrocnemii",
+   "anglais": "Lateral head of gastrocnemius",
+   "ta2": "2658",
+   "type": "muscle",
+   "region": "jambe",
+   "source": "Lateral head of gastrocnemius",
+   "pair": true,
+   "app": [
+    {
+     "groupe": "mollets",
+     "faisceau": "mol_gastro",
+     "role": "principal"
+    }
+   ]
+  },
+  {
+   "id": "gastrocnemien_medial",
+   "nom": "Gastrocnémien médial",
+   "latin": "Caput mediale musculi gastrocnemii",
+   "anglais": "Medial head of gastrocnemius",
+   "ta2": "2659",
+   "type": "muscle",
+   "region": "jambe",
+   "source": "Medial head of gastrocnemius",
+   "pair": true,
+   "app": [
+    {
+     "groupe": "mollets",
+     "faisceau": "mol_gastro",
+     "role": "principal"
+    }
+   ]
+  },
+  {
+   "id": "long_extenseur_de_l_hallux",
+   "nom": "Long extenseur de l'hallux",
+   "latin": "Extensor longus hallucis",
+   "anglais": "Extensor hallucis longus",
+   "ta2": "2650",
+   "type": "muscle",
+   "region": "jambe",
+   "source": "Extensor hallucis longus",
+   "pair": true,
+   "app": []
+  },
+  {
+   "id": "long_extenseur_des_orteils",
+   "nom": "Long extenseur des orteils",
+   "latin": "Extensor longus digitorum",
+   "anglais": "Extensor digitorum longus",
+   "ta2": "2645",
+   "type": "muscle",
+   "region": "jambe",
+   "source": "Extensor digitorum longus",
+   "pair": true,
+   "app": []
+  },
+  {
+   "id": "long_fibulaire",
+   "nom": "Long fibulaire",
+   "latin": "Musculus fibularis longus",
+   "anglais": "Fibularis longus muscle",
+   "ta2": "2652",
+   "type": "muscle",
+   "region": "jambe",
+   "source": "Fibularis longus muscle",
+   "pair": true,
+   "app": []
+  },
+  {
+   "id": "long_flechisseur_de_l_hallux",
+   "nom": "Long fléchisseur de l'hallux",
+   "latin": "Flexor longus hallucis",
+   "anglais": "Flexor hallucis longus",
+   "ta2": "2668",
+   "type": "muscle",
+   "region": "jambe",
+   "source": "Flexor hallucis longus",
+   "pair": true,
+   "app": []
+  },
+  {
+   "id": "long_flechisseur_des_orteils",
+   "nom": "Long fléchisseur des orteils",
+   "latin": "Musculus flexor digitorum longus",
+   "anglais": "Flexor digitorum longus",
+   "ta2": "2667",
+   "type": "muscle",
+   "region": "jambe",
+   "source": "Flexor digitorum longus",
+   "pair": true,
+   "app": []
+  },
+  {
+   "id": "plantaire",
+   "nom": "Plantaire",
+   "latin": "Musculus plantaris",
+   "anglais": "Plantaris muscle",
+   "ta2": "2663",
+   "type": "muscle",
+   "region": "jambe",
+   "source": "Plantaris muscle",
+   "pair": true,
+   "app": [
+    {
+     "groupe": "mollets",
+     "faisceau": null,
+     "role": "synergiste"
+    }
+   ]
+  },
+  {
+   "id": "poplite",
+   "nom": "Poplité",
+   "latin": "Musculus popliteus",
+   "anglais": "Popliteus muscle",
+   "ta2": "2665",
+   "type": "muscle",
+   "region": "jambe",
+   "source": "Popliteus muscle",
+   "pair": true,
+   "app": []
+  },
+  {
+   "id": "soleaire",
+   "nom": "Soléaire",
+   "latin": "Musculus soleus",
+   "anglais": "Soleus muscle",
+   "ta2": "2660",
+   "type": "muscle",
+   "region": "jambe",
+   "source": "Soleus muscle",
+   "pair": true,
+   "app": [
+    {
+     "groupe": "mollets",
+     "faisceau": "mol_soleaire",
+     "role": "principal"
+    }
+   ]
+  },
+  {
+   "id": "tendon_calcaneen",
+   "nom": "Tendon calcanéen (d'Achille)",
+   "latin": "Tendo calcaneus",
+   "anglais": "Calcaneal tendon",
+   "ta2": null,
+   "type": "tendon",
+   "region": "jambe",
+   "source": "Calcaneal tendon",
+   "pair": true,
+   "app": []
+  },
+  {
+   "id": "tibial_anterieur",
+   "nom": "Tibial antérieur",
+   "latin": "Musculus tibialis anterior",
+   "anglais": "Tibialis anterior muscle",
+   "ta2": "2644",
+   "type": "muscle",
+   "region": "jambe",
+   "source": "Tibialis anterior muscle",
+   "pair": true,
+   "app": [
+    {
+     "groupe": "mollets",
+     "faisceau": "mol_tibial",
+     "role": "principal"
+    }
+   ]
+  },
+  {
+   "id": "tibial_posterieur",
+   "nom": "Tibial postérieur",
+   "latin": "Musculus tibialis posterior",
+   "anglais": "Tibialis posterior muscle",
+   "ta2": "2666",
+   "type": "muscle",
+   "region": "jambe",
+   "source": "Tibialis posterior muscle",
+   "pair": true,
+   "app": []
+  },
+  {
+   "id": "troisieme_fibulaire",
+   "nom": "Troisième fibulaire",
+   "latin": "Musculus fibularis tertius",
+   "anglais": "Fibularis tertius muscle",
+   "ta2": "2649",
+   "type": "muscle",
+   "region": "jambe",
+   "source": "Fibularis tertius muscle",
+   "pair": true,
+   "app": []
+  },
+  {
+   "id": "abducteur_de_l_hallux",
+   "nom": "Abducteur de l'hallux",
+   "latin": "Abductor hallucis",
+   "anglais": "Abductor hallucis",
+   "ta2": "2672",
+   "type": "muscle",
+   "region": "pied",
+   "source": "Abductor hallucis",
+   "pair": true,
+   "app": []
+  },
+  {
+   "id": "abducteur_du_petit_orteil",
+   "nom": "Abducteur du petit orteil",
+   "latin": "Abductor digiti minimi pedis",
+   "anglais": "Abductor digiti minimi of foot",
+   "ta2": "2679",
+   "type": "muscle",
+   "region": "pied",
+   "source": "Abductor digiti minimi of foot",
+   "pair": true,
+   "app": []
+  },
+  {
+   "id": "adducteur_de_l_hallux_chef_oblique",
+   "nom": "Adducteur de l'hallux · chef oblique",
+   "latin": "Caput obliquum adductoris hallucis",
+   "anglais": "Oblique head of adductor hallucis",
+   "ta2": "2677",
+   "type": "muscle",
+   "region": "pied",
+   "source": "Oblique head of adductor hallucis",
+   "pair": true,
+   "app": []
+  },
+  {
+   "id": "adducteur_de_l_hallux_chef_transverse",
+   "nom": "Adducteur de l'hallux · chef transverse",
+   "latin": "Caput transversum adductoris hallucis",
+   "anglais": "Transverse head of adductor hallucis",
+   "ta2": "2678",
+   "type": "muscle",
+   "region": "pied",
+   "source": "Transverse head of adductor hallucis",
+   "pair": true,
+   "app": []
+  },
+  {
+   "id": "carre_plantaire",
+   "nom": "Carré plantaire",
+   "latin": "Musculus quadratus plantae",
+   "anglais": "Quadratus plantae muscle",
+   "ta2": "2684",
+   "type": "muscle",
+   "region": "pied",
+   "source": "Quadratus plantae muscle",
+   "pair": true,
+   "app": []
+  },
+  {
+   "id": "court_extenseur_de_l_hallux",
+   "nom": "Court extenseur de l'hallux",
+   "latin": "Extensor brevis hallucis",
+   "anglais": "Extensor hallucis brevis",
+   "ta2": "2670",
+   "type": "muscle",
+   "region": "pied",
+   "source": "Extensor hallucis brevis",
+   "pair": true,
+   "app": []
+  },
+  {
+   "id": "court_extenseur_des_orteils",
+   "nom": "Court extenseur des orteils",
+   "latin": "Extensor brevis digitorum",
+   "anglais": "Extensor digitorum brevis",
+   "ta2": "2671",
+   "type": "muscle",
+   "region": "pied",
+   "source": "Extensor digitorum brevis",
+   "pair": true,
+   "app": []
+  },
+  {
+   "id": "court_flechisseur_de_l_hallux_chef_lateral",
+   "nom": "Court fléchisseur de l'hallux · chef latéral",
+   "latin": "Caput laterale flexoris brevis hallucis",
+   "anglais": "Lateral head of flexor hallucis brevis",
+   "ta2": "2675",
+   "type": "muscle",
+   "region": "pied",
+   "source": "Lateral head of flexor hallucis brevis",
+   "pair": true,
+   "app": []
+  },
+  {
+   "id": "court_flechisseur_de_l_hallux_chef_medial",
+   "nom": "Court fléchisseur de l'hallux · chef médial",
+   "latin": "Caput mediale flexoris brevis hallucis",
+   "anglais": "Medial head of flexor hallucis brevis",
+   "ta2": "2674",
+   "type": "muscle",
+   "region": "pied",
+   "source": "Medial head of flexor hallucis brevis",
+   "pair": true,
+   "app": []
+  },
+  {
+   "id": "court_flechisseur_des_orteils",
+   "nom": "Court fléchisseur des orteils",
+   "latin": "Flexor brevis digitorum",
+   "anglais": "Flexor digitorum brevis",
+   "ta2": "2683",
+   "type": "muscle",
+   "region": "pied",
+   "source": "Flexor digitorum brevis",
+   "pair": true,
+   "app": []
+  },
+  {
+   "id": "court_flechisseur_du_petit_orteil",
+   "nom": "Court fléchisseur du petit orteil",
+   "latin": "Musculus flexor digiti minimi brevis pedis",
+   "anglais": "Flexor digiti minimi of foot",
+   "ta2": "2682",
+   "type": "muscle",
+   "region": "pied",
+   "source": "Flexor digiti minimi of foot",
+   "pair": true,
+   "app": []
+  },
+  {
+   "id": "interosseux_dorsaux_du_pied",
+   "nom": "Interosseux dorsaux du pied",
+   "latin": "Musculi interossei dorsales pedis",
+   "anglais": "Dorsal interossei muscles of foot",
+   "ta2": "2686",
+   "type": "muscle",
+   "region": "pied",
+   "source": "Dorsal interossei muscles of foot",
+   "pair": true,
+   "app": []
+  },
+  {
+   "id": "interosseux_plantaires",
+   "nom": "Interosseux plantaires",
+   "latin": "Musculi interossei plantares",
+   "anglais": "Plantar interossei muscles",
+   "ta2": "2687",
+   "type": "muscle",
+   "region": "pied",
+   "source": "Plantar interossei muscles",
+   "pair": true,
+   "app": []
+  },
+  {
+   "id": "lombricaux_du_pied",
+   "nom": "Lombricaux du pied",
+   "latin": "Musculi lumbricales pedis",
+   "anglais": "Lumbrical muscles of foot",
+   "ta2": "2685",
+   "type": "muscle",
+   "region": "pied",
+   "source": "Lumbrical muscles of foot",
+   "pair": true,
+   "app": []
+  },
+  {
+   "id": "opposant_du_petit_orteil",
+   "nom": "Opposant du petit orteil",
+   "latin": "Musculus opponens digiti minimi pedis",
+   "anglais": "Opponens digiti minimi muscle of foot",
+   "ta2": null,
+   "type": "muscle",
+   "region": "pied",
+   "source": "(Opponens digiti minimi muscle of foot)",
+   "pair": true,
+   "app": []
+  }
+ ]
+}

@@ -1,0 +1,20 @@
+<!doctype html><html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<style>html,body{margin:0;height:100%}body{background:radial-gradient(ellipse 75% 60% at 50% 42%,#1b1e27 0%,#0d0f15 55%,#07080b 100%)}body.clair{background:radial-gradient(ellipse 75% 60% at 50% 42%,#ffffff 0%,#eef1f6 60%,#e2e6ee 100%)}#scene{position:absolute;inset:0}.atlas-toile{width:100%;height:100%;display:block}</style></head>
+<body><div id="scene"></div><script src="atlas3d.js"></script><script>
+const q = new URLSearchParams(location.search);
+if (q.get('clair')) document.body.classList.add('clair');
+fetch(q.get('modele') || '../donnees/atlas.bin').then(r => r.arrayBuffer()).then(t => {
+  const a = window.atlas = AnqaAtlas.creer(document.getElementById('scene'), t, { clair: !!q.get('clair'), ppMax: +(q.get('pp') || 2) });
+  const cam = {}; ['az', 'el', 'dist'].forEach(k => { if (q.get(k) != null) cam[k] = +q.get(k); });
+  if (q.get('cible')) cam.cible = q.get('cible').split(',').map(Number);
+  if (q.get('cadre')) { const [y0, y1] = q.get('cadre').split(':').map(Number); cam.cible = [+(q.get('x') || 0), (y0 + y1) / 2, 0.02]; cam.dist = (y1 - y0) * 1.08 / 2 / Math.tan(12 * Math.PI / 180); }
+  a.placer(cam);
+  if (q.get('couche')) a.couche(+q.get('couche'));
+  if (q.get('fantomes') === '0') a.fantomes(false);
+  if (q.get('choisi')) a.choisir(q.get('choisi'));
+  if (q.get('isoler')) a.isoler(q.get('isoler').split(','));
+  if (q.get('masquer')) q.get('masquer').split(',').forEach(id => a.masquer(id));
+  if (q.get('sansos')) a.squelette(false);
+  setTimeout(() => { window.pret = true; }, 400);
+}).catch(e => { document.body.textContent = String(e && e.stack || e); window.pret = true; window.erreur = String(e); });
+</script></body></html>
