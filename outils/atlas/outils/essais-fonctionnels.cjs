@@ -88,9 +88,9 @@ const erreurs = [];
   // 11. Masquer puis réafficher ; isoler.
   pt = await pointDe('pectoral_sternal', 'gauche'); await toucher(pt.x, pt.y); await attendre(500);
   await p.click('.atlas-fiche [data-action="masquer"]'); await repos();
-  const dessous = await ev(([x, y]) => { const r = monte.atlas.toile.getBoundingClientRect(), t = monte.atlas.reperer(x - r.left, y - r.top); return t && t.structure ? t.structure.id : null; }, [pt.x, pt.y]);
+  const apresMasque = await carte(3);
   const bouton = await ev(() => { const b = document.querySelector('.atlas-retablir'); return b.hidden ? null : b.textContent; });
-  noter('« Masquer » retire le muscle et laisse toucher celui du dessous', dessous && dessous !== 'pectoral_sternal' && !!bouton, `sous le grand pectoral : ${dessous} ; bouton « ${bouton} »`);
+  noter('« Masquer » retire le muscle (des deux côtés) et découvre celui du dessous', !apresMasque['pectoral_sternal|gauche'] && !apresMasque['pectoral_sternal|droit'] && !!apresMasque['petit_pectoral|gauche'] && !!bouton, `grand pectoral sternal encore touchable : ${!!apresMasque['pectoral_sternal|gauche']} ; petit pectoral découvert : ${!!apresMasque['petit_pectoral|gauche']} ; bouton « ${bouton} »`);
   await p.click('.atlas-retablir'); await repos();
   noter('« Réafficher » remet le muscle', (await ev(() => monte.atlas.masques().length)) === 0, '');
   pt = await pointDe('grand_droit_abdomen'); await toucher(pt.x, pt.y); await attendre(500);
@@ -153,25 +153,25 @@ const erreurs = [];
   // Tour complet
   await ev(() => monte.atlas.reinitialiser(0)); await repos();
   let tour = 0, prec = (await cam()).az;
-  for (let k = 0; k < 4; k++) { await client.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x: 60, y: 420, id: 1 }] }); for (let i = 1; i <= 20; i++) await client.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [{ x: 60 + i * 13, y: 420, id: 1 }] }); await client.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] }); await repos(); const az = (await cam()).az; let dd = az - prec; while (dd > 180) dd -= 360; while (dd < -180) dd += 360; tour += dd; prec = az; }
-  noter('rotation complète sur 360°, sans butée', Math.abs(tour) > 360, `${Math.abs(tour).toFixed(0)}° cumulés en quatre gestes`);
+  for (let k = 0; k < 7; k++) { await client.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x: 40, y: 420, id: 1 }] }); for (let i = 1; i <= 20; i++) { await client.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [{ x: 40 + i * 13, y: 420, id: 1 }] }); await attendre(8); } await client.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] }); await repos(); const az = (await cam()).az; let dd = az - prec; while (dd > 180) dd -= 360; while (dd < -180) dd += 360; tour += dd; prec = az; }
+  noter('rotation complète sur 360°, sans butée', Math.abs(tour) > 360, `${Math.abs(tour).toFixed(0)}° cumulés en sept gestes`);
 
   // 6. Zoom par pincement, limites, puis déplacement à deux doigts.
   await ev(() => monte.atlas.reinitialiser(0)); await repos();
   const z0 = await cam();
   const pince = async (e0, e1, cx, cy, dx = 0, dy = 0) => { const n = 14; await client.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x: cx - e0, y: cy, id: 1 }, { x: cx + e0, y: cy, id: 2 }] }); for (let i = 1; i <= n; i++) { const e = e0 + (e1 - e0) * i / n; await client.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [{ x: cx - e + dx * i / n, y: cy + dy * i / n, id: 1 }, { x: cx + e + dx * i / n, y: cy + dy * i / n, id: 2 }] }); await attendre(10); } await client.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] }); await repos(); };
-  await pince(40, 150, 195, 300);
+  await pince(40, 130, 180, 300);
   const z1 = await cam();
   noter('écarter deux doigts rapproche', z1.dist < z0.dist * 0.5, `distance ${z0.dist.toFixed(2)} m → ${z1.dist.toFixed(2)} m`);
-  for (let k = 0; k < 6; k++) await pince(30, 170, 195, 300);
+  for (let k = 0; k < 6; k++) await pince(30, 135, 180, 300);
   const z2 = await cam();
   noter('le zoom avant est borné', z2.dist >= 0.299, `distance minimale ${z2.dist.toFixed(2)} m`);
-  const avant = await cam(); await pince(80, 80, 195, 380, 60, -40); const apres = await cam();
+  const avant = await cam(); await pince(70, 70, 170, 380, 50, -40); const apres = await cam();
   noter('deux doigts déplacent la vue', Math.hypot(apres.cible[0] - avant.cible[0], apres.cible[1] - avant.cible[1], apres.cible[2] - avant.cible[2]) > 0.005 && Math.abs(apres.dist - avant.dist) < 0.02, `cible déplacée de ${(1000 * Math.hypot(apres.cible[0] - avant.cible[0], apres.cible[1] - avant.cible[1], apres.cible[2] - avant.cible[2])).toFixed(0)} mm`);
-  for (let k = 0; k < 10; k++) await pince(80, 80, 195, 380, 160, 0);
+  for (let k = 0; k < 10; k++) await pince(60, 60, 110, 380, 150, 0);
   const loin = await cam();
   noter('le déplacement reste contrôlé (le corps ne sort pas de la vue)', Math.abs(loin.cible[0]) <= 0.34 + 1e-6 && loin.cible[1] >= 0 && loin.cible[1] <= 1.71, `cible bornée à x = ${loin.cible[0].toFixed(2)} m`);
-  for (let k = 0; k < 8; k++) await pince(170, 30, 195, 300);
+  for (let k = 0; k < 8; k++) await pince(135, 30, 180, 300);
   const z3 = await cam();
   noter('le zoom arrière est borné et recentre le corps', z3.dist <= dE * 1.121 && Math.abs(z3.cible[0]) < 0.05, `distance ${z3.dist.toFixed(2)} m (corps entier : ${dE.toFixed(2)} m), cible x = ${z3.cible[0].toFixed(3)}`);
 
@@ -198,6 +198,21 @@ const erreurs = [];
   noter('une double touche choisit et cadre le muscle', ds === 'droit_femoral' && dc.dist < dE * 0.75, `choisi : ${ds}, distance ${dc.dist.toFixed(2)} m`);
   await ev(() => { monte.choisir(null); monte.atlas.reinitialiser(0); }); await repos();
 
+  await nav.close();
+  // Mouvements : la pose reste saine du début à la fin, les mains tiennent le matériel, le corps se touche encore.
+  {
+    const { nav: nav3, ctx } = await ouvrir({ viewport: { width: 390, height: 760 }, deviceScaleFactor: 1, reducedMotion: 'reduce' });
+    p = await ctx.newPage(); p.on('pageerror', e => erreurs.push(e.message));
+    const bilan = [];
+    for (const m of ['squat', 'developpeCouche', 'curl', 'traction', 'pompe', 'elevationsLaterales', 'souleveDeTerre', 'rowing']) {
+      await p.goto('http://atlas.local/appli/essai-mouvement.html?m=' + m + '&pp=1');
+      await p.waitForFunction(() => window.pret, null, { timeout: 120000 });
+      const r = await ev(() => { const res = { fini: true, mains: 0, touchables: 0 }; for (const u of [0, 0.5, 1]) { const info = anim.rendre(0, u), mats = anim.corps.matrices(); for (let i = 0; i < mats.length; i++) if (!Number.isFinite(mats[i])) res.fini = false; res.mains = Math.max(res.mains, Math.abs(info.prises.G.y - info.prises.D.y)); } res.touchables = Object.keys(atlas.carteReperage(3) || {}).length; return res; });
+      bilan.push([m, r.fini, +r.mains.toFixed(3), r.touchables]);
+    }
+    noter('les huit mouvements : poses saines, mains à la même hauteur, corps toujours touchable muscle par muscle', bilan.every(b => b[1] && b[2] < 0.01 && b[3] > 60), bilan.map(b => `${b[0]} (${b[3]} structures touchables)`).join(', '));
+    nav = nav3;
+  }
   noter('aucune erreur dans la console', !erreurs.length, erreurs.join(' | '));
   const mem = await ev(() => performance.memory ? Math.round(performance.memory.usedJSHeapSize / 1e6) : null);
   console.log(`\n${R.filter(r => r.ok).length} essais réussis sur ${R.length} — mémoire JavaScript de la page : ${mem} Mo`);

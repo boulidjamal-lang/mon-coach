@@ -30,8 +30,9 @@ function cheminChromium() {
   return undefined;
 }
 
-async function lancerNavigateur() {
-  return chromium.launch({ executablePath: cheminChromium() });
+/* options (facultatif) : arguments de lancement en plus, ex. le rendu 3D logiciel pour l'atlas. */
+async function lancerNavigateur(options) {
+  return chromium.launch({ executablePath: cheminChromium(), args: options || [] });
 }
 
 /* Nouvelle page sur l'appli, connexion obligatoire contournée, écran de

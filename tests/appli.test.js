@@ -6474,3 +6474,187 @@ test('Gemini : trois réponses demandées en une requête ; si le modèle refuse
   assert.deepEqual(r.corps, [{ candidateCount: 3 }, null, null, { candidateCount: 3 }, null], 'après un refus, plus de demande multiple pour ce modèle');
 }));
 
+
+/* ---------- Atlas musculaire 3D ---------- */
+/* L'en-tête du modèle (assets/atlas/atlas.bin) : le registre des structures et le squelette de mouvement. */
+function enteteAtlas() {
+  const b = fs.readFileSync(path.join(RACINE, 'assets', 'atlas', 'atlas.bin'));
+  assert.equal(b.toString('latin1', 0, 4), 'ANQA');
+  return JSON.parse(b.subarray(12, 12 + b.readUInt32LE(8)).toString('utf8'));
+}
+/* Quatre semaines et plus de séances d'essai : pectoraux le jour même, dos il y a 2 jours, jambes il y a 4 jours,
+   avec des charges qui montent un peu de semaine en semaine. */
+const HISTORIQUE_ATLAS = `(() => {
+  const jour = n => decalerJours(todayStr(), -n), serie = (poids, reps, n) => Array.from({ length: n }, () => ({ fait: true, poids, reps }));
+  const seance = (n, exos) => ({ id: 'h' + n, date: jour(n), exercices: exos.map(([exerciceId, p, r, k]) => ({ exerciceId, series: serie(p, r, k) })) });
+  musculationSessionActive = null; musculationHistorique = [];
+  for (let sem = 0; sem < 8; sem++) {
+    const m = 1 - sem * 0.02;
+    musculationHistorique.push(seance(sem * 7, [['e1', Math.round(80 * m), 8, 4], ['e42', Math.round(10 * m), 12, 3]]));
+    musculationHistorique.push(seance(sem * 7 + 2, [['e20', 0, 8, 4], ['e24', Math.round(60 * m), 10, 4]]));
+    musculationHistorique.push(seance(sem * 7 + 4, [['e265', Math.round(100 * m), 6, 5], ['e29', Math.round(120 * m), 5, 3]]));
+  }
+})()`;
+
+test('atlas 3D : le registre du modèle parle la langue de l\'appli (groupes, faisceaux, muscles attendus)', () => avecAppli({}, async ({ page }) => {
+  const E = enteteAtlas(), S = E.structures;
+  assert.equal(E.format, 'anqa-atlas');
+  assert.equal(new Set(S.map(s => s.id)).size, S.length, 'identifiants uniques');
+  assert.ok(S.length <= 250, 'le numéro de structure tient sur un octet');
+  // Chaque structure : un nom français, un nom latin, une région connue, une couche, un maillage à elle.
+  for (const s of S) {
+    assert.ok(s.nom && s.latin && E.regions[s.region] && s.couche >= 1 && s.couche <= E.couches, 'fiche complète : ' + s.id);
+    assert.ok(s.nbSommets > 3 && s.nbIndices >= 3, 'maillage propre : ' + s.id);
+  }
+  // Les muscles demandés pour l'entraînement, chacun à part.
+  const ids = new Set(S.map(s => s.id));
+  for (const id of ['pectoral_claviculaire', 'pectoral_sternal', 'pectoral_abdominal', 'deltoide_anterieur', 'deltoide_lateral', 'deltoide_posterieur', 'trapeze_superieur', 'trapeze_moyen', 'trapeze_inferieur',
+    'grand_dorsal', 'grand_rond', 'petit_rond', 'grand_rhomboide', 'petit_rhomboide', 'dentele_anterieur', 'biceps_long', 'biceps_court', 'brachial', 'brachio_radial', 'triceps_long', 'triceps_lateral', 'triceps_medial',
+    'grand_droit_abdomen', 'oblique_externe', 'oblique_interne', 'transverse_abdomen', 'grand_fessier', 'moyen_fessier', 'petit_fessier', 'droit_femoral', 'vaste_lateral', 'vaste_medial', 'vaste_intermediaire',
+    'biceps_femoral_long', 'semi_tendineux', 'semi_membraneux', 'gastrocnemien_medial', 'gastrocnemien_lateral', 'soleaire', 'tibial_anterieur']) assert.ok(ids.has(id), 'muscle présent : ' + id);
+  // Le grand droit se voit en surface (gaine ouverte) ; le transverse est un muscle profond.
+  assert.equal(S.find(s => s.id === 'grand_droit_abdomen').couche, 1);
+  assert.ok(S.find(s => s.id === 'transverse_abdomen').couche >= 3);
+  // Liens avec l'appli : groupes suivis, faisceaux du bon groupe, rôles connus ; chaque faisceau de l'appli a son muscle.
+  const appli = await page.evaluate(() => ({ groupes: Object.keys(ZONES_VOLUME), faisceaux: Object.fromEntries(Object.entries(FAISCEAUX).map(([g, l]) => [g, l.map(x => x[0])])), roles: Object.keys(POIDS_ROLE_ATLAS) }));
+  const vus = new Set();
+  for (const s of S) for (const a of s.app) {
+    assert.ok(appli.groupes.includes(a.groupe), `${s.id} : groupe ${a.groupe}`);
+    assert.ok(appli.roles.includes(a.role), `${s.id} : rôle ${a.role}`);
+    if (a.faisceau) { assert.ok((appli.faisceaux[a.groupe] || []).includes(a.faisceau), `${s.id} : faisceau ${a.faisceau} du groupe ${a.groupe}`); vus.add(a.faisceau); }
+  }
+  for (const g in appli.faisceaux) for (const f of appli.faisceaux[g]) assert.ok(vus.has(f), 'un muscle pour le faisceau ' + f);
+  for (const g of appli.groupes) assert.ok(S.some(s => s.app.some(a => a.groupe === g && a.role === 'principal')), 'un muscle moteur pour le groupe ' + g);
+  // Le squelette de mouvement : parents avant enfants, jumeaux gauche-droite réciproques.
+  E.squelette.forEach((a, i) => { assert.ok(a.parent < i); assert.equal(E.squelette[a.jumeau].jumeau, i); });
+  // Les exercices animés existent, et leur mouvement aussi.
+  const mouvements = fs.readFileSync(path.join(RACINE, 'assets', 'atlas', 'atlas-mouvements.js'), 'utf8');
+  const lies = await page.evaluate(() => Object.entries(MOUVEMENTS_3D).map(([id, m]) => [id, m, !!trouverExercice(id)]));
+  for (const [id, m, existe] of lies) { assert.ok(existe, 'exercice ' + id); assert.ok(new RegExp('\\n    ' + m + '\\(u, c\\) \\{').test(mouvements), 'mouvement ' + m); }
+}));
+
+test('atlas 3D : les cartes viennent de l\'historique réel, et restent neutres sans donnée', () => avecAppli({}, async ({ page }) => {
+  const S = enteteAtlas().structures;
+  const r = await page.evaluate(([S, historique]) => {
+    const res = {};
+    // Sans aucune séance : rien n'est coloré, et chaque carte le dit.
+    musculationSessionActive = null; musculationHistorique = [];
+    atlasDonnees = donneesAtlas();
+    res.vide = ['semaine', 'seance', 'frequence', 'progression', 'equilibre'].map(m => { const c = carteAtlas(m, S); return [Object.keys(c.couleurs).length, c.note]; });
+    (0, eval)(historique);
+    atlasDonnees = donneesAtlas();
+    const D = atlasDonnees, de = id => S.find(s => s.id === id);
+    res.semaine = D.semaine; res.seance = D.seance;
+    res.jours = Object.fromEntries(Object.entries(D.jours).map(([g, s]) => [g, s.size]));
+    res.progression = Object.fromEntries(Object.entries(D.progression).map(([g, p]) => [g, [p.exercices.length, p.evolution > 0]]));
+    res.retards = Object.keys(D.retards).sort();
+    const sem = carteAtlas('semaine', S), zone = g => ZONES_INFO[cleZoneVolume(g, D.semaine[g])].couleur, N = neutresAtlas();
+    // Le faisceau sternal porte l'essentiel du développé couché : pleine couleur de la zone des pectoraux.
+    res.pecSternal = [sem.couleurs.pectoral_sternal, melangerCouleurs(N.muscle, zone('pectoraux'), 1)];
+    res.pecHautPlusPale = sem.couleurs.pectoral_claviculaire !== sem.couleurs.pectoral_sternal;
+    res.nonTravailles = ['grand_dorsal', 'droit_femoral', 'sartorius'].map(id => sem.couleurs[id] || null);
+    res.legendeSemaine = sem.legende.map(l => l.t);
+    const se = carteAtlas('seance', S);
+    res.seanceCouleurs = [se.couleurs.pectoral_sternal === couleurCssAtlas('--corps-cible', '#f472b6'), !!se.couleurs.triceps_long, se.couleurs.grand_dorsal || null, se.note];
+    res.progressionCouleurs = [carteAtlas('progression', S).couleurs.grand_dorsal === couleurCssAtlas('--ok', '#32d74b')];
+    res.equilibre = [carteAtlas('equilibre', S).couleurs.pectoral_claviculaire === couleurCssAtlas('--attention', '#ff9f0a')];
+    res.anatomie = Object.keys(carteAtlas('anatomie', S).couleurs || {}).length;
+    // Fiches : la zone de la semaine, la progression chiffrée, un muscle sans suivi.
+    res.ficheSemaine = ficheAtlas(de('pectoral_sternal'), 'semaine').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
+    res.ficheProgression = ficheAtlas(de('grand_dorsal'), 'progression').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
+    res.ficheSansSuivi = ficheAtlas(de('sartorius'), 'semaine').replace(/<[^>]+>/g, ' ').trim();
+    // Un exercice : ses muscles, pondérés (principal, secondaire, faisceaux de sa fiche).
+    atlasExercice = { exo: trouverExercice('e1'), mouvement: MOUVEMENTS_3D.e1 };
+    const ex = carteAtlas('exercice', S);
+    res.exercice = [ex.couleurs.pectoral_sternal === couleurCssAtlas('--corps-cible', '#f472b6'), !!ex.couleurs.triceps_lateral && ex.couleurs.triceps_lateral !== ex.couleurs.pectoral_sternal, ex.couleurs.grand_dorsal || null, ex.legende.map(l => l.t)];
+    // Les alertes de faisceaux : mêmes phrases qu'avant, avec le faisceau en retard en plus.
+    const f = { delt_ant: 10, delt_lat: 1, delt_post: 2 };
+    res.avis = [avisFaisceaux('epaules', f, 13).map(a => a.faisceau), alertesFaisceaux('epaules', f, 13).length, avisFaisceaux('epaules', f, 13)[0].texte === alertesFaisceaux('epaules', f, 13)[0]];
+    atlasExercice = null; atlasDonnees = null;
+    return res;
+  }, [S, HISTORIQUE_ATLAS]);
+  for (const [n, note] of r.vide) { assert.equal(n, 0); assert.match(note, /^(Aucune|Pas encore)/); }
+  // Aujourd'hui : développé couché (4 séries) et élévations latérales (3 séries) ; les secondaires comptent pour moitié.
+  assert.equal(r.semaine.pectoraux, 4);
+  assert.ok(r.semaine.epaules >= 3 && r.semaine.triceps > 0);
+  assert.deepEqual(r.seance.directs, { pectoraux: 4, epaules: 3 });
+  assert.ok(r.seance.indirects.triceps > 0 && !r.seance.directs.dos);
+  assert.equal(r.jours.pectoraux, 4, 'une séance de pectoraux par semaine sur 28 jours');
+  // Le dos : quatre jours de tractions et de rowing, et quatre jours de soulevé de terre (3 séries où il est secondaire : 1,5 série).
+  assert.equal(r.jours.dos, 8);
+  assert.deepEqual(r.progression.dos, [1, true], 'rowing : mêmes exercices sur les deux périodes, charge en hausse');
+  assert.deepEqual(r.progression.pectoraux, [1, true]);
+  assert.ok(r.retards.includes('pec_haut'), 'haut des pectoraux en retard (que du développé couché à plat)');
+  assert.equal(r.pecSternal[0], r.pecSternal[1]);
+  assert.ok(r.pecHautPlusPale, 'un faisceau moins sollicité est plus pâle');
+  assert.deepEqual(r.nonTravailles, [null, null, null], 'ce qui n\'a pas travaillé cette semaine reste neutre');
+  assert.deepEqual(r.legendeSemaine, ['Trop peu', 'Entretien', 'Progression', 'Zone idéale', 'Trop']);
+  assert.deepEqual(r.seanceCouleurs.slice(0, 3), [true, true, null]);
+  assert.equal(r.seanceCouleurs[3], "Séance d'aujourd'hui");
+  assert.deepEqual(r.progressionCouleurs, [true]);
+  assert.deepEqual(r.equilibre, [true]);
+  assert.equal(r.anatomie, 0, 'en mode anatomie, les couleurs naturelles');
+  assert.match(r.ficheSemaine, /^Pectoraux muscle moteur · Milieu Pectoraux .* 4 séries/);
+  assert.match(r.ficheProgression, /^Dos muscle moteur · .*Force estimée : \+\d+(,\d)? % en 28 jours \(1 exercice comparé\)/);
+  assert.match(r.ficheSansSuivi, /n'a pas de suivi dédié/);
+  assert.deepEqual(r.exercice.slice(0, 3), [true, true, null]);
+  assert.deepEqual(r.exercice[3], ['Muscle principal', 'Travaille aussi']);
+  assert.deepEqual(r.avis, [['delt_post', 'delt_lat'], 2, true]);
+}));
+
+test('atlas 3D : sans WebGL 2, aucun accès ; avec, la fenêtre s\'ouvre, anime un exercice et libère tout à la fermeture', async () => {
+  // Sans WebGL 2 : pas de bouton, et l'ouverture forcée prévient sans rien casser.
+  await avecAppli({}, async ({ page, dialogues }) => {
+    const r = await page.evaluate(async () => {
+      const sauve = window.WebGL2RenderingContext; window.WebGL2RenderingContext = undefined;
+      const bouton = boutonAtlasHTML('semaine', null, '3D');
+      await ouvrirAtlas('semaine');
+      const ouverte = document.getElementById('atlas-modal').classList.contains('show');
+      window.WebGL2RenderingContext = sauve;
+      return { bouton, ouverte, avec: /ouvrirAtlas\(&quot;exercice&quot;, \{ exercice: &quot;e1&quot; \}\)/.test(boutonAtlasHTML('exercice', 'e1', 'Voir')) };
+    });
+    assert.equal(r.bouton, '');
+    assert.equal(r.ouverte, false);
+    assert.ok(r.avec);
+    assert.ok(dialogues.some(d => /atlas en 3D demande un appareil plus récent/.test(d)));
+  });
+  // Avec WebGL 2 (rendu logiciel) : l'appli servie comme sur le site, l'atlas chargé à la demande.
+  const nav = await lancerNavigateur(['--use-gl=angle', '--use-angle=swiftshader', '--enable-unsafe-swiftshader']);
+  try {
+    const { page, erreurs, ctx } = await ouvrirAppli(nav, { https: true });
+    const webgl = await page.evaluate(() => !!document.createElement('canvas').getContext('webgl2'));
+    if (!webgl) { await ctx.close(); return; }   // pas de rendu 3D dans ce navigateur de test : rien à vérifier de plus
+    await page.evaluate(HISTORIQUE_ATLAS);
+    const pret = () => page.waitForFunction(() => atlasMonte && atlasMonte.atlas.mesures().images > 1, null, { timeout: 120000 });
+    await page.evaluate(() => { ouvrirAtlas('semaine'); });
+    await pret();
+    const a = await page.evaluate(() => ({ scripts: [...document.scripts].map(s => s.getAttribute('src')).filter(s => s && s.startsWith('assets/atlas/')), modes: [...document.querySelectorAll('.atlas-modes button')].map(b => b.textContent),
+      actif: document.querySelector('.atlas-modes button[aria-pressed="true"]').textContent, structures: atlasMonte.atlas.structures.length, appels: atlasMonte.atlas.mesures().appelsDeDessin,
+      legende: document.querySelectorAll('.atlas-legende span').length, lecture: document.querySelector('.atlas-barre .atlas-rond[aria-label*="mouvement"]').hidden }));
+    assert.deepEqual(a.scripts, ['assets/atlas/atlas3d.js'], 'les mouvements ne se chargent que pour un exercice');
+    assert.deepEqual(a.modes, ['Semaine', 'Dernière séance', 'Fréquence', 'Progression', 'Équilibre', 'Anatomie']);
+    assert.equal(a.actif, 'Semaine');
+    assert.ok(a.structures > 170 && a.appels <= 5 && a.legende === 5 && a.lecture);
+    // Toucher un muscle par l'atlas : sa fiche dit la zone de la semaine.
+    const fiche = await page.evaluate(async () => { atlasMonte.choisir('pectoral_sternal'); await new Promise(r => setTimeout(r, 200)); return document.querySelector('.atlas-fiche[data-ouverte]').textContent.replace(/\s+/g, ' '); });
+    assert.match(fiche, /Grand pectoral · faisceau sternal.*Pars sternocostalis.*Thorax.*Couche 1.*Pectoraux.*4 séries/);
+    // Fermer libère le moteur 3D (plus de toile, plus de contexte graphique).
+    await page.click('#atlas-modal .close-modal');
+    assert.deepEqual(await page.evaluate(() => [atlasMonte, document.querySelectorAll('#atlas-scene canvas').length, document.getElementById('atlas-modal').classList.contains('show')]), [null, 0, false]);
+    // Depuis un exercice animé : le corps exécute le mouvement, ses muscles en couleur.
+    await page.evaluate(() => { ouvrirAtlas('exercice', { exercice: 'e265' }); });
+    await pret();
+    const e = await page.evaluate(() => ({ titre: document.getElementById('titre-atlas').textContent, mode: atlasMonte.etat().mode, anim: !!atlasMonte.animation(), scripts: [...document.scripts].map(s => s.getAttribute('src')).filter(s => s && s.startsWith('assets/atlas/')).length,
+      pose: atlasMonte.animation().corps.monde('bassin').y < 0.93, colores: Object.keys(carteAtlas('exercice', atlasMonte.atlas.structures).couleurs).length }));
+    assert.deepEqual([e.titre, e.mode, e.anim, e.scripts], ['Squat avec barre', 'exercice', true, 2]);
+    assert.ok(e.pose, 'le bassin est descendu : le corps est en plein squat');
+    assert.ok(e.colores > 10);
+    // Un exercice sans mouvement animé : ses muscles, corps au repos, et c'est dit.
+    await page.evaluate(() => { fermerAtlas(); ouvrirAtlas('exercice', { exercice: 'e39' }); });
+    await pret();
+    assert.deepEqual(await page.evaluate(() => [!!atlasMonte.animation(), document.querySelector('.atlas-note').textContent]), [false, 'Mouvement pas encore animé pour cet exercice : ses muscles, corps au repos.']);
+    await page.evaluate(() => fermerAtlas());
+    assert.deepEqual(erreurs, [], 'erreurs JavaScript dans la page');
+    await ctx.close();
+  } finally { await nav.close(); }
+});

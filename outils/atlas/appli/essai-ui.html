@@ -18,7 +18,7 @@ fetch('../donnees/atlas.bin').then(r => r.arrayBuffer()).then(t => {
   const a = m.atlas;
   const cam = {}; ['az', 'el', 'dist'].forEach(k => { if (q.get(k) != null) cam[k] = +q.get(k); });
   if (Object.keys(cam).length) a.placer(cam);
-  if (q.get('couche')) { a.couche(+q.get('couche')); }
+  if (q.get('couche')) m.couche(+q.get('couche'));
   if (q.get('fantomes') === '0') a.fantomes(false);
   if (q.get('choisi')) m.choisir(q.get('choisi'), { cadrer: !!q.get('cadrer') });
   if (q.get('index')) m.ouvrirIndex(true);
