@@ -25,6 +25,12 @@ const PLAFOND_PRO = 600;
 const MODELES = ['gemini-3.5-flash', 'gemini-2.5-flash'];
 const TAILLE_MAX = 6_000_000; // une photo compressée et le texte, largement
 const TEXTE_MAX = 20_000;     // caractères de texte par demande (consignes + données)
+// Le programme sur mesure envoie toute la bibliothèque d'exercices (823
+// exercices « identifiant|nom|groupe|matériel », environ 67 000 caractères
+// sans filtre de matériel, plus les exercices perso) : il a son propre
+// plafond. Une demande sans tâche (app iPhone repartie du build 33, versions
+// plus anciennes) peut être un programme : même plafond.
+const TEXTE_MAX_PROGRAMME = 150_000;
 const IMAGES_MAX = 1;
 
 const ROLE = "Tu es l'assistant d'Askēsis, une application de suivi nutritionnel et de musculation. " +
@@ -64,7 +70,7 @@ function debutDuMois() {
 // Seules les parties attendues passent : du texte (borné) et au plus une
 // image inline. Tout le reste (fichiers, outils, autres champs) est écarté.
 // deno-lint-ignore no-explicit-any
-function partiesAcceptables(parts: unknown[]): { parts: any[]; erreur?: string } {
+function partiesAcceptables(parts: unknown[], texteMax: number): { parts: any[]; erreur?: string } {
   // deno-lint-ignore no-explicit-any
   const propres: any[] = [];
   let texte = 0, images = 0;
@@ -85,7 +91,7 @@ function partiesAcceptables(parts: unknown[]): { parts: any[]; erreur?: string }
     }
   }
   if (!propres.length) return { parts: [], erreur: 'Demande vide.' };
-  if (texte > TEXTE_MAX) return { parts: [], erreur: 'Demande trop longue.' };
+  if (texte > texteMax) return { parts: [], erreur: 'Demande trop longue.' };
   if (images > IMAGES_MAX) return { parts: [], erreur: 'Une seule photo par demande.' };
   return { parts: propres };
 }
@@ -118,12 +124,14 @@ Deno.serve(async (req: Request) => {
   if (!Array.isArray(demande.parts) || !demande.parts.length) return json({ erreur: 'Demande vide.' }, 400);
   const tache = demande.tache == null ? 'libre' : String(demande.tache);
   if (!Object.prototype.hasOwnProperty.call(TACHES, tache)) return json({ erreur: 'Tâche inconnue.' }, 400);
-  const { parts, erreur } = partiesAcceptables(demande.parts);
+  const { parts, erreur } = partiesAcceptables(demande.parts, tache === 'programme' || tache === 'libre' ? TEXTE_MAX_PROGRAMME : TEXTE_MAX);
   if (erreur) return json({ erreur }, 400);
   const modele = MODELES.includes(String(demande.modele)) ? String(demande.modele) : MODELES[0];
   // Plusieurs réponses en une demande (l'analyse d'une photo en demande 3) :
-  // 3 au plus, et seulement pour la photo. Chaque réponse compte pour un essai.
-  const candidats = tache === 'photo' ? Math.min(3, Math.max(1, Math.floor(Number(demande.candidats) || 1))) : 1;
+  // 3 au plus, pour la photo, et pour une demande sans tâche (les anciennes
+  // versions ne demandent plusieurs réponses que pour la photo). Chaque
+  // réponse compte pour un essai.
+  const candidats = tache === 'photo' || tache === 'libre' ? Math.min(3, Math.max(1, Math.floor(Number(demande.candidats) || 1))) : 1;
 
   // Compté avant l'appel (deux demandes en même temps ne dépassent pas la
   // limite), une fois par réponse demandée.

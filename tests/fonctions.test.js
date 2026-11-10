@@ -150,6 +150,27 @@ test('fonction « ia » : un échec de Gemini rend les essais et ne renvoie jama
   assert.deepEqual([r.status, /0xdead/.test(JSON.stringify(r.corps))], [503, false]);
 });
 
+test('fonction « ia » : le programme sur mesure passe avec toute la bibliothèque d\'exercices, même sans tâche (app iPhone du build 33) ; les autres tâches restent bornées ; sans tâche, la photo garde ses 3 réponses', async () => {
+  const base = fausseBase();
+  base.tables.abonnements.push({ utilisateur: 'u-pro', formule: 'an', statut: 'actif', fin: new Date(Date.now() + 864e5).toISOString() });
+  const corps = [];
+  globalThis.fetch = async (url, o) => { corps.push(JSON.parse(o.body)); return new Response(JSON.stringify({ candidates: [{ content: { parts: [{ text: 'a' }] } }] }), { status: 200 }); };
+  const h = await chargerFonction('ia', envIA, base);
+  // 823 exercices « identifiant|nom|groupe|matériel » : environ 67 000 caractères, plus la consigne.
+  const programme = 'x'.repeat(70_000);
+  assert.equal((await appelIA(h, 'jeton-pro', 'POST', { parts: [{ text: programme }], tache: 'programme' })).status, 200);
+  assert.equal((await appelIA(h, 'jeton-pro', 'POST', { parts: [{ text: programme }] })).status, 200);
+  let r = await appelIA(h, 'jeton-pro', 'POST', { parts: [{ text: programme }], tache: 'journee' });
+  assert.deepEqual([r.status, r.corps.erreur], [400, 'Demande trop longue.']);
+  r = await appelIA(h, 'jeton-pro', 'POST', { parts: [{ text: 'y'.repeat(150_001) }], tache: 'programme' });
+  assert.deepEqual([r.status, r.corps.erreur], [400, 'Demande trop longue.']);
+  // Sans tâche, l\'ancienne appli demande 3 réponses pour une photo : elle les obtient.
+  r = await appelIA(h, 'jeton-pro', 'POST', { parts: [{ text: 'photo' }], candidats: 3 });
+  assert.equal(r.status, 200);
+  assert.deepEqual(corps.at(-1).generationConfig, { candidateCount: 3 });
+  assert.equal(corps.length, 3);
+});
+
 test('fonction « ia » : sans clé Gemini sur le serveur, rien n\'est compté', async () => {
   const base = fausseBase();
   const h = await chargerFonction('ia', { ...envIA, GEMINI_API_KEY: '' }, base);
