@@ -1821,7 +1821,7 @@ test('Erreurs : envoyées sans données perso, une fois, pas les coupures résea
     allerA('admin');
     await chargerAdmin();
     await ouvrirErreursAdmin();
-    const res = { envois, resume: document.getElementById('erreurs-resume').textContent,
+    const res = { envois, avant1h: new Date().getHours() < 1, resume: document.getElementById('erreurs-resume').textContent,
       groupes: [...document.querySelectorAll('#admin-erreurs-liste .adm-err')].map(c => [c.querySelector('.adm-nb').textContent, c.querySelector('.adm-qui b').textContent, c.querySelector('.adm-qui small').textContent, c.querySelector('.adm-chips').textContent]) };
     window.__appels = [];
     const premier = document.querySelector('#admin-erreurs-liste .adm-err');
@@ -1837,7 +1837,8 @@ test('Erreurs : envoyées sans données perso, une fois, pas les coupures résea
   assert.equal(r.groupes.length, 2);
   assert.deepEqual(r.groupes[0].slice(0, 3), ['×2', 'Synchro : délai dépassé', '2 comptes · dernière il y a 12 min']);
   assert.match(r.groupes[0][3], /iPhone · app Askēsis.*Mac · Safari.*Ancienne version/);
-  assert.deepEqual(r.occurrences, ["@alice.fit · iPhone · app Askēsis · Repas du jouril y a 12 min", '@bob · Mac · Safari · Progrèsil y a 1 h']);
+  // Entre minuit et une heure, « il y a 1 h » tombe la veille : « hier ».
+  assert.deepEqual(r.occurrences, ["@alice.fit · iPhone · app Askēsis · Repas du jouril y a 12 min", '@bob · Mac · Safari · Progrès' + (r.avant1h ? 'hier' : 'il y a 1 h')]);
   assert.deepEqual(r.regle, [['erreurs_appli', [['eq', 'type', 'synchro'], ['eq', 'message', 'délai dépassé'], ['is', 'regle_le', null]]]]);
 }));
 
