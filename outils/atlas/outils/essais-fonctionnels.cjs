@@ -36,9 +36,14 @@ async function page(reduit) {
   return { nav, duree: Date.now() - t0 };
 }
 const erreurs = [];
+// Dans les comptes rendus, les muscles portent leur nom d'usage (et leur côté), pas leur identifiant.
+let NOMS = {};
+const nom = id => { if (id == null) return 'aucun'; const [i, cote] = String(id).split('|'); return (NOMS[i] || i) + (cote ? ' ' + cote : ''); };
+const MVT = { squat: 'squat', developpeCouche: 'développé couché', curl: 'curl', traction: 'traction', pompe: 'pompe', elevationsLaterales: 'élévations latérales', souleveDeTerre: 'soulevé de terre', rowing: 'rowing' };
 (async () => {
   let { nav, duree } = await page(true);
 
+  NOMS = await ev(() => Object.fromEntries(monte.atlas.structures.map(s => [s.id, s.nom])));
   const m0 = await ev(() => monte.atlas.mesures());
   noter('chargement et premier affichage', m0.images > 0, `${duree} ms jusqu'à la page prête (navigateur de test, rendu logiciel), ${m0.triangles} triangles par côté, ${m0.appelsDeDessin} appels de dessin, image ${m0.largeur}×${m0.hauteur}`);
   await repos();
@@ -54,16 +59,16 @@ const erreurs = [];
     await ev(v => monte.atlas.vue(v, 0), vue); await repos();
     const ok = [], ko = [], rapproches = [];
     for (const id of ids) {
-      let pt = await pointDe(id); if (!pt) { ko.push(id + ' (invisible)'); continue; }
+      let pt = await pointDe(id); if (!pt) { ko.push(nom(id) + ' (invisible)'); continue; }
       // Corps entier, un muscle mince n'offre que quelques pixels : on s'en approche d'abord, comme on le ferait au doigt.
       if (pt.marge < 3) { await ev(id => monte.atlas.cadrer(id, 0), id); await repos(); pt = await pointDe(id); rapproches.push(id); }
       await toucher(pt.x, pt.y);
       const e = await ev(() => ({ c: monte.etat().choisi, titre: (document.querySelector('.atlas-fiche[data-ouverte] h3') || {}).textContent || null }));
-      const nom = await ev(id => monte.atlas.structures[monte.atlas.indice(id)].nom, id);
-      (e.c === id && e.titre === nom ? ok : ko).push(id + (e.c === id ? '' : ' → ' + e.c));
+      const titre = NOMS[id];
+      (e.c === id && e.titre === titre ? ok : ko).push(nom(id) + (e.c === id ? '' : ' → ' + nom(e.c)));
       await ev(v => { monte.choisir(null); monte.atlas.reinitialiser(0); monte.atlas.vue(v, 0); }, vue); await repos();
     }
-    noter(`toucher un muscle le choisit et affiche sa fiche (vue de ${vue})`, !ko.length, `${ok.length}/${ids.length}` + (rapproches.length ? ` (après s'être rapproché, trop minces corps entier : ${rapproches.join(', ')})` : '') + (ko.length ? ' ; manqués : ' + ko.join(', ') : ''));
+    noter(`toucher un muscle le choisit et affiche sa fiche (vue de ${vue})`, !ko.length, `${ok.length}/${ids.length}` + (rapproches.length ? ` (après s'être rapproché, trop minces corps entier : ${rapproches.map(nom).join(', ')})` : '') + (ko.length ? ' ; manqués : ' + ko.join(', ') : ''));
   }
 
   // 3. Désélection : toucher le même muscle, toucher le vide, bouton de fermeture.
@@ -71,13 +76,13 @@ const erreurs = [];
   let pt = await pointDe('pectoral_sternal');
   await toucher(pt.x, pt.y); const s1 = await ev(() => monte.etat().choisi); await attendre(450);
   pt = await pointDe('pectoral_sternal'); await toucher(pt.x, pt.y); const s2 = await ev(() => monte.etat().choisi);
-  noter('toucher de nouveau le muscle choisi le désélectionne', s1 === 'pectoral_sternal' && s2 === null, `${s1} → ${s2}`);
+  noter('toucher de nouveau le muscle choisi le désélectionne', s1 === 'pectoral_sternal' && s2 === null, `${nom(s1)} choisi, puis ${s2 === null ? 'plus rien' : nom(s2)}`);
   await repos(); await attendre(400);
   pt = await pointDe('pectoral_sternal'); await toucher(pt.x, pt.y); await attendre(450); await toucher(22, 300); const s3 = await ev(() => monte.etat().choisi);
-  noter('toucher le vide désélectionne', s3 === null, String(s3));
+  noter('toucher le vide désélectionne', s3 === null, s3 === null ? 'plus rien de choisi' : nom(s3));
   await repos(); await attendre(400);
   pt = await pointDe('pectoral_sternal'); await toucher(pt.x, pt.y); await attendre(500); await p.click('.atlas-fiche [data-action="fermer"]'); const s4 = await ev(() => monte.etat().choisi);
-  noter('la croix de la fiche désélectionne', s4 === null, String(s4));
+  noter('la croix de la fiche désélectionne', s4 === null, s4 === null ? 'plus rien de choisi' : nom(s4));
   await repos();
 
   // 4. Gauche et droite distingués ; les deux côtés du muscle s'éclairent ensemble.
@@ -91,7 +96,7 @@ const erreurs = [];
   const c2c = await carte(3), couchesVues = await ev(ids => ids.map(k => monte.atlas.structures[monte.atlas.indice(k.split('|')[0])].couche), Object.keys(c2c));
   noter('couche 2 : seuls les muscles de couche 2 et plus se touchent (à travers les fantômes)', couchesVues.length > 20 && couchesVues.every(c => c >= 2), `${Object.keys(avantC).length} structures touchables en surface, ${couchesVues.length} en couche 2, couche minimale ${Math.min(...couchesVues)}`);
   await p.click('.atlas-couches > .atlas-rond'); await repos();
-  noter('le bouton de transparence retire les fantômes', (await ev(() => monte.atlas.fantomes())) === false && (await ev(() => monte.atlas.mesures().appelsDeDessin)) === 3, `fantômes : ${await ev(() => monte.atlas.fantomes())}, appels de dessin : ${await ev(() => monte.atlas.mesures().appelsDeDessin)}`);
+  noter('le bouton de transparence retire les fantômes', (await ev(() => monte.atlas.fantomes())) === false && (await ev(() => monte.atlas.mesures().appelsDeDessin)) === 3, `fantômes ${(await ev(() => monte.atlas.fantomes())) ? 'encore là' : 'retirés'}, ${await ev(() => monte.atlas.mesures().appelsDeDessin)} appels de dessin (5 avec eux)`);
   await p.click('.atlas-couches > .atlas-rond');
   await p.click(`.atlas-pile [data-couche="${await ev(() => monte.atlas.entete.couches + 1)}"]`); await repos();
   const cOs = await carte(3);
@@ -103,16 +108,16 @@ const erreurs = [];
   await p.click('.atlas-fiche [data-action="masquer"]'); await repos();
   const apresMasque = await carte(3);
   const bouton = await ev(() => { const b = document.querySelector('.atlas-retablir'); return b.hidden ? null : b.textContent; });
-  noter('« Masquer » retire le muscle (des deux côtés) et découvre celui du dessous', !apresMasque['pectoral_sternal|gauche'] && !apresMasque['pectoral_sternal|droit'] && !!apresMasque['petit_pectoral|gauche'] && !!bouton, `grand pectoral sternal encore touchable : ${!!apresMasque['pectoral_sternal|gauche']} ; petit pectoral découvert : ${!!apresMasque['petit_pectoral|gauche']} ; bouton « ${bouton} »`);
+  noter('« Masquer » retire le muscle (des deux côtés) et découvre celui du dessous', !apresMasque['pectoral_sternal|gauche'] && !apresMasque['pectoral_sternal|droit'] && !!apresMasque['petit_pectoral|gauche'] && !!bouton, `grand pectoral sternal ${apresMasque['pectoral_sternal|gauche'] ? 'encore touchable' : 'retiré'} ; petit pectoral ${apresMasque['petit_pectoral|gauche'] ? 'découvert' : 'toujours caché'} ; bouton « ${bouton} »`);
   await p.click('.atlas-retablir'); await repos();
-  noter('« Réafficher » remet le muscle', (await ev(() => monte.atlas.masques().length)) === 0, '');
+  noter('« Réafficher » remet le muscle', (await ev(() => monte.atlas.masques().length)) === 0, 'plus aucun muscle masqué');
   pt = await pointDe('grand_droit_abdomen'); await toucher(pt.x, pt.y); await attendre(500);
   await p.click('.atlas-fiche [data-action="isoler"]'); await attendre(900); await repos();
   const iso = await ev(() => monte.atlas.isoles()), cIso = await carte(3);
-  noter('« Isoler » ne laisse que le muscle choisi (les autres en fantômes)', iso && iso.length === 1 && Object.keys(cIso).every(k => k.startsWith('grand_droit_abdomen|')), `isolé : ${iso}, touchables : ${Object.keys(cIso).join(', ')}`);
+  noter('« Isoler » ne laisse que le muscle choisi (les autres en fantômes)', iso && iso.length === 1 && Object.keys(cIso).every(k => k.startsWith('grand_droit_abdomen|')), `isolé : ${(iso || []).map(nom).join(', ')} ; seuls touchables : ${Object.keys(cIso).map(nom).join(', ')}`);
   await p.click('.atlas-fiche [data-action="groupe"]'); await repos();
   const isoG = await ev(() => monte.atlas.isoles());
-  noter('isoler le groupe du muscle', isoG && isoG.length > 1 && isoG.includes('oblique_externe'), `${isoG ? isoG.length : 0} muscles : ${(isoG || []).join(', ')}`);
+  noter('isoler le groupe du muscle', isoG && isoG.length > 1 && isoG.includes('oblique_externe'), `${isoG ? isoG.length : 0} muscles : ${(isoG || []).map(nom).join(', ')}`);
   await ev(() => { monte.choisir(null); monte.atlas.toutAfficher(); monte.atlas.reinitialiser(0); }); await repos();
 
   // 12. Index : chercher un muscle profond, le choisir, il revient à l'écran.
@@ -121,7 +126,7 @@ const erreurs = [];
   const nbRes = await ev(() => document.querySelectorAll('.atlas-index-liste button').length);
   await p.click('.atlas-index-liste button'); await attendre(1100); await repos();
   const ei = await ev(() => ({ c: monte.etat().choisi, couche: monte.atlas.couche(), ouvert: document.querySelector('.atlas-index').hasAttribute('data-ouvert') }));
-  noter("l'index trouve un muscle profond et l'amène à l'écran", nbRes === 1 && ei.c === 'subscapulaire' && ei.couche === 4 && !ei.ouvert, `${nbRes} résultat pour « subscap », choisi : ${ei.c}, couche affichée : ${ei.couche}`);
+  noter("l'index trouve un muscle profond et l'amène à l'écran", nbRes === 1 && ei.c === 'subscapulaire' && ei.couche === 4 && !ei.ouvert, `${nbRes} résultat pour « subscap », choisi : ${nom(ei.c)}, couche affichée : ${ei.couche}`);
   await ev(() => { monte.choisir(null); monte.atlas.toutAfficher(); monte.couche(1); monte.atlas.reinitialiser(0); }); await repos();
 
   // 13. Modes de carte : couleurs et légende.
@@ -132,7 +137,7 @@ const erreurs = [];
 
   // 14. Perte puis reprise du contexte graphique (mise en veille, mémoire reprise par le système).
   const perte = await ev(async () => { const a = monte.atlas, gl = a.toile.getContext('webgl2'), ext = gl.getExtension('WEBGL_lose_context'); if (!ext) return null; ext.loseContext(); await new Promise(r => setTimeout(r, 200)); const perdu = gl.isContextLost(); ext.restoreContext(); await new Promise(r => setTimeout(r, 500)); const r = a.toile.getBoundingClientRect(), t = a.reperer(r.width / 2, r.height * 0.36); return { perdu, repris: !gl.isContextLost(), touche: t && t.structure ? t.structure.id : null }; });
-  noter('le contexte graphique perdu est repris sans recharger', perte && perte.perdu && perte.repris && !!perte.touche, JSON.stringify(perte));
+  noter('le contexte graphique perdu est repris sans recharger', perte && perte.perdu && perte.repris && !!perte.touche, perte ? `contexte ${perte.perdu ? 'perdu' : 'non perdu'}, puis ${perte.repris ? 'repris' : 'non repris'} ; le corps se touche de nouveau (${nom(perte.touche)})` : 'perte du contexte impossible à provoquer');
 
   // 15. Changement de taille (rotation de l'écran) : le corps entier reste cadré.
   await p.setViewportSize({ width: 760, height: 390 }); await attendre(700); await repos();
@@ -206,7 +211,7 @@ const erreurs = [];
   // 8. Boutons de vue et retour à la vue de départ.
   const vues = {};
   for (const v of ['dos', 'gauche', 'droite', 'face']) { await p.click(`.atlas-vues [data-vue="${v}"]`); await attendre(900); await repos(); const c = await cam(); vues[v] = [Math.round(c.az), await ev(v => document.querySelector(`.atlas-vues [data-vue="${v}"]`).getAttribute('aria-pressed'), v)]; }
-  noter('les quatre vues se placent et le bouton actif suit', vues.dos[0] === 180 || vues.dos[0] === -180 ? vues.gauche[0] === 90 && vues.droite[0] === -90 && vues.face[0] === 0 && Object.values(vues).every(x => x[1] === 'true') : false, JSON.stringify(vues));
+  noter('les quatre vues se placent et le bouton actif suit', vues.dos[0] === 180 || vues.dos[0] === -180 ? vues.gauche[0] === 90 && vues.droite[0] === -90 && vues.face[0] === 0 && Object.values(vues).every(x => x[1] === 'true') : false, Object.entries(vues).map(([v, x]) => `${v} : ${x[0]}°${x[1] === 'true' ? '' : ' (bouton inactif)'}`).join(', '));
   await ev(() => monte.atlas.vue('gauche', 0)); await repos();
   const cgauche = await carte(3), kg = Object.keys(cgauche);
   noter('la vue « Gauche » montre le côté gauche du sujet', kg.filter(k => k.endsWith('|gauche')).length > kg.filter(k => k.endsWith('|droit')).length * 2, `${kg.filter(k => k.endsWith('|gauche')).length} structures gauches visibles, ${kg.filter(k => k.endsWith('|droit')).length} droites`);
@@ -224,7 +229,7 @@ const erreurs = [];
     doubles.push(await ev(([id, cote]) => { const a = monte.atlas, st = a.structures[a.indice(id)], c = a.camera(), pr = a.projeter(c.cible), r = a.toile.getBoundingClientRect(), f = document.querySelector('.atlas-fiche').getBoundingClientRect(), haut = document.querySelector('.atlas-modes').getBoundingClientRect().bottom - r.top;
       return { id, cote, choisi: monte.etat().choisi, dist: c.dist, y: pr.y, milieu: (haut + (f.top - r.top)) / 2, bonCote: Math.abs(c.cible[0] - st.centre[0] * (cote === 'droit' ? -1 : 1)) < 0.002 && Math.abs(c.cible[1] - st.centre[1]) < 0.002 }; }, [id, cote]));
   }
-  noter('une double touche choisit le muscle et le cadre, du côté touché', doubles.every(x => x.choisi === x.id && x.bonCote && x.dist < dE * 0.75 && Math.abs(x.y - x.milieu) < 40), doubles.map(x => `${x.choisi} ${x.cote}${x.bonCote ? '' : ' (mauvais côté)'} à ${x.dist.toFixed(2)} m, centre à ${Math.round(x.y - x.milieu)} px du milieu de la zone libre`).join(' ; '));
+  noter('une double touche choisit le muscle et le cadre, du côté touché', doubles.every(x => x.choisi === x.id && x.bonCote && x.dist < dE * 0.75 && Math.abs(x.y - x.milieu) < 40), doubles.map(x => `${nom(x.choisi)} ${x.cote}${x.bonCote ? '' : ' (mauvais côté)'} à ${x.dist.toFixed(2)} m, centre à ${Math.round(x.y - x.milieu)} px du milieu de la zone libre`).join(' ; '));
   await ev(() => { monte.choisir(null); monte.atlas.reinitialiser(0); }); await repos();
 
   await nav.close();
@@ -239,10 +244,10 @@ const erreurs = [];
       const r = await ev(() => { const res = { fini: true, mains: 0, touchables: 0 }; for (const u of [0, 0.5, 1]) { const info = anim.rendre(0, u), mats = anim.corps.matrices(); for (let i = 0; i < mats.length; i++) if (!Number.isFinite(mats[i])) res.fini = false; res.mains = Math.max(res.mains, Math.abs(info.prises.G.y - info.prises.D.y)); } res.touchables = Object.keys(atlas.carteReperage(3) || {}).length; return res; });
       bilan.push([m, r.fini, +r.mains.toFixed(3), r.touchables]);
     }
-    noter('les huit mouvements : poses saines, mains à la même hauteur, corps toujours touchable muscle par muscle', bilan.every(b => b[1] && b[2] < 0.01 && b[3] > 60), bilan.map(b => `${b[0]} (${b[3]} structures touchables)`).join(', '));
+    noter('les huit mouvements : poses saines, mains à la même hauteur, corps toujours touchable muscle par muscle', bilan.every(b => b[1] && b[2] < 0.01 && b[3] > 60), bilan.map(b => `${MVT[b[0]] || b[0]} (${b[3]} structures touchables)`).join(', '));
     nav = nav3;
   }
-  noter('aucune erreur dans la console', !erreurs.length, erreurs.join(' | '));
+  noter('aucune erreur dans la console', !erreurs.length, erreurs.length ? erreurs.join(' | ') : 'aucune, sur les trois passes');
   const mem = await ev(() => performance.memory ? Math.round(performance.memory.usedJSHeapSize / 1e6) : null);
   console.log(`\n${R.filter(r => r.ok).length} essais réussis sur ${R.length} — mémoire JavaScript de la page : ${mem} Mo`);
   fs.writeFileSync('rapport/essais-fonctionnels.json', JSON.stringify({ date: new Date().toISOString(), navigateur: 'Chromium sans écran (rendu logiciel SwiftShader), 390×760, tactile ; une passe sans animations, une passe avec', memoireJsMo: mem, essais: R }, null, 1));
