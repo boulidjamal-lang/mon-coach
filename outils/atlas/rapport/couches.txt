@@ -1,0 +1,178 @@
+1  abaisseur_de_l_angle_de_la_bouche              0.38
+1  abaisseur_de_la_levre_inferieure               0.15
+1  abducteur_de_l_hallux                          0.41
+1  abducteur_du_petit_doigt                       0.51
+1  abducteur_du_petit_orteil                      0.42
+1  adducteur_de_l_hallux_chef_transverse          0.15
+1  adducteur_du_pouce_chef_transverse             0.17
+1  ancone                                         0.32
+1  biceps_court                                   0.17
+1  biceps_femoral_long                            0.39
+1  biceps_long                                    0.30
+1  brachial                                       0.15
+1  brachio_radial                                 0.50
+1  court_abducteur_du_pouce                       0.45
+1  court_extenseur_de_l_hallux                    0.19
+1  court_extenseur_des_orteils                    0.32
+1  court_extenseur_pouce                          0.22
+1  court_extenseur_radial_carpe                   0.15
+1  court_fibulaire                                0.22
+1  court_flechisseur_de_l_hallux_chef_lateral     0.17
+1  court_flechisseur_de_l_hallux_chef_medial      0.21
+1  court_flechisseur_des_orteils                  0.45
+1  court_flechisseur_du_petit_doigt               0.23
+1  court_flechisseur_du_petit_orteil              0.33
+1  court_flechisseur_du_pouce_chef_profond        0.17
+1  court_flechisseur_du_pouce_chef_superficiel    0.34
+1  deltoide_anterieur                             0.39
+1  deltoide_lateral                               0.49
+1  deltoide_posterieur                            0.44
+1  dentele_anterieur                              posée à la main
+1  droit_femoral                                  0.36
+1  elevateur_de_l_angle_de_la_bouche              0.27
+1  elevateur_de_la_levre_superieure               0.17
+1  elevateur_naso_labial                          0.22
+1  extenseur_doigts                               0.47
+1  extenseur_index                                0.15
+1  extenseur_petit_doigt                          0.16
+1  extenseur_ulnaire_carpe_humeral                0.32
+1  flechisseur_radial_carpe                       0.37
+1  flechisseur_superficiel_doigts_radial          0.19
+1  flechisseur_ulnaire_carpe_humeral              0.31
+1  flechisseur_ulnaire_carpe_ulnaire              0.33
+1  frontal                                        0.48
+1  gastrocnemien_lateral                          0.48
+1  gastrocnemien_medial                           0.40
+1  gracile                                        0.27
+1  grand_dorsal                                   0.28
+1  grand_droit_abdomen                            0.38
+1  grand_fessier                                  0.47
+1  grand_rond                                     posée à la main
+1  grand_zygomatique                              0.40
+1  infra_epineux                                  posée à la main
+1  interosseux_dorsaux_de_la_main                 0.35
+1  interosseux_dorsaux_du_pied                    0.29
+1  ligne_blanche                                  0.32
+1  lombricaux_de_la_main                          0.16
+1  lombricaux_du_pied                             0.24
+1  long_adducteur                                 0.14
+1  long_extenseur_de_l_hallux                     0.17
+1  long_extenseur_des_orteils                     0.28
+1  long_extenseur_pouce                           0.17
+1  long_extenseur_radial_carpe                    0.42
+1  long_fibulaire                                 0.43
+1  long_flechisseur_des_orteils                   0.15
+1  long_palmaire                                  0.39
+1  masseter_partie_profonde                       0.17
+1  masseter_partie_superficielle                  0.41
+1  mentonnier                                     0.26
+1  moyen_fessier                                  posée à la main
+1  nasal                                          0.38
+1  oblique_externe                                0.35
+1  occipital                                      0.48
+1  orbiculaire_de_l_oeil_partie_orbitaire         0.38
+1  orbiculaire_de_l_oeil_partie_palpebrale        0.34
+1  orbiculaire_de_la_bouche                       0.37
+1  pectine                                        0.25
+1  pectoral_abdominal                             0.26
+1  pectoral_claviculaire                          0.33
+1  pectoral_sternal                               0.44
+1  petit_rond                                     posée à la main
+1  petit_zygomatique                              0.38
+1  procerus                                       0.16
+1  pyramidal                                      0.38
+1  risorius                                       0.39
+1  rond_pronateur_humeral                         0.16
+1  sartorius                                      0.38
+1  scalene_moyen                                  0.18
+1  semi_membraneux                                0.16
+1  semi_tendineux                                 0.34
+1  soleaire                                       posée à la main
+1  sterno_cleido_mastoidien                       0.44
+1  sterno_hyoidien                                0.17
+1  temporo_parietal                               0.49
+1  tendon_calcaneen                               0.45
+1  tenseur_fascia_lata                            0.47
+1  tibial_anterieur                               0.45
+1  tractus_ilio_tibial                            posée à la main
+1  trapeze_inferieur                              0.41
+1  trapeze_moyen                                  0.42
+1  trapeze_superieur                              0.38
+1  triceps_lateral                                0.33
+1  triceps_long                                   0.28
+1  troisieme_fibulaire                            0.40
+1  vaste_lateral                                  0.44
+1  vaste_medial                                   0.21
+2  abaisseur_du_septum_nasal                      0.01 0.30
+2  adducteur_de_l_hallux_chef_oblique             0.04 0.39
+2  adducteur_du_pouce_chef_oblique                0.11 0.28
+2  biceps_femoral_court                           0.09 0.56
+2  buccinateur                                    0.04 0.38
+2  carre_femoral                                  0.00 0.37
+2  carre_plantaire                                0.05 0.52
+2  carre_pronateur                                0.14 0.26
+2  coraco_brachial                                0.02 0.40
+2  corrugateur_du_sourcil                         0.00 0.42
+2  court_adducteur                                0.00 0.35
+2  dentele_postero_inferieur                      0.00 0.45
+2  elevateur_scapula                              0.08 0.44
+2  epineux_de_la_tete                             0.03 0.25
+2  epineux_thorax                                 0.00 0.15
+2  extenseur_ulnaire_carpe_ulnaire                0.05 0.19
+2  flechisseur_profond_doigts                     0.05 0.21
+2  flechisseur_superficiel_doigts_humero_ulnaire  0.11 0.48
+2  grand_adducteur                                0.03 0.56
+2  grand_rhomboide                                0.00 0.44
+2  iliaque                                        0.06 0.20
+2  ilio_costal_lombes                             0.04 0.27
+2  ilio_costal_thorax                             0.00 0.16
+2  intercostaux_externes                          0.01 0.23
+2  interosseux_palmaires                          0.03 0.24
+2  interosseux_plantaires                         0.05 0.31
+2  jumeau_inferieur                               0.00 0.40
+2  jumeau_superieur                               0.00 0.24
+2  long_abducteur_pouce                           0.14 0.47
+2  long_flechisseur_de_l_hallux                   0.08 0.43
+2  long_flechisseur_pouce                         0.14 0.38
+2  longissimus_thorax                             0.01 0.16
+2  oblique_interne                                0.04 0.47
+2  obturateur_interne                             0.02 0.19
+2  omo_hyoidien                                   0.12 0.39
+2  opposant_du_petit_doigt                        0.13 0.41
+2  opposant_du_petit_orteil                       0.12 0.51
+2  opposant_du_pouce                              0.08 0.39
+2  petit_fessier                                  0.05 0.48
+2  petit_pectoral                                 0.00 0.45
+2  petit_rhomboide                                0.00 0.43
+2  piriforme                                      0.01 0.37
+2  plantaire                                      0.11 0.53
+2  poplite                                        0.01 0.29
+2  rond_pronateur_ulnaire                         0.00 0.51
+2  scalene_anterieur                              0.12 0.34
+2  scalene_posterieur                             0.07 0.29
+2  splenius_de_la_tete                            0.08 0.28
+2  subclavier                                     0.00 0.27
+2  supinateur                                     0.00 0.51
+2  supra_epineux                                  0.00 0.33
+2  temporal                                       0.13 0.44
+2  tibial_posterieur                              0.04 0.36
+2  triceps_medial                                 0.07 0.49
+2  vaste_intermediaire                            0.00 0.55
+3  carre_lombes                                   0.00 0.02 0.36
+3  dentele_postero_superieur                      0.00 0.11 0.33
+3  epineux_du_cou                                 0.00 0.04 0.21
+3  grand_psoas                                    0.01 0.11 0.17
+3  ilio_costal_du_cou                             0.00 0.03 0.17
+3  intercostaux_internes                          0.00 0.11 0.37
+3  longissimus_de_la_tete                         0.00 0.02 0.17
+3  multifide_du_cou                               0.00 0.01 0.18
+3  multifide_lombes                               0.00 0.00 0.15
+3  obturateur_externe                             0.00 0.08 0.30
+3  petit_adducteur                                0.00 0.09 0.61
+3  semi_epineux_du_thorax                         0.00 0.12 0.24
+3  splenius_du_cou                                0.00 0.07 0.32
+3  transverse_abdomen                             0.00 0.13 0.29
+4  longissimus_du_cou                             0.00 0.02 0.13 0.45
+4  multifide_thorax                               0.00 0.01 0.04 0.26
+4  semi_epineux_du_cou                            0.00 0.00 0.11 0.36
+4  subscapulaire                                  0.00 0.06 0.10 0.15

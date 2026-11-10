@@ -1,0 +1,21 @@
+{
+  "date": "2026-11-10",
+  "ponderation": { "anatomie": 0.25, "individualisation": 0.20, "geometrie": 0.15, "visuel": 0.10, "technique": 0.10, "mobile": 0.10, "licence": 0.10 },
+  "candidats": [
+    { "nom": "Z-Anatomy", "lien": "https://github.com/Z-Anatomy/Models-of-human-anatomy", "licence": "CC BY-SA 4.0 (dérive de BodyParts3D, CC BY-SA 2.1 JP)", "inspecte": "oui : dépôt cloné (1905c88), Startup.blend (307 Mo, Blender 3.5) ouvert avec Blender 5.0.1, maillages extraits modificateurs appliqués, affichés dans three.js", "notes": [8.5, 10, 7.5, 8, 8, 7.5, 7], "score": 8.30,
+      "faits": ["7 184 objets dont 4 569 maillages", "système musculaire : 684 pièces après extraction, 474 muscles (237 paires), 78 bourses, 80 fascias, 51 gaines et ligaments", "1,84 M de triangles pour les muscles", "607 pièces fermées sur 684, 0 retournée, 2 triangles dégénérés", "symétrie gauche/droite à 0,0005 mm", "matériau Tendon distinct sur les 474 muscles", "705 zones d'origine (.ol/.or) et de terminaison (.el/.er)", "squelette : 278 pièces, 702 000 triangles", "hauteur 1,70 m", "table TA2 des noms (anglais, latin, français…)"] },
+    { "nom": "BodyParts3D 4.0", "lien": "https://dbarchive.biosciencedbc.jp/en/bodyparts3d/download.html", "licence": "CC BY-SA 2.1 Japon", "inspecte": "oui : isa_BP3D_4.0_obj_99.zip (2 234 pièces, 6,68 M de triangles) et partof_BP3D_4.0_obj_99.zip (1 258 pièces) téléchargés et inventoriés", "notes": [6.5, 7, 6, 6, 8, 6, 7], "score": 6.63,
+      "faits": ["une pièce OBJ par structure, identifiants FMA, normales présentes, pas de coordonnées de texture", "chefs séparés (pectoral, deltoïde, trapèze, triceps, biceps, gastrocnémien)", "absents : grand dorsal, grand droit de l'abdomen, oblique interne, transverse, carré des lombes, multifides"] },
+    { "nom": "Muscle Anatomy - Ecorche Rigged Set (A. Lashko)", "lien": "https://superhivemarket.com/products/muscle-anatomy---ecorche-rigged", "licence": "payant (49 à 99 $), licence commerciale à vérifier pour une appli dont les fichiers sont lisibles", "inspecte": "non : fiche seulement", "notes": [7.5, 8, 9, 9, 6, 9, 5], "score": 7.73 },
+    { "nom": "Male Muscular System (CGTrader)", "lien": "https://cgtrader.com/3d-models/character/anatomy/male-muscular-system", "licence": "payant (40 $), Royalty Free", "inspecte": "non : fiche seulement", "notes": [7, 8, 8, 7, 7, 7, 5], "score": 7.15 },
+    { "nom": "Male Full Body Ecorche (diegoluga, Sketchfab)", "lien": "https://sketchfab.com/3d-models/none-ab11ebff89224f03bd75efede1164cf6", "licence": "CC BY 4.0", "inspecte": "non : métadonnées de l'API (640 470 faces, 16 matériaux, 28 textures) ; téléchargement réservé aux comptes", "notes": [7, 3, 6, 9, 7, 6, 9], "score": 6.35 },
+    { "nom": "Corps actuel (MakeHuman CC0 + muscles peints)", "lien": "prototype interne", "licence": "CC0", "inspecte": "oui", "notes": [4, 1, 8, 5, 9, 9, 10], "score": 5.70 }
+  ],
+  "ecartes": [
+    { "nom": "AnatomyTOOL Open 3D Model", "lien": "https://anatomytool.org/node/63904", "raison": "site non joignable depuis cet environnement ; dérivé de Z-Anatomy et BodyParts3D, même licence" },
+    { "nom": "NIH 3D", "lien": "https://3d.nih.gov/entries/3DPX-012628", "raison": "muscles des bras seulement (Visible Human), licences variables" },
+    { "nom": "BlenderKit", "lien": "https://www.blenderkit.com", "raison": "recherche par l'API : aucun atlas musculaire à muscles séparés" },
+    { "nom": "TurboSquid", "lien": "https://www.turbosquid.com", "raison": "accès refusé aux robots (403) ; modèles payants non vérifiables" },
+    { "nom": "Male Body Muscular System (ruslangadzhiev, Sketchfab)", "lien": "https://sketchfab.com/3d-models/none-991eb96938be4d0d8fadee241a1063d3", "raison": "sculpture d'un seul bloc (1 matériau) : muscles non séparables" }
+  ]
+}

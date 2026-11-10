@@ -1,0 +1,1412 @@
+{
+"Abductor digiti minimi of foot": {
+"id": "2679",
+"en": "Abductor digiti minimi of foot",
+"la": "Abductor digiti minimi pedis",
+"fr": "Abducteur du petit orteil"
+},
+"Abductor digiti minimi of hand": {
+"id": "2529",
+"en": "Abductor digiti minimi of hand",
+"la": "Abductor digiti minimi manus",
+"fr": "Muscle abducteur du petit doigt"
+},
+"Abductor hallucis": {
+"id": "2672",
+"en": "Abductor hallucis",
+"la": "Abductor hallucis",
+"fr": "Abducteur de l'hallux"
+},
+"Abductor pollicis brevis": {
+"id": "2521",
+"en": "Abductor pollicis brevis",
+"la": "Abductor brevis pollicis",
+"fr": "Court abducteur du pouce"
+},
+"Abductor pollicis longus": {
+"id": "2517",
+"en": "Abductor pollicis longus",
+"la": "Abductor longus pollicis",
+"fr": "Long abducteur du pouce"
+},
+"Acromial part of deltoid muscle": {
+"id": "2454",
+"en": "Acromial part of deltoid muscle",
+"la": "Pars acromialis musculi deltoidei",
+"fr": "Partie acromiale du deltoïde"
+},
+"Adductor brevis": {
+"id": "2629",
+"en": "Adductor brevis",
+"la": "Adductor brevis",
+"fr": "Court adducteur"
+},
+"Adductor longus": {
+"id": "2628",
+"en": "Adductor longus",
+"la": "Adductor longus",
+"fr": "Long adducteur"
+},
+"Adductor magnus": {
+"id": "2630",
+"en": "Adductor magnus",
+"la": "Adductor magnus",
+"fr": "Grand adducteur"
+},
+"Anconeus muscle": {
+"id": "2510",
+"en": "Anconeus muscle",
+"la": "Musculus anconeus",
+"fr": "Muscle anconé"
+},
+"Anterior belly of digastric muscle": {
+"id": "2161",
+"en": "Anterior belly of digastric muscle",
+"la": "Venter anterior musculi digastrici",
+"fr": "Ventre antérieur du muscle digastrique"
+},
+"Ary-epiglottic part of oblique arytenoid muscle": {
+"id": "2204",
+"en": "Ary-epiglottic part of oblique arytenoid muscle",
+"la": "Pars aryepiglottica musculi arytenoidei obliqui",
+"fr": "Partie ary-épiglottique du muscle aryténoïdien oblique"
+},
+"Ascending part of trapezius muscle": {
+"id": "2229",
+"en": "Ascending part of trapezius muscle",
+"la": "Pars ascendens musculi trapezii",
+"fr": "Partie ascendante du trapèze"
+},
+"Brachialis muscle": {
+"id": "2469",
+"en": "Brachialis muscle",
+"la": "Musculus brachialis",
+"fr": "Muscle brachial"
+},
+"Brachioradialis muscle": {
+"id": "2496",
+"en": "Brachioradialis muscle",
+"la": "Musculus brachioradialis",
+"fr": "Muscle brachioradial"
+},
+"Bucinator": {
+"id": "2086",
+"en": "Bucinator",
+"la": "Bucinator",
+"fr": "Muscle buccinateur"
+},
+"Calcaneal tendon": {
+"id": "2662",
+"en": "Calcaneal tendon",
+"la": "Tendo calcaneus",
+"fr": "Tendon calcanéen"
+},
+"Clavicular head of pectoralis major muscle": {
+"id": "2302",
+"en": "Clavicular head of pectoralis major muscle",
+"la": "Pars clavicularis musculi pectoralis majoris",
+"fr": "Chef claviculaire du grand pectoral"
+},
+"Clavicular part of deltoid muscle": {
+"id": "2453",
+"en": "Clavicular part of deltoid muscle",
+"la": "Pars clavicularis musculi deltoidei",
+"fr": "Partie claviculaire du deltoïde"
+},
+"Coccygeus muscle": {
+"id": "2412",
+"en": "Coccygeus muscle",
+"la": "Musculus coccygeus",
+"fr": "Muscle coccygien"
+},
+"Common tendinous ring": {
+"id": "2047",
+"en": "Common tendinous ring",
+"la": "Anulus tendineus communis",
+"fr": "Anneau tendineux commun"
+},
+"Coracobrachialis muscle": {
+"id": "2468",
+"en": "Coracobrachialis muscle",
+"la": "Musculus coracobrachialis",
+"fr": "Muscle coracobrachial"
+},
+"Corrugator supercilii": {
+"id": "2071",
+"en": "Corrugator supercilii",
+"la": "Musculus corrugator supercilii",
+"fr": "Muscle corrugateur du sourcil"
+},
+"Deep head of flexor pollicis brevis": {
+"id": "2524",
+"en": "Deep head of flexor pollicis brevis",
+"la": "Caput profundum flexoris brevis pollicis",
+"fr": "Chef profond du court fléchisseur du pouce"
+},
+"Deep head of pronator teres": {
+"id": "2480",
+"en": "Deep head of pronator teres",
+"la": "Caput profundum pronatoris teretis",
+"fr": "Chef profond du rond pronateur"
+},
+"Deep part of masseter": {
+"id": "2107",
+"en": "Deep part of masseter",
+"la": "Pars profunda masseteris",
+"fr": "Partie profonde du muscle masséter"
+},
+"Depressor anguli oris": {
+"id": "2076",
+"en": "Depressor anguli oris",
+"la": "Depressor anguli oris",
+"fr": "Muscle abaisseur de l'angle de la bouche"
+},
+"Depressor labii inferioris": {
+"id": "2083",
+"en": "Depressor labii inferioris",
+"la": "Depressor labii inferioris",
+"fr": "Muscle abaisseur de la lèvre inférieure"
+},
+"Depressor septi nasi": {
+"id": "2065",
+"en": "Depressor septi nasi",
+"la": "Depressor septi nasi",
+"fr": "Muscle abaisseur du septum nasal"
+},
+"Descending part of trapezius muscle": {
+"id": "2227",
+"en": "Descending part of trapezius muscle",
+"la": "Pars descendens musculi trapezii",
+"fr": "Partie descendante du trapèze"
+},
+"Diaphragm": {
+"id": "2327",
+"en": "Diaphragm",
+"la": "Diaphragma",
+"fr": "Diaphragme"
+},
+"Dorsal interossei muscles of foot": {
+"id": "2686",
+"en": "Dorsal interossei muscles of foot",
+"la": "Musculi interossei dorsales pedis",
+"fr": "Muscles interosseux dorsaux du pied"
+},
+"Dorsal interossei muscles of hand": {
+"id": "2533",
+"en": "Dorsal interossei muscles of hand",
+"la": "Musculi interossei dorsales manus",
+"fr": "Muscles interosseux dorsaux de la main"
+},
+"Dorsal parts of lateral intertransversarii lumborum muscles": {
+"id": "2240",
+"en": "Dorsal parts of lateral intertransversarii lumborum muscles",
+"la": "Partes dors. musculorum intertransversariorum lat. lumborum",
+"fr": "Parties dorsales des muscles intertransv. lat. des lombes"
+},
+"Extensor carpi radialis brevis": {
+"id": "2499",
+"en": "Extensor carpi radialis brevis",
+"la": "Extensor radialis brevis carpi",
+"fr": "Court extenseur radial du carpe"
+},
+"Extensor carpi radialis longus": {
+"id": "2497",
+"en": "Extensor carpi radialis longus",
+"la": "Extensor radialis longus carpi",
+"fr": "Long extenseur radial du carpe"
+},
+"Extensor digiti minimi": {
+"id": "2506",
+"en": "Extensor digiti minimi",
+"la": "Extensor digiti minimi",
+"fr": "Extenseur du petit doigt"
+},
+"Extensor digitorum brevis": {
+"id": "2671",
+"en": "Extensor digitorum brevis",
+"la": "Extensor brevis digitorum",
+"fr": "Court extenseur des orteils"
+},
+"Extensor digitorum longus": {
+"id": "2645",
+"en": "Extensor digitorum longus",
+"la": "Extensor longus digitorum",
+"fr": "Muscle long extenseur des orteils"
+},
+"Extensor digitorum": {
+"id": "2500",
+"en": "Extensor digitorum",
+"la": "Extensor digitorum",
+"fr": "Extenseur des doigts"
+},
+"Extensor hallucis brevis": {
+"id": "2670",
+"en": "Extensor hallucis brevis",
+"la": "Extensor brevis hallucis",
+"fr": "Court extenseur de l'hallux"
+},
+"Extensor hallucis longus": {
+"id": "2650",
+"en": "Extensor hallucis longus",
+"la": "Extensor longus hallucis",
+"fr": "Long extenseur de l'hallux"
+},
+"Extensor indicis": {
+"id": "2515",
+"en": "Extensor indicis",
+"la": "Extensor indicis",
+"fr": "Muscle extenseur de l'index"
+},
+"Extensor pollicis brevis": {
+"id": "2518",
+"en": "Extensor pollicis brevis",
+"la": "Extensor brevis pollicis",
+"fr": "Court extenseur du pouce"
+},
+"Extensor pollicis longus": {
+"id": "2516",
+"en": "Extensor pollicis longus",
+"la": "Extensor longus pollicis",
+"fr": "Long extenseur du pouce"
+},
+"External abdominal oblique muscle": {
+"id": "2364",
+"en": "External abdominal oblique muscle",
+"la": "Musculus obliquus externus abdominis",
+"fr": "Muscle oblique externe de l'abdomen"
+},
+"External anal sphincter": {
+"id": "2426",
+"en": "External anal sphincter",
+"la": "Sphincter externus ani",
+"fr": "Sphincter anal externe"
+},
+"External intercostal muscles": {
+"id": "2311",
+"en": "External intercostal muscles",
+"la": "Musculi intercostales externi",
+"fr": "Muscles intercostaux externes"
+},
+"External part of thyro-arytenoid muscle": {
+"id": "2200",
+"en": "External part of thyro-arytenoid muscle",
+"la": "Pars externa musculi thyreoarytenoidei",
+"fr": "Partie externe du muscle thyro-aryténoïdien"
+},
+"Fibularis brevis muscle": {
+"id": "2653",
+"en": "Fibularis brevis muscle",
+"la": "Musculus fibularis brevis",
+"fr": "Muscle court fibulaire"
+},
+"Fibularis longus muscle": {
+"id": "2652",
+"en": "Fibularis longus muscle",
+"la": "Musculus fibularis longus",
+"fr": "Muscle long fibulaire"
+},
+"Fibularis tertius muscle": {
+"id": "2649",
+"en": "Fibularis tertius muscle",
+"la": "Musculus fibularis tertius",
+"fr": "Muscle troisième fibulaire"
+},
+"Flexor carpi radialis": {
+"id": "2481",
+"en": "Flexor carpi radialis",
+"la": "Flexor radialis carpi",
+"fr": "Fléchisseur radial du carpe"
+},
+"Flexor digiti minimi of foot": {
+"id": "2682",
+"en": "Flexor digiti minimi of foot",
+"la": "Flexor digiti minimi pedis pedis",
+"fr": "Fléchisseur du petit doigt"
+},
+"Flexor digiti minimi of hand": {
+"id": "2530",
+"en": "Flexor digiti minimi of hand",
+"la": "Flexor digiti minimi manus",
+"fr": "Fléchisseur du petit doigt de la main"
+},
+"Flexor digitorum brevis": {
+"id": "2683",
+"en": "Flexor digitorum brevis",
+"la": "Flexor brevis digitorum",
+"fr": "Court fléchisseur des orteils"
+},
+"Flexor digitorum longus": {
+"id": "2667",
+"en": "Flexor digitorum longus",
+"la": "Musculus flexor digitorum longus",
+"fr": "Long fléchisseur des orteils"
+},
+"Flexor digitorum profundus": {
+"id": "2491",
+"en": "Flexor digitorum profundus",
+"la": "Flexor profundus digitorum",
+"fr": "Fléchisseur profond des doigts"
+},
+"Flexor hallucis longus": {
+"id": "2668",
+"en": "Flexor hallucis longus",
+"la": "Flexor longus hallucis",
+"fr": "Long fléchisseur de l'hallux"
+},
+"Flexor pollicis longus": {
+"id": "2492",
+"en": "Flexor pollicis longus",
+"la": "Flexor longus pollicis",
+"fr": "Long fléchisseur du pouce"
+},
+"Frontalis muscle": {
+"id": "2056",
+"en": "Frontalis muscle",
+"la": "Musculus frontalis",
+"fr": "Muscle frontal"
+},
+"Genioglossus muscle": {
+"id": "2117",
+"en": "Genioglossus muscle",
+"la": "Musculus genioglossus",
+"fr": "Muscle génioglosse"
+},
+"Geniohyoid muscle": {
+"id": "2166",
+"en": "Geniohyoid muscle",
+"la": "Musculus geniohyoideus",
+"fr": "Muscle géniohyoïdien"
+},
+"Gluteus maximus muscle": {
+"id": "2598",
+"en": "Gluteus maximus muscle",
+"la": "Musculus gluteus maximus",
+"fr": "Muscle grand fessier"
+},
+"Gluteus medius muscle": {
+"id": "2599",
+"en": "Gluteus medius muscle",
+"la": "Musculus gluteus medius",
+"fr": "Muscle moyen fessier"
+},
+"Gluteus minimus muscle": {
+"id": "2600",
+"en": "Gluteus minimus muscle",
+"la": "Musculus gluteus minimus",
+"fr": "Muscle petit fessier"
+},
+"Gracilis muscle": {
+"id": "2635",
+"en": "Gracilis muscle",
+"la": "Musculus gracilis",
+"fr": "Muscle gracile"
+},
+"Humeral head of extensor carpi ulnaris": {
+"id": "2508",
+"en": "Humeral head of extensor carpi ulnaris",
+"la": "Caput humerale extensoris ulnaris carpi",
+"fr": "Chef huméral de l'extenseur ulnaire du carpe"
+},
+"Humeral head of flexor carpi ulnaris": {
+"id": "2484",
+"en": "Humeral head of flexor carpi ulnaris",
+"la": "Caput humerale flexoris ulnaris carpi",
+"fr": "Chef huméral du fléchisseur ulnaire du carpe"
+},
+"Humero-ulnar head of flexor digitorum superficialis": {
+"id": "2487",
+"en": "Humero-ulnar head of flexor digitorum superficialis",
+"la": "Caput humeroulnare flexoris superficialis digitorum",
+"fr": "Chef huméro-ulnaire du fléchisseur superficiel des doigts"
+},
+"Hyoglossus muscle": {
+"id": "2118",
+"en": "Hyoglossus muscle",
+"la": "Musculus hyoglossus",
+"fr": "Muscle hyoglosse"
+},
+"Iliacus muscle": {
+"id": "2594",
+"en": "Iliacus muscle",
+"la": "Musculus iliacus",
+"fr": "Muscle iliaque"
+},
+"Iliococcygeus muscle": {
+"id": "2404",
+"en": "Iliococcygeus muscle",
+"la": "Musculus iliococcygeus",
+"fr": "Muscle iliococcygien"
+},
+"Iliocostalis colli muscle": {
+"id": "2261",
+"en": "Iliocostalis colli muscle",
+"la": "Musculus iliocostalis colli",
+"fr": "Muscle iliocostal du cou"
+},
+"Iliocostalis lumborum muscle": {
+"id": "2258",
+"en": "Iliocostalis lumborum muscle",
+"la": "Musculus iliocostalis lumborum",
+"fr": "Muscle iliocostal des lombes"
+},
+"Iliocostalis thoracis muscle": {
+"id": "2260",
+"en": "Iliocostalis thoracis muscle",
+"la": "Musculus iliocostalis thoracis",
+"fr": "Muscle iliocostal du thorax"
+},
+"Inferior gemellus muscle": {
+"id": "2607",
+"en": "Inferior gemellus muscle",
+"la": "Musculus gemellus inferior",
+"fr": "Muscle jumeau inférieur"
+},
+"Inferior head of lateral pterygoid muscle": {
+"id": "2111",
+"en": "Inferior head of lateral pterygoid muscle",
+"la": "Caput inferius musculi pterygoidei lateralis",
+"fr": "Chef inférieur du muscle ptérygoïdien latéral"
+},
+"Inferior oblique muscle": {
+"id": "2051",
+"en": "Inferior oblique muscle",
+"la": "Musculus obliquus inferior bulbi oculi",
+"fr": "Muscle oblique inférieur de l'œil"
+},
+"Inferior pharyngeal constrictor": {
+"id": "2187",
+"en": "Inferior pharyngeal constrictor",
+"la": "Constrictor inferior pharyngis",
+"fr": "Constricteur inférieur du pharynx"
+},
+"Inferior rectus muscle": {
+"id": "2043",
+"en": "Inferior rectus muscle",
+"la": "Musculus rectus inferior",
+"fr": "Muscle droit inférieur de l'œil"
+},
+"Inferior tarsus": {
+"id": "6829",
+"en": "Inferior tarsus",
+"la": "Tarsus inferior",
+"fr": "Tarse inférieur"
+},
+"Infraspinatus muscle": {
+"id": "2458",
+"en": "Infraspinatus muscle",
+"la": "Musculus infraspinatus",
+"fr": "Muscle infra-épineux"
+},
+"Innermost intercostal muscles": {
+"id": "2313",
+"en": "Innermost intercostal muscles",
+"la": "Musculi intercostales intimi",
+"fr": "Muscles intercostaux intimes"
+},
+"Internal abdominal oblique muscle": {
+"id": "2373",
+"en": "Internal abdominal oblique muscle",
+"la": "Musculus obliquus internus abdominis",
+"fr": "Muscle oblique interne de l'abdomen"
+},
+"Internal intercostal muscles": {
+"id": "2312",
+"en": "Internal intercostal muscles",
+"la": "Musculi intercostales interni",
+"fr": "Muscles intercostaux internes"
+},
+"Interspinales colli muscles": {
+"id": "2293",
+"en": "Interspinales colli muscles",
+"la": "Musculi interspinales colli",
+"fr": "Muscles interépineux du cou"
+},
+"Interspinales lumborum muscles": {
+"id": "2291",
+"en": "Interspinales lumborum muscles",
+"la": "Musculi interspinales lumborum",
+"fr": "Muscles interépineux des lombes"
+},
+"Interspinales thoracis muscles": {
+"id": "2292",
+"en": "Interspinales thoracis muscles",
+"la": "Musculi interspinales thoracis",
+"fr": "Muscles interépineux du thorax"
+},
+"Lateral crico-arytenoid muscle": {
+"id": "2198",
+"en": "Lateral crico-arytenoid muscle",
+"la": "Musculus cricoarytendoideus lateralis",
+"fr": "Muscle crico-aryténoïdien latéral"
+},
+"Lateral head of flexor hallucis brevis": {
+"id": "2675",
+"en": "Lateral head of flexor hallucis brevis",
+"la": "Caput laterale flexoris brevis hallucis",
+"fr": "Chef latéral du court fléchisseur de l'hallux"
+},
+"Lateral head of gastrocnemius": {
+"id": "2658",
+"en": "Lateral head of gastrocnemius",
+"la": "Caput laterale musculi gastrocnemii",
+"fr": "Chef latéral du gastrocnémien"
+},
+"Lateral head of triceps brachii": {
+"id": "2473",
+"en": "Lateral head of triceps brachii",
+"la": "Caput laterale musculi tricipitis brachii",
+"fr": "Chef latéral du triceps brachial"
+},
+"Lateral rectus muscle": {
+"id": "2045",
+"en": "Lateral rectus muscle",
+"la": "Musculus rectus lateralis bulbi oculi",
+"fr": "Muscle droit latéral de l'œil"
+},
+"Latissimus dorsi muscle": {
+"id": "2231",
+"en": "Latissimus dorsi muscle",
+"la": "Musculus latissimus dorsi",
+"fr": "Muscle grand dorsal"
+},
+"Levator anguli oris": {
+"id": "2084",
+"en": "Levator anguli oris",
+"la": "Levator anguli oris",
+"fr": "Muscle élévateur de l'angle de la bouche"
+},
+"Levator labii superioris": {
+"id": "2081",
+"en": "Levator labii superioris",
+"la": "Levator labii superioris",
+"fr": "Muscle élévateur de la lèvre supérieure"
+},
+"Levator nasolabialis": {
+"id": "2082",
+"en": "Levator nasolabialis",
+"la": "Levator nasolabialis",
+"fr": "Musclé élévateur nasolabial"
+},
+"Levator palpebrae superioris": {
+"id": "2052",
+"en": "Levator palpebrae superioris",
+"la": "Levator palpebrae superioris",
+"fr": "Muscle élévateur de la paupière supérieure"
+},
+"Levator scapulae": {
+"id": "2234",
+"en": "Levator scapulae",
+"la": "Levator scapulae",
+"fr": "Muscle élévateur de la scapula"
+},
+"Levatores breves costarum": {
+"id": "2310",
+"en": "Levatores breves costarum",
+"la": "Levatores breves costarum",
+"fr": "Courts élévateurs des côtes"
+},
+"Levatores longi costarum": {
+"id": "2309",
+"en": "Levatores longi costarum",
+"la": "Levatores longi costarum",
+"fr": "Longs élévateurs des côtes"
+},
+"Long head of biceps brachii": {
+"id": "2465",
+"en": "Long head of biceps brachii",
+"la": "Caput longum musculi bicipitis brachii",
+"fr": "Chef long du biceps brachial"
+},
+"Long head of biceps femoris": {
+"id": "2639",
+"en": "Long head of biceps femoris",
+"la": "Caput longum musculi bicipitis femoris",
+"fr": "Chef long du biceps fémoral"
+},
+"Long head of triceps brachii": {
+"id": "2472",
+"en": "Long head of triceps brachii",
+"la": "Caput longum musculi tricipitis brachii",
+"fr": "Chef long du triceps brachial"
+},
+"Longissimus capitis muscle": {
+"id": "2266",
+"en": "Longissimus capitis muscle",
+"la": "Musculus longissimus capitis",
+"fr": "Muscle longissimus de la tête"
+},
+"Longissimus colli muscle": {
+"id": "2265",
+"en": "Longissimus colli muscle",
+"la": "Musculus longissimus colli",
+"fr": "Muscle longissimus du cou"
+},
+"Longissimus thoracis muscle": {
+"id": "2263",
+"en": "Longissimus thoracis muscle",
+"la": "Musculus longissimus thoracis",
+"fr": "Muscle longissimus du thorax"
+},
+"Longus capitis muscle": {
+"id": "2149",
+"en": "Longus capitis muscle",
+"la": "Musculus longus capitis",
+"fr": "Muscle long de la tête"
+},
+"Longus colli muscle": {
+"id": "2148",
+"en": "Longus colli muscle",
+"la": "Musculus longus colli",
+"fr": "Muscle long du cou"
+},
+"Lumbrical muscles of foot": {
+"id": "2685",
+"en": "Lumbrical muscles of foot",
+"la": "Musculi lumbricales pedis",
+"fr": "Muscles lombricaux du pied"
+},
+"Lumbrical muscles of hand": {
+"id": "2532",
+"en": "Lumbrical muscles of hand",
+"la": "Musculi lumbricales manus",
+"fr": "Muscles lombricaux de la main"
+},
+"Medial head of flexor hallucis brevis": {
+"id": "2674",
+"en": "Medial head of flexor hallucis brevis",
+"la": "Caput mediale flexoris brevis hallucis",
+"fr": "Chef médial du court fléchisseur de l'hallux"
+},
+"Medial head of gastrocnemius": {
+"id": "2659",
+"en": "Medial head of gastrocnemius",
+"la": "Caput mediale musculi gastrocnemii",
+"fr": "Chef médial du gastrocnémien"
+},
+"Medial head of triceps brachii": {
+"id": "2474",
+"en": "Medial head of triceps brachii",
+"la": "Caput mediale musculi tricipitis caput brachii",
+"fr": "Chef médial du triceps brachial"
+},
+"Medial pterygoid muscle": {
+"id": "2113",
+"en": "Medial pterygoid muscle",
+"la": "Musculus pterygoideus medialis",
+"fr": "Muscle ptérygoïdien médial"
+},
+"Medial rectus muscle": {
+"id": "2044",
+"en": "Medial rectus muscle",
+"la": "Musculus rectus medialis",
+"fr": "Muscle droit médial de l'œil"
+},
+"Mentalis muscle": {
+"id": "2087",
+"en": "Mentalis muscle",
+"la": "Musculus mentalis",
+"fr": "Muscle mentonnier"
+},
+"Middle pharyngeal constrictor": {
+"id": "2184",
+"en": "Middle pharyngeal constrictor",
+"la": "Constrictor medius pharyngis",
+"fr": "Constricteur moyen du pharynx"
+},
+"Multifidus colli muscle": {
+"id": "2279",
+"en": "Multifidus colli muscle",
+"la": "Musculus multifidus colli",
+"fr": "Muscles multifides du cou"
+},
+"Multifidus lumborum muscle": {
+"id": "2277",
+"en": "Multifidus lumborum muscle",
+"la": "Musculus multifidus lumborum",
+"fr": "Muscles multifides lombaire"
+},
+"Multifidus thoracis muscle": {
+"id": "2278",
+"en": "Multifidus thoracis muscle",
+"la": "Musculus multifidus thoracis",
+"fr": "Muscles multifides du thorax"
+},
+"Mylohyoid muscle": {
+"id": "2165",
+"en": "Mylohyoid muscle",
+"la": "Musculus mylohyoideus",
+"fr": "Muscle mylohyoïdien"
+},
+"Nasalis muscle": {
+"id": "2062",
+"en": "Nasalis muscle",
+"la": "Musculus nasalis",
+"fr": "Muscle nasal"
+},
+"Oblique head of adductor hallucis": {
+"id": "2677",
+"en": "Oblique head of adductor hallucis",
+"la": "Caput obliquum adductoris hallucis",
+"fr": "Chef oblique de l'adducteur de l'hallux"
+},
+"Oblique head of adductor pollicis": {
+"id": "2527",
+"en": "Oblique head of adductor pollicis",
+"la": "Caput obliquum adductoris pollicis",
+"fr": "Chef oblique de l'adducteur du pouce"
+},
+"Oblique part of cricothyroid muscle": {
+"id": "2195",
+"en": "Oblique part of cricothyroid muscle",
+"la": "Pars obliqua musculi cricothyreoidei",
+"fr": "Partie oblique du muscle cricothyroïdien"
+},
+"Obliquus inferior capitis muscle": {
+"id": "2252",
+"en": "Obliquus inferior capitis muscle",
+"la": "Musculus obliquus inferior capitis",
+"fr": "Muscle oblique inférieur de la tête"
+},
+"Obliquus superior capitis muscle": {
+"id": "2251",
+"en": "Obliquus superior capitis muscle",
+"la": "Musculus obliquus superior capitis",
+"fr": "Muscle oblique supérieur de la tête"
+},
+"Obturator externus": {
+"id": "2636",
+"en": "Obturator externus",
+"la": "Obturator externus",
+"fr": "Obturateur externe"
+},
+"Obturator internus": {
+"id": "2605",
+"en": "Obturator internus",
+"la": "Obturator internus",
+"fr": "Obturateur interne"
+},
+"Occipitalis muscle": {
+"id": "2057",
+"en": "Occipitalis muscle",
+"la": "Musculus occipitalis",
+"fr": "Muscle occipital"
+},
+"Omohyoid muscle": {
+"id": "2169",
+"en": "Omohyoid muscle",
+"la": "Musculus omohyoideus",
+"fr": "Muscle omohyoïdien"
+},
+"Opponens digiti minimi muscle of hand": {
+"id": "2531",
+"en": "Opponens digiti minimi muscle of hand",
+"la": "Musculus opponens digiti minimi manus",
+"fr": "Muscle opposant du petit doigt"
+},
+"Opponens pollicis muscle": {
+"id": "2525",
+"en": "Opponens pollicis muscle",
+"la": "Musculus opponens pollicis",
+"fr": "Muscle opposant du pouce"
+},
+"Orbicularis oris muscle": {
+"id": "2073",
+"en": "Orbicularis oris muscle",
+"la": "Musculus orbicularis oris",
+"fr": "Muscle orbiculaire de la bouche"
+},
+"Orbital part of orbicularis oculi": {
+"id": "2070",
+"en": "Orbital part of orbicularis oculi",
+"la": "Pars orbitalis musculi orbicularis oculi",
+"fr": "Partie orbitaire du muscle orbiculaire de l'oeil"
+},
+"Palatopharyngeus muscle": {
+"id": "2132",
+"en": "Palatopharyngeus muscle",
+"la": "Musculus palatopharyngeus",
+"fr": "Muscle palatopharyngien"
+},
+"Palmar interossei muscles": {
+"id": "2534",
+"en": "Palmar interossei muscles",
+"la": "Musculi interossei palmares",
+"fr": "Muscles interosseux palmaires"
+},
+"Palmaris longus muscle": {
+"id": "2482",
+"en": "Palmaris longus muscle",
+"la": "Musculus palmaris longus",
+"fr": "Muscle long palmaire"
+},
+"Palpebral part of orbicularis oculi": {
+"id": "2067",
+"en": "Palpebral part of orbicularis oculi",
+"la": "Pars palpebralis musculi orbicularis oculi",
+"fr": "Partie palpébrale du muscle orbiculaire de l'oeil"
+},
+"Pectineus muscle": {
+"id": "2627",
+"en": "Pectineus muscle",
+"la": "Musculus pectineus",
+"fr": "Muscle pectiné"
+},
+"Pectoralis minor muscle": {
+"id": "2305",
+"en": "Pectoralis minor muscle",
+"la": "Musculus pectoralis minor",
+"fr": "Muscle petit pectoral"
+},
+"Piriformis muscle": {
+"id": "2604",
+"en": "Piriformis muscle",
+"la": "Musculus piriformis",
+"fr": "Muscle piriforme"
+},
+"Plantar interossei muscles": {
+"id": "2687",
+"en": "Plantar interossei muscles",
+"la": "Musculi interossei plantares",
+"fr": "Muscles interosseux plantaires"
+},
+"Plantaris muscle": {
+"id": "2663",
+"en": "Plantaris muscle",
+"la": "Musculus plantaris",
+"fr": "Muscle plantaire"
+},
+"Platysma": {
+"id": "2147",
+"en": "Platysma",
+"la": "Platysma",
+"fr": "Platysma"
+},
+"Popliteus muscle": {
+"id": "2665",
+"en": "Popliteus muscle",
+"la": "Musculus popliteus",
+"fr": "Muscle poplité"
+},
+"Posterior belly of digastric muscle": {
+"id": "2163",
+"en": "Posterior belly of digastric muscle",
+"la": "Venter posterior musculi digastrici",
+"fr": "Ventre postérieur du muscle digastrique"
+},
+"Posterior crico-arytenoid muscle": {
+"id": "2196",
+"en": "Posterior crico-arytenoid muscle",
+"la": "Musculus cricoarytenoideus posterior",
+"fr": "Muscle crico-aryténoïdien postérieur"
+},
+"Procerus muscle": {
+"id": "2061",
+"en": "Procerus muscle",
+"la": "Musculus procerus",
+"fr": "Muscle procérus"
+},
+"Pronator quadratus": {
+"id": "2493",
+"en": "Pronator quadratus",
+"la": "Pronator quadratus",
+"fr": "Carré pronateur"
+},
+"Psoas major": {
+"id": "2595",
+"en": "Psoas major",
+"la": "Psoas major",
+"fr": "Grand psoas"
+},
+"Pubo-analis muscle": {
+"id": "2406",
+"en": "Pubo-analis muscle",
+"la": "Musculus puboanalis",
+"fr": "Muscle pubo-anal"
+},
+"Pubococcygeus muscle": {
+"id": "2405",
+"en": "Pubococcygeus muscle",
+"la": "Musculus pubococcygeus",
+"fr": "Muscle pubococcygien"
+},
+"Pyramidalis muscle": {
+"id": "2363",
+"en": "Pyramidalis muscle",
+"la": "Musculus pyramidalis",
+"fr": "Muscle pyramidal de l'abdomen"
+},
+"Quadratus femoris muscle": {
+"id": "2608",
+"en": "Quadratus femoris muscle",
+"la": "Musculus quadratus femoris",
+"fr": "Muscle carré fémoral"
+},
+"Quadratus lumborum muscle": {
+"id": "2382",
+"en": "Quadratus lumborum muscle",
+"la": "Musculus quadratus lumborum",
+"fr": "Muscle carré des lombes"
+},
+"Quadratus plantae muscle": {
+"id": "2684",
+"en": "Quadratus plantae muscle",
+"la": "Musculus quadratus plantae",
+"fr": "Muscle carré plantaire"
+},
+"Radial head of flexor digitorum superficialis": {
+"id": "2488",
+"en": "Radial head of flexor digitorum superficialis",
+"la": "Caput radiale flexoris superficialis digitorum",
+"fr": "Chef radial du fléchisseur superficiel des doigts"
+},
+"Rectus abdominis muscle": {
+"id": "2357",
+"en": "Rectus abdominis muscle",
+"la": "Musculus rectus abdominis",
+"fr": "Muscle droit de l'abdomen"
+},
+"Rectus anterior capitis muscle": {
+"id": "2150",
+"en": "Rectus anterior capitis muscle",
+"la": "Musculus rectus anterior capitis",
+"fr": "Muscle droit antérieur de la tête"
+},
+"Rectus femoris muscle": {
+"id": "2614",
+"en": "Rectus femoris muscle",
+"la": "Musculus rectus femoris",
+"fr": "Muscle droit fémoral"
+},
+"Rectus lateralis capitis muscle": {
+"id": "2151",
+"en": "Rectus lateralis capitis muscle",
+"la": "Musculus rectus lateralis capitis",
+"fr": "Muscle droit latéral de la tête"
+},
+"Rectus posterior major capitis muscle": {
+"id": "2249",
+"en": "Rectus posterior major capitis muscle",
+"la": "Musculus rectus posterior major capitis",
+"fr": "Muscle grand droit postérieur de la tête"
+},
+"Rectus posterior minor capitis muscle": {
+"id": "2250",
+"en": "Rectus posterior minor capitis muscle",
+"la": "Musculus rectus posterior minor capitis",
+"fr": "Muscle petit droit postérieur de la tête"
+},
+"Rhomboid major muscle": {
+"id": "2232",
+"en": "Rhomboid major muscle",
+"la": "Musculus rhomboideus major",
+"fr": "Muscle grand rhomboïde"
+},
+"Rhomboid minor muscle": {
+"id": "2233",
+"en": "Rhomboid minor muscle",
+"la": "Musculus rhomboideus minor",
+"fr": "Muscle petit rhomboïde"
+},
+"Risorius muscle": {
+"id": "2078",
+"en": "Risorius muscle",
+"la": "Musculus risorius",
+"fr": "Muscle risorius"
+},
+"Rotatores": {
+"id": "2284",
+"en": "Rotatores",
+"la": "Rotatores",
+"fr": "Muscles rotateurs"
+},
+"Sartorius muscle": {
+"id": "2610",
+"en": "Sartorius muscle",
+"la": "Musculus sartorius",
+"fr": "Muscle sartorius"
+},
+"Scalenus anterior muscle": {
+"id": "2152",
+"en": "Scalenus anterior muscle",
+"la": "Musculus scalenus anterior",
+"fr": "Muscle scalène antérieur"
+},
+"Scalenus medius muscle": {
+"id": "2153",
+"en": "Scalenus medius muscle",
+"la": "Musculus scalenus medius",
+"fr": "Muscle scalène moyen"
+},
+"Scalenus posterior muscle": {
+"id": "2154",
+"en": "Scalenus posterior muscle",
+"la": "Musculus scalenus posterior",
+"fr": "Muscle scalène postérieur"
+},
+"Scapular spinal part of deltoid muscle": {
+"id": "2455",
+"en": "Scapular spinal part of deltoid muscle",
+"la": "Pars spinalis scapularis musculi deltoidei",
+"fr": "Partie scapulaire épineuse du deltoïde"
+},
+"Semimembranosus muscle": {
+"id": "2642",
+"en": "Semimembranosus muscle",
+"la": "Musculus semimembranosus",
+"fr": "Muscle semimembraneux"
+},
+"Semispinalis colli muscle": {
+"id": "2282",
+"en": "Semispinalis colli muscle",
+"la": "Musculus semispinalis colli",
+"fr": "Muscle semi-épineux du cou"
+},
+"Semispinalis thoracis muscle": {
+"id": "2281",
+"en": "Semispinalis thoracis muscle",
+"la": "Musculus semispinalis thoracis",
+"fr": "Muscle semi-épineux du thorax"
+},
+"Semitendinosus muscle": {
+"id": "2641",
+"en": "Semitendinosus muscle",
+"la": "Musculus semitendinosus",
+"fr": "Muscle semitendineux"
+},
+"Serratus anterior muscle": {
+"id": "2307",
+"en": "Serratus anterior muscle",
+"la": "Musculus serratus anterior",
+"fr": "Muscle dentelé antérieur"
+},
+"Serratus posterior inferior muscle": {
+"id": "2235",
+"en": "Serratus posterior inferior muscle",
+"la": "Musculus serratus posterior inferior",
+"fr": "Muscle dentelé postéro-inférieur"
+},
+"Serratus posterior superior muscle": {
+"id": "2236",
+"en": "Serratus posterior superior muscle",
+"la": "Musculus serratus posterior superior",
+"fr": "Muscle dentelé postéro-supérieur"
+},
+"Short head of biceps brachii": {
+"id": "2466",
+"en": "Short head of biceps brachii",
+"la": "Caput breve musculi bicipitis brachii",
+"fr": "Chef court du biceps brachial"
+},
+"Short head of biceps femoris": {
+"id": "2640",
+"en": "Short head of biceps femoris",
+"la": "Caput breve musculi bicipitis femoris",
+"fr": "Chef court du biceps fémoral"
+},
+"Soleus muscle": {
+"id": "2660",
+"en": "Soleus muscle",
+"la": "Musculus soleus",
+"fr": "Muscle soléaire"
+},
+"Spinalis capitis muscle": {
+"id": "2270",
+"en": "Spinalis capitis muscle",
+"la": "Musculus spinalis capitis",
+"fr": "Muscle épineux de la tête"
+},
+"Spinalis colli muscle": {
+"id": "2269",
+"en": "Spinalis colli muscle",
+"la": "Musculus spinalis colli",
+"fr": "Muscle épineux du cou"
+},
+"Spinalis thoracis muscle": {
+"id": "2268",
+"en": "Spinalis thoracis muscle",
+"la": "Musculus spinalis thoracis",
+"fr": "Muscle épineux du thorax"
+},
+"Splenius capitis muscle": {
+"id": "2273",
+"en": "Splenius capitis muscle",
+"la": "Musculus splenius capitis",
+"fr": "Muscle splénius de la tête"
+},
+"Splenius colli muscle": {
+"id": "2274",
+"en": "Splenius colli muscle",
+"la": "Musculus splenius colli",
+"fr": "Muscle splénius du cou"
+},
+"Sternocleidomastoid muscle": {
+"id": "2156",
+"en": "Sternocleidomastoid muscle",
+"la": "Musculus sternocleidomastoideus",
+"fr": "Muscle sternocléïdomastoïdien"
+},
+"Sternocostal head of pectoralis major muscle": {
+"id": "2303",
+"en": "Sternocostal head of pectoralis major muscle",
+"la": "Pars sternocostalis musculi pectoralis majoris",
+"fr": "Chef sternocostal du grand pectoral"
+},
+"Sternohyoid muscle": {
+"id": "2168",
+"en": "Sternohyoid muscle",
+"la": "Musculus sternohyoideus",
+"fr": "Muscle sternohyoïdien"
+},
+"Sternothyroid muscle": {
+"id": "2173",
+"en": "Sternothyroid muscle",
+"la": "Musculus sternothyreoideus",
+"fr": "Muscle sternothyroïdien"
+},
+"Straight part of cricothyroid muscle": {
+"id": "2194",
+"en": "Straight part of cricothyroid muscle",
+"la": "Pars recta musculi cricothyreoidei",
+"fr": "Partie droite du muscle cricothyroïdien"
+},
+"Stylohyoid muscle": {
+"id": "2164",
+"en": "Stylohyoid muscle",
+"la": "Musculus stylohyoideus",
+"fr": "Muscle stylohyoïdien"
+},
+"Stylopharyngeus muscle": {
+"id": "2190",
+"en": "Stylopharyngeus muscle",
+"la": "Musculus stylopharyngeus",
+"fr": "Muscle stylopharyngien"
+},
+"Subclavius muscle": {
+"id": "2306",
+"en": "Subclavius muscle",
+"la": "Musculus subclavius",
+"fr": "Muscle subclavier"
+},
+"Subscapularis muscle": {
+"id": "2460",
+"en": "Subscapularis muscle",
+"la": "Musculus subscapularis",
+"fr": "Muscle subscapulaire"
+},
+"Superficial head of flexor pollicis brevis": {
+"id": "2523",
+"en": "Superficial head of flexor pollicis brevis",
+"la": "Caput superficiale flexoris brevis pollicis",
+"fr": "Chef superficiel du court fléchisseur du pouce"
+},
+"Superficial head of pronator teres": {
+"id": "2479",
+"en": "Superficial head of pronator teres",
+"la": "Caput superficiale pronatoris teretis",
+"fr": "Chef superficiel du rond pronateur"
+},
+"Superficial part of masseter": {
+"id": "2106",
+"en": "Superficial part of masseter",
+"la": "Pars superficialis masseteris",
+"fr": "Partie superficielle du muscle masséter"
+},
+"Superior gemellus muscle": {
+"id": "2606",
+"en": "Superior gemellus muscle",
+"la": "Musculus gemellus superior",
+"fr": "Muscle jumeau supérieur"
+},
+"Superior head of lateral pterygoid muscle": {
+"id": "2110",
+"en": "Superior head of lateral pterygoid muscle",
+"la": "Caput superius musculi pterygoidei lateralis",
+"fr": "Chef supérieur du muscle ptérygoïdien latéral"
+},
+"Superior oblique muscle": {
+"id": "2048",
+"en": "Superior oblique muscle",
+"la": "Musculus obliquus superior bulbi oculi",
+"fr": "Muscle oblique supérieur de l'œil"
+},
+"Superior pharyngeal constrictor": {
+"id": "2179",
+"en": "Superior pharyngeal constrictor",
+"la": "Constrictor superior pharyngis",
+"fr": "Constricteur supérieur du pharynx"
+},
+"Superior rectus muscle": {
+"id": "2042",
+"en": "Superior rectus muscle",
+"la": "Musculus rectus superior",
+"fr": "Muscle droit supérieur de l'œil"
+},
+"Superior tarsus": {
+"id": "6827",
+"en": "Superior tarsus",
+"la": "Tarsus superior",
+"fr": "Tarse supérieur"
+},
+"Supinator": {
+"id": "2512",
+"en": "Supinator",
+"la": "Supinator",
+"fr": "Supinateur"
+},
+"Supraspinatus muscle": {
+"id": "2457",
+"en": "Supraspinatus muscle",
+"la": "Musculus supraspinatus",
+"fr": "Muscle supra-épineux"
+},
+"Temporalis muscle": {
+"id": "2108",
+"en": "Temporalis muscle",
+"la": "Musculus temporalis",
+"fr": "Muscle temporal"
+},
+"Temporoparietalis muscle": {
+"id": "2058",
+"en": "Temporoparietalis muscle",
+"la": "Musculus temporoparietalis",
+"fr": "Muscle temporopariétal"
+},
+"Tendinous arch of levator ani": {
+"id": "2434",
+"en": "Tendinous arch of levator ani",
+"la": "Arcus tendineus levatoris ani",
+"fr": "Arcade tendineuse de l'élévateur de l'anus"
+},
+"Tendon of extensor digitorum longus": {
+"id": "7201",
+"en": "Tendon of extensor digitorum longus",
+"la": "Tendon extensoris digitorum longi",
+"fr": "Tendon du long extenseur des orteils"
+},
+"Teres major muscle": {
+"id": "2462",
+"en": "Teres major muscle",
+"la": "Musculus teres major",
+"fr": "Muscle grand rond"
+},
+"Teres minor muscle": {
+"id": "2459",
+"en": "Teres minor muscle",
+"la": "Musculus teres minor",
+"fr": "Muscle petit rond"
+},
+"Thyro-epiglottic part of thyro-arytenoid muscle": {
+"id": "2201",
+"en": "Thyro-epiglottic part of thyro-arytenoid muscle",
+"la": "Pars thyreoepiglottica musculi thyreoarytenoidei",
+"fr": "Partie thyro-épiglottique du muscle thyro-aryténoïdien"
+},
+"Thyrohyoid muscle": {
+"id": "2174",
+"en": "Thyrohyoid muscle",
+"la": "Musculus thyreohyoideus",
+"fr": "Muscle thyrohyoïdien"
+},
+"Tibialis anterior muscle": {
+"id": "2644",
+"en": "Tibialis anterior muscle",
+"la": "Musculus tibialis anterior",
+"fr": "Muscle tibial antérieur"
+},
+"Tibialis posterior muscle": {
+"id": "2666",
+"en": "Tibialis posterior muscle",
+"la": "Musculus tibialis posterior",
+"fr": "Muscle tibial postérieur"
+},
+"Transverse arytenoid muscle": {
+"id": "2205",
+"en": "Transverse arytenoid muscle",
+"la": "Musculus arytenoideus transversus",
+"fr": "Muscle aryténoïdien transverse"
+},
+"Transverse head of adductor hallucis": {
+"id": "2678",
+"en": "Transverse head of adductor hallucis",
+"la": "Caput transversum adductoris hallucis",
+"fr": "Chef transverse de l'adducteur de l'hallux"
+},
+"Transverse head of adductor pollicis": {
+"id": "2528",
+"en": "Transverse head of adductor pollicis",
+"la": "Caput transversum adductoris pollicis",
+"fr": "Chef transverse de l'adducteur du pouce"
+},
+"Transverse part of trapezius muscle": {
+"id": "2228",
+"en": "Transverse part of trapezius muscle",
+"la": "Pars transversa musculi trapezii",
+"fr": "Partie transverse du trapèze"
+},
+"Transversus abdominis muscle": {
+"id": "2375",
+"en": "Transversus abdominis muscle",
+"la": "Musculus transversus abdominis",
+"fr": "Muscle transverse de l'abdomen"
+},
+"Transversus thoracis muscle": {
+"id": "2315",
+"en": "Transversus thoracis muscle",
+"la": "Musculus transversus thoracis",
+"fr": "Muscle transverse du thorax"
+},
+"Trochlea of superior oblique muscle": {
+"id": "2049",
+"en": "Trochlea of superior oblique muscle",
+"la": "Trochlea musculi obliqui superioris",
+"fr": "Trochlée du muscle oblique supérieur"
+},
+"Ulnar head of extensor carpi ulnaris": {
+"id": "2509",
+"en": "Ulnar head of extensor carpi ulnaris",
+"la": "Caput ulnare extensoris ulnaris carpi",
+"fr": "Chef ulnaire de l'extenseur ulnaire du carpe"
+},
+"Ulnar head of flexor carpi ulnaris": {
+"id": "2485",
+"en": "Ulnar head of flexor carpi ulnaris",
+"la": "Caput ulnare flexoris ulnaris carpi",
+"fr": "Chef ulnaire du fléchisseur ulnaire du carpe"
+},
+"Vastus intermedius muscle": {
+"id": "2619",
+"en": "Vastus intermedius muscle",
+"la": "Musculus vastus intermedius",
+"fr": "Muscle vaste intermédiaire"
+},
+"Vastus lateralis muscle": {
+"id": "2618",
+"en": "Vastus lateralis muscle",
+"la": "Musculus vastus lateralis",
+"fr": "Muscle vaste latéral"
+},
+"Vastus medialis muscle": {
+"id": "2620",
+"en": "Vastus medialis muscle",
+"la": "Musculus vastus medialis",
+"fr": "Muscle vaste médial"
+},
+"Ventral parts of lateral intertransversarii lumborum muscles": {
+"id": "2241",
+"en": "Ventral parts of lateral intertransversarii lumborum muscles",
+"la": "Partes vent. musculorum intertransversariorum lat. lumborum",
+"fr": "Parties ventrales des muscles intertransv. lat. des lombes"
+},
+"Zygomaticus major muscle": {
+"id": "2079",
+"en": "Zygomaticus major muscle",
+"la": "Musculus zygomaticus major",
+"fr": "Muscle grand zygomatique"
+},
+"Zygomaticus minor muscle": {
+"id": "2080",
+"en": "Zygomaticus minor muscle",
+"la": "Musculus zygomaticus minor",
+"fr": "Muscle petit zygomatique"
+}
+}
