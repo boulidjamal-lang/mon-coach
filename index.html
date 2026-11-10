@@ -873,31 +873,6 @@
   <button type="button" class="onglet" id="onglet-profil" data-ecran="reglages" onclick="allerA('reglages')"><svg class="icone-ui" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="5" /><path d="M20 21a8 8 0 0 0-16 0" /></svg><span>Profil</span></button>
 </nav>
 
-<!-- ============ TOUR GUIDÉ : met en lumière un élément réel de l'écran à
-     la fois (le reste s'assombrit). La carte d'explication reste posée en
-     bas de l'écran (en haut quand l'élément montré est en bas) : seul le
-     projecteur se déplace, et un toucher n'importe où fait avancer.
-     Voir demarrerTourGuide / TOUR_ETAPES. ============ -->
-<div class="tour-overlay hidden" id="tour-overlay" role="dialog" aria-modal="true" aria-labelledby="tour-titre">
-  <div class="tour-voile" id="tour-voile" onclick="tourSuivant()"></div>
-  <div class="tour-spot" id="tour-spot"></div>
-  <div class="tour-bulle" id="tour-bulle" tabindex="-1">
-    <div class="tour-tete">
-      <div class="tour-points" id="tour-points" aria-hidden="true"></div>
-      <span class="tour-compteur" id="tour-compteur"></span>
-      <button type="button" class="tour-passer" onclick="fermerTourGuide()">Passer</button>
-    </div>
-    <div class="tour-corps" id="tour-corps" aria-live="polite">
-      <h3 id="tour-titre"></h3>
-      <p id="tour-texte"></p>
-    </div>
-    <div class="tour-actions">
-      <button type="button" class="tour-retour" id="tour-precedent" onclick="tourPrecedent()" aria-label="Étape précédente"><svg class="icone-ui" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 18-6-6 6-6" /></svg></button>
-      <button type="button" class="btn btn-primary tour-suivant" id="tour-suivant" onclick="tourSuivant()">Suivant</button>
-    </div>
-  </div>
-</div>
-
 <!-- ================= FEUILLE D'ACTION REPAS ================= -->
 <div class="feuille" id="feuille-repas" role="dialog" aria-modal="true" aria-labelledby="feuille-repas-titre">
   <div class="feuille-contenu">
@@ -2046,13 +2021,13 @@
 
     <div class="reglages-titre">Aide</div>
     <div class="carte-liste">
-      <button type="button" class="ligne-reglage ligne-reglage--bouton" id="btn-revoir-tutoriel" onclick="demarrerTourGuide()">
+      <button type="button" class="ligne-reglage ligne-reglage--bouton" id="btn-revoir-tutoriel" onclick="relancerAstuces()">
         <span class="action-ic"><svg class="icone-ui" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10" /><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" /><path d="M12 17h.01" /></svg></span>
-        <span class="ligne-txt"><b>Visite guidée de l'appli</b></span><svg class="icone-ui chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 18 6-6-6-6" /></svg>
+        <span class="ligne-txt"><b>Revoir les astuces</b><small>Elles réapparaissent dans chaque écran</small></span><svg class="icone-ui chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 18 6-6-6-6" /></svg>
       </button>
-      <button type="button" class="ligne-reglage ligne-reglage--bouton" id="btn-visite-muscu" onclick="demarrerTourGuide('muscu')">
+      <button type="button" class="ligne-reglage ligne-reglage--bouton" id="btn-visite-muscu" onclick="relancerAstuces('muscu')">
         <span class="action-ic"><svg class="icone-ui" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14.4 14.4 9.6 9.6" /><path d="M18.657 21.485a2 2 0 1 1-2.829-2.828l-1.767 1.768a2 2 0 1 1-2.829-2.829l6.364-6.364a2 2 0 1 1 2.829 2.829l-1.768 1.767a2 2 0 1 1 2.828 2.829z" /><path d="m21.5 21.5-1.4-1.4" /><path d="M3.9 3.9 2.5 2.5" /><path d="M6.404 12.768a2 2 0 1 1-2.829-2.829l1.768-1.767a2 2 0 1 1-2.828-2.829l2.828-2.828a2 2 0 1 1 2.829 2.828l1.767-1.768a2 2 0 1 1 2.829 2.829z" /></svg></span>
-        <span class="ligne-txt"><b>Visite guidée de la musculation</b></span><svg class="icone-ui chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 18 6-6-6-6" /></svg>
+        <span class="ligne-txt"><b>Astuces de la musculation</b><small>Activité et séance en cours</small></span><svg class="icone-ui chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 18 6-6-6-6" /></svg>
       </button>
       <button type="button" class="ligne-reglage ligne-reglage--bouton" id="btn-premiers-pas" onclick="reafficherPremiersPas()">
         <span class="action-ic"><svg class="icone-ui" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 22V4a1 1 0 0 1 .4-.8A6 6 0 0 1 8 2c3 0 5 2 7.333 2q2 0 3.067-.8A1 1 0 0 1 20 4v10a1 1 0 0 1-.4.8A6 6 0 0 1 16 16c-3 0-5-2-8-2a6 6 0 0 0-4 1.528" /></svg></span>
@@ -2625,7 +2600,6 @@
     <button type="button" class="interet" data-interet="muscu" aria-pressed="true" onclick="basculerInteret('muscu')"><span class="interet-ico"><svg class="icone-ui" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17.596 12.768a2 2 0 1 0 2.829-2.829l-1.768-1.767a2 2 0 0 0 2.828-2.829l-2.828-2.828a2 2 0 0 0-2.829 2.828l-1.767-1.768a2 2 0 1 0-2.829 2.829z" /><path d="m2.5 21.5 1.4-1.4" /><path d="m20.1 3.9 1.4-1.4" /><path d="M5.343 21.485a2 2 0 1 0 2.829-2.828l1.767 1.768a2 2 0 1 0 2.829-2.829l-6.364-6.364a2 2 0 1 0-2.829 2.829l1.768 1.767a2 2 0 0 0-2.828 2.829z" /><path d="m9.6 14.4 4.8-4.8" /></svg></span><span class="interet-txt"><b>Ma musculation</b><small>Programmes, séances, progression</small></span><span class="interet-case"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5" /></svg></span></button>
     <button type="button" class="interet" data-interet="cardio" aria-pressed="true" onclick="basculerInteret('cardio')"><span class="interet-ico"><svg class="icone-ui" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z" /><path d="M3.2 12h3.3l1.5-3 3 6 1.5-3h8.3" /></svg></span><span class="interet-txt"><b>Mon cardio</b><small>Course, vélo, natation, pas</small></span><span class="interet-case"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5" /></svg></span></button>
     <button type="button" class="btn btn-primary" id="btn-interets-ok" style="margin-top:6px;" onclick="validerInterets(false)">C'est parti</button>
-    <button type="button" class="btn btn-secondaire" style="margin-top:8px; background:transparent; box-shadow:none;" onclick="validerInterets(true)">Faire plutôt la visite guidée complète</button>
   </div>
 </div>
 
@@ -3108,7 +3082,7 @@ const URL_SITE_WEB = 'https://boulidjamal-lang.github.io/mon-coach/';
      encore envoyé (au plus toutes les 10 min, après une synchro réussie).
    Variables en var : ces fonctions peuvent servir avant la fin du chargement.
    ===================================================================== */
-const VERSION_APPLI = '2026-11-10.4';  // date de mise en ligne (.4 : quatrième du jour ; visite guidée plus courte, sans attente)
+const VERSION_APPLI = '2026-11-10.5';  // date de mise en ligne (.5 : cinquième du jour ; astuces sur place à la place de la visite guidée)
 var DERNIERE_SYNCHRO_LS = 'mc_derniere_synchro';
 function libelleVersion(v, court) {
   const d = new Date(String(v || VERSION_APPLI).slice(0, 10) + 'T12:00:00');
@@ -7344,6 +7318,8 @@ function fermerModal(id) {
 function majCoucheOuverte() {
   const ouvert = !!document.querySelector('.modal.show, .feuille.show');
   document.body.classList.toggle('couche-ouverte', ouvert);
+  // Une astuce retenue par la fenêtre peut maintenant s'afficher.
+  if (!ouvert && typeof afficherAstuce === 'function' && typeof ecranActif !== 'undefined') afficherAstuce();
 }
 
 /* =====================================================================
@@ -11214,6 +11190,7 @@ let ecranActif = 'repas';
 const ORDRE_ONGLETS = ['repas', 'seance', 'stats', 'reglages', 'admin'];
 function allerA(nom) {
   if (ECRANS.indexOf(nom) === -1) nom = 'repas';
+  retirerAstuce();
   // Glissement dans le sens de la barre d'onglets (à droite = vers la gauche).
   const sens = Math.sign(ORDRE_ONGLETS.indexOf(nom) - ORDRE_ONGLETS.indexOf(ecranActif));
   document.documentElement.style.setProperty('--ecran-tx', sens * 28 + 'px');
@@ -11255,6 +11232,7 @@ function allerA(nom) {
   // Le bandeau flottant se masque sur l'onglet Séance (qui a déjà le sien)
   // et doit réapparaître dès qu'on le quitte avec une séance toujours active.
   majBandeauSeanceFlottant();
+  afficherAstuce(nom);
 }
 
 /* Bandeau du haut rétréci au scroll, comme un grand titre repliable iOS :
@@ -11393,9 +11371,8 @@ async function initOngletsNatifs() {
 function ongletNatifDe(nom) { return ['repas', 'seance', 'stats', 'reglages'].includes(nom) ? nom : 'reglages'; }
 function majOngletsNatifs() {
   if (!ONGLETS_NATIFS) return;
-  const tour = document.getElementById('tour-overlay');
   const visibles = !document.body.classList.contains('couche-ouverte') && !document.body.classList.contains('mode-seance')
-    && !document.documentElement.classList.contains('spl-actif') && !(tour && !tour.classList.contains('hidden'));
+    && !document.documentElement.classList.contains('spl-actif');
   if (visibles !== ongletsNatifsVisibles) { ongletsNatifsVisibles = visibles; appelOnglets('afficher', { visible: visibles }); }
   // Le « + » reste toujours là (la barre ne se recompose pas d'un écran à
   // l'autre) ; seul son nom, lu par VoiceOver, suit l'écran.
@@ -11598,7 +11575,7 @@ function appliquerTheme(choix) {
 // Plus de bouton dans l'en-tete (retiré) : seul le choix explicite dans les
 // réglages (choisirTheme, via le segment Clair/Sombre) appelle encore
 // appliquerTheme().
-function choisirTheme(t) { appliquerTheme(t); majCouleurBarreStyle(); renderVitrineProfil(); renderVitrineMuscu(); apparenceNative(); }
+function choisirTheme(t) { appliquerTheme(t); majCouleurBarreStyle(); renderVitrineProfil(); renderVitrineMuscu(); apparenceNative(); afficherAstuce(); }
 // App iPhone : les éléments d'iOS (barre d'onglets, claviers, alertes) suivent le thème choisi.
 function apparenceNative() {
   if (!NATIF || !NATIF.Onglets) return;
@@ -11635,283 +11612,163 @@ function verifierSupportVerre() {
 }
 
 /* =====================================================================
-   TOUR GUIDÉ — met en lumière un élément réel de l'écran à la fois, en
-   parcourant les écrans dans l'ordre de la barre d'onglets (Repas,
-   Activité, Progrès, Profil), sans y revenir. La carte d'explication reste
-   posée au même endroit et le texte change aussitôt : rien n'attend la fin
-   d'une animation. Accessible à tout moment depuis Réglages, et proposé une
-   fois juste après le bilan initial (voir onbTerminer) —
-   userProfile.tutorielVu empêche la reproposition automatique une fois vu
-   ou passé, sur n'importe quel appareil puisque ce champ est synchronisé
-   comme le reste du profil.
+   ASTUCES — à la place de la visite guidée. La première fois qu'on ouvre
+   un écran, une petite carte apparaît dans la page, juste au-dessus de
+   l'élément qu'elle explique, avec une pointe vers lui : rien ne
+   s'assombrit, rien ne s'ouvre, on continue d'utiliser l'écran.
+   « Compris » passe à l'astuce suivante de l'écran ; la croix les masque
+   toutes pour cet écran. Les astuces s'activent à la fin du bilan initial
+   (validerInterets) et depuis Réglages › Aide ; celles déjà vues sont
+   gardées dans le profil (synchronisé), donc jamais remontrées, sur aucun
+   appareil. Une fois toutes vues, elles se coupent d'elles-mêmes.
+   Chaque astuce se pose juste AVANT l'élément qu'elle explique, ou flotte
+   au-dessus d'un élément fixe (le +). Un conteneur redessiné (vitrines
+   Activité et Profil) l'efface : renderSeance, allerA et choisirTheme la
+   reposent aussitôt.
+   « partie » sépare, sur un même écran, des astuces qui ne se voient pas
+   ensemble (Activité, puis la séance en cours) : leur compte « Astuce 1
+   sur 3 » et leur croix restent à part. « si » : condition en plus de
+   l'élément affiché (une séance avec au moins un exercice).
    ===================================================================== */
-const TOUR_ETAPES = [
-  { titre: 'Bienvenue sur Askēsis', texte: "Un tour d'une minute : tes repas, ton activité, tes progrès et ton profil. Touche n'importe où pour avancer." },
+const ASTUCES = [
   // Repas
-  { ecran: 'repas', cible: '#semaine-nav', titre: 'Ta semaine', texte: "Un anneau par jour, rempli par tes calories. Touche un jour pour le revoir ; la flamme compte tes jours d'affilée." },
-  { ecran: 'repas', cible: '.summary-card', titre: 'Bilan de la journée', get texte() { return 'Tes calories et tes macros face à ton objectif. Touche le résumé pour ta dépense du jour' + (geminiKey ? " et une analyse de ta journée par l'IA." : '.'); } },
-  { ecran: 'repas', cible: '#coach-jour', titre: 'Le coach du jour', texte: "Ce qui compte le plus maintenant, d'après ta journée et ta semaine : repas, protéines, eau, pas, séances." },
-  { ecran: 'repas', cible: '#cartes-stats-repas', titre: 'Pas, eau et poids', texte: "Glisse d'une carte à l'autre ; touche celle du centre pour noter tes pas, ton eau ou ta pesée." },
-  { ecran: 'repas', cible: '#onglet-plus', titre: 'Le bouton +', texte: "L'action utile de l'écran. Ici, il ajoute à ton repas du moment." },
-  { ecran: 'repas', feuille: 'feuille-repas', cible: '#feuille-repas .feuille-contenu', titre: 'Ajouter un repas', get texte() { return (geminiKey ? 'Une recette, un aliment, une photo ou un code-barres' : 'Une recette, un aliment ou un code-barres') + ' : les macros sont calculées pour toi.'; } },
+  { id: 'repas-semaine', ecran: 'repas', avant: '#semaine-nav', titre: 'Ta semaine', texte: "Un anneau par jour, rempli par tes calories. Touche un jour pour le revoir, glisse pour changer de semaine." },
+  { id: 'repas-bilan', ecran: 'repas', avant: '#ecran-repas .summary-card', titre: 'Bilan de la journée', get texte() { return 'Tes calories et tes macros face à ton objectif. Touche-le pour ta dépense du jour' + (geminiKey ? " et une analyse de ta journée par l'IA." : '.'); } },
+  { id: 'repas-stats', ecran: 'repas', avant: '#cartes-stats-repas', titre: 'Pas, eau et poids', texte: "Glisse d'une carte à l'autre ; touche celle du centre pour noter tes pas, ton eau ou ta pesée." },
+  { id: 'repas-plus', ecran: 'repas', flottante: '#onglet-plus', titre: 'Le bouton +', get texte() { return (geminiKey ? 'Une recette, un aliment, une photo ou un code-barres' : 'Une recette, un aliment ou un code-barres') + " pour ton repas du moment. Sur Activité, il lance une séance."; } },
   // Activité
-  { ecran: 'seance', cible: '#vitrine-muscu .hx', titre: 'Ta semaine de muscu', texte: "Ton corps se colore selon le volume de la semaine : vert en zone idéale. Juste dessous, la séance du jour." },
-  { ecran: 'seance', cible: '#seance-mode-nav', titre: 'Musculation ou cardio', texte: "Passe à ton cardio : course, vélo, natation, HIIT… La visite « Musculation » détaille le reste." },
+  { id: 'seance-mode', ecran: 'seance', groupe: 'muscu', avant: '#seance-mode-nav', titre: 'Musculation ou cardio', texte: "Passe ici à ton cardio : course, vélo, natation, HIIT…" },
+  { id: 'seance-corps', ecran: 'seance', groupe: 'muscu', avant: '#vitrine-muscu .hx', titre: 'Ta semaine de muscu', texte: "Ton corps se colore selon le volume de la semaine : vert en zone idéale. Touche-le pour le détail." },
+  { id: 'seance-programmes', ecran: 'seance', groupe: 'muscu', avant: '#seance-lancer', titre: 'Tes programmes', texte: "Touche un programme pour lancer la séance. Pour en créer un ou parcourir les exercices, c'est juste en dessous." },
+  { id: 'seance-ia', ecran: 'seance', groupe: 'muscu', ia: true, avant: '#seance-lancer .actions-grille', titre: "Programme par l'IA", texte: "Ton objectif, tes jours et ton matériel : l'IA te propose un programme complet, à modifier ensuite." },
+  // Séance en cours
+  { id: 'session-volume', ecran: 'seance', partie: 'session', groupe: 'muscu', avant: '#session-haut', titre: 'Le volume de ta semaine', texte: "Un cadran par muscle : tes séries de la semaine, de « trop peu » à « trop ». Touche un muscle pour ce qu'il te reste." },
+  { id: 'session-series', ecran: 'seance', partie: 'session', groupe: 'muscu', avant: '#session-exercices-container', si: () => sessionAvecExercice(), titre: 'Tes séries', texte: "« Préc. » reprend ta dernière fois. Touche le numéro d'une série pour la marquer (échauffement, dégressif…) ; coche-la quand elle est faite : le repos démarre." },
+  { id: 'session-glisser', ecran: 'seance', partie: 'session', groupe: 'muscu', avant: '#session-exercices-container', si: () => sessionAvecExercice(), titre: 'Retirer ou remplacer', texte: "Glisse un exercice vers la gauche pour le retirer, vers la droite pour le remplacer. Ton programme, lui, ne change pas." },
+  { id: 'session-terminer', ecran: 'seance', partie: 'session', groupe: 'muscu', avant: '#seance-vue-active > [onclick="terminerSeance()"]', titre: 'Terminer la séance', texte: "Ta séance rejoint ton historique, avec tes records : 1RM, charge, volume." },
   // Progrès
-  { ecran: 'stats', avant: () => { ouvrirStats('resume'); }, cible: '#pg-periode-btn', titre: 'Tes progrès', texte: "Ta courbe de poids, ta maintenance réelle et ce qui a bougé, sur la période de ton choix." },
+  { id: 'stats-onglets', ecran: 'stats', avant: '#stats-onglets-nav', titre: 'Tes progrès', texte: "Le Résumé dit où tu en es ; Corps, Repas, Cardio et Muscu détaillent. La période se change en haut à droite." },
   // Profil
-  { ecran: 'reglages', cible: '#vitrine-profil .carte-objectifs', titre: 'Ton objectif', texte: "Sèche, maintien, prise de masse ou recomposition : il règle tes calories et tes macros." },
-  { ecran: 'reglages', cible: '.btn-engrenage', titre: 'Réglages', texte: "Ton compte, ta balance Withings, le thème, et les visites guidées pour revoir ce tour." },
-  { titre: "C'est parti !", texte: "Pour les programmes, les séances et le volume, lance la visite « Musculation » depuis les Réglages." }
+  { id: 'profil-reglages', ecran: 'reglages', avant: '#vitrine-profil', pointe: 'haut-droite', titre: 'Tes réglages', texte: "L'engrenage, en haut à droite : ton compte, ta balance Withings, le thème et ces astuces." },
+  { id: 'profil-objectif', ecran: 'reglages', avant: '#vitrine-profil .carte-objectifs', titre: 'Ton objectif', texte: "Sèche, maintien, prise de masse ou recomposition : il règle tes calories et tes macros." }
 ];
-/* Visite dédiée à la musculation. Les étapes « siSession » montrent un
-   élément de la séance en cours : sans séance lancée, une séance de
-   démonstration est ouverte le temps de ces étapes (voir assurerSeanceDemo). */
-const seanceDeDemo = () => !!(musculationSessionActive && musculationSessionActive.demo);
-const TOUR_MUSCU = [
-  { titre: 'La musculation dans Askēsis', texte: "Trois temps : préparer tes séances, t'entraîner (avec une séance de démonstration), puis suivre tes progrès." },
-  // A. Écran Activité : préparer ses séances
-  { ecran: 'seance', cible: '#programmes-liste-container', titre: 'Tes programmes', texte: "Des exercices avec leurs séries, charges et répétitions cibles. Le ⋯ d'un programme le modifie, le duplique ou le supprime." },
-  { ecran: 'seance', cible: '[onclick="ouvrirCreationProgramme()"]', titre: 'Créer un programme', texte: "Ajoute tes exercices, règle séries, techniques, supersets et tempo. Doigt appuyé sur un exercice pour le déplacer." },
-  { ecran: 'seance', cible: '[onclick="ouvrirAssistantProgrammeIA()"]', ia: true, titre: "Programme par l'IA", texte: "Ton objectif, tes jours et ton matériel : l'IA te propose un programme complet, à modifier ensuite." },
-  { ecran: 'seance', cible: '[onclick="ouvrirBibliotheque()"]', titre: "Bibliothèque d'exercices", texte: "Plus de 800 exercices, par muscle et par matériel. Chaque fiche : les instructions, tes records et ton historique." },
-  { ecran: 'seance', cible: '#gymbros-rangee .gstrip', titre: 'Tes gymbros', texte: "Tes amis d'un coup d'œil (anneau = entraîné aujourd'hui). « Tout voir » ouvre leur fil ; « + » partage ton invitation." },
-  { ecran: 'seance', cible: '#seance-lancer', titre: 'Lancer une séance',
-    texte: () => "Touche un programme, ou « Séance vide » pour choisir au fil de l'eau. Suivant : "
-      + (musculationSessionActive && !musculationSessionActive.demo ? 'ta séance en cours.' : 'une séance de démonstration.') },
-  // B. Pendant la séance (démonstration si aucune séance n'est en cours)
-  { ecran: 'seance', siSession: true, cible: '#session-entete', titre: 'En-tête de la séance',
-    texte: () => 'Le chrono, tes séries faites sur le total, et ton corps coloré par le volume de la semaine.'
-      + (seanceDeDemo() ? " Démonstration : rien n'est enregistré." : '') },
-  { ecran: 'seance', siSession: true, cible: '#session-haut', titre: 'Le volume de ta semaine', texte: "Un cadran par muscle : tes séries de la semaine, de « trop peu » à « trop ». Touche un muscle pour ce qu'il te reste." },
-  { ecran: 'seance', siSession: true, cible: '#session-exercices-container .serie-prec', titre: 'Ta séance précédente', texte: "« Préc. » rappelle ta dernière fois sur cette série : touche-la pour reprendre ces valeurs, puis fais un peu mieux." },
-  { ecran: 'seance', siSession: true, cible: '#session-exercices-container .serie-num-btn', titre: 'Le type de série', texte: "Touche le numéro d'une série : Échauffement (jamais compté dans les jauges), Dégressif, Pyramidal ou Échec." },
-  { ecran: 'seance', siSession: true, cible: '#session-exercices-container .tempo-ligne', titre: 'Tempo et objectif', texte: "Le tempo règle la vitesse de chaque phase, la cible tes répétitions : en haut de la cible, l'appli propose de monter la charge." },
-  { ecran: 'seance', siSession: true, titre: 'Cocher une série',
-    // Démonstration : la 2e série est vraiment cochée, pour montrer la case
-    // validée et le minuteur de repos qui démarre juste en dessous.
-    avant: () => {
-      const d = musculationSessionActive;
-      if (d && d.demo && d.exercices[0] && d.exercices[0].series[1] && !d.exercices[0].series[1].fait) basculerSerieSession(0, 1);
-    },
-    cible: () => (seanceDeDemo() ? '#session-exercices-container .serie-table' : '#session-exercices-container .serie-ligne button:last-child'),
-    texte: () => (seanceDeDemo()
-      ? "La 2e série vient d'être cochée : la case passe au vert, l'appli demande ta réserve (RIR, facultatif) et le repos démarre."
-      : "Coche chaque série faite : l'appli demande ta réserve (RIR, facultatif), le repos démarre et les jauges suivent.") },
-  { ecran: 'seance', siSession: true, cible: '#session-exercices-container .exo-swipe', titre: 'Retirer ou remplacer',
-    avant: () => setTimeout(demoGlisserExercice, 450),
-    texte: "Glisse un exercice vers la gauche pour le retirer, vers la droite pour le remplacer. Ton programme, lui, ne change pas." },
-  { ecran: 'seance', siSession: true, cible: '#seance-vue-active [onclick="terminerSeance()"]', titre: 'Terminer la séance',
-    texte: () => 'Ta séance rejoint ton historique avec tes records : 1RM, charge, volume.'
-      + (seanceDeDemo() ? " La démonstration se ferme à l'étape suivante." : '') },
-  // C. Après la séance
-  { ecran: 'stats', avant: () => { ouvrirStats('muscu'); }, cible: '#pg-grille-muscu', titre: 'Le détail muscu', texte: "Ta force exercice par exercice et tes séries par muscle sur 8 semaines : touche une case pour son détail." },
-  { titre: 'Bon entraînement !', texte: "Tu peux revoir cette visite à tout moment depuis Profil › Réglages." }
-];
-let tourListe = TOUR_ETAPES;
-/* Visite : montre le geste sur le premier exercice (gauche = retirer,
-   droite = remplacer), sans rien déclencher. */
-function demoGlisserExercice() {
-  const zone = document.querySelector('#session-exercices-container .exo-swipe');
-  const bloc = zone && zone.querySelector('.session-exo-bloc');
-  if (!zone || !bloc || !tourActif) return;
-  const etape = tourEtape;
-  const pas = [
-    [0, () => { zone.classList.add('vers-gauche'); bloc.style.transform = 'translateX(-96px)'; }],
-    [1100, () => { bloc.style.transform = ''; }],
-    [1450, () => { zone.classList.remove('vers-gauche'); zone.classList.add('vers-droite'); bloc.style.transform = 'translateX(96px)'; }],
-    [2550, () => { bloc.style.transform = ''; }],
-    [2900, () => { zone.classList.remove('vers-droite'); }]
-  ];
-  pas.forEach(([t, f]) => setTimeout(() => { if (tourActif && tourEtape === etape && document.body.contains(zone)) f(); else { bloc.style.transform = ''; zone.classList.remove('vers-gauche', 'vers-droite'); } }, t));
-}
-/* Visite Musculation sans séance en cours : une séance de démonstration
-   (un exercice, quelques séries d'exemple) est ouverte le temps des étapes
-   de séance, puis retirée. Elle n'est jamais enregistrée (voir
-   sauvegarderSessionActive) et ne compte nulle part. */
-function assurerSeanceDemo() {
-  if (musculationSessionActive) return;
-  const exos = toutesLesExercices();
-  const exo = exos.find(e => /d[ée]velopp[ée] couch[ée]/i.test(libelleExercice(e)) && e.materiel === 'barre')
-    || exos.find(e => e.groupe === 'pectoraux') || exos[0];
-  if (!exo) return;
-  musculationSessionActive = {
-    demo: true, programmeId: null, programmeNom: 'Séance de démonstration', debut: Date.now(), notes: '',
-    exercices: [{
-      exerciceId: exo.id, nom: exo.nom, supersetSuivant: false, tempo: '3010',
-      series: [
-        { poids: 30, reps: 12, fait: true, technique: 'echauffement' },
-        { poids: 50, reps: 10, fait: false, technique: null },
-        { poids: 50, reps: 10, fait: false, technique: null },
-        { poids: 50, reps: 8, fait: false, technique: 'echec' }
-      ]
-    }]
-  };
-  reposActifs = {}; palierOuvert = {};
-  renderSeance();
-}
-function retirerSeanceDemo() {
-  if (!musculationSessionActive || !musculationSessionActive.demo) return;
-  musculationSessionActive = null;
-  reposActifs = {}; palierOuvert = {};
-  renderSeance();
-}
-let tourActif = false;
-let tourEtape = 0;
-let tourResizeHandler = null;
-let tourClavierHandler = null;
-let tourGeneration = 0;
-let tourCible = null;
+const ICONE_ASTUCE = '<svg class="icone-ui" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 14c.2-1 .7-1.7 1.5-2.5 1-.9 1.5-2.2 1.5-3.5A6 6 0 0 0 6 8c0 1 .2 2.2 1.5 3.5.7.7 1.3 1.5 1.5 2.5" /><path d="M9 18h6" /><path d="M10 22h4" /></svg>';
+const ICONE_FERMER_ASTUCE = '<svg class="icone-ui" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18" /><path d="m6 6 12 12" /></svg>';
+let astuceEssaisDemarrage = 0;
+let astuceResizeBranche = false;
 
-function demarrerTourGuide(type) {
-  tourListe = (type === 'muscu' ? TOUR_MUSCU : TOUR_ETAPES).filter(e => !e.ia || geminiKey);
-  fermerFeuilles();
-  document.querySelectorAll('.modal.show').forEach(m => m.classList.remove('show'));
-  document.body.classList.remove('couche-ouverte');
-  tourActif = true;
-  tourEtape = 0;
-  // Pendant la visite, écrans et feuilles apparaissent sans animation : la
-  // carte et le projecteur se posent tout de suite au bon endroit.
-  document.documentElement.classList.add('tour-en-cours');
-  document.getElementById('tour-points').innerHTML = tourListe.map(() => '<i></i>').join('');
-  document.getElementById('tour-overlay').classList.remove('hidden');
-  if (!tourResizeHandler) {
-    tourResizeHandler = () => { if (tourActif) placerTour(tourCible, true); };
-    window.addEventListener('resize', tourResizeHandler);
-  }
-  if (!tourClavierHandler) {
-    tourClavierHandler = e => {
-      if (!tourActif) return;
-      if (e.key === 'Escape') { e.preventDefault(); fermerTourGuide(); }
-      else if (e.key === 'ArrowRight') { e.preventDefault(); tourSuivant(); }
-      else if (e.key === 'ArrowLeft') { e.preventDefault(); tourPrecedent(); }
-    };
-    document.addEventListener('keydown', tourClavierHandler);
-  }
-  afficherEtapeTour();
-  // Le focus va à la carte (lecteurs d'écran, clavier), sans anneau visible.
-  document.getElementById('tour-bulle').focus({ preventScroll: true });
+function astucesApplicables() { return ASTUCES.filter(a => !a.ia || geminiKey); }
+function partieAstuce(a) { return a.ecran + '/' + (a.partie || ''); }
+function sessionAvecExercice() { return !!(musculationSessionActive && musculationSessionActive.exercices && musculationSessionActive.exercices.length); }
+function astucesVues() { return new Set(Array.isArray(userProfile.astucesVues) ? userProfile.astucesVues : []); }
+function retirerAstuce() { const a = document.getElementById('astuce'); if (a) a.remove(); }
+function lieuAstuce(a) {
+  if (a.si && !a.si()) return null;
+  // App iPhone avec la barre d'onglets d'iOS : la page cache la sienne, le + est natif.
+  if (a.flottante && ONGLETS_NATIFS) return 'natif';
+  const el = document.querySelector(a.avant || a.flottante);
+  return el && el.getClientRects().length ? el : null;
 }
 
-function afficherEtapeTour() {
-  const etape = tourListe[tourEtape];
-  if (!etape) { fermerTourGuide(); return; }
-  const gen = ++tourGeneration;
-  if (etape.ecran && etape.ecran !== ecranActif) allerA(etape.ecran);
-  if (etape.ecran === 'seance') choisirModeSeance(etape.modeCardio ? 'cardio' : 'muscu', true);
-  // Certaines étapes montrent le contenu d'une feuille (ex. les façons
-  // d'ajouter un repas) : on l'ouvre si besoin, et on referme toute feuille
-  // restée ouverte d'une étape précédente qui n'en a plus besoin.
-  if (etape.feuille) {
-    if (!document.getElementById(etape.feuille).classList.contains('show')) {
-      if (etape.feuille === 'feuille-repas') ouvrirFeuilleRepas(repasDuMoment());
-      else ouvrirFeuille(etape.feuille);
-    }
-  } else if (document.querySelector('.feuille.show')) {
-    fermerFeuilles();
-  }
-  // Visite Musculation : séance de démonstration pendant les étapes de
-  // séance seulement (sinon elle masquerait l'accueil de l'écran Activité).
-  if (etape.siSession) assurerSeanceDemo(); else retirerSeanceDemo();
-  if (etape.avant) { try { etape.avant(); } catch (e) {} }
-  const selCible = typeof etape.cible === 'function' ? etape.cible() : etape.cible;
-  let cible = selCible ? document.querySelector(selCible) : null;
-  // Étape de séance sans séance en cours, ou élément masqué/absent : carte
-  // au centre, sans projecteur, plutôt qu'un cadre sur un élément invisible.
-  if (etape.siSession && !musculationSessionActive) cible = null;
-  if (cible && !(cible.offsetWidth || cible.offsetHeight)) cible = null;
-  tourCible = cible;
-  ecrireEtapeTour(etape);
-  placerTour(cible);
-  // Un contenu inséré juste après coup (graphiques de Progrès, liste qui se
-  // complète) peut encore déplacer la cible : une seule vérification un peu
-  // plus tard recale le projecteur, sans rien faire attendre.
-  setTimeout(() => { if (gen === tourGeneration && tourActif) placerTour(cible, true); }, 260);
-}
-
-/* Le texte change aussitôt, avec un fondu d'entrée très court : la carte,
-   elle, ne bouge pas. */
-function ecrireEtapeTour(etape) {
-  const n = tourListe.length;
-  document.getElementById('tour-compteur').textContent = `Étape ${tourEtape + 1} sur ${n}`;
-  document.getElementById('tour-titre').textContent = etape.titre;
-  document.getElementById('tour-texte').textContent = typeof etape.texte === 'function' ? etape.texte() : etape.texte;
-  document.getElementById('tour-precedent').hidden = tourEtape === 0;
-  document.getElementById('tour-suivant').textContent = tourEtape === n - 1 ? 'Terminer' : 'Suivant';
-  Array.from(document.getElementById('tour-points').children)
-    .forEach((p, i) => { p.className = i < tourEtape ? 'fait' : (i === tourEtape ? 'actuel' : ''); });
-  const corps = document.getElementById('tour-corps');
-  corps.style.transition = 'none';
-  corps.style.opacity = '0';
-  void corps.offsetWidth;
-  corps.style.transition = '';
-  corps.style.opacity = '';
-}
-
-/* Projecteur sur la cible, carte posée en bas de l'écran ; en haut quand la
-   cible est dans la moitié basse (barre d'onglets, feuille). Avec la carte
-   en bas, la cible remonte au milieu de la place libre au-dessus d'elle.
-   Rien n'est animé ici : le projecteur se pose d'un coup (une ombre plein
-   écran qui glisse coûte cher sur iPhone) et aucune attente n'est faite. */
-function placerTour(cible, recalage) {
-  const spot = document.getElementById('tour-spot');
-  const carte = document.getElementById('tour-bulle');
-  if (!cible || !document.body.contains(cible)) {
-    spot.classList.add('sans-cible');
-    spot.style.cssText = '';
-    carte.classList.remove('en-haut');
-    carte.classList.add('au-centre');
+/* Montre la prochaine astuce non vue de l'écran, s'il y en a une dont
+   l'élément est affiché. Sans effet si elle est déjà là (appelée souvent :
+   changement d'écran, séance redessinée, fenêtre refermée). */
+function afficherAstuce(ecran, defiler) {
+  ecran = ecran || ecranActif;
+  if (!userProfile.astucesActives || ecran !== ecranActif) { retirerAstuce(); return; }
+  // Écran de démarrage encore là : on repasse un peu plus tard.
+  if (ecranDemarrageAffiche()) {
+    if (astuceEssaisDemarrage++ < 20) setTimeout(() => afficherAstuce(), 500);
     return;
   }
-  spot.classList.remove('sans-cible');
-  carte.classList.remove('au-centre');
-  const H = window.innerHeight, marge = 14;
-  if (!recalage) cible.scrollIntoView({ block: 'center', behavior: 'auto' });
-  let r = cible.getBoundingClientRect();
-  const hCarte = carte.offsetHeight;
-  let enHaut = r.top + r.height / 2 > H * 0.55;
-  if (!enHaut && !recalage) {
-    const voulu = Math.max(marge, (H - hCarte - marge * 2 - r.height) / 2);
-    if (Math.abs(r.top - voulu) > 4) { window.scrollBy(0, r.top - voulu); r = cible.getBoundingClientRect(); }
-  }
-  // Toujours recouverte par la carte en bas (page trop courte pour la
-  // remonter) : la carte passe en haut s'il y a la place.
-  if (!enHaut && r.bottom > H - hCarte - marge * 2 && r.top > hCarte + marge * 3) enHaut = true;
-  carte.classList.toggle('en-haut', enHaut);
-  const pad = 8;
-  const left = Math.max(4, r.left - pad), top = Math.max(4, r.top - pad);
-  spot.style.left = left + 'px';
-  spot.style.top = top + 'px';
-  spot.style.width = Math.min(window.innerWidth - left - 4, r.width + pad * 2) + 'px';
-  spot.style.height = Math.min(H - top - 4, r.height + pad * 2) + 'px';
+  // Une fenêtre ou une feuille est ouverte : l'astuce attendra qu'elle se ferme (voir majCoucheOuverte).
+  if (document.querySelector('.modal.show, .feuille.show')) return;
+  const vues = astucesVues();
+  const liste = astucesApplicables().filter(a => a.ecran === ecran);
+  const suivante = liste.find(a => !vues.has(a.id) && lieuAstuce(a));
+  const actuelle = document.getElementById('astuce');
+  if (!suivante) { retirerAstuce(); return; }
+  if (actuelle && actuelle.dataset.astuce === suivante.id && actuelle.isConnected) return;
+  retirerAstuce();
+  const memePartie = liste.filter(a => partieAstuce(a) === partieAstuce(suivante));
+  poserAstuce(suivante, lieuAstuce(suivante), memePartie.indexOf(suivante) + 1, memePartie.length, defiler);
 }
 
-function tourSuivant() {
-  if (tourEtape >= tourListe.length - 1) { fermerTourGuide(); return; }
-  tourEtape++;
-  afficherEtapeTour();
-}
-function tourPrecedent() {
-  if (tourEtape <= 0) return;
-  tourEtape--;
-  afficherEtapeTour();
-}
-function fermerTourGuide() {
-  retirerSeanceDemo();
-  tourActif = false;
-  tourGeneration++;
-  tourCible = null;
-  document.getElementById('tour-overlay').classList.add('hidden');
-  document.documentElement.classList.remove('tour-en-cours');
-  if (document.querySelector('.feuille.show')) fermerFeuilles();
-  if (tourResizeHandler) { window.removeEventListener('resize', tourResizeHandler); tourResizeHandler = null; }
-  if (tourClavierHandler) { document.removeEventListener('keydown', tourClavierHandler); tourClavierHandler = null; }
-  if (!userProfile.tutorielVu) {
-    userProfile.tutorielVu = true;
-    userProfile.maj = Date.now();
-    try { ecrireBloc(PROFILE_KEY, userProfile); } catch (e) {}
-    planifierSync();
+function poserAstuce(a, lieu, k, n, defiler) {
+  const d = document.createElement('div');
+  d.id = 'astuce';
+  d.className = 'astuce' + (a.flottante ? ' astuce--flottante' : '') + (a.pointe === 'haut-droite' ? ' astuce--haut-droite' : '');
+  d.setAttribute('role', 'note');
+  d.dataset.astuce = a.id;
+  d.innerHTML = `<span class="astuce-ic" aria-hidden="true">${ICONE_ASTUCE}</span>
+    <div class="astuce-corps"><b></b><p></p></div>
+    <button type="button" class="astuce-fermer" aria-label="Masquer les astuces de cet écran">${ICONE_FERMER_ASTUCE}</button>
+    <div class="astuce-pied"><span>${n > 1 ? `Astuce ${k} sur ${n}` : 'Astuce'}</span><button type="button" class="astuce-ok">Compris</button></div>`;
+  d.querySelector('b').textContent = a.titre;
+  d.querySelector('p').textContent = typeof a.texte === 'function' ? a.texte() : a.texte;
+  d.querySelector('.astuce-ok').addEventListener('click', () => { noterAstuces([a.id]); afficherAstuce(a.ecran, true); });
+  d.querySelector('.astuce-fermer').addEventListener('click', () => {
+    noterAstuces(astucesApplicables().filter(x => partieAstuce(x) === partieAstuce(a)).map(x => x.id));
+    retirerAstuce();
+  });
+  if (a.flottante) {
+    // Au-dessus d'un élément fixe (le + de la barre d'onglets), pointe vers lui.
+    document.body.appendChild(d);
+    if (lieu === 'natif') {
+      // Barre d'onglets d'iOS : elle occupe la marge de sécurité du bas, et
+      // son « + » est le rond de verre à droite.
+      d.style.bottom = 'calc(14px + env(safe-area-inset-bottom, 0px))';
+      d.style.setProperty('--pointe-x', Math.round(d.getBoundingClientRect().width - 32) + 'px');
+    } else {
+      const r = lieu.getBoundingClientRect();
+      d.style.bottom = Math.round(window.innerHeight - r.top + 14) + 'px';
+      const c = d.getBoundingClientRect();
+      d.style.setProperty('--pointe-x', Math.round(r.left + r.width / 2 - c.left) + 'px');
+    }
+    if (!astuceResizeBranche) {
+      astuceResizeBranche = true;
+      window.addEventListener('resize', () => { const x = document.getElementById('astuce'); if (x && x.classList.contains('astuce--flottante')) { x.remove(); afficherAstuce(); } });
+    }
+  } else {
+    lieu.parentNode.insertBefore(d, lieu);
+    // Après « Compris » : l'astuce suivante peut être plus bas dans la page.
+    if (defiler) {
+      const r = d.getBoundingClientRect();
+      if (r.top < 70 || r.bottom > window.innerHeight - 110) {
+        const doux = !(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+        d.scrollIntoView({ block: 'center', behavior: doux ? 'smooth' : 'auto' });
+      }
+    }
   }
+}
+
+function noterAstuces(ids) {
+  const vues = astucesVues();
+  ids.forEach(id => vues.add(id));
+  userProfile.astucesVues = Array.from(vues);
+  // Toutes vues : les astuces se coupent (Réglages › Aide les relance).
+  if (astucesApplicables().every(a => vues.has(a.id))) { userProfile.astucesActives = false; userProfile.tutorielVu = true; }
+  userProfile.maj = Date.now();
+  try { ecrireBloc(PROFILE_KEY, userProfile); } catch (e) {}
+  planifierSync();
+}
+
+/* Réglages › Aide : « Revoir les astuces » (toutes) ou « Astuces de la
+   musculation » (Activité et séance en cours). */
+function relancerAstuces(groupe) {
+  const ids = new Set(ASTUCES.filter(a => !groupe || a.groupe === groupe).map(a => a.id));
+  userProfile.astucesVues = (Array.isArray(userProfile.astucesVues) ? userProfile.astucesVues : []).filter(id => !ids.has(id));
+  userProfile.astucesActives = true;
+  userProfile.maj = Date.now();
+  try { ecrireBloc(PROFILE_KEY, userProfile); } catch (e) {}
+  planifierSync();
+  fermerFeuilles();
+  document.querySelectorAll('.modal.show').forEach(m => m.classList.remove('show'));
+  majCoucheOuverte();
+  const ecran = groupe === 'muscu' ? 'seance' : 'repas';
+  if (ecran === 'seance') modeSeance = 'muscu';
+  allerA(ecran);
+  window.scrollTo({ top: 0, behavior: 'auto' });
 }
 
 /* Le repas propose par defaut suit l'heure : a 20 h on vise le diner. */
@@ -13337,7 +13194,7 @@ async function enregistrerPseudo(brut) {
 }
 function proposerPseudoQuandLibre(essai) {
   if (!sessionUtilisateur || monPseudo || monPseudoIndispo || essai > 40) return;
-  if (document.querySelector('.modal.show, .feuille.show') || ecranDemarrageAffiche() || (document.getElementById('tour-overlay') && !document.getElementById('tour-overlay').classList.contains('hidden'))) {
+  if (document.querySelector('.modal.show, .feuille.show') || ecranDemarrageAffiche()) {
     setTimeout(() => proposerPseudoQuandLibre(essai + 1), 3000);
     return;
   }
@@ -15591,7 +15448,7 @@ function renderPremiersPas() {
     ${etapes.map(e => `<div class="pp-etape${e.fait ? ' pp-fait' : ''}${nouvelle(e) ? ' pp-nouveau' : ''}"><span class="pp-coche">${e.fait ? coche : ''}</span>
       <span class="pp-texte"><b>${e.titre}</b><small>${e.sous}</small></span>
       ${e.fait ? '' : `<button type="button" class="pp-go" onclick="faireEtapePremiersPas(${argJs(e.cle)})">Faire ›</button>`}</div>`).join('')}
-    <p class="pp-visite">Envie d'un tour complet ? <button type="button" onclick="demarrerTourGuide()">Lancer la visite guidée</button></p>
+    <p class="pp-visite">Des astuces s'affichent dans chaque écran la première fois. <button type="button" onclick="relancerAstuces()">Les revoir</button></p>
   </div>`;
 }
 function enregistrerPremiersPas(maj) {
@@ -15633,9 +15490,10 @@ function basculerInteret(cle) {
 }
 function validerInterets(avecVisite) {
   const choix = interetsChoisis.length ? interetsChoisis.slice() : INTERETS.slice();
+  // Nouveau compte : les astuces s'afficheront au fil des écrans.
+  if (!Array.isArray(userProfile.astucesVues)) { userProfile.astucesVues = []; userProfile.astucesActives = true; }
   enregistrerPremiersPas({ interets: choix, masque: false });
   fermerModal('modal-interets');
-  if (avecVisite) { setTimeout(demarrerTourGuide, 300); return; }
   // On démarre sur l'écran du premier centre d'intérêt choisi.
   if (choix.includes('nutrition')) allerA('repas');
   else { allerA('seance'); choisirModeSeance(choix.includes('muscu') ? 'muscu' : 'cardio'); }
@@ -19893,6 +19751,7 @@ function renderSeance() {
   majBandeauSeanceFlottant();
   renderVitrineMuscu();
   majBoutonPlus();
+  if (ecranActif === 'seance') afficherAstuce('seance');
 }
 
 /* Plein écran pendant une séance de musculation (voir body.mode-seance). */
@@ -27093,6 +26952,8 @@ function renderSessionModal() {
     nombre: () => musculationSessionActive ? musculationSessionActive.exercices.length : 0,
     deplacer: deplacerExerciceSession
   });
+  // Premier exercice ajouté : « Tes séries » peut maintenant s'afficher.
+  if (ecranActif === 'seance') afficherAstuce('seance');
 }
 /* Déplacer un exercice pendant la séance (appui long sur son en-tête, voir
    initReordre). Il quitte son superset ; posé au milieu d'un superset, il
@@ -28279,7 +28140,6 @@ window.addEventListener('touchend', (e) => {
    #exercice-perso-modal ouverte depuis #picker-exercices-modal). */
 window.addEventListener('keydown', (e) => {
   if (e.key !== 'Escape') return;
-  if (tourActif) { fermerTourGuide(); return; }
   const ouvertes = Array.from(document.querySelectorAll('.modal.show, .feuille.show'));
   if (ouvertes.length) {
     let zMax = -Infinity;

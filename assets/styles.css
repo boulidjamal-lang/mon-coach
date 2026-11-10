@@ -700,60 +700,41 @@ body.sur-stats .date-nav, body.sur-reglages .date-nav, body.sur-admin .date-nav 
    sur les conteneurs qui, eux, ont le droit de défiler (voir
    .modal-content et .feuille-contenu plus bas). */
 body.couche-ouverte { overflow: hidden; touch-action: none; }
-/* --- Tour guidé : voile plein écran + trou lumineux sur l'élément visé.
-   Le trou est purement visuel (box-shadow géant autour d'un rectangle
-   transparent) : rien n'est peint par-dessus la cible, elle reste visible
-   telle quelle. Le voile capte tous les touchers (un toucher = étape
-   suivante) pour empêcher d'agir pour de vrai sur l'appli pendant la
-   visite. Le projecteur se pose sans transition : faire glisser une ombre
-   plein écran coûte cher sur iPhone. La carte reste posée en bas (en haut
-   quand l'élément montré est en bas) ; seul son texte change, en fondu. */
-.tour-overlay { position: fixed; inset: 0; z-index: 10000; }
-.tour-overlay.hidden { display: none; }
-.tour-voile { position: fixed; inset: 0; background: transparent; pointer-events: auto; touch-action: none; cursor: pointer; -webkit-tap-highlight-color: transparent; }
-.tour-spot {
-  position: fixed; left: 50%; top: 50%; width: 0; height: 0; pointer-events: none; border-radius: 18px; z-index: 9001;
-  box-shadow: 0 0 0 2px var(--primary), 0 0 0 9999px rgba(6, 10, 18, 0.72);
-}
-.tour-spot.sans-cible { box-shadow: 0 0 0 9999px rgba(6, 10, 18, 0.72); }
-:root[data-theme="dark"] .tour-spot { box-shadow: 0 0 0 2px var(--primary), 0 0 0 9999px rgba(0, 0, 0, 0.82); }
-:root[data-theme="dark"] .tour-spot.sans-cible { box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.82); }
-.tour-bulle {
-  position: fixed; z-index: 9002; left: 0; right: 0; margin: 0 auto;
-  width: min(calc(100% - 24px - env(safe-area-inset-left, 0px) - env(safe-area-inset-right, 0px)), 420px);
-  bottom: calc(14px + env(safe-area-inset-bottom, 0px));
+/* --- Astuces : une petite carte dans la page, juste au-dessus de
+   l'élément qu'elle explique, avec une pointe vers lui (voir ASTUCES).
+   Rien ne s'assombrit et rien ne bloque : on continue d'utiliser l'écran.
+   Celle du + flotte au-dessus de la barre d'onglets. */
+.astuce {
+  position: relative; display: grid; grid-template-columns: 36px minmax(0, 1fr) auto; column-gap: 12px;
+  margin: 4px 0 16px; padding: 12px 6px 4px 14px;
   background: var(--s1, #ffffff); color: var(--text);
-  border: 1px solid var(--ligne, rgba(0, 0, 0, 0.08));
-  border-radius: 24px; padding: 4px 16px 14px;
-  box-shadow: 0 18px 50px rgba(0, 0, 0, 0.3);
+  border: 1px solid var(--ligne, rgba(0, 0, 0, 0.08)); border-radius: 22px;
+  box-shadow: 0 12px 30px -16px rgba(0, 0, 0, 0.28);
+  animation: astuceIn 0.22s cubic-bezier(0.16, 1, 0.3, 1);
 }
-.tour-bulle:focus { outline: none; }
-.tour-bulle.en-haut { bottom: auto; top: calc(14px + env(safe-area-inset-top, 0px)); }
-.tour-bulle.au-centre { bottom: auto; top: 50%; transform: translateY(-50%); }
-.tour-tete { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 44px; }
-.tour-points { display: flex; flex-wrap: wrap; gap: 5px; min-width: 0; }
-.tour-points i { display: block; width: 6px; height: 6px; border-radius: 99px; background: var(--ligne, rgba(0, 0, 0, 0.14)); transition: width 0.18s ease, background-color 0.18s ease; }
-.tour-points i.fait { background: var(--text-muted); }
-.tour-points i.actuel { width: 18px; background: var(--primary); }
-.tour-compteur { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
-.tour-passer { background: none; border: 0; color: var(--text-muted); font-size: 0.85rem; font-weight: 700; cursor: pointer; min-height: 44px; padding: 0 2px 0 8px; }
-.tour-corps { transition: opacity 0.16s ease; }
-.tour-bulle h3 { margin: 0 0 4px; font-size: 1.08rem; font-weight: 800; letter-spacing: -0.01em; }
-.tour-bulle p { margin: 0; font-size: 0.92rem; line-height: 1.45; color: var(--text-muted); }
-.tour-actions { display: flex; align-items: center; gap: 10px; margin-top: 14px; }
-.tour-retour {
-  flex: none; width: 46px; height: 46px; border-radius: 99px; display: grid; place-items: center; cursor: pointer;
-  background: transparent; color: var(--text); border: 1px solid var(--ligne, rgba(0, 0, 0, 0.12));
+.astuce::after {
+  content: ""; position: absolute; left: var(--pointe-x, 50%); bottom: -8px; width: 14px; height: 14px; margin-left: -7px;
+  background: var(--s1, #ffffff); border-right: 1px solid var(--ligne, rgba(0, 0, 0, 0.08)); border-bottom: 1px solid var(--ligne, rgba(0, 0, 0, 0.08));
+  transform: rotate(45deg);
 }
-.tour-retour .icone-ui { width: 20px; height: 20px; }
-.tour-retour[hidden] { display: none; }
-.tour-bulle .tour-suivant { flex: 1; width: auto; min-height: 46px; margin: 0; }
-/* Pendant la visite : écrans et feuilles sans animation d'entrée (la carte
-   et le projecteur se posent tout de suite), et pas de flou sous les
-   feuilles, déjà assombries par le voile. */
-html.tour-en-cours .ecran, html.tour-en-cours .feuille-contenu { animation: none !important; }
-html.tour-en-cours .feuille { -webkit-backdrop-filter: none; backdrop-filter: none; }
-@media (prefers-reduced-motion: reduce) { .tour-corps, .tour-points i { transition: none; } }
+.astuce--haut-droite::after { bottom: auto; top: -8px; left: auto; right: 26px; border: 0; border-left: 1px solid var(--ligne, rgba(0, 0, 0, 0.08)); border-top: 1px solid var(--ligne, rgba(0, 0, 0, 0.08)); }
+.astuce--haut-droite { margin-top: 14px; }
+.astuce-ic { grid-row: 1 / span 2; width: 36px; height: 36px; border-radius: 11px; background: var(--text); color: var(--s1, #ffffff); display: grid; place-items: center; }
+.astuce .astuce-ic .icone-ui { width: 20px; height: 20px; color: inherit; }
+.astuce-corps { padding-top: 1px; }
+.astuce-corps b { display: block; font-size: 1rem; font-weight: 800; letter-spacing: -0.01em; }
+.astuce-corps p { margin: 3px 0 0; font-size: 0.9rem; line-height: 1.4; color: var(--text-muted); }
+.astuce-fermer { grid-column: 3; grid-row: 1; width: 44px; height: 44px; margin: -10px -2px 0 0; border: 0; border-radius: 99px; background: none; color: var(--text-muted); display: grid; place-items: center; cursor: pointer; }
+.astuce .astuce-fermer .icone-ui { width: 18px; height: 18px; color: inherit; }
+.astuce-pied { grid-column: 2 / span 2; display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.astuce-pied span { font-size: 0.82rem; font-weight: 600; color: var(--text-muted); }
+.astuce-ok { min-height: 44px; padding: 0 12px; border: 0; background: none; color: var(--text); font-size: 0.95rem; font-weight: 800; cursor: pointer; }
+.astuce--flottante {
+  position: fixed; z-index: 85; left: max(12px, env(safe-area-inset-left, 0px)); right: max(12px, env(safe-area-inset-right, 0px));
+  margin: 0 auto; max-width: 440px; box-shadow: 0 18px 44px -12px rgba(0, 0, 0, 0.35);
+}
+@keyframes astuceIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) { .astuce { animation: none; } }
 
 /* --- MODALES --- */
 .modal {
@@ -4241,7 +4222,7 @@ html:root body :is(.summary-card span.libelle, .heros-droite .libelle, .macro-lb
   .cardio-record span, .plage-bornes small, .tempo-ligne label, .tempo-phases small, .zones-reglage-entete, .pave-champ > small, .prog-heros small,
   .onb-etapes-n, .bilan-heros small, .bilan-tuile span, .sh-etat, .ia-prog-tete, .ia-prog-recap-bloc small, .faisceaux-figures figcaption, .serie-entete span,
   .apercu-lbl, .niveau-s, .exo-groupe, .carte-stats-ligne, .cardio-pastille, .pc .tag, #btn-aujourdhui, .titre-section, .fitness-card h3, .analysis-card h3,
-  .tour-compteur, .feuille-titre, .onb-cible-lbl, .stats-grille small, .trio > div label, .off-section, .session-superset-titre,
+  .feuille-titre, .onb-cible-lbl, .stats-grille small, .trio > div label, .off-section, .session-superset-titre,
   [style*="text-transform:uppercase"], [style*="text-transform: uppercase"]) {
   text-transform: none !important; letter-spacing: 0 !important; }
 html:root body :is(.summary-card span.libelle, .heros-droite .libelle, .heros-puces div, .coach-carte small, .carte-stats-titre, #bloc-eau h3, .hx-k, .bt-k,
