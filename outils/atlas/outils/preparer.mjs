@@ -3,7 +3,8 @@
 //   2. allège chaque maillage à erreur géométrique bornée (en millimètres), en gardant la limite muscle / tendon ;
 //   3. range les muscles en couches de profondeur, par épluchage : est « en surface » ce qu'on voit de l'extérieur ;
 //   4. calcule pour chaque sommet l'ombrage de relief (part du ciel cachée par les muscles voisins et les os) ;
-//   5. écrit le tout dans un fichier compact (positions sur 16 bits, normales sur 2 octets).
+//   5. articule le corps : chaque pièce d'os suit une articulation, chaque sommet de muscle est attaché à ses os ;
+//   6. écrit le tout dans un fichier compact (positions sur 16 bits, normales sur 2 octets).
 // Usage : node outils/preparer.mjs <dossier des .bin extraits> <sortie.bin> [erreur en mm]
 import fs from 'fs';
 import v8 from 'v8';
@@ -11,6 +12,7 @@ import * as THREE from 'three';
 import { MeshBVH } from 'three-mesh-bvh';
 import { lireBin, genre, tendonParSommet, normales } from './commun.mjs';
 import { reduire } from './simplifier.mjs';
+import { construireSquelette, articulationDeLaPiece, creerAttacheur } from './articuler.mjs';
 
 const [dossier, sortie, erreurMm = '0.5'] = process.argv.slice(2);
 const ERR = Number(erreurMm) / 1000;
@@ -240,30 +242,48 @@ else {
   fs.writeFileSync(cacheOmbre, v8.serialize(OMB));
 }
 
-/* ---------- 5 : écriture ---------- */
-// Un seul tampon de sommets pour tout le modèle (12 octets par sommet) :
-//   position x, y, z sur 16 bits (dans la boîte du modèle) · ombrage · part de tendon · normale (2 octets, octaèdre) · numéro de structure · libre.
+/* ---------- 5 : articulation ---------- */
+const SQ = construireSquelette('donnees/rig-biomeca.json');
+for (const o of OS) { const b = new THREE.Box3().setFromArray(o.P); o.joint = articulationDeLaPiece(o.nom, b.getCenter(new THREE.Vector3()).toArray(), SQ); }
+const cacheAttaches = `donnees/attaches-${erreurMm}.v8`;
+let ATT;
+if (fs.existsSync(cacheAttaches) && !process.env.REFAIRE && !process.env.REATTACHER) ATT = v8.deserialize(fs.readFileSync(cacheAttaches));
+else {
+  const attacher = creerAttacheur(SQ, OS);
+  ATT = ENT.map(e => attacher(e.P, e.T));
+  fs.writeFileSync(cacheAttaches, v8.serialize(ATT));
+  chrono(`muscles attachés aux os (${SQ.articulations.length} articulations)`);
+}
+fs.writeFileSync('rapport/attaches.txt', ENT.map((e, i) => `${e.id.padEnd(46)} ${ATT[i].articulations.map(j => SQ.articulations[j].nom).join(' ')}`).join('\n') + '\n');
+
+/* ---------- 6 : écriture ---------- */
+// Un seul tampon de sommets pour tout le modèle (20 octets par sommet) :
+//   position x, y, z sur 16 bits (dans la boîte du modèle) · ombrage · part de tendon · normale (2 octets, octaèdre) · numéro de structure · libre
+//   · 4 articulations · 4 poids (somme 255).
 // Les triangles sont rangés par structure, en indices locaux sur 16 bits quand la structure le permet.
-const pieces = ENT.map((e, i) => ({ P: e.P, T: e.T, N: e.N, tendon: e.tendon, ombre: OMB.ent[i], num: i }));
+const pieces = ENT.map((e, i) => ({ P: e.P, T: e.T, N: e.N, tendon: e.tendon, ombre: OMB.ent[i], num: i, att: ATT[i] }));
+const OCTETS = 20;
 const NUM_OS_PAIR = ENT.length, NUM_OS_IMPAIR = ENT.length + 1;
 if (NUM_OS_IMPAIR > 255) throw new Error('trop de structures pour un numéro sur un octet');
-OS.forEach((o, i) => pieces.push({ P: o.P, T: o.T, N: o.N, tendon: null, ombre: OMB.os[i], num: o.pair ? NUM_OS_PAIR : NUM_OS_IMPAIR }));
+OS.forEach((o, i) => pieces.push({ P: o.P, T: o.T, N: o.N, tendon: null, ombre: OMB.os[i], num: o.pair ? NUM_OS_PAIR : NUM_OS_IMPAIR, joint: o.joint }));
 const mini = [1e9, 1e9, 1e9], maxi = [-1e9, -1e9, -1e9];
 for (const p of pieces) for (let i = 0; i < p.P.length; i++) { mini[i % 3] = Math.min(mini[i % 3], p.P[i]); maxi[i % 3] = Math.max(maxi[i % 3], p.P[i]); }
 const etendue = maxi.map((m, k) => m - mini[k]);
 const nvTotal = pieces.reduce((s, p) => s + p.P.length / 3, 0), ntTotal = pieces.reduce((s, p) => s + p.T.length / 3, 0);
-const sommets = Buffer.alloc(nvTotal * 12), indices = Buffer.alloc(ntTotal * 3 * 2), listePieces = [];
+const sommets = Buffer.alloc(nvTotal * OCTETS), indices = Buffer.alloc(ntTotal * 3 * 2), listePieces = [];
 const octa = (x, y, z) => { const s = Math.abs(x) + Math.abs(y) + Math.abs(z) || 1; let u = x / s, v = y / s; if (z < 0) { const u2 = (1 - Math.abs(v)) * (u >= 0 ? 1 : -1), v2 = (1 - Math.abs(u)) * (v >= 0 ? 1 : -1); u = u2; v = v2; } return [Math.max(-127, Math.min(127, Math.round(u * 127))), Math.max(-127, Math.min(127, Math.round(v * 127)))]; };
 let v = 0, t = 0; const plages = [];
 for (const p of pieces) {
   const n = p.P.length / 3;
   for (let i = 0; i < n; i++) {
-    const o = (v + i) * 12;
+    const o = (v + i) * OCTETS;
     for (let k = 0; k < 3; k++) sommets.writeUInt16LE(Math.round((p.P[i * 3 + k] - mini[k]) / etendue[k] * 65535), o + k * 2);
     sommets.writeUInt8(Math.round(255 * Math.min(1, Math.max(0, p.ombre[i]))), o + 6);
     sommets.writeUInt8(p.tendon ? Math.round(255 * Math.min(1, Math.max(0, p.tendon[i]))) : 0, o + 7);
     const [a, b] = octa(p.N[i * 3], p.N[i * 3 + 1], p.N[i * 3 + 2]); sommets.writeInt8(a, o + 8); sommets.writeInt8(b, o + 9);
     sommets.writeUInt8(p.num, o + 10);
+    if (p.att) for (let k = 0; k < 4; k++) { sommets.writeUInt8(p.att.os[i * 4 + k], o + 12 + k); sommets.writeUInt8(p.att.poids[i * 4 + k], o + 16 + k); }
+    else { sommets.writeUInt8(p.joint, o + 12); sommets.writeUInt8(255, o + 16); }
   }
   if (n > 65536) throw new Error('pièce trop grande pour des indices sur 16 bits');
   for (let i = 0; i < p.T.length; i++) indices.writeUInt16LE(p.T[i], (t + i) * 2);
@@ -276,15 +296,16 @@ const structures = ENT.map((e, i) => {
   return { ...e.reg, couche: e.couche, centre: c.toArray().map(x => +x.toFixed(4)), rayon: +r.toFixed(4), sommets: plages[i][0], nbSommets: plages[i][1], indices: plages[i][2], nbIndices: plages[i][3] };
 });
 const entete = {
-  format: 'anqa-atlas', version: 1,
+  format: 'anqa-atlas', version: 2,
   source: 'Z-Anatomy (z-anatomy.com), dérivé de BodyParts3D © The Database Center for Life Science — CC BY-SA 4.0 ; modèle allégé et mis en couches pour Anqā, diffusé sous la même licence.',
   erreurMm: Number(erreurMm), couches: NB_COUCHES, regions: REG.regions,
   boite: { min: mini.map(x => +x.toFixed(5)), etendue: etendue.map(x => +x.toFixed(5)) },
-  sommets: nvTotal, triangles: ntTotal, octetsParSommet: 12, pieces: listePieces,
+  sommets: nvTotal, triangles: ntTotal, octetsParSommet: OCTETS, pieces: listePieces,
+  squelette: SQ.articulations.map(a => ({ nom: a.nom, parent: a.parent, centre: a.centre, jumeau: a.jumeau })),
   os: { pair: NUM_OS_PAIR, impair: NUM_OS_IMPAIR, indices: plages[ENT.length] ? plages[ENT.length][2] : t, nbIndices: t - (plages[ENT.length] ? plages[ENT.length][2] : t) },
   structures
 };
 let h = Buffer.from(JSON.stringify(entete), 'utf8'); if (h.length % 4) h = Buffer.concat([h, Buffer.alloc(4 - h.length % 4, 32)]);
-const tete = Buffer.alloc(12); tete.write('ANQA', 0, 'latin1'); tete.writeUInt32LE(1, 4); tete.writeUInt32LE(h.length, 8);
+const tete = Buffer.alloc(12); tete.write('ANQA', 0, 'latin1'); tete.writeUInt32LE(2, 4); tete.writeUInt32LE(h.length, 8);
 fs.writeFileSync(sortie, Buffer.concat([tete, h, sommets, indices]));
 chrono(`écrit ${sortie} : ${structures.length} structures, ${nvTotal} sommets, ${ntTotal} triangles (un côté), ${(fs.statSync(sortie).size / 1e6).toFixed(2)} Mo — couches : ${[1, 2, 3, 4, 5].map(k => couche.filter(c => c === k).length).join(' / ')}`);
