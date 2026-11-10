@@ -524,7 +524,7 @@ test('stats muscu : détail par faisceau et déséquilibres (pecs, épaules, dos
   });
   assert.ok(ecart.every(e => e < 1e-9), 'faisceaux ≠ total du groupe : ' + ecart);
   // Compléter : incliné, rowing, oiseau, élévations latérales → plus d'alerte.
-  await page.evaluate(() => ajouterSeanceTest(['Développé incliné avec haltères', 'Rowing barre buste penché', 'Reverse fly à la poulie', 'Élévation latérale avec haltères']));
+  await page.evaluate(() => ajouterSeanceTest(['Développé incliné avec haltères', 'Rowing barre buste penché', 'Oiseau à la poulie', 'Élévation latérale avec haltères']));
   r = await lire();
   assert.deepEqual(['pectoraux', 'epaules', 'dos'].flatMap(g => r[g].alertes), []);
 }));
@@ -4025,6 +4025,52 @@ test('bibliothèque de base : les tirages comptent les biceps, les développés 
   assert.deepEqual(r, { tractions: true, rowing: true, brasTendus: false, pullover: false, smith: true, epaules: true, overhead: true, sissy: false, series: 2 });
 }));
 
+test("bibliothèque : les doublons sont fusionnés, programmes et séances passent sur l'exercice gardé", () => avecAppli({}, async ({ page }) => {
+  const r = await page.evaluate(() => {
+    const ids = new Set(toutesLesExercices().map(e => e.id));
+    const noms = toutesLesExercices().map(e => e.nom.toLocaleLowerCase('fr'));
+    const res = {
+      sourcesPresentes: Object.keys(FUSIONS_BIBLIOTHEQUE).filter(s => ids.has(s)),
+      ciblesAbsentes: Object.values(FUSIONS_BIBLIOTHEQUE).filter(c => !ids.has(c)),
+      ciblesFusionnees: Object.values(FUSIONS_BIBLIOTHEQUE).filter(c => FUSIONS_BIBLIOTHEQUE[c]),
+      nomsEnDouble: noms.filter((n, i) => noms.indexOf(n) !== i),
+      // L'ancienne fiche reste lisible pour les séances qui l'utilisaient.
+      ancienneFiche: (trouverExercice('sw-kickboxing') || {}).nom
+    };
+    // Un programme et une séance passée sur un doublon passent sur l'exercice gardé.
+    musculationProgrammes.push({ id: 'p-doublon', nom: 'Test', exercices: [{ exerciceId: 'sw-crunchs-en-bicyclette', nom: 'Crunchs en bicyclette', series: [] }] });
+    musculationHistorique.unshift({ id: 'h-doublon', date: todayStr(), exercices: [{ exerciceId: 'sw-squat-gobelet', nom: 'Squat gobelet', series: [{ poids: 0, reps: 12, fait: true }] }] });
+    appliquerOverridesBase([]);
+    const p = musculationProgrammes.find(x => x.id === 'p-doublon').exercices[0];
+    const h = musculationHistorique.find(x => x.id === 'h-doublon').exercices[0];
+    res.programme = [p.exerciceId, p.nom];
+    res.seance = [h.exerciceId, h.nom, h.series.length];
+    // Une simple correction de l'admin (nom) sur un doublon ne le fait pas revenir.
+    appliquerOverridesBase([{ id: 'sw-kickboxing', donnees: { nom: 'Kickboxing renommé' } }]);
+    res.apresCorrection = toutesLesExercices().some(e => e.id === 'sw-kickboxing');
+    // L'admin a fusionné dans l'autre sens : pas de boucle, l'exercice reste dans la bibliothèque.
+    appliquerOverridesBase([{ id: 'e338', donnees: { fusionneVers: 'sw-curl-avec-halteres-en-supination' } }]);
+    res.sensInverse = [toutesLesExercices().some(e => e.id === 'sw-curl-avec-halteres-en-supination'), toutesLesExercices().some(e => e.id === 'e338'), cibleFusion('e338')];
+    return res;
+  });
+  assert.deepEqual([r.sourcesPresentes, r.ciblesAbsentes, r.ciblesFusionnees, r.nomsEnDouble], [[], [], [], []]);
+  assert.equal(r.ancienneFiche, 'Kickboxing');
+  assert.deepEqual(r.programme, ['e244', 'Crunch vélo']);
+  assert.deepEqual(r.seance, ['sw-squat', 'Squat', 1]);
+  assert.equal(r.apresCorrection, false);
+  assert.deepEqual(r.sensInverse, [true, false, 'sw-curl-avec-halteres-en-supination']);
+}));
+
+test('bibliothèque : le matériel suit ce que montre la vignette (machine, barre, haltères…)', () => avecAppli({}, async ({ page }) => {
+  const r = await page.evaluate(() => {
+    const exo = nom => { const e = toutesLesExercices().find(x => x.nom === nom); if (!e) throw new Error('introuvable : ' + nom); return e.materiel + '/' + e.groupe; };
+    return ['Développé couché à la machine', 'Squat avec barre basse', 'Élévation des mollets assis', 'Course sur tapis roulant', 'Épaulé avec kettlebell',
+      'Traction en levier avant', 'Planche latérale avec coquille', 'Pompes prise serrée'].map(exo);
+  });
+  assert.deepEqual(r, ['machine/pectoraux', 'barre/quadriceps', 'machine/mollets', 'machine/cardio', 'kettlebell/dos',
+    'poids_corps/dos', 'poids_corps/fessiers', 'poids_corps/triceps']);
+}));
+
 test("bibliothèque : un muscle choisi montre aussi les exercices où il est secondaire", () => avecAppli({}, async ({ page }) => {
   const r = await page.evaluate(() => {
     ouvrirBibliotheque();
@@ -4045,8 +4091,8 @@ test("bibliothèque : un muscle choisi montre aussi les exercices où il est sec
   assert.match(r.biceps.compte, /^\d+ exercices · \d+ en muscle secondaire$/);
   assert.deepEqual(r.biceps.titres, [], 'le premier paquet ne montre que des exercices de biceps');
   assert.ok(r.biceps.noms.length > 0);
-  assert.deepEqual([r.rowing.compte, r.rowing.titres, r.ordre], ['1 en muscle secondaire', ['Travaillent aussi les biceps'], ['titre', 'exercice']]);
-  assert.deepEqual(r.rowing.noms, ['Rowing barre buste penché']);
+  assert.deepEqual([r.rowing.compte, r.rowing.titres, r.ordre], ['2 en muscle secondaire', ['Travaillent aussi les biceps'], ['titre', 'exercice']]);
+  assert.deepEqual(r.rowing.noms, ['Rowing barre buste penché', 'Rowing barre buste penché prise supination']);
   assert.deepEqual(r.dos, []);
 }));
 
@@ -4722,7 +4768,7 @@ test('bibliothèque : classiques en tête puis l\'alphabet ; icônes d\'aliments
   assert.deepEqual(r.curl, ['Curl à la barre', 'Curl prise marteau', r.curl[2]]);
   assert.match(r.curl[2], /^Curl/);
   assert.equal(r.toutesCurl, true);
-  assert.deepEqual(r.abdos, ['Planche', 'Crunchs abdominaux']);
+  assert.deepEqual(r.abdos, ['Planche', 'Crunch abdominal']);
   assert.equal(r.alpha, true);
   assert.deepEqual(r.icones, ['🍵', '🥩', '🥗', '🍰', '🥐', '🍳', '🍽️']);
   assert.equal(r.ligne, '🍽️');
