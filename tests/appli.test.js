@@ -1261,16 +1261,23 @@ test("profil fusionné (lot 12) : une pesée faite ici et une autre là-bas sont
 test("taille de texte du système (lot 13) : la racine suit l'échelle du téléphone dans les bornes prévues, rien ne bouge là où le mot-clé n'existe pas, et le pincement pour zoomer reste permis", () => avecAppli({}, async ({ page }) => {
   const r = await page.evaluate(async () => {
     const racine = document.documentElement;
-    // Le harnais réduit les mouvements : toute transition dure 0,01 ms, la valeur calculée se lit au tour suivant.
+    // Le harnais réduit les mouvements : toute transition dure 0,01 ms, mais elle n'avance qu'à l'image
+    // suivante ; sous charge, aucune image en 40 ms. On attend donc que la valeur bouge (2 s au plus).
     const tour = () => new Promise(ok => setTimeout(ok, 40));
+    const echelle = async v => {
+      const avant = getComputedStyle(racine).fontSize;
+      if (v == null) racine.style.removeProperty('--echelle-texte'); else racine.style.setProperty('--echelle-texte', v);
+      for (let i = 0; i < 50 && getComputedStyle(racine).fontSize === avant; i++) await tour();
+      await tour();
+    };
     const base = parseFloat(getComputedStyle(racine).fontSize);
     const res = { supporte: CSS.supports('font', '-apple-system-body'), mesure: mesurerTailleTexteSysteme(), echelleIci: appliquerTailleTexteSysteme(), variableIci: racine.style.getPropertyValue('--echelle-texte') };
     // Ce qu'un iPhone réglé « plus grand » donnerait : la racine suit, bornée.
-    racine.style.setProperty('--echelle-texte', '1.3'); await tour();
+    await echelle('1.3');
     res.agrandi = Math.round(parseFloat(getComputedStyle(racine).fontSize) / base * 100) / 100;
-    racine.style.setProperty('--echelle-texte', '0.85'); await tour();
+    await echelle('0.85');
     res.reduit = Math.round(parseFloat(getComputedStyle(racine).fontSize) / base * 100) / 100;
-    racine.style.removeProperty('--echelle-texte'); await tour();
+    await echelle(null);
     res.retour = parseFloat(getComputedStyle(racine).fontSize) === base;
     res.bornes = [ECHELLE_TEXTE_MIN, ECHELLE_TEXTE_MAX];
     const viewport = document.querySelector('meta[name="viewport"]').content;
@@ -1821,7 +1828,7 @@ test('Erreurs : envoyées sans données perso, une fois, pas les coupures résea
     allerA('admin');
     await chargerAdmin();
     await ouvrirErreursAdmin();
-    const res = { envois, resume: document.getElementById('erreurs-resume').textContent,
+    const res = { envois, avant1h: new Date().getHours() < 1, resume: document.getElementById('erreurs-resume').textContent,
       groupes: [...document.querySelectorAll('#admin-erreurs-liste .adm-err')].map(c => [c.querySelector('.adm-nb').textContent, c.querySelector('.adm-qui b').textContent, c.querySelector('.adm-qui small').textContent, c.querySelector('.adm-chips').textContent]) };
     window.__appels = [];
     const premier = document.querySelector('#admin-erreurs-liste .adm-err');
@@ -1837,7 +1844,8 @@ test('Erreurs : envoyées sans données perso, une fois, pas les coupures résea
   assert.equal(r.groupes.length, 2);
   assert.deepEqual(r.groupes[0].slice(0, 3), ['×2', 'Synchro : délai dépassé', '2 comptes · dernière il y a 12 min']);
   assert.match(r.groupes[0][3], /iPhone · app Askēsis.*Mac · Safari.*Ancienne version/);
-  assert.deepEqual(r.occurrences, ["@alice.fit · iPhone · app Askēsis · Repas du jouril y a 12 min", '@bob · Mac · Safari · Progrèsil y a 1 h']);
+  // Entre minuit et une heure, « il y a 1 h » tombe la veille : « hier ».
+  assert.deepEqual(r.occurrences, ["@alice.fit · iPhone · app Askēsis · Repas du jouril y a 12 min", '@bob · Mac · Safari · Progrès' + (r.avant1h ? 'hier' : 'il y a 1 h')]);
   assert.deepEqual(r.regle, [['erreurs_appli', [['eq', 'type', 'synchro'], ['eq', 'message', 'délai dépassé'], ['is', 'regle_le', null]]]]);
 }));
 
