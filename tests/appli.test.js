@@ -1012,8 +1012,25 @@ test('Administration : Serveur et SQL sonde chaque SQL sans rien modifier, signa
   assert.match(r.sql, /create table if not exists public\.erreurs_appli/);
   assert.match(r.sql, /jambou592@gmail\.com/);
   assert.equal(r.ecritures, 0, 'le bilan ne modifie rien');
-  assert.deepEqual(r.rpc, ['admin_signalements', 'gymbro_direct', 'gymbro_saisons', 'mes_defis', 'mon_statut_compte']);
+  assert.deepEqual(r.rpc, ['admin_regles_ouvertes', 'admin_signalements', 'gymbro_direct', 'gymbro_saisons', 'mes_defis']);
   assert.deepEqual(r.tuileErreurs, ['—', 'SQL « Administration » à passer'], 'table absente : pas « 0 erreur »');
+}));
+
+test("Administration : une règle d'accès ouverte à tous sur les tables de données est signalée en rouge, et le script 1 n'en crée plus", () => avecAppli({}, async ({ page }) => {
+  await installerFauxAdmin(page, () => ({ 'rpc:admin_regles_ouvertes': 2 }));
+  const r = await page.evaluate(async () => {
+    ouvrirServeurAdmin();
+    await verifierServeurAdmin(true);
+    const rls = document.querySelector('.adm-sql[data-sql="rls"]');
+    return { etat: rls.querySelector('[data-etat-sql]').textContent, rouge: rls.classList.contains('adm-sql--ko'), bilan: document.querySelector('#serveur-bilan b').textContent,
+      script1: SQL_SUPABASE, script2: SQL_RLS };
+  });
+  assert.equal(r.etat, 'Accès ouvert à tous');
+  assert.equal(r.rouge, true);
+  assert.equal(r.bilan, '1 point à régler');
+  assert.ok(!/using \(true\)/.test(r.script1), 'le script 1 ne crée plus de règle ouverte');
+  assert.match(r.script1, /drop policy if exists "acces journees" on journees;/);
+  assert.match(r.script2, /create or replace function public\.admin_regles_ouvertes\(\)/);
 }));
 
 test('Administration : signalements (motif, bio, « 2e fois ») ; classer et suspendre les traitent', () => avecAppli({}, async ({ page }) => {

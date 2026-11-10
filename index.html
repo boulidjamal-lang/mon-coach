@@ -6048,7 +6048,7 @@
       <div class="adm-sql" data-sql="supabase">
         <button type="button" class="ligne-reglage ligne-reglage--bouton" aria-expanded="false" onclick="basculerSqlAdmin(this)"><span class="adm-num">1</span><span class="ligne-txt"><b>Comptes et synchro</b><small>Journées, profil, programmes, séances</small></span><span class="adm-etat adm-etat--attente" data-etat-sql>&hellip;</span></button>
         <div class="adm-sql-corps hidden">
-        <p class="note note-explicative">À exécuter une fois : crée les tables où chaque appareil range et retrouve ses données.</p>
+        <p class="note note-explicative">À exécuter une fois : crée les tables où chaque appareil range et retrouve ses données. Il n'ouvre aucun accès : c'est le script 2 qui donne les droits.</p>
         <div class="bloc-sql" id="bloc-sql"></div>
         <button class="btn btn-secondaire" type="button" onclick="copierSql()">Copier le SQL</button>
         </div>
@@ -6056,7 +6056,7 @@
       <div class="adm-sql" data-sql="rls">
         <button type="button" class="ligne-reglage ligne-reglage--bouton" aria-expanded="false" onclick="basculerSqlAdmin(this)"><span class="adm-num">2</span><span class="ligne-txt"><b>Sécurité des données</b><small>Chacun ne voit que ses données</small></span><span class="adm-etat adm-etat--attente" data-etat-sql>&hellip;</span></button>
         <div class="adm-sql-corps hidden">
-        <p class="note note-explicative">Sans lui, les tables sont ouvertes à quiconque possède la clé publique du projet. Avec lui, chaque compte ne lit et ne modifie que ses propres données (l'administrateur voit tout).</p>
+        <p class="note note-explicative">Sans lui, personne ne peut lire ni écrire (les tables sont fermées). Avec lui, chaque compte ne lit et ne modifie que ses propres données (l'administrateur voit tout), et l'appli vérifie qu'aucune règle ouverte à tous ne subsiste.</p>
         <div class="bloc-sql" id="bloc-sql-rls"></div>
         <button class="btn btn-secondaire" type="button" onclick="copierSqlRls()">Copier le SQL</button>
         </div>
@@ -6120,7 +6120,7 @@
         </div>
       </div>
     </div>
-    <p class="note adm-note">Touche une ligne pour voir et copier son SQL, même déjà passé : le relancer ne casse rien.</p>
+    <p class="note adm-note">Touche une ligne pour voir et copier son SQL, même déjà passé : relancer un script ne rouvre jamais l'accès aux données.</p>
     <div class="reglages-titre">Fonctions serveur et ce téléphone</div>
     <div class="carte-liste" id="serveur-appareil"></div>
     <button type="button" class="btn btn-secondaire adm-plein" onclick="verifierServeurAdmin(true)"><svg class="icone-ui" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8" /><path d="M21 3v5h-5" /><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16" /><path d="M8 16H3v5" /></svg>Relancer le bilan</button>
@@ -21915,8 +21915,10 @@ create table if not exists journees (
   primary key (utilisateur, jour)
 );
 alter table journees enable row level security;
+-- Aucune règle d'accès ici : la table reste fermée tant que le script 2
+-- (Sécurité des données) n'a pas créé les règles par compte. Le drop retire
+-- l'ancienne règle ouverte à tous si elle existait encore.
 drop policy if exists "acces journees" on journees;
-create policy "acces journees" on journees for all using (true) with check (true);
 
 create table if not exists profil (
   utilisateur text primary key default 'moi',
@@ -21925,7 +21927,6 @@ create table if not exists profil (
 );
 alter table profil enable row level security;
 drop policy if exists "acces profil" on profil;
-create policy "acces profil" on profil for all using (true) with check (true);
 
 -- Musculation : une ligne par programme / par séance enregistrée / par
 -- exercice personnalisé, comme "journees" — jamais un seul blob par
@@ -21940,7 +21941,6 @@ create table if not exists programmes_musculation (
 );
 alter table programmes_musculation enable row level security;
 drop policy if exists "acces programmes_musculation" on programmes_musculation;
-create policy "acces programmes_musculation" on programmes_musculation for all using (true) with check (true);
 
 create table if not exists seances_musculation (
   utilisateur text not null default 'moi',
@@ -21951,7 +21951,6 @@ create table if not exists seances_musculation (
 );
 alter table seances_musculation enable row level security;
 drop policy if exists "acces seances_musculation" on seances_musculation;
-create policy "acces seances_musculation" on seances_musculation for all using (true) with check (true);
 
 create table if not exists exercices_perso_musculation (
   utilisateur text not null default 'moi',
@@ -21962,21 +21961,20 @@ create table if not exists exercices_perso_musculation (
 );
 alter table exercices_perso_musculation enable row level security;
 drop policy if exists "acces exercices_perso_musculation" on exercices_perso_musculation;
-create policy "acces exercices_perso_musculation" on exercices_perso_musculation for all using (true) with check (true);
 
 -- La table des aliments n'est pas créée ici : l'application lit celle que
 -- tu as déjà. Prépare-la avec le SQL « Préparer la table des aliments ».`;
 
-/* Politiques de repli, ouvertes à quiconque possède la clé publique : c'est
- ce qui permet à l'appli de fonctionner day one, sans compte. Une fois que
- les deux personnes se sont inscrites (bouton ), ce second script les
- remplace par des politiques qui vérifient réellement auth.uid() : chacun
- ne voit plus que ses propres lignes, même avec la même clé publique. */
+/* Le script 1 n'ouvre plus aucun accès. Jusqu'au 9 novembre 2026, il créait
+ des règles « using (true) » pour fonctionner sans compte : relancé après le
+ script 2, il rouvrait les tables à quiconque possédait la clé publique (les
+ règles permissives se cumulent). Les règles par compte viennent du script 2,
+ qui vérifie aussi qu'aucune règle ouverte ne subsiste (admin_regles_ouvertes). */
 const ADMIN_EMAIL = 'jambou592@gmail.com';
 
 const SQL_RLS = `-- À exécuter UNE FOIS que toi et l'autre personne avez chacun créé un
 -- compte (bouton <svg class="icone-ui" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2" /><circle cx="12" cy="7" r="4" /></svg> <svg class="icone-ui" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 18 6-6-6-6" /></svg> Créer un compte). Idempotent : relancer ne casse rien.
--- Avant ça, la table est accessible à quiconque a la clé publique du projet ;
+-- Avant ça, les tables sont fermées (le script 1 ne crée plus de règle) ;
 -- après, chaque compte ne peut lire/écrire que les lignes où
 -- utilisateur = son propre auth.uid() — sauf le compte administrateur
 -- (jambou592@gmail.com), qui voit et gère tout.
@@ -22249,7 +22247,22 @@ begin
   delete from auth.users where id::text = p_utilisateur;
 end;
 $$;
-grant execute on function public.admin_effacer_definitivement(text) to authenticated;`;
+grant execute on function public.admin_effacer_definitivement(text) to authenticated;
+
+-- Contrôle : combien de règles ouvertes à tous (using (true) ou with check
+-- (true)) restent sur les cinq tables de données ? Doit valoir 0. Réservé à
+-- l'administrateur ; l'écran Administration l'affiche en rouge sinon.
+create or replace function public.admin_regles_ouvertes()
+returns integer language sql stable security definer set search_path = public as $$
+  select case when coalesce(auth.jwt() ->> 'email', '') = 'jambou592@gmail.com'
+    then (select count(*)::int from pg_policies
+          where schemaname = 'public'
+            and tablename in ('journees', 'profil', 'programmes_musculation', 'seances_musculation', 'exercices_perso_musculation')
+            and (qual = 'true' or with_check = 'true'))
+    else null end;
+$$;
+revoke execute on function public.admin_regles_ouvertes() from public, anon;
+grant execute on function public.admin_regles_ouvertes() to authenticated;`;
 
 function sqlRls() { return SQL_RLS; }
 
@@ -33441,7 +33454,15 @@ async function sonderAdmin(type, nom, args) {
 }
 const SONDES_SQL_ADMIN = {
   supabase: () => sonderAdmin('table', 'seances_musculation'),
-  rls: () => sonderAdmin('rpc', 'mon_statut_compte'),
+  // Sécurité : la fonction de contrôle doit exister ET ne trouver aucune
+  // règle ouverte à tous sur les tables de données.
+  rls: async () => {
+    try {
+      const { data, error } = await supa.rpc('admin_regles_ouvertes');
+      if (error) return estErreurReseauAdmin(error) ? 'inconnu' : 'ko';
+      return Number(data) > 0 ? 'ouvert' : 'ok';
+    } catch (e) { return 'inconnu'; }
+  },
   accents: async () => {
     const t = await sonderAdmin('table', confSupabase().table);
     if (t !== 'ok') return t;
@@ -33460,7 +33481,7 @@ const SONDES_SQL_ADMIN = {
     return a === 'ok' && b === 'ok' ? 'ok' : (a === 'inconnu' || b === 'inconnu') ? 'inconnu' : 'ko';
   },
 };
-const LIBELLES_ETAT_SQL = { ok: ['ok', 'OK'], ko: ['ko', 'Manquant'], attention: ['attention', 'À compléter'], inconnu: ['neutre', '?'] };
+const LIBELLES_ETAT_SQL = { ok: ['ok', 'OK'], ko: ['ko', 'Manquant'], ouvert: ['ko', 'Accès ouvert à tous'], attention: ['attention', 'À compléter'], inconnu: ['neutre', '?'] };
 async function verifierServeurAdmin(force) {
   if (!supa) return;
   if (!force && etatServeurAdmin && Date.now() - etatServeurAdmin.le < 30000) { rendreServeurAdmin(); return; }
@@ -33483,10 +33504,10 @@ function rendreServeurAdmin() {
     const el = div.querySelector('[data-etat-sql]');
     const [type, texte] = LIBELLES_ETAT_SQL[r[div.dataset.sql]] || LIBELLES_ETAT_SQL.inconnu;
     if (el) { el.className = 'adm-etat adm-etat--' + type; el.innerHTML = iconeAdmin(type === 'neutre' ? 'info' : type) + escapeHtml(texte); }
-    div.classList.toggle('adm-sql--ko', r[div.dataset.sql] === 'ko');
+    div.classList.toggle('adm-sql--ko', r[div.dataset.sql] === 'ko' || r[div.dataset.sql] === 'ouvert');
   });
   const valeurs = Object.values(r);
-  const manquants = valeurs.filter(v => v === 'ko').length;
+  const manquants = valeurs.filter(v => v === 'ko' || v === 'ouvert').length;
   const aCompleter = valeurs.filter(v => v === 'attention').length;
   const injoignable = valeurs.every(v => v === 'inconnu');
   const points = manquants + aCompleter;
