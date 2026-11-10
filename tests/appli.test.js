@@ -920,6 +920,9 @@ test('après le questionnaire : « Par où commencer ? » puis la carte « Premi
   await page.click('#btn-interets-ok');
   // Seule la musculation reste choisie : on démarre sur l'écran Activité.
   assert.deepEqual(await page.evaluate(() => [userProfile.premiersPas.interets, ecranActif, modeSeance]), [['muscu'], 'seance', 'muscu']);
+  // Nouveau compte : les astuces démarrent, avec la première de l'écran.
+  await page.waitForSelector('#astuce[data-astuce="seance-mode"]', { timeout: 5000 });
+  assert.equal(await page.evaluate(() => userProfile.astucesActives), true);
   await page.evaluate(() => allerA('repas'));
   assert.match(await page.textContent('#premiers-pas'), /1\/2/);
   // L'étape se coche toute seule une fois faite
@@ -929,57 +932,110 @@ test('après le questionnaire : « Par où commencer ? » puis la carte « Premi
   assert.equal(await page.evaluate(() => document.getElementById('premiers-pas').innerHTML), '');
 }));
 
-for (const visite of ['generale', 'muscu']) {
-  test(`la visite guidée « ${visite} » se déroule jusqu'au bout`, () => avecAppli({}, async ({ page }) => {
-    await page.evaluate(v => demarrerTourGuide(v === 'muscu' ? 'muscu' : undefined), visite);
-    const nb = await page.evaluate(() => tourListe.length);
-    for (let k = 0; k < nb; k++) {
-      await page.evaluate(k => { tourEtape = k; afficherEtapeTour(); }, k);
-      await page.waitForTimeout(120);
-    }
-    await page.evaluate(() => fermerTourGuide());
-  }));
-}
+// Lit l'astuce affichée : son identifiant, son texte, et si elle est bien
+// posée juste au-dessus de l'élément qu'elle explique (sans le cacher, et
+// sans rien entre les deux).
+const lireAstuce = page => page.evaluate(() => {
+  const d = document.getElementById('astuce');
+  if (!d) return null;
+  const a = ASTUCES.find(x => x.id === d.dataset.astuce), lieu = document.querySelector(a.avant || a.flottante);
+  const r = d.getBoundingClientRect(), l = lieu.getBoundingClientRect();
+  let pointe = true;
+  if (a.flottante) { const x = r.left + parseFloat(d.style.getPropertyValue('--pointe-x')); pointe = x >= l.left && x <= l.right; }
+  return { id: a.id, titre: d.querySelector('b').textContent, rang: d.querySelector('.astuce-pied span').textContent,
+    posee: (a.flottante ? d.parentNode === document.body : d.nextElementSibling === lieu) && r.bottom <= l.top + 1 && l.top - r.bottom < 40 && pointe };
+});
 
-test("visite guidée : courte, écrans dans l'ordre, texte immédiat, carte qui ne cache pas l'élément montré", () => avecAppli({}, async ({ page }) => {
+test("astuces : la première fois sur un écran, une carte juste au-dessus de l'élément ; « Compris » passe à la suivante, la croix les masque", () => avecAppli({}, async ({ page }) => {
+  // Compte déjà en place, astuces jamais activées : rien ne s'affiche.
+  await page.evaluate(() => allerA('repas'));
+  assert.equal(await lireAstuce(page), null);
+  await page.evaluate(() => { userProfile.astucesVues = []; userProfile.astucesActives = true; allerA('repas'); });
+  assert.deepEqual(await lireAstuce(page), { id: 'repas-semaine', titre: 'Ta semaine', rang: 'Astuce 1 sur 4', posee: true });
+  // Rien ne s'assombrit ni ne bloque : pas de couche ouverte, l'écran reste utilisable.
+  assert.equal(await page.evaluate(() => document.body.classList.contains('couche-ouverte')), false);
+  await page.click('#astuce .astuce-ok');
+  assert.deepEqual(await lireAstuce(page), { id: 'repas-bilan', titre: 'Bilan de la journée', rang: 'Astuce 2 sur 4', posee: true });
+  // La croix masque toutes celles de l'écran, et seulement celles-là.
+  await page.click('#astuce .astuce-fermer');
+  assert.deepEqual(await page.evaluate(() => [!!document.getElementById('astuce'), userProfile.astucesVues.slice().sort(), userProfile.astucesActives]),
+    [false, ['repas-bilan', 'repas-plus', 'repas-semaine', 'repas-stats'], true]);
+  // Gardées dans le profil (synchronisé) : jamais remontrées.
+  assert.equal(await page.evaluate(() => JSON.parse(localStorage.getItem(PROFILE_KEY)).astucesVues.length), 4);
+  await page.evaluate(() => { allerA('stats'); allerA('repas'); });
+  assert.equal(await lireAstuce(page), null);
+  // Écran suivant : la sienne, seule de l'écran.
+  await page.evaluate(() => allerA('stats'));
+  assert.deepEqual(await lireAstuce(page), { id: 'stats-onglets', titre: 'Tes progrès', rang: 'Astuce', posee: true });
+  await page.click('#astuce .astuce-ok');
+  assert.equal(await lireAstuce(page), null);
+  // Une feuille ouverte la retient ; elle apparaît quand la feuille se ferme.
+  await page.evaluate(() => { ouvrirFeuilleRepas(); allerA('reglages'); });
+  assert.equal(await lireAstuce(page), null);
+  await page.evaluate(() => fermerFeuilles());
+  assert.deepEqual(await lireAstuce(page), { id: 'profil-reglages', titre: 'Tes réglages', rang: 'Astuce 1 sur 2', posee: true });
+  // Vitrine redessinée (changement de thème) : l'astuce est reposée aussitôt.
+  await page.click('#astuce .astuce-ok');
+  await page.evaluate(() => choisirTheme('dark'));
+  assert.deepEqual(await lireAstuce(page), { id: 'profil-objectif', titre: 'Ton objectif', rang: 'Astuce 2 sur 2', posee: true });
+}));
+
+test("astuces : avec la barre d'onglets d'iOS (app iPhone), celle du + flotte au-dessus de la barre, pointe vers le rond de droite", () => avecAppli({}, async ({ page }) => {
   const r = await page.evaluate(() => {
-    const res = {};
-    for (const type of ['generale', 'muscu']) {
-      demarrerTourGuide(type === 'muscu' ? 'muscu' : undefined);
-      const etapes = tourListe.length, ecrans = [], couvertes = [], lentes = [];
-      for (let k = 0; k < etapes; k++) {
-        tourEtape = k; afficherEtapeTour();
-        // Rien n'attend : le titre est déjà là au retour de l'appel.
-        if (document.getElementById('tour-titre').textContent !== tourListe[k].titre) lentes.push(k);
-        const e = tourListe[k].ecran;
-        if (e && ecrans[ecrans.length - 1] !== e) ecrans.push(e);
-        const c = tourCible;
-        if (c) {
-          const a = c.getBoundingClientRect(), b = document.getElementById('tour-bulle').getBoundingClientRect();
-          const recouvert = Math.max(0, Math.min(a.bottom, b.bottom) - Math.max(a.top, b.top)) * Math.max(0, Math.min(a.right, b.right) - Math.max(a.left, b.left));
-          // Un élément qui tient dans la moitié de l'écran ne doit pas être caché par la carte.
-          if (a.height < innerHeight / 2 && recouvert > 0.15 * a.width * a.height) couvertes.push(tourListe[k].titre);
-        }
-      }
-      res[type] = { etapes, ecrans, couvertes, lentes };
-      fermerTourGuide();
-    }
-    return res;
+    ONGLETS_NATIFS = true; document.documentElement.classList.add('onglets-natifs');
+    userProfile.astucesActives = true; userProfile.astucesVues = ['repas-semaine', 'repas-bilan', 'repas-stats']; allerA('repas');
+    const d = document.getElementById('astuce'), c = d.getBoundingClientRect();
+    return { id: d.dataset.astuce, flottante: d.parentNode === document.body, bas: Math.round(innerHeight - c.bottom), pointe: parseFloat(d.style.getPropertyValue('--pointe-x')) / c.width };
   });
-  assert.ok(r.generale.etapes <= 13, 'visite générale : ' + r.generale.etapes + ' étapes');
-  assert.deepEqual(r.generale.ecrans, ['repas', 'seance', 'stats', 'reglages']);
-  assert.deepEqual(r.muscu.ecrans, ['seance', 'stats']);
-  for (const v of ['generale', 'muscu']) assert.deepEqual([r[v].lentes, r[v].couvertes], [[], []], v);
-  // Toucher le voile avance, les flèches du clavier aussi, Échap ferme.
-  await page.evaluate(() => demarrerTourGuide());
-  await page.click('#tour-voile', { position: { x: 10, y: 300 } });
-  await page.keyboard.press('ArrowRight');
-  const avant = await page.evaluate(() => tourEtape);
-  await page.keyboard.press('ArrowLeft');
-  const apres = await page.evaluate(() => [tourEtape, document.getElementById('tour-precedent').hidden]);
-  await page.keyboard.press('Escape');
-  const fin = await page.evaluate(() => [tourActif, document.getElementById('tour-overlay').classList.contains('hidden'), document.documentElement.classList.contains('tour-en-cours')]);
-  assert.deepEqual([avant, apres, fin], [2, [1, false], [false, true, false]]);
+  assert.deepEqual([r.id, r.flottante], ['repas-plus', true]);
+  assert.ok(r.bas >= 14 && r.bas < 60, 'au-dessus de la barre : ' + r.bas);
+  assert.ok(r.pointe > 0.85, 'pointe à droite : ' + r.pointe);
+}));
+
+test("astuces : chacune trouve sa place, dans l'ordre, séance en cours comprise ; toutes vues, elles se coupent ; Réglages les relance", () => avecAppli({}, async ({ page }) => {
+  const vues = [], malPosees = [], rangs = [];
+  // Lit l'astuce affichée et touche « Compris », jusqu'à ce qu'il n'y en ait plus.
+  const suivre = async () => {
+    for (let i = 0; i < 8; i++) {
+      const a = await lireAstuce(page);
+      if (!a) return;
+      vues.push(a.id); rangs.push(a.rang);
+      if (!a.posee) malPosees.push(a.id);
+      await page.click('#astuce .astuce-ok');
+    }
+  };
+  await page.evaluate(() => { userProfile.astucesVues = []; userProfile.astucesActives = true; allerA('repas'); });
+  await suivre();
+  await page.evaluate(() => { allerA('seance'); choisirModeSeance('muscu', true); });
+  await suivre();
+  // Séance libre, encore vide : « Tes séries » attend le premier exercice.
+  await page.evaluate(() => demarrerSeanceLibre());
+  assert.equal((await lireAstuce(page)).id, 'session-volume');
+  await page.click('#astuce .astuce-ok');
+  assert.equal((await lireAstuce(page)).id, 'session-terminer');
+  vues.push('session-volume'); rangs.push('Astuce 1 sur 4');
+  await page.evaluate(() => ajouterExerciceASession(toutesLesExercices().find(x => x.nom === 'Développé couché avec barre').id));
+  await suivre();
+  await page.evaluate(() => { musculationSessionActive = null; sauvegarderSessionActive(); renderSeance(); allerA('stats'); });
+  await suivre();
+  await page.evaluate(() => allerA('reglages'));
+  await suivre();
+  assert.deepEqual(vues, await page.evaluate(() => astucesApplicables().map(a => a.id)));
+  assert.deepEqual(malPosees, []);
+  // Le compte est celui de la partie de l'écran : Activité (3 sans IA), puis la séance en cours (4).
+  assert.deepEqual(rangs, ['Astuce 1 sur 4', 'Astuce 2 sur 4', 'Astuce 3 sur 4', 'Astuce 4 sur 4', 'Astuce 1 sur 3', 'Astuce 2 sur 3', 'Astuce 3 sur 3',
+    'Astuce 1 sur 4', 'Astuce 2 sur 4', 'Astuce 3 sur 4', 'Astuce 4 sur 4', 'Astuce', 'Astuce 1 sur 2', 'Astuce 2 sur 2']);
+  // Toutes vues : elles se coupent.
+  assert.deepEqual(await page.evaluate(() => { allerA('repas'); return [userProfile.astucesActives, userProfile.tutorielVu, !!document.getElementById('astuce')]; }), [false, true, false]);
+  // Réglages › Aide : celles de la musculation seulement…
+  await page.evaluate(() => { allerA('reglages'); document.getElementById('btn-visite-muscu').click(); });
+  assert.deepEqual(await page.evaluate(() => [ecranActif, modeSeance, userProfile.astucesActives,
+    ASTUCES.filter(a => !userProfile.astucesVues.includes(a.id)).every(a => a.groupe === 'muscu')]), ['seance', 'muscu', true, true]);
+  assert.equal((await lireAstuce(page)).id, 'seance-mode');
+  // … ou toutes.
+  await page.evaluate(() => { allerA('reglages'); document.getElementById('btn-revoir-tutoriel').click(); });
+  assert.deepEqual(await page.evaluate(() => [ecranActif, userProfile.astucesVues.length]), ['repas', 0]);
+  assert.equal((await lireAstuce(page)).id, 'repas-semaine');
 }));
 
 test('Administration : les comptes en liste (pseudo, état, recherche, filtres), puis la page d\'un compte', () => avecAppli({}, async ({ page }) => {
@@ -4833,14 +4889,14 @@ test('IA : cachée sans clé liée au compte, visible avec', () => avecAppli({},
       bilanJour: vu('#carte-bilan-jour'), periode: vu('.stats-bilan'), programme: vu('[onclick="ouvrirAssistantProgrammeIA()"].action-tuile'),
       aideIA: vu('#aide-routine-modal .btn-primary.ia-seulement'), exercicesLarge: getComputedStyle(document.querySelector('.pleine-sans-ia')).gridColumnStart };
     fermerFeuilles(); allerA(avant[0]);
-    demarrerTourGuide('muscu'); r.etapesMuscu = tourListe.filter(e => e.ia).length; fermerTourGuide();
-    demarrerTourGuide(); r.texteBilan = tourListe.find(e => e.titre === 'Bilan de la journée').texte; fermerTourGuide();
+    r.astucesIA = astucesApplicables().filter(a => a.ia).length;
+    r.texteBilan = ASTUCES.find(a => a.id === 'repas-bilan').texte;
     return r;
   });
   const sans = await etat();
   assert.deepEqual([sans.classe, sans.photo, sans.idees, sans.bilanJour, sans.periode, sans.programme, sans.aideIA], [false, false, false, false, false, false, false]);
   assert.equal(sans.exercicesLarge, '1');
-  assert.equal(sans.etapesMuscu, 0);
+  assert.equal(sans.astucesIA, 0);
   assert.doesNotMatch(sans.texteBilan, /IA/);
   // Appelée quand même (écran resté ouvert) : un message clair, rien ne s'ouvre.
   await page.evaluate(() => ouvrirPhoto(MEALS[0]));
@@ -4850,7 +4906,7 @@ test('IA : cachée sans clé liée au compte, visible avec', () => avecAppli({},
   await page.evaluate(() => { userProfile.geminiKey = 'AIza-test'; appliquerGeminiKeyEffective(); });
   const avec = await etat();
   assert.deepEqual([avec.classe, avec.photo, avec.idees, avec.bilanJour, avec.periode, avec.programme, avec.aideIA], [true, true, true, true, true, true, true]);
-  assert.equal(avec.etapesMuscu, 1);
+  assert.equal(avec.astucesIA, 1);
   assert.match(avec.texteBilan, /par l'IA/);
 }));
 
