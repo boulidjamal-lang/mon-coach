@@ -6920,8 +6920,14 @@ test('atlas 3D : sans WebGL 2, aucun accès ; avec, la fenêtre s\'ouvre, anime 
     assert.deepEqual(a.modes, ['Semaine', 'Dernière séance', 'Fréquence', 'Progression', 'Équilibre', 'Anatomie']);
     assert.equal(a.actif, 'Semaine');
     assert.ok(a.structures > 170 && a.appels <= 5 && a.legende === 5 && a.lecture);
-    // Toucher un muscle par l'atlas : sa fiche dit la zone de la semaine.
-    const fiche = await page.evaluate(async () => { atlasMonte.choisir('pectoral_sternal'); await new Promise(r => setTimeout(r, 200)); return document.querySelector('.atlas-fiche[data-ouverte]').textContent.replace(/\s+/g, ' '); });
+    // Toucher un muscle pour de vrai (un clic au cœur de sa tache à l'écran) : sa fiche dit la zone de la semaine.
+    await page.waitForFunction(() => !atlasMonte.atlas.mesures().enCours, null, { timeout: 60000 });
+    const pt = await page.evaluate(() => { const c = atlasMonte.atlas.carteReperage(3)['pectoral_sternal|gauche'], r = atlasMonte.atlas.toile.getBoundingClientRect(); return { x: r.left + c.x, y: r.top + c.y, marge: c.marge }; });
+    assert.ok(pt.marge > 6, 'le grand pectoral offre une vraie surface à toucher');
+    await page.mouse.click(pt.x, pt.y);
+    await page.waitForFunction(() => document.querySelector('.atlas-fiche[data-ouverte]'), null, { timeout: 60000 });
+    assert.equal(await page.evaluate(() => atlasMonte.etat().choisi), 'pectoral_sternal');
+    const fiche = await page.evaluate(() => document.querySelector('.atlas-fiche[data-ouverte]').textContent.replace(/\s+/g, ' '));
     assert.match(fiche, /Grand pectoral · faisceau sternal.*Pars sternocostalis.*Thorax.*Couche 1.*Pectoraux.*4 séries/);
     // Fermer libère le moteur 3D (plus de toile, plus de contexte graphique).
     await page.click('#atlas-modal .close-modal');
