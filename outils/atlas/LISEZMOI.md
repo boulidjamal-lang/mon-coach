@@ -42,13 +42,33 @@ Contrôles : `appli/essai.html`, `appli/essai-ui.html` et `appli/essai-mouvement
    relief et l'épaisseur sous la peau (ce dont elle doit reculer pour laisser voir un muscle), et écrit le fichier.
    Copier ensuite le résultat dans `assets/atlas/`.
 
+Trois règles propres à la peau, trouvées en la regardant bouger :
+
+- **L'épaule.** Au repos, le bras pend contre le flanc : la peau du flanc reprenait les attaches du bras tout proche
+  et partait avec lui quand il se lève (le torse s'élargissait comme une cape). La peau du tronc ne suit donc le bras
+  que près de l'articulation (pleinement à moins de 5 cm du centre de l'épaule, plus du tout au-delà de 13 cm), et la
+  peau du bras ne suit le tronc que près de l'épaule. La région de chaque sommet (bras ou tronc) vient des régions de
+  Z-Anatomy.
+- **L'ombrage de relief se calcule segment par segment** (tronc et tête, chaque bras, chaque main, chaque jambe,
+  chaque pied). L'ombre qu'un bras baissé fait au flanc, ou une cuisse à l'autre, n'existe plus dès qu'ils
+  s'écartent : calculée sur le corps entier, elle resterait peinte sur la peau comme une tache. Aux jonctions
+  (épaule, hanche, poignet, cheville), où le pli s'ouvre avec le mouvement, elle s'efface.
+- **L'aisselle se creuse.** Ses articulations intermédiaires ont un « retrait » : elles se rapprochent du centre de
+  l'épaule à mesure que le bras tourne, au lieu de tourner à distance constante (ce qui gonflerait le flanc).
+
 Articulations intermédiaires : entre deux os qui tournent beaucoup l'un par rapport à l'autre, une peau attachée
 moitié-moitié se pince ou se vrille (l'avant-bras en pronation). La peau s'attache donc aussi à des articulations
 fictives, qui font une fraction de la rotation (avant-bras, coude, poignet, épaule, aisselle, hanche, genou,
 cheville) ; leur liste est dans l'en-tête du fichier, et le moteur calcule leur pose à chaque image. Les muscles,
 eux, ne s'en servent pas.
 
-Dans le moteur (`atlas3d.js`) : la peau a son propre programme de dessin. Peau partielle : la tête, les mains et
+Sondes de contrôle (`outils/`) : `peau-orientation.mjs` (sens des triangles, arêtes portées par plus de deux
+triangles), `peau-envers3d.mjs` (triangles dont l'envers se voit du dehors), `peau-attaches.mjs x,y,z …` (attaches de
+la peau en un point : utile pour comprendre pourquoi elle suit tel os).
+
+Dans le moteur (`atlas3d.js`) : la peau a son propre programme de dessin. L'envers de la peau (vu par une ouverture :
+narine, poignet de la peau partielle) est assombri ; il se reconnaît au triangle qui tourne le dos ET à la normale
+de la surface, car un triangle vu par la tranche, au bord d'un pli, est parfois pris à tort pour un envers. Peau partielle : la tête, les mains et
 les pieds, dessinés un rien en avant. Peau entière : seuls les muscles colorés (ou choisi) sont dessinés, ils
 marquent le pochoir, et la peau du corps recule derrière eux à cet endroit — une fenêtre, qui ne s'ouvre pas si un
 autre membre passe devant.

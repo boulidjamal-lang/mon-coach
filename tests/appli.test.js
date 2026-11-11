@@ -6590,6 +6590,7 @@ test('atlas 3D : la peau va avec le modèle (zones, attaches au squelette, artic
   assert.ok(octets < 1.2e6, 'la peau reste légère : ' + octets + ' octets');
   // Les articulations intermédiaires relient deux articulations du squelette, pour une part de leur rotation.
   for (const d of H.intermediaires) assert.ok(E.squelette[d.vers].parent >= 0 && d.de >= 0 && d.de < E.squelette.length && d.part > 0 && d.part < 1, 'articulation intermédiaire valide');
+  for (const d of H.intermediaires) assert.ok(d.retrait == null || (d.retrait > 0 && d.retrait <= 1), 'retrait d\'une articulation intermédiaire entre 0 et 1');
   // Chaque sommet : une zone connue, des attaches à des articulations qui existent, des poids dont la somme fait le tout.
   const NT = E.squelette.length + 2 * H.intermediaires.length, pas = H.octetsParSommet, parZone = new Array(H.zones.length).fill(0);
   let defauts = 0;
@@ -6601,6 +6602,21 @@ test('atlas 3D : la peau va avec le modèle (zones, attaches au squelette, artic
   }
   assert.equal(defauts, 0, 'sommets de la peau sans défaut');
   assert.ok(parZone.every(n => n > 0), 'chaque zone a ses sommets : ' + parZone.join(', '));
+  // Le flanc reste sur les côtes : sous l'aisselle, la peau du tronc ne suit ni le bras ni une articulation qui mène
+  // au bras (sinon elle part avec lui quand il se lève, et le torse s'élargit comme une cape).
+  const NJ = E.squelette.length, NX = H.intermediaires.length, duBras = n => /^(humerus|ulna|radius|main|doigt)/.test(n);
+  const versBras = j => (j < NJ ? duBras(E.squelette[j].nom) : duBras(E.squelette[H.intermediaires[(j - NJ) % NX].vers].nom));
+  let flanc = 0, flancBras = 0;
+  for (let i = 0; i < H.sommets; i++) {
+    const o = i * pas; if (sommets[o + 10] !== 0) continue;
+    const x = H.boite.min[0] + sommets.readUInt16LE(o) / 65535 * H.boite.etendue[0], y = H.boite.min[1] + sommets.readUInt16LE(o + 2) / 65535 * H.boite.etendue[1];
+    if (x > 0.15 || y < 1.05 || y > 1.24) continue;
+    flanc++;
+    let part = 0; for (let k = 0; k < 4; k++) if (versBras(sommets[o + 12 + k])) part += sommets[o + 16 + k];
+    if (part > 2) flancBras++;
+  }
+  assert.ok(flanc > 300, 'le contrôle porte bien sur la peau du tronc : ' + flanc + ' sommets');
+  assert.equal(flancBras, 0, 'sommets du flanc attachés au bras');
   // Les triangles ne nomment que des sommets qui existent.
   const nb = (H.trianglesPairs + H.trianglesImpairs) * 3, lire = H.indicesSur === 32 ? k => indices.readUInt32LE(k * 4) : k => indices.readUInt16LE(k * 2);
   let hors = 0; for (let k = 0; k < nb; k++) if (lire(k) >= H.sommets) hors++;

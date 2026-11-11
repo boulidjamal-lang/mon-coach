@@ -4,7 +4,8 @@
 //   2. adoucit la région uro-génitale (le corps porte un short) ;
 //   3. garde la peau au-dessus des muscles et des os de l'atlas (elle est repoussée là où ils affleurent) ;
 //   4. l'attache au squelette de mouvement : chaque sommet reprend les attaches des muscles et des os qu'il recouvre ;
-//   5. calcule l'ombrage de relief (aisselles, entrejambe, dessous du menton, entre les doigts) ;
+//   5. calcule l'ombrage de relief, segment par segment (dessous du menton, oreilles, entre les doigts ; pas l'ombre
+//      d'un bras sur le flanc, qui ne vaut que bras baissés) ;
 //   6. écrit atlas-peau.bin (même rangement des sommets que atlas.bin : 20 octets).
 // Usage : node outils/peau.mjs <regions.bin> <atlas.bin> <sortie.bin>
 import fs from 'fs';
@@ -277,6 +278,35 @@ for (let tour = 0; tour < TOURS; tour++) {
   for (let i = 0; i < nv; i++) { const v = voisins[i]; for (let j = 0; j < NJ; j++) { let s = 0; for (let q = 0; q < v.length; q++) s += W[v[q] * NJ + j]; Q[i * NJ + j] = 0.5 * W[i * NJ + j] + 0.5 * s / Math.max(1, v.length); } }
   W = Q;
 }
+/* L'épaule. Au repos, le bras pend contre le flanc : la peau du flanc reprenait les attaches du bras tout proche (ou du
+   grand dorsal près de son tendon), et partait avec lui quand il se lève. La peau du tronc ne suit donc le bras que près
+   de l'articulation ; plus loin, le tronc la garde. De même, la peau du bras ne suit le tronc que près de l'épaule. */
+{
+  const R0 = Number(process.env.EPAULE_R0 || 0.05), R1 = Number(process.env.EPAULE_R1 || 0.13);
+  const lisse = (a, b, x) => { const u = Math.min(1, Math.max(0, (x - a) / (b - a))); return u * u * (3 - 2 * u); };
+  // Part « bras » de chaque sommet, d'après sa région (deltoïde, bras, avant-bras, main), adoucie le long de la peau.
+  let bras = new Float32Array(nv), compte = new Float32Array(nv);
+  for (let t = 0; t < nt; t++) { const b = BRAS.test(regions[peauRegion[t]]) || MAIN.has(regions[peauRegion[t]]) ? 1 : 0; for (let j = 0; j < 3; j++) { bras[T[t * 3 + j]] += b; compte[T[t * 3 + j]]++; } }
+  for (let i = 0; i < nv; i++) bras[i] /= compte[i] || 1;
+  for (let k = 0; k < 3; k++) { const b = new Float32Array(nv); for (let i = 0; i < nv; i++) { const vs = voisins[i]; let s = 0; for (let q = 0; q < vs.length; q++) s += bras[vs[q]]; b[i] = 0.5 * bras[i] + 0.5 * s / Math.max(1, vs.length); } bras = b; }
+  const membre = nom => /^(humerus|ulna|radius|main|doigt)/.test(nom), jambe = nom => /^(femur|tibia|pied|orteils)/.test(nom);
+  const TRONC = A.E.squelette.map((a, j) => (!membre(a.nom) && !jambe(a.nom) ? j : -1)).filter(j => j >= 0), THORAX = J('thorax');
+  let retenus = 0, rendus = 0;
+  for (const c of ['G', 'D']) {
+    const BR = A.E.squelette.map((a, j) => (membre(a.nom) && a.nom.endsWith('.' + c) ? j : -1)).filter(j => j >= 0), HUM = J('humerus.' + c), C = A.E.squelette[HUM].centre;
+    for (let i = 0; i < nv; i++) {
+      const w = W.subarray(i * NJ, (i + 1) * NJ), d = Math.hypot(P[i * 3] - C[0], P[i * 3 + 1] - C[1], P[i * 3 + 2] - C[2]), loin = lisse(R0, R1, d);
+      let sB = 0, sT = 0; for (const j of BR) sB += w[j]; for (const j of TRONC) sT += w[j];
+      // Peau du tronc : sa part de bras est plafonnée, d'autant plus bas qu'elle est loin de l'épaule.
+      const plafB = 1 - loin * (1 - bras[i]);
+      if (sB > plafB + 1e-6) { const k = plafB / sB, rendu = sB - plafB; for (const j of BR) w[j] *= k; if (sT > 1e-6) for (const j of TRONC) w[j] += rendu * w[j] / sT; else w[THORAX] += rendu; retenus++; sT += rendu; sB = plafB; }
+      // Peau du bras : sa part de tronc est plafonnée de même.
+      const plafT = 1 - loin * bras[i];
+      if (sB > 1e-6 && sT > plafT + 1e-6) { const k = plafT / sT, rendu = sT - plafT; for (const j of TRONC) w[j] *= k; for (const j of BR) w[j] += rendu * w[j] / sB; rendus++; }
+    }
+  }
+  chrono(`épaule : ${retenus} sommets du tronc retenus (part de bras plafonnée), ${rendus} sommets du bras rendus au bras`);
+}
 // Sur la couture du milieu, les attaches sont symétriques (sinon les deux moitiés se décollent en mouvement).
 for (let i = 0; i < nv; i++) if (P[i * 3] === 0) { const w = W.subarray(i * NJ, (i + 1) * NJ), s = Float32Array.from(w); for (let j = 0; j < NJ; j++) w[j] = (s[j] + s[jumeau[j]]) / 2; }
 /* Articulations intermédiaires, pour la peau seulement. Entre deux os qui tournent beaucoup l'un par rapport à l'autre,
@@ -284,12 +314,14 @@ for (let i = 0; i < nv; i++) if (P[i * 3] === 0) { const w = W.subarray(i * NJ, 
    pronation). On intercale donc des articulations fictives qui font une fraction de la rotation : chaque sommet n'est
    plus partagé qu'entre deux voisines, qui diffèrent de peu. Le moteur calcule leur pose à partir des deux vraies. */
 const DEFS = [], PAIRES = [];
-function declarer(nom, de, vers, parts) { const k0 = DEFS.length; parts.forEach(f => DEFS.push({ de: J(de), vers: J(vers), part: +f.toFixed(4) })); PAIRES.push({ nom, de: J(de), vers: J(vers), parts, k0 }); }
+function declarer(nom, de, vers, parts, retrait = 0) { const k0 = DEFS.length; parts.forEach(f => DEFS.push(Object.assign({ de: J(de), vers: J(vers), part: +f.toFixed(4) }, retrait ? { retrait } : {}))); PAIRES.push({ nom, de: J(de), vers: J(vers), parts, k0 }); }
 declarer('torsion', 'ulna.G', 'radius.G', [0.25, 0.5, 0.75]);      // l'avant-bras : la peau se vrille du coude au poignet
 declarer('coude', 'humerus.G', 'ulna.G', [0.5]);
 declarer('poignet', 'radius.G', 'main.G', [0.5]);
 declarer('epaule', 'clavicule.G', 'humerus.G', [1 / 3, 2 / 3]);
-declarer('aisselle', 'thorax', 'humerus.G', [1 / 3, 2 / 3]);         // pectoral, grand dorsal : du thorax au bras
+// L'aisselle : bras levé, elle se creuse. Ses articulations se rapprochent du centre de l'épaule à mesure qu'elle tourne
+// (« retrait »), au lieu de tourner à distance constante, ce qui gonflerait le flanc comme une aile.
+declarer('aisselle', 'thorax', 'humerus.G', [1 / 3, 2 / 3], Number(process.env.RETRAIT_AISSELLE || 0.5));   // pectoral, grand dorsal : du thorax au bras
 declarer('hanche', 'bassin', 'femur.G', [1 / 3, 2 / 3]);
 declarer('genou', 'femur.G', 'tibia.G', [0.5]);
 declarer('cheville', 'tibia.G', 'pied.G', [0.5]);
@@ -333,14 +365,32 @@ function quatre(w) {
 chrono('peau attachée au squelette');
 
 /* ---------- 5 : ombrage de relief ---------- */
-// Part du ciel cachée par le corps lui-même (les deux côtés de la peau), comme pour les muscles.
+/* Part du ciel cachée par le corps lui-même (les deux côtés de la peau), comme pour les muscles — mais segment par
+   segment. Le corps est mesuré au repos, bras le long du corps : l'ombre que le bras fait au flanc, ou une cuisse à
+   l'autre, n'existe plus dès que le bras se lève ou que les jambes s'écartent, et resterait peinte sur la peau comme
+   une tache. Une surface ne fait donc de l'ombre qu'à ce qui bouge avec elle : tronc et tête, chaque bras, chaque main,
+   chaque jambe, chaque pied. Aux jonctions, la part d'ombre suit le partage des attaches (pas de cassure). */
 const ombre = (() => {
+  const SEG = ['axe', 'bras.G', 'main.G', 'jambe.G', 'pied.G', 'bras.D', 'main.D', 'jambe.D', 'pied.D'], NS = SEG.length;
+  const segDe = nom => { const c = /\.D$/.test(nom) ? '.D' : '.G', n = nom.replace(/\.[GD]$/, ''); return SEG.indexOf(/^(humerus|ulna|radius)$/.test(n) ? 'bras' + c : /^(main|doigt)/.test(n) ? 'main' + c : /^(femur|tibia)$/.test(n) ? 'jambe' + c : /^(pied|orteils)$/.test(n) ? 'pied' + c : 'axe'); };
+  const segJ = A.E.squelette.map(a => segDe(a.nom)), miroirS = SEG.map((s, k) => (k === 0 ? 0 : SEG.indexOf(s.replace(/\.[GD]$/, m => (m === '.G' ? '.D' : '.G')))));
+  if (segJ.some(s => s < 0) || miroirS.some(s => s < 0)) throw new Error('segments du corps : articulation non rangée');
+  // Part de chaque segment en chaque sommet (côté rangé ; pour le miroir, les segments gauches et droits s'échangent).
+  const S = new Float32Array(nv * NS);
+  for (let i = 0; i < nv; i++) for (let j = 0; j < NJ; j++) { const w = W[i * NJ + j]; if (w) S[i * NS + segJ[j]] += w; }
   const Pm = new Float32Array(nv * 6), Tm = new Uint32Array(T.length * 2);
   Pm.set(P); for (let i = 0; i < nv; i++) { Pm[(nv + i) * 3] = -P[i * 3]; Pm[(nv + i) * 3 + 1] = P[i * 3 + 1]; Pm[(nv + i) * 3 + 2] = P[i * 3 + 2]; }
   Tm.set(T); for (let i = 0; i < T.length; i += 3) { Tm[T.length + i] = nv + T[i]; Tm[T.length + i + 1] = nv + T[i + 2]; Tm[T.length + i + 2] = nv + T[i + 1]; }
   const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.BufferAttribute(Pm, 3)); g.setIndex(new THREE.BufferAttribute(Tm, 1));
-  const bvh = new MeshBVH(g), rayon = new THREE.Ray(), R = 24, o = new Float32Array(nv);
+  // (La construction range les triangles de Tm à sa façon : un numéro de face touchée se lit dans Tm après coup.)
+  const bvh = new MeshBVH(g), rayon = new THREE.Ray(), R = 24, PORTEE = 0.25, o = new Float32Array(nv);
   const n = new THREE.Vector3(), u = new THREE.Vector3(), v = new THREE.Vector3();
+  // Parenté entre le sommet i et la face f : produit de leurs parts de segments (1 : même segment ; 0 : segments distincts).
+  const parente = (i, f) => {
+    let s = 0;
+    for (let k = 0; k < 3; k++) { let q = Tm[f * 3 + k]; const mir = q >= nv; if (mir) q -= nv; for (let a = 0; a < NS; a++) { const x = S[i * NS + a]; if (x) s += x * S[q * NS + (mir ? miroirS[a] : a)]; } }
+    return s / 3;
+  };
   for (let i = 0; i < nv; i++) {
     n.set(N[i * 3], N[i * 3 + 1], N[i * 3 + 2]); u.set(Math.abs(n.x) > 0.8 ? 0 : 1, Math.abs(n.x) > 0.8 ? 1 : 0, 0).cross(n).normalize(); v.crossVectors(n, u);
     let libre = 0, tot = 0;
@@ -349,11 +399,21 @@ const ombre = (() => {
       const a = 2 * Math.PI * ((k * 0.618034 + i * 0.37) % 1), r = Math.sqrt((k + 0.5) / R), h = Math.sqrt(1 - r * r);
       rayon.direction.set(0, 0, 0).addScaledVector(u, r * Math.cos(a)).addScaledVector(v, r * Math.sin(a)).addScaledVector(n, h).normalize();
       rayon.origin.set(P[i * 3], P[i * 3 + 1], P[i * 3 + 2]).addScaledVector(n, 0.0015);
-      const hit = bvh.raycastFirst(rayon, THREE.DoubleSide, 0, 0.25);
-      libre += hit ? Math.min(1, hit.distance / 0.25) ** 0.6 : 1; tot++;
+      // Chaque surface rencontrée retire sa part de ciel, selon sa parenté avec le sommet et sa distance.
+      const touches = bvh.raycast(rayon, THREE.DoubleSide, 0, PORTEE).sort((p, q) => p.distance - q.distance);
+      let passe = 1;
+      for (const hit of touches) { passe *= 1 - parente(i, hit.faceIndex) * (1 - Math.min(1, hit.distance / PORTEE) ** 0.6); if (passe < 0.02) break; }
+      libre += passe; tot++;
     }
     o[i] = libre / tot;
   }
+  // Aux jonctions (épaule, hanche, poignet, cheville), la peau est partagée entre deux segments : le pli qu'elle forme au
+  // repos s'ouvre avec le mouvement (l'aisselle, bras levé). L'ombre s'y efface, d'autant plus que le partage est égal.
+  const ETALE = Number(process.env.ETALE_JONCTION || 3);
+  let jonction = new Float32Array(nv);
+  for (let i = 0; i < nv; i++) { let c = 0; for (let a = 0; a < NS; a++) c += S[i * NS + a] ** 2; jonction[i] = Math.min(1, 2 * (1 - c)); }
+  for (let k = 0; k < ETALE; k++) { const b = new Float32Array(nv); for (let i = 0; i < nv; i++) { const vs = voisins[i]; let m = jonction[i]; for (let q = 0; q < vs.length; q++) m = Math.max(m, jonction[vs[q]] * 0.85); b[i] = m; } jonction = b; }
+  for (let i = 0; i < nv; i++) o[i] = 1 - (1 - o[i]) * (1 - jonction[i]);
   let a = o; for (let k = 0; k < 2; k++) { const b = new Float32Array(nv); for (let i = 0; i < nv; i++) { const vs = voisins[i]; let s = 0; for (let q = 0; q < vs.length; q++) s += a[vs[q]]; b[i] = 0.5 * a[i] + 0.5 * s / Math.max(1, vs.length); } a = b; }
   return a;
 })();
