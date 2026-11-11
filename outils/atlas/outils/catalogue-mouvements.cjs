@@ -4,7 +4,7 @@
 // Les vues sont gardées d'une fois sur l'autre (dossier vues/) : seuls les mouvements nouveaux ou modifiés sont rendus.
 // Usage : node outils/catalogue-mouvements.cjs <dossier de sortie>
 // Variables : DEPOT (le dépôt de l'appli), L, H (taille d'une vue), COLS (exercices par rangée), PAR (exercices par planche),
-//             PAGES (rendus menés de front), PEAU (0 écorché, 1 tête-mains-pieds, 2 entière : par défaut, comme l'appli),
+//             PAGES (rendus menés de front), PEAU (0 écorché ; 1 tête, mains et pieds : par défaut, comme l'appli ; 2 entière),
 //             CLAIR=1, REFAIRE=<expression> (rend de nouveau les mouvements qui la contiennent, par exemple après avoir
 //             retouché une famille : REFAIRE="^squat"), Q (qualité des planches, 2 à 8).
 const { ouvrir } = require('./photo.cjs');
@@ -16,7 +16,7 @@ const cleDe = texte => crypto.createHash('sha1').update(texte).digest('hex').sli
   const sortie = process.argv[2] || 'essai/catalogue';
   const DEPOT = process.env.DEPOT || path.join(__dirname, '..', '..', '..');
   const L = +(process.env.L || 220), H = +(process.env.H || 250), COLS = +(process.env.COLS || 5), PAR = +(process.env.PAR || 60), PAGES = +(process.env.PAGES || 3);
-  const PEAU = process.env.PEAU == null ? 2 : +process.env.PEAU, clair = !!process.env.CLAIR;
+  const PEAU = process.env.PEAU == null ? 1 : +process.env.PEAU, clair = !!process.env.CLAIR;
   const { visibles, GROUPES, specDe } = bibliotheque(DEPOT);
   const t0 = Date.now();
   // Les couleurs de chaque exercice, demandées à l'appli.
@@ -41,7 +41,7 @@ const cleDe = texte => crypto.createHash('sha1').update(texte).digest('hex').sli
       p.on('pageerror', e => erreurs.push(e.message));
       await p.goto(`http://atlas.local/appli/essai-mouvement.html?spec=repos&pp=1${PEAU ? '&peau=' + PEAU : ''}${clair ? '&clair=1' : ''}`);
       await p.waitForFunction(() => window.pret, null, { timeout: 180000 });
-      await p.evaluate(n => { window.atlas.theme({ muscle: n.muscle, tendon: n.tendon, os: n.os, estompe: 0.5 }); }, neutres);
+      await p.evaluate(n => { window.atlas.theme(AnqaAtlas.themeDeCarte(Object.assign({}, n, { estompe: 0.5 }))); }, neutres);
       for (;;) {
         const i = suivant++; if (i >= liste.length) break;
         const [k, r] = liste[i];

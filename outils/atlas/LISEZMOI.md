@@ -79,6 +79,86 @@ les pieds, dessinés un rien en avant. Peau entière : seuls les muscles coloré
 marquent le pochoir, et la peau du corps recule derrière eux à cet endroit — une fenêtre, qui ne s'ouvre pas si un
 autre membre passe devant.
 
+## Ce que le corps devient au chargement, et comment il se déforme
+
+- **Le mélange des articulations.** Un sommet de muscle suit jusqu'à quatre os. Leurs déplacements se mélangent en
+  quaternions duaux (une rotation et un glissement), pas en matrices : entre deux os qui tournent beaucoup l'un par
+  rapport à l'autre — l'épaule bras levé, la hanche en squat, le coude plié — la chair tourne d'une part de l'angle
+  autour de l'articulation, à distance constante, au lieu de couper par la corde et de s'écraser. Chaque rotation est
+  prise du même côté que celle de son os parent : le mélange suit le chemin que l'articulation a vraiment pris, sans
+  saut quand un os dépasse le demi-tour par rapport à un os éloigné. Le moteur écrit ces quaternions dans la texture
+  de pose (rangées 2 et 3) ; le solveur de pose fait le même calcul quand il mesure le corps (`Corps.peauPosee`) : ce
+  qu'il mesure est ce qui se dessine. La peau, elle, garde ses matrices et ses articulations intermédiaires.
+- **La carrure.** Le corps de Z-Anatomy est celui d'un homme mince. Au chargement, le moteur étoffe les chairs autour
+  des os (`etoffer`, option `carrure` : 1 par défaut, 0 pour le corps d'origine) : chaque sommet s'écarte de l'axe des
+  os qu'il suit — l'axe du membre, ou la verticale du milieu du corps pour le tronc — d'un pourcentage qui dépend de
+  l'endroit (jusqu'à 30 % au milieu du bras, 18 % à la cuisse et au mollet, 11 à 13 % au thorax et aux épaules, moins
+  à la taille, rien aux poignets, aux chevilles, à la tête, aux mains et aux pieds). Toutes les couches s'écartent
+  ensemble : les muscles gardent leur forme, leurs voisins et leurs tendons ; le squelette ne bouge pas. La peau
+  reçoit la même transformation. Les outils de contrôle (`mouvements/silhouettes.mjs`) chargent le modèle par la même
+  fonction : `CARRURE=0` pour s'en passer. Les fichiers `atlas.bin` et `atlas-peau.bin` ne sont pas modifiés.
+- **Une seule apparence.** L'appli montre toujours le corps écorché, la peau gardée sur la tête, les mains et les
+  pieds (plus de bouton « Peau »). La peau entière (`niveauPeau: 2`) existe encore dans le moteur, mais n'est plus
+  proposée ni contrôlée depuis la carrure et le nouveau mélange : la remettre demanderait de la revoir.
+- **La teinte de la peau.** Sur une carte comme pendant un exercice, le corps est gris et les muscles en couleur : la
+  peau gardée prend la teinte du corps (un gris entre celui des muscles au repos et celui des tendons, voir
+  `avecPeauAtlas` dans `index.html`), cheveux et sourcils dans la même teinte, plus sombre. La carte la donne au moteur
+  par son champ `peau` (`AnqaAtlas.themeDeCarte`) : la peau n'est alors plus qu'une matière de cette couleur (`chair`
+  à 0 : ni sang sous la surface, ni ongles rosés, ni iris bruns). Sans ce champ — le mode « Anatomie », aux couleurs
+  naturelles — la peau reste naturelle. `apparence()` rend les couleurs en vigueur, pour les contrôles.
+- **Ce que chaque image soumet.** Le mouvement tourne dans la fiche de chaque exercice : le dessin de cette apparence
+  ne soumet à la carte graphique que ce qui se voit. Le modèle une fois par côté ; la passe des structures translucides
+  (fantômes, voiles) ne soumet que leurs plages d'indices — à la couche 1, un seul voile sur 178 structures — et retombe
+  sur le modèle entier au-delà de 24 plages ; la peau partielle ne soumet que les triangles de la tête, des mains et
+  des pieds, triés au chargement, sans rejet point par point dans le nuanceur (qui empêcherait les puces des
+  téléphones d'écarter d'avance les points cachés). Soit 495 000 triangles par image au lieu de 950 000, pour la même
+  image au pixel près (`mesures().trianglesSoumis`, vérifié par un test).
+  Les structures se dessinent de la surface vers la profondeur (couche 1, puis 2, 3, 4, et le squelette) : un muscle
+  de surface dessiné d'abord masque d'avance ceux qu'il recouvre, que la carte graphique n'a plus à colorer pour
+  rien ; les fantômes, eux, se posent du fond vers la surface. Même image (au plus 2/255 d'écart sur les fantômes).
+- **Le mouvement dans la fiche ne tourne que s'il se voit.** `monterMouvementFiche` (dans `index.html`) regarde quatre
+  fois par seconde si le cadre est à l'écran (`cadreFicheVisible`) et met le mouvement en pause sinon. Pas
+  d'`IntersectionObserver` : dans le moteur web d'iOS, son premier verdict pouvait tomber pendant que la fiche glissait
+  en place (« pas visible »), puis plus rien tant que rien ne se redessinait — le mouvement restait figé. Le simulateur
+  iPhone l'a montré ; un test rejoue la panne.
+
+## Le matériel
+
+`mouvements/src/20-materiel.js` dessine le matériel avec les formes du moteur (`formesDeBase` dans `atlas3d.js`) :
+cylindre, boîte, sphère, anneau, demi-anneau, prisme à six pans. Un cylindre et une boîte peuvent avoir les bords
+arrondis (`r`, en mètres) : c'est ce qui fait un coussin, un disque, un profilé d'acier. Mesures d'une salle : barre
+de 28 mm, disque de 45 cm, banc à 44 cm.
+
+- Poids libres : barre olympique (manchons, butées, deux disques et un collier par côté), barre EZ ondulée, haltères
+  à têtes à six pans, kettlebell, disque, ballon.
+- Bancs : plat, réglable (crémaillère), décliné (boudins) ; supports de barre du développé couché ; siège ; pupitre ;
+  portique de traction ; barres parallèles.
+- Machines à charge guidée : un bâti commun (`bati` : socle, deux montants, traverse, pile de poids entre ses tiges).
+  Tour de poulie (`MAT.colonne` : chariot sur son rail, câble jusqu'à la pile), poste de tirage vertical
+  (`MAT.tirageHaut`), rowing assis (repose-pieds), presse à cuisses (rails, chariot, disques), hack squat, leg
+  extension et leg curl (bras de levier dans l'axe du genou, boudin), machines à leviers (développés, écartés,
+  rowing : `definir` leur donne leur bâti d'après leurs pivots), tractions assistées, mollets, lombaires.
+- La pile de poids monte avec le mouvement : les plaques marquées `leve` suivent la longueur du câble (son minimum
+  est relevé à la définition du mouvement), ou ce que dit `d.levee(info, u)` pour une machine sans câble apparent.
+- Le haut d'un grand bâti est marqué `hors` : il ne compte pas pour le cadrage, qui se règle sur le corps et sur ce
+  qu'il touche.
+
+Les appareils de cardio (`mouvements/src/56-cardio.js`) sont dessinés avec les mêmes pièces : tapis roulant (plateau
+entre deux longerons, bande, capot du moteur, montants, console, mains courantes), vélo et air bike (poutre sur deux
+pieds, cadre en profilés, tige et selle, potence, console, roue carénée ou ventilateur dans sa cage, pédalier),
+rameur (rail, pieds, roue à air, écran, cale-pieds, siège), elliptique, simulateur d'escalier, ergomètre de ski,
+traîneau. Ils restent plus simples que les machines de musculation : pas de carénages moulés.
+
+## Positions
+
+Corrigées d'après une comparaison planche à planche avec une référence d'exécution (étude seulement : aucune image
+de la référence n'entre dans l'appli) : couché sur un banc, les genoux sont à l'équerre et les pieds à plat ; la barre
+du développé couché descend au bas des pectoraux (en haut de la poitrine sur un banc incliné) et les bras tendus sont
+à la verticale ; au rowing barre, le buste est près de l'horizontale ; au squat, les appuis sont plus larges que les
+épaules, pointes ouvertes, hanches sous les genoux ; debout, les pieds sont à la largeur du bassin ; au rowing assis,
+les pieds sont posés sur les repose-pieds. `outils/gros-plans.cjs` montre une articulation
+pendant un mouvement ; `mouvements/controle.mjs --table` reste le garde-fou.
+
 ## Les mouvements des exercices
 
 Chaque exercice de la bibliothèque (`EXERCICES_BASE` dans `index.html`) a son mouvement. Tout est dans `mouvements/` :
@@ -87,8 +167,8 @@ Chaque exercice de la bibliothèque (`EXERCICES_BASE` dans `index.html`) a son m
   une famille, puis ses options — `curl hal assis alt`, `developpe barre incline`, `traction large`,
   `pompe diamant`, `etire pigeon`, `cardio rameur`… `amp=0.5` (valable partout) réduit l'amplitude de moitié.
 - `src/*.js` : les sources, assemblées dans l'ordre des numéros. `00-maths` et `10-corps` (le solveur : bassin,
-  colonne, bras et jambes par cibles ou par angles), `20-materiel` (barres, haltères, bancs, poulies, machines
-  simplifiées), `30-postures` (debout, assis, couché, planche…), `35-definition` (lecture du mouvement, poses
+  colonne, bras et jambes par cibles ou par angles), `20-materiel` (barres, haltères, bancs, poulies, machines :
+  voir « Le matériel »), `30-postures` (debout, assis, couché, planche…), `35-definition` (lecture du mouvement, poses
   clés, appuis des pieds), puis une famille de mouvements par fichier (`42-curl` … `58-etirements`) et
   `90-animation` (la lecture en boucle, le cadrage, le filet qui garde le corps au-dessus du sol).
   Les options qu'une famille comprend sont celles que son code lit (`o.nom`).
@@ -99,10 +179,13 @@ Chaque exercice de la bibliothèque (`EXERCICES_BASE` dans `index.html`) a son m
   dans la suite de tests de l'appli.
 - `node outils/planche-mouvements.cjs sortie.png "pompe diamant" "dips anneaux | Dips aux anneaux"` : planche de
   contrôle dans le vrai rendu (début, milieu, fin de la répétition). `appli/essai-mouvement.html?spec=…` ou
-  `?ex=<identifiant>` montre un mouvement seul (`&peau=1` ou `&peau=2` pour la peau).
+  `?ex=<identifiant>` montre un mouvement seul (`&peau=1` pour la peau de l'appli, `&carrure=0` pour le corps
+  d'origine). `node outils/grille.cjs sortie.jpg liste.txt` : une grille de mouvements, chacun à un instant et sous
+  une vue donnés ; `node outils/gros-plans.cjs sortie.jpg liste.txt` : une articulation en gros plan pendant un
+  mouvement (contrôle des déformations).
 - `node outils/video-planche.cjs sortie.mp4 "ex=e338" "ex=e20 | Traction"` : plusieurs exercices côte à côte, en
-  vidéo, tels que l'appli les montre (peau, muscles de l'exercice en couleur) ; `node outils/apercu-exercice.cjs
-  sortie.jpg e338` : un exercice sous ses trois peaux. Les couleurs sont calculées par l'appli elle-même
+  vidéo, tels que l'appli les montre (peau partielle, muscles de l'exercice en couleur) ; `node
+  outils/apercu-exercice.cjs sortie.jpg e338` : un exercice à un instant donné. Les couleurs sont calculées par l'appli elle-même
   (`outils/exercices-appli.cjs` l'ouvre dans le navigateur de test).
 - `node mouvements/sonde.mjs "<mouvement>" [instant]` : hauteur du point le plus bas de chaque région du corps,
   pour régler une pose au sol.
@@ -116,7 +199,7 @@ Ajouter ou corriger le mouvement d'un exercice : modifier sa ligne dans `table.t
 relancer `construire.mjs`, puis `controle.mjs --table`, et regarder le résultat sur une planche. Un exercice ajouté
 à la bibliothèque sans ligne dans la table fait échouer les tests de l'appli.
 
-Ce que le mouvement ne montre pas : les machines sont dessinées en formes simples (leviers, coussins, sièges) ; les
+Ce que le mouvement ne montre pas : les
 déplacements (fentes marchées, marches latérales) se font sur place ; les mouvements à plusieurs temps (relevé
 turc, haltérophilie) passent par quelques poses clés ; les muscles s'étirent et se raccourcissent avec les os mais
 ne gonflent pas à la contraction.

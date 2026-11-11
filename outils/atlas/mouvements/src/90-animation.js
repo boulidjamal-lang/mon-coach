@@ -33,8 +33,9 @@
       for (const pt of corps.pw) etendre(pt.x, pt.y, pt.z, 0.09);
       // Le matériel : les huit coins de chaque forme, tournés et posés (sauf ce qui est très grand : murs, colonnes).
       for (const f of formes) {
-        if (Math.max(f.s[0], f.s[1], f.s[2]) > 1.9) continue;
-        const q = new Quat(f.q[0], f.q[1], f.q[2], f.q[3]), dd = f.forme === 'boite' ? [f.s[0] / 2, f.s[1] / 2, f.s[2] / 2] : f.forme === 'cylindre' ? [f.s[0], f.s[1] / 2, f.s[2]] : [f.s[0], f.s[1], f.s[2]];
+        if (f.hors || Math.max(f.s[0], f.s[1], f.s[2]) > 1.9) continue;
+        const tb = f.forme === 'tore' || f.forme === 'arc' ? (f.r || 0) : 0;
+        const q = new Quat(f.q[0], f.q[1], f.q[2], f.q[3]), dd = f.forme === 'boite' ? [f.s[0] / 2, f.s[1] / 2, f.s[2] / 2] : f.forme === 'cylindre' || f.forme === 'hexa' ? [f.s[0], f.s[1] / 2, f.s[2]] : [f.s[0] + tb, f.s[1] + tb, f.s[2] + tb];
         for (let k = 0; k < 8; k++) { const cc = V(k & 1 ? dd[0] : -dd[0], k & 2 ? dd[1] : -dd[1], k & 4 ? dd[2] : -dd[2]).applyQuaternion(q); etendre(f.p[0] + cc.x, f.p[1] + cc.y, f.p[2] + cc.z, 0); }
       }
     }

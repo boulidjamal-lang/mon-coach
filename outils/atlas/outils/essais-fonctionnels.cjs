@@ -232,22 +232,23 @@ const MVT = { squat: 'squat', developpeCouche: 'développé couché', curl: 'cur
   noter('une double touche choisit le muscle et le cadre, du côté touché', doubles.every(x => x.choisi === x.id && x.bonCote && x.dist < dE * 0.75 && Math.abs(x.y - x.milieu) < 40), doubles.map(x => `${nom(x.choisi)} ${x.cote}${x.bonCote ? '' : ' (mauvais côté)'} à ${x.dist.toFixed(2)} m, centre à ${Math.round(x.y - x.milieu)} px du milieu de la zone libre`).join(' ; '));
   await ev(() => { monte.choisir(null); monte.atlas.reinitialiser(0); }); await repos();
 
-  // La peau : trois positions au bouton ; sous la peau entière, on touche un muscle à travers elle ; en profondeur, elle s'efface.
+  // La peau : une seule apparence (tête, mains et pieds), sans bouton ; on touche un muscle du corps comme avant ; en
+  // profondeur (couches retirées, muscle du visage choisi), elle s'efface.
   if (await ev(() => monte.atlas.aPeau)) {
     const bilan = await ev(() => {
-      const b = document.querySelector('.atlas-peau'), r = { depart: monte.etat().peau, tour: [] };
-      for (let i = 0; i < 3; i++) { b.click(); r.tour.push(monte.etat().peau); }
-      monte.niveauPeau(2); r.entiere = monte.etat().peau; r.appels = monte.atlas.mesures().appelsDeDessin;
+      const r = { depart: monte.etat().peau, boutons: document.querySelectorAll('.atlas-peau').length, appels: monte.atlas.mesures().appelsDeDessin };
       monte.couche(3); r.profond = monte.etat().peau; monte.couche(1); r.retour = monte.etat().peau;
       return r;
     });
     await ev(() => monte.atlas.vue('face', 0)); await repos();
     const pt = await pointDe('pectoral_sternal'); await toucher(pt.x, pt.y); await repos();
-    const sousPeau = await ev(() => [monte.etat().choisi, monte.etat().peau]);
-    await ev(() => { monte.choisir(null); monte.niveauPeau(1); }); await repos();
-    noter('la peau : trois positions au bouton, un muscle touché à travers la peau entière, effacée en profondeur',
-      bilan.depart === 1 && bilan.tour.join() === '0,2,1' && bilan.entiere === 2 && bilan.profond === 0 && bilan.retour === 2 && sousPeau[0] === 'pectoral_sternal' && sousPeau[1] === 2,
-      `au départ ${bilan.depart}, puis ${bilan.tour.join(' → ')} ; peau entière : ${bilan.appels} appels de dessin, ${nom(sousPeau[0])} touché à travers elle ; couche 3 : peau ${bilan.profond}`);
+    const touche = await ev(() => [monte.etat().choisi, monte.etat().peau]);
+    await ev(() => monte.choisir('masseter_partie_superficielle')); await repos();
+    const visage = await ev(() => [monte.etat().choisi, monte.etat().peau]);
+    await ev(() => monte.choisir(null)); await repos();
+    noter('la peau : une seule apparence (tête, mains, pieds), sans bouton, effacée en profondeur',
+      bilan.depart === 1 && bilan.boutons === 0 && bilan.profond === 0 && bilan.retour === 1 && touche[0] === 'pectoral_sternal' && touche[1] === 1 && visage[1] === 0,
+      `au départ ${bilan.depart}, ${bilan.boutons} bouton, ${bilan.appels} appels de dessin ; couche 3 : peau ${bilan.profond} ; ${nom(touche[0])} touché, peau ${touche[1]} ; muscle du visage choisi (${visage[0]}) : peau ${visage[1]}`);
   }
 
   await nav.close();

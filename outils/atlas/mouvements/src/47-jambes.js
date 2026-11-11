@@ -27,7 +27,11 @@
     } else if (o.elas) { p.bras = pareil(B(30, 28, 60, 140, 90)); r.tenu = [{ t: 'elastique', de: 'pieds', m: 'G', bout: 'rien' }, { t: 'elastique', de: 'pieds', m: 'D', bout: 'rien' }]; }
     else if (o.hanches) p.bras = mains(c, t, 'hanches');
     else if (o.nuque) p.bras = mains(c, t, 'nuque');
-    else p.bras = pareil(B(6, lerp(30, 86, u == null ? 1 : u), 0, 8, 180, { doigts: 'detendu' }));          // bras qui montent devant pour l'équilibre
+    else {
+      // Sans charge : les bras tendus devant soi, à l'horizontale, pour l'équilibre (quel que soit le buste).
+      const k = u == null ? 1 : u;
+      for (const [kk, s] of COTES) p.bras[kk] = { dirBras: V(s * 0.05, -0.35 * (1 - k), 1), dirAvantBras: V(-s * 0.02, -0.3 * (1 - k), 1), paume: V(0, -1, 0), doigts: 'plat' };
+    }
     return r;
   }
 
@@ -38,7 +42,7 @@
      inclinée ; avec barre : la barre derrière les jambes) ; ceinture (charge accrochée à la taille). */
   FAM.squat = (c, o, C) => {
     const L = c.L, sumo = !!o.sumo;
-    const ecart = sumo ? 0.34 : o.serre ? 0.09 : 0.17, ouv = sumo ? 40 : 20;
+    const ecart = sumo ? 0.36 : o.serre ? 0.09 : 0.2, ouv = sumo ? 42 : 26;
     const prof = o.demi ? 0.52 : o.partiel ? 0.7 : o.boite ? 0.8 : 1;
     const droit = o.avant || o.gobelet || o.kb || o.tete || o.zercher || o.landmine || o.smith || sumo || o.cycliste;   // buste plus droit
     let fixe = [], vue = { az: 38, el: 8 }, objetsPlus = null;
@@ -55,9 +59,27 @@
       // Machine inclinée : le dos glisse le long d'un dossier à 60°, les pieds sur un plateau.
       const r = V(0, Math.sin(rad(58)), -Math.cos(rad(58))), base = V(0, 0.92, -0.2);
       const cle = u => { const p = { bassin: { pos: base.clone().add(r.clone().multiplyScalar(-0.3 * u)), rot: qX(-28) }, lombaires: 0, thorax: 0, cou: 6, bras: {}, jambes: {} }; for (const [k, s] of COTES) { p.jambes[k] = { cheville: V(s * 0.16, 0.3, 0.42), pole: V(s * 0.2, 0.4, 1), pied: V(s * 0.15, 0.55, 0.83), hautPied: V(0, 0.83, -0.55) }; p.bras[k] = B(30, 40, 0, 100, 90); } return p; };
-      fixe = [pret(boite(0.5, 0.05, 0.5, 0, 0.25, 0.55, C.cadre, 0.5, qX(-32))), pret(seg(V(0, 0.15, 0.25), V(0, 1.75, -0.75), 0.035, C.cadre, 0.5))];
+      // Le bâti : le plateau des pieds, deux rails inclinés sur leurs montants ; le chariot (dossier, épaulières,
+      // traverse, disques) glisse le long des rails avec le dos.
+      const xR = 0.36, r0 = V(0, 0.16, 0.36), r1 = r0.clone().add(r.clone().multiplyScalar(2.0));
+      fixe = [pret(boite(0.62, 0.035, 0.5, 0, 0.27, 0.56, C.fonte, 0.3, qX(-32), 0.012)), pret(tube(V(0, 0.03, 0.72), V(0, 0.2, 0.62), 0.05, C.cadre))];
+      for (const s of [1, -1]) {
+        fixe.push(pret(tube(r0.clone().setX(s * xR), r1.clone().setX(s * xR), 0.055, C.cadre)), Object.assign(pret(tube(V(s * xR, 0.03, r1.z), r1.clone().setX(s * xR), 0.055, C.cadre)), { hors: 1 }));
+        fixe.push(...poseFixe(patin(C, V(s * xR, 0.028, r1.z - 0.1), V(s * xR, 0.028, 0.85), 0.05)));
+      }
+      fixe.push(Object.assign(pret(tube(r1.clone().setX(-xR), r1.clone().setX(xR), 0.055, C.cadre)), { hors: 1 }));
       const d = { pose: cle, fixe, vue: { az: 62, el: 10 }, tenu: [] };
-      d.objets = (info, u, sortie) => { const b = info.bassin, q = qX(-28), dos = V(0, 0.32, -0.15).applyQuaternion(q).add(b); sortie.push({ forme: 'boite', s: [0.4, 0.75, 0.06], p: [dos.x, dos.y, dos.z], q: [q.x, q.y, q.z, q.w], couleur: C.banc, metal: 0 }); };
+      d.objets = (info, u, sortie) => {
+        const b = info.bassin, q = qX(-28), dos = V(0, 0.32, -0.15).applyQuaternion(q).add(b);
+        sortie.push(pret(coussin(0.4, 0.78, 0.065, dos.x, dos.y, dos.z, C, q)));
+        const tr = dos.clone().add(V(0, 0, -0.08).applyQuaternion(q));
+        sortie.push(pret(tube(tr.clone().setX(-xR - 0.04), tr.clone().setX(xR + 0.04), 0.05, C.cadre)));
+        for (const s of [1, -1]) {
+          const ep = info.epaules[s > 0 ? 'G' : 'D'], pad = ep.clone().add(V(0, 0.085, 0.01).applyQuaternion(q));
+          sortie.push(pret(cyl(0.05, 0.16, pad.x, pad.y, pad.z, C.banc, 0.12, q.clone().multiply(LONG_Z), 0.02)));
+          poserObjet(MAT.disque(C, 0.2), tr.clone().setX(s * (xR + 0.12)), null, sortie);
+        }
+      };
       return d;
     }
     const cle = u => {
@@ -72,7 +94,8 @@
         p = debout(c, { dx: 0.3 * k, dy: -0.42 * k, dz: -0.12 * k, penche: 26 * k, ecart: 0.42, ouv: 30, cou: -14 * k });
         p.jambes.D.pied = V(-0.2, 0.7 * k, 0.7).normalize(); p.jambes.D.hautPied = V(0, 0.7, -0.7 * k).normalize();
       } else {
-        p = debout(c, { dy: -0.4 * k, dz: (droit ? -0.14 : -0.2) * k, penche: 2 + (droit ? 16 : 28) * k, ecart, ouv, lomb: 4 * k, thor: 6 * k, cou: -(droit ? 12 : 22) * k, y0: o.cycliste ? 0 : 0 });
+        // En bas : les hanches passent sous les genoux, le buste penche d'autant que la barre est sur le dos.
+        p = debout(c, { dy: -0.44 * k, dz: (droit ? -0.15 : -0.22) * k, penche: 2 + (droit ? 18 : 32) * k, ecart, ouv, lomb: 3 * k, thor: 5 * k, cou: -(droit ? 12 : 24) * k, y0: o.cycliste ? 0 : 0 });
         if (o.cycliste) for (const [kk, s] of COTES) p.jambes[kk] = pied(c, s, { ecart: 0.1, ouv: 8, pointe: 14 });
       }
       return p;

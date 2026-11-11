@@ -3,7 +3,7 @@
 //   un exercice s'écrit « ex=<identifiant>[ | titre[ | az,el]] » (un exercice de la bibliothèque : son mouvement et les
 //   couleurs de ses muscles, comme dans l'appli) ou « <mouvement>[ | titre[ | az,el]] » (un mouvement seul, sans couleurs).
 // Variables : L, H (taille d'une case), COLS, IPS (images par seconde), DUREE (secondes d'une boucle), BOUCLES, CLAIR=1,
-//             PEAU (0 écorché, 1 tête-mains-pieds, 2 entière : par défaut, comme l'appli), DEPOT (le dépôt de l'appli).
+//             PEAU (0 écorché ; 1 tête, mains et pieds : par défaut, comme l'appli ; 2 entière), DEPOT (le dépôt de l'appli).
 const { ouvrir } = require('./photo.cjs');
 const { bibliotheque, couleursExercices } = require('./exercices-appli.cjs');
 const { execFileSync } = require('child_process');
@@ -12,7 +12,7 @@ const fs = require('fs'), path = require('path');
   const [sortie, ...textes] = process.argv.slice(2);
   const L = +(process.env.L || 360), H = +(process.env.H || 440), COLS = +(process.env.COLS || 2), IPS = +(process.env.IPS || 25);
   const DUREE = +(process.env.DUREE || 2.8), N = Math.round(IPS * DUREE), BOUCLES = +(process.env.BOUCLES || 3);
-  const PEAU = process.env.PEAU == null ? 2 : +process.env.PEAU, clair = !!process.env.CLAIR, DEPOT = process.env.DEPOT || path.join(__dirname, '..', '..', '..');
+  const PEAU = process.env.PEAU == null ? 1 : +process.env.PEAU, clair = !!process.env.CLAIR, DEPOT = process.env.DEPOT || path.join(__dirname, '..', '..', '..');
   const items = textes.map(t => { const [quoi, titre, vueTxt] = t.split('|').map(x => x.trim()); return { ex: /^ex=/.test(quoi) ? quoi.slice(3) : null, spec: /^ex=/.test(quoi) ? null : quoi, titre: titre || '', vue: vueTxt ? { az: +vueTxt.split(',')[0], el: +(vueTxt.split(',')[1] || 10) } : null }; });
   let neutres = null;
   if (items.some(i => i.ex)) {
@@ -30,7 +30,7 @@ const fs = require('fs'), path = require('path');
     const it = items[i];
     await p.evaluate(([spec, titre, vue, couleurs, neutres]) => {
       window.changer(spec, titre, vue);
-      if (couleurs) { window.atlas.theme({ muscle: neutres.muscle, tendon: neutres.tendon, os: neutres.os, estompe: 0.5 }); window.atlas.colorer(couleurs, { tendons: 0.3 }); }
+      if (couleurs) { window.atlas.theme(AnqaAtlas.themeDeCarte(Object.assign({}, neutres, { estompe: 0.5 }))); window.atlas.colorer(couleurs, { tendons: 0.3 }); }
       else window.atlas.colorer(null);
     }, [it.spec, it.titre, it.vue, it.couleurs || null, neutres]);
     for (let k = 0; k < N; k++) {

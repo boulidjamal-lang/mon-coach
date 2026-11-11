@@ -5921,6 +5921,9 @@ test("app iOS : ni vidéo SmartWorkout, ni GIF ExerciseDB, ni image wger ; les a
   const requetes = [];
   page.on('request', r => requetes.push(r.url()));
   const r = await page.evaluate(async () => {
+    // La fiche montre d'abord le mouvement en 3D ; ici on regarde ce qu'elle montre sans lui (appareil sans WebGL 2,
+    // ou « Voir la photo ») : c'est là que se jouent les droits des images.
+    window.WebGL2RenderingContext = undefined;
     const fiche = id => {
       afficherFicheExerciceBiblio(id);
       choisirOngletFiche('technique');
@@ -5965,6 +5968,7 @@ test("app iOS : ni vidéo SmartWorkout, ni GIF ExerciseDB, ni image wger ; les a
 
 test("site : comme l'app, ni vidéo SmartWorkout ni GIF ExerciseDB (schéma des muscles à la place) ; chaque image d'exercice cite sa source", () => avecAppli({}, async ({ page }) => {
   const r = await page.evaluate(() => {
+    window.WebGL2RenderingContext = undefined;   // la fiche sans le mouvement en 3D : la photo, ou le corps dessiné
     const fiche = id => {
       afficherFicheExerciceBiblio(id);
       choisirOngletFiche('technique');
@@ -7000,6 +7004,189 @@ test('atlas 3D : les cartes viennent de l\'historique réel, et restent neutres 
   assert.deepEqual(r.avis, [['delt_post', 'delt_lat'], 2, true]);
 }));
 
+/* Ouvrir un exercice montre son mouvement, sans rien toucher de plus : le corps de l'atlas l'exécute dans la fiche.
+   De là, l'atlas s'ouvre en grand DEVANT la fiche (au build 53 il s'ouvrait derrière : on ne voyait rien). */
+test('atlas 3D : la fiche d\'un exercice montre son mouvement dès l\'ouverture, et l\'atlas s\'ouvre devant elle', async () => {
+  // Sans WebGL 2 : la fiche garde la photo ou le corps dessiné, et rien ne se charge.
+  await avecAppli({}, async ({ page }) => {
+    const r = await page.evaluate(() => {
+      const sauve = window.WebGL2RenderingContext; window.WebGL2RenderingContext = undefined;
+      afficherFicheExerciceBiblio('e265');
+      const res = { cadre3d: !!document.getElementById('fiche-exo-3d'), statique: !!document.querySelector('#fiche-exo-media .fiche-exo-image'), monte: ficheMouvement };
+      fermerModal('fiche-exercice-modal'); window.WebGL2RenderingContext = sauve;
+      return res;
+    });
+    assert.deepEqual(r, { cadre3d: false, statique: true, monte: null });
+  });
+  const nav = await lancerNavigateur(['--use-gl=angle', '--use-angle=swiftshader', '--enable-unsafe-swiftshader']);
+  try {
+    const { page, erreurs, ctx } = await ouvrirAppli(nav, { https: true });
+    const webgl = await page.evaluate(() => !!document.createElement('canvas').getContext('webgl2'));
+    if (!webgl) { await ctx.close(); return; }   // pas de rendu 3D dans ce navigateur de test : rien à vérifier de plus
+    const monte = () => page.waitForFunction(() => ficheMouvement && document.querySelector('#fiche-exo-3d canvas'), null, { timeout: 120000 });
+    await page.evaluate(() => afficherFicheExerciceBiblio('e265'));
+    await monte();
+    const f = await page.evaluate(() => ({
+      onglet: !document.querySelector('#fiche-exercice-container .fiche-onglet[data-onglet="technique"]').classList.contains('hidden'),
+      anime: ficheMouvement.apercu.anime, peau: ficheMouvement.apercu.atlas.niveauPeau(), toiles: document.querySelectorAll('#fiche-exo-3d canvas').length,
+      boutons: [...document.querySelectorAll('#fiche-exo-3d .fiche-3d-btn')].map(b => b.getAttribute('aria-label')),
+      spec: ficheMouvement.apercu.atlas && AnqaMouvements.specDe('e265'), colores: Object.keys(carteExerciceAtlas(trouverExercice('e265'), ficheMouvement.apercu.atlas.structures).couleurs).length,
+      scripts: [...document.scripts].map(s => s.getAttribute('src')).filter(s => s && s.startsWith('assets/atlas/')).sort(),
+      materiel: ficheMouvement.apercu.atlas.mesures().appelsDeDessin
+    }));
+    assert.ok(f.onglet, "la fiche s'ouvre sur l'onglet où se trouve le mouvement");
+    assert.deepEqual([f.anime, f.peau, f.toiles, f.spec], [true, 1, 1, 'squat barre']);
+    assert.equal(f.boutons.length, 2);
+    assert.match(f.boutons[1], /Ouvrir l'atlas en grand/);
+    assert.ok(f.colores > 10, 'les muscles de l\'exercice sont colorés');
+    assert.deepEqual(f.scripts, ['assets/atlas/atlas-mouvements.js', 'assets/atlas/atlas3d.js']);
+    // La peau gardée (tête, mains, pieds) a la teinte du corps, pas celle de la chair.
+    assert.deepEqual(await page.evaluate(() => { const ap = ficheMouvement.apercu.atlas.apparence(), n = neutresExerciceAtlas(); return [ap.chair, ap.teint === n.peau, ap.muscle === n.muscle]; }), [0, true, true]);
+    // Lecture et pause.
+    const lecture = await page.evaluate(() => { const r = [ficheMouvement.voulu]; basculerLectureFiche(); r.push(ficheMouvement.voulu, ficheMouvement.apercu.lecture()); if (!ficheMouvement.voulu) basculerLectureFiche(); r.push(ficheMouvement.voulu); return r; });
+    assert.equal(lecture[1], !lecture[0]);
+    assert.equal(lecture[2], lecture[1], 'le bouton commande bien le mouvement');
+    assert.equal(lecture[3], true);
+    // Un autre onglet de la fiche : le mouvement se met en pause ; au retour, il reprend.
+    await page.evaluate(() => choisirOngletFiche('resume'));
+    await page.waitForFunction(() => !ficheMouvement.apercu.lecture(), null, { timeout: 20000 });
+    await page.evaluate(() => choisirOngletFiche('technique'));
+    await page.waitForFunction(() => ficheMouvement.apercu.lecture(), null, { timeout: 20000 });
+    // Une pause qui ne vient pas du bouton ne dure pas : tant que le mouvement est voulu et que son cadre se voit, il
+    // repart de lui-même. (Dans le moteur web d'iOS, un verdict de visibilité rendu pendant que la fiche glissait en
+    // place le laissait figé : le simulateur iPhone l'a montré.)
+    assert.deepEqual(await page.evaluate(() => { ficheMouvement.apercu.lecture(false); return [ficheMouvement.voulu, ficheMouvement.apercu.lecture()]; }), [true, false]);
+    await page.waitForFunction(() => ficheMouvement.apercu.lecture(), null, { timeout: 20000 });
+    // Hors de l'écran (la fiche défilée loin), il se met en pause ; revenu, il reprend.
+    await page.evaluate(() => { document.getElementById('fiche-exo-3d').style.transform = 'translateY(3000px)'; });
+    await page.waitForFunction(() => !ficheMouvement.apercu.lecture(), null, { timeout: 20000 });
+    await page.evaluate(() => { document.getElementById('fiche-exo-3d').style.transform = ''; });
+    await page.waitForFunction(() => ficheMouvement.apercu.lecture(), null, { timeout: 20000 });
+    // Tourner du doigt : un glissement horizontal change l'angle de vue.
+    const boite = await page.evaluate(() => { const r = document.querySelector('#fiche-exo-3d canvas').getBoundingClientRect(); return { x: r.left + r.width / 2, y: r.top + r.height / 2, az: ficheMouvement.apercu.atlas.camera().az }; });
+    await page.mouse.move(boite.x, boite.y); await page.mouse.down(); await page.mouse.move(boite.x + 80, boite.y + 4, { steps: 6 }); await page.mouse.up();
+    const az = await page.evaluate(() => ficheMouvement.apercu.atlas.camera().az);
+    assert.ok(Math.abs(az - boite.az) > 20, 'la vue a tourné : ' + boite.az + ' → ' + az);
+    // Agrandir : l'atlas s'ouvre devant la fiche, sur le même exercice ; le cadre de la fiche est défait entre-temps.
+    await page.evaluate(() => agrandirMouvementFiche());
+    await page.waitForFunction(() => atlasMonte && atlasMonte.atlas.mesures().images > 1, null, { timeout: 120000 });
+    const g = await page.evaluate(() => {
+      const dessus = document.elementFromPoint(innerWidth / 2, innerHeight / 2);
+      return { devant: !!dessus.closest('#atlas-modal'), fiche: ficheMouvement, titre: document.getElementById('titre-atlas').textContent, mode: atlasMonte.etat().mode, anim: !!atlasMonte.animation() };
+    });
+    assert.deepEqual(g, { devant: true, fiche: null, titre: 'Squat avec barre', mode: 'exercice', anim: true });
+    // Le bouton de la fiche (« Explorer les muscles en 3D ») mène au même endroit, lui aussi devant la fiche.
+    await page.evaluate(() => fermerAtlas());
+    await monte();
+    assert.equal(await page.evaluate(() => atlasMonte), null);
+    await page.click('#fiche-exercice-container .btn-atlas');
+    await page.waitForFunction(() => atlasMonte && atlasMonte.atlas.mesures().images > 1, null, { timeout: 120000 });
+    assert.ok(await page.evaluate(() => !!document.elementFromPoint(innerWidth / 2, innerHeight / 2).closest('#atlas-modal')), "l'atlas ouvert depuis la fiche est au premier plan");
+    // Là aussi, un seul corps en mémoire graphique : le cadre de la fiche est défait, et revient à la fermeture.
+    assert.deepEqual(await page.evaluate(() => [ficheMouvement, document.querySelectorAll('#fiche-exo-3d canvas').length]), [null, 0]);
+    await page.evaluate(() => fermerAtlas());
+    await monte();
+    // La touche Échap referme l'atlas comme sa croix : scène défaite, et la fiche restée dessous reprend son mouvement.
+    await page.evaluate(() => agrandirMouvementFiche());
+    await page.waitForFunction(() => atlasMonte && atlasMonte.atlas.mesures().images > 1, null, { timeout: 120000 });
+    await page.keyboard.press('Escape');
+    assert.deepEqual(await page.evaluate(() => [atlasMonte, document.getElementById('atlas-modal').classList.contains('show'), document.getElementById('fiche-exercice-modal').classList.contains('show')]), [null, false, true]);
+    await monte();
+    // Un exercice qui a une photo : elle reste à portée, et l'on revient au mouvement.
+    const avecPhoto = await page.evaluate(() => { const e = EXERCICES_BASE.find(x => mouvementExercice(x.id) && (mediaExercice(x) || {}).img && mediaExercice(x).img.length); return e ? e.id : null; });
+    if (avecPhoto) {
+      await page.evaluate(id => afficherFicheExerciceBiblio(id), avecPhoto);
+      await monte();
+      await page.click('#fiche-exo-media .lien-texte');
+      assert.deepEqual(await page.evaluate(() => [ficheMouvement, !!document.querySelector('#fiche-exo-media .fiche-exo-image img'), document.querySelectorAll('#fiche-exo-3d canvas').length]), [null, true, 0]);
+      const photo = await page.evaluate(() => { const z = document.getElementById('fiche-exo-media'); return { src: z.querySelector('.fiche-exo-image img').src, notes: [...z.querySelectorAll('.fiche-exo-note-source')].map(p => p.textContent.trim()), interdit: /smartworkout|exercisedb|wger/i.test(z.innerHTML), videos: z.querySelectorAll('video').length }; });
+      assert.deepEqual([photo.interdit, photo.videos], [false, 0], 'la photo de la fiche : ni vidéo ni média interdit');
+      assert.ok(photo.notes.some(t => /^(Image|Photo|Illustration) : /.test(t)) || !/RepDB|free-exercise-db|workout-guide/.test(photo.src), 'la photo cite sa source : ' + photo.notes.join(' | '));
+      assert.ok(photo.notes.some(t => /Voir le mouvement en 3D/.test(t)), 'on peut revenir au mouvement');
+      await page.click('#fiche-exo-media .lien-texte');
+      await monte();
+    }
+    // Fermer la fiche défait tout : plus de toile, plus de contexte graphique.
+    await page.evaluate(() => fermerModal('fiche-exercice-modal'));
+    assert.deepEqual(await page.evaluate(() => [ficheMouvement, document.querySelectorAll('#fiche-exo-3d canvas').length]), [null, 0]);
+    // Un exercice créé par l'utilisateur n'a pas de mouvement : sa fiche garde le corps dessiné.
+    await page.evaluate(() => { musculationExosPerso.push({ id: 'exercice-maison', nom: 'Exercice maison', groupe: 'biceps', secondaires: [], materiel: 'haltere' }); afficherFicheExerciceBiblio('exercice-maison'); });
+    assert.deepEqual(await page.evaluate(() => [!!document.getElementById('fiche-exo-3d'), !!document.querySelector('#fiche-exo-media .fiche-exo-image')]), [false, true]);
+    await page.evaluate(() => fermerModal('fiche-exercice-modal'));
+    assert.deepEqual(erreurs, [], 'erreurs JavaScript dans la page');
+    await ctx.close();
+  } finally { await nav.close(); }
+});
+
+/* La carrure : les chairs sont étoffées autour des os au chargement — le squelette, la tête, les mains et les pieds ne
+   bougent pas ; la peau reçoit la même transformation. Le mélange des articulations (quaternions duaux) redonne la
+   pose rigide là où un seul os commande. Le matériel : formes connues du moteur, pile de poids qui suit le câble. */
+test('atlas 3D : carrure (os et extrémités intacts), mélange des articulations, matériel des machines', async () => {
+  const vm = require('vm');
+  const ctxMoteur = { window: {}, Math, Float32Array, Uint8Array, Uint16Array, Uint32Array, DataView, JSON, Object, Array, Infinity, console };
+  vm.createContext(ctxMoteur);
+  vm.runInContext(fs.readFileSync(path.join(RACINE, 'assets', 'atlas', 'atlas3d.js'), 'utf8'), ctxMoteur);
+  const etoffer = ctxMoteur.window.AnqaAtlas.etoffer;
+  assert.equal(typeof etoffer, 'function');
+  const b = fs.readFileSync(path.join(RACINE, 'assets', 'atlas', 'atlas.bin')), lg = b.readUInt32LE(8), E = JSON.parse(b.subarray(12, 12 + lg).toString('utf8'));
+  const debut = 12 + Math.ceil(lg / 4) * 4, pas = E.octetsParSommet, brut = new Uint8Array(b.buffer, b.byteOffset + debut, E.sommets * pas);
+  const r = etoffer(brut, pas, E.boite, E.squelette, 1, (v, o) => brut[o + 10] === E.os.pair || brut[o + 10] === E.os.impair);
+  const lire = (tab, boite, v) => [0, 1, 2].map(k => boite.min[k] + (tab[v * pas + k * 2] | (tab[v * pas + k * 2 + 1] << 8)) / 65535 * boite.etendue[k]);
+  let osBouge = 0, extremites = 0, nbExt = 0;
+  const parRegion = {};
+  for (const st of E.structures) for (let v = st.sommets; v < st.sommets + st.nbSommets; v += 3) {
+    const p0 = lire(brut, E.boite, v), p1 = lire(r.sommets, r.boite, v), d = Math.hypot(p1[0] - p0[0], p1[1] - p0[1], p1[2] - p0[2]);
+    if (['tete', 'main', 'pied'].includes(st.region)) { nbExt++; extremites = Math.max(extremites, d); }
+    (parRegion[st.region] = parRegion[st.region] || []).push(d);
+  }
+  for (let v = 0; v < E.sommets; v += 7) if (brut[v * pas + 10] === E.os.pair || brut[v * pas + 10] === E.os.impair) { const p0 = lire(brut, E.boite, v), p1 = lire(r.sommets, r.boite, v); osBouge = Math.max(osBouge, Math.hypot(p1[0] - p0[0], p1[1] - p0[1], p1[2] - p0[2])); }
+  const moy = t => t.reduce((a, x) => a + x, 0) / t.length;
+  assert.ok(osBouge < 0.0005, 'le squelette ne bouge pas : ' + osBouge);
+  assert.ok(nbExt > 1000 && extremites < 0.004, 'la tête, les mains et les pieds gardent leur forme : ' + extremites);
+  assert.ok(moy(parRegion.bras) > 0.004 && moy(parRegion.cuisse) > 0.004 && moy(parRegion.thorax) > 0.006, 'bras, cuisses et thorax sont étoffés : ' + [moy(parRegion.bras), moy(parRegion.cuisse), moy(parRegion.thorax)].map(x => x.toFixed(4)));
+  assert.ok(Math.max(...parRegion.bras, ...parRegion.cuisse, ...parRegion.thorax, ...parRegion.dos) < 0.05, 'sans excès');
+  // Sans carrure (force nulle), le modèle revient tel quel.
+  const nul = etoffer(brut, pas, E.boite, E.squelette, 0, null);
+  let ecart = 0; for (let v = 0; v < E.sommets; v += 11) { const p0 = lire(brut, E.boite, v), p1 = lire(nul.sommets, nul.boite, v); ecart = Math.max(ecart, Math.hypot(p1[0] - p0[0], p1[1] - p0[1], p1[2] - p0[2])); }
+  assert.ok(ecart < 0.0002, 'force nulle : rien ne change (' + ecart + ')');
+
+  // Le mélange des articulations, tel que le solveur le mesure (et que le moteur le dessine).
+  const { pathToFileURL } = require('url'), dossier = path.join(RACINE, 'outils', 'atlas', 'mouvements');
+  const { chargerAtlas, chargerMouvements, FICHIER_ATLAS, FICHIER_MOUVEMENTS } = await import(pathToFileURL(path.join(dossier, 'silhouettes.mjs')).href);
+  const atlas = chargerAtlas(FICHIER_ATLAS), M = chargerMouvements(FICHIER_MOUVEMENTS), C = M.TEINTES.sombre;
+  const corps = new M.Corps(atlas.E.squelette, atlas.peau);
+  const d = M.definir('developpe epaules barre', corps, C);
+  corps.poser(M.poseA(d, 0, 1));
+  const pe = corps.peau(null), m = corps.matrices(), S = corps.S;
+  let k = 0, pireSeul = 0, nSeul = 0, pireEpaule = Infinity;
+  const ep = corps.monde('humerus.G'), ep0 = corps.tete[corps.i['humerus.G']];
+  corps.peauPosee(null, (x, y, z) => {
+    const cote = k >= pe.n ? 1 : 0, v = k % pe.n; k++;
+    const X = cote ? -pe.P[v * 3] : pe.P[v * 3], Y = pe.P[v * 3 + 1], Z = pe.P[v * 3 + 2];
+    let seul = -1; for (let q = 0; q < 4; q++) if (pe.W[v * 4 + q] > 0.999) seul = cote ? S[pe.J[v * 4 + q]].jumeau : pe.J[v * 4 + q];
+    if (seul >= 0) { const o = seul * 12; nSeul++; pireSeul = Math.max(pireSeul, Math.hypot(x - (m[o] * X + m[o + 1] * Y + m[o + 2] * Z + m[o + 3]), y - (m[o + 4] * X + m[o + 5] * Y + m[o + 6] * Z + m[o + 7]), z - (m[o + 8] * X + m[o + 9] * Y + m[o + 10] * Z + m[o + 11]))); }
+    // Autour de l'épaule gauche (à 4–7 cm de l'articulation au repos) : bras levé, la chair reste à distance de l'articulation.
+    if (!cote) { const r0 = Math.hypot(X - ep0.x, Y - ep0.y, Z - ep0.z); if (r0 > 0.04 && r0 < 0.07) pireEpaule = Math.min(pireEpaule, Math.hypot(x - ep.x, y - ep.y, z - ep.z) / r0); }
+  });
+  assert.ok(nSeul > 5000 && pireSeul < 1e-4, 'un sommet tenu par un seul os suit cet os exactement : ' + pireSeul);
+  assert.ok(pireEpaule > 0.55, "bras levé, l'épaule garde son volume (rapport de distance le plus faible : " + pireEpaule.toFixed(2) + ')');
+
+  // Le matériel : un développé couché a ses supports de barre ; au tirage vertical, la pile de poids suit le câble.
+  const formesDe = (spec, u) => { const def = M.definir(spec, corps, C); return { def, formes: M.materielDe(def, corps.poser(M.poseA(def, 0, u)), u, C, {}) }; };
+  const connues = new Set(['cylindre', 'boite', 'sphere', 'tore', 'arc', 'hexa']);
+  const couche = formesDe('developpe barre', 0);
+  assert.ok(couche.formes.every(x => connues.has(x.forme)), 'des formes que le moteur sait dessiner');
+  assert.ok(couche.formes.some(x => x.forme === 'hexa') === false && formesDe('curl hal', 0).formes.some(x => x.forme === 'hexa'), 'les haltères ont des têtes à pans');
+  assert.ok(couche.formes.filter(x => x.forme === 'boite' && x.p[1] > 0.9 && Math.abs(Math.abs(x.p[0]) - 0.53) < 0.01).length >= 4, 'deux montants et leurs crochets derrière la tête');
+  const haut = formesDe('tirage', 0), basT = formesDe('tirage', 1);
+  const levees = t => t.formes.filter(x => x.leve).map(x => x.p[1]);
+  assert.ok(levees(haut).length >= 5 && haut.def.cable0 > 0, 'la pile a des plaques mobiles');
+  const dy = levees(basT).map((y, i) => y - levees(haut)[i]);
+  assert.ok(dy.every(x => Math.abs(x - dy[0]) < 1e-6) && dy[0] > 0.25, 'barre tirée, la pile est montée de ' + dy[0].toFixed(2) + ' m');
+  // Une machine à leviers reçoit son bâti et sa pile.
+  assert.ok(formesDe('developpe machine assis', 0.5).formes.some(x => x.leve), 'la machine à développer a sa pile de poids');
+});
+
 test('atlas 3D : sans WebGL 2, aucun accès ; avec, la fenêtre s\'ouvre, anime un exercice et libère tout à la fermeture', async () => {
   // Sans WebGL 2 : pas de bouton, et l'ouverture forcée prévient sans rien casser.
   await avecAppli({}, async ({ page, dialogues }) => {
@@ -7034,7 +7221,52 @@ test('atlas 3D : sans WebGL 2, aucun accès ; avec, la fenêtre s\'ouvre, anime 
     assert.equal(a.actif, 'Semaine');
     // Tout le corps en 5 appels de dessin (sol, muscles et voiles des deux côtés), 3 de plus pour la peau partielle.
     assert.ok(a.structures > 170 && a.appels <= 8 && a.legende === 5 && a.lecture, JSON.stringify([a.structures, a.appels, a.legende, a.lecture]));
+    // Chaque image ne soumet à la carte graphique que ce qui se voit : le modèle une fois par côté, les seuls triangles
+    // du voile (et non tout le modèle une seconde fois), et de la peau les seuls triangles de la tête, des mains et des
+    // pieds. Le décompte attendu est refait ici d'après les fichiers.
+    const soumis = await page.evaluate(() => { const m = atlasMonte.atlas.mesures(); return [m.trianglesSoumis, m.triangles]; });
+    const enTete = f => { const b = fs.readFileSync(path.join(__dirname, '..', 'assets', 'atlas', f)), lg = b.readUInt32LE(8); return { b, debut: 12 + lg, e: JSON.parse(b.subarray(12, 12 + lg).toString('utf8')) }; };
+    const modele = enTete('atlas.bin'), peauF = enTete('atlas-peau.bin'), ep = peauF.e;
+    const voiles = modele.e.structures.filter(x => x.type === 'aponevrose').reduce((t, x) => t + x.nbIndices / 3, 0);
+    const debutIndices = peauF.debut + ep.sommets * ep.octetsParSommet, gardes = [0, 0];
+    for (let t = 0; t < ep.trianglesPairs + ep.trianglesImpairs; t++) {
+      const sommet = ep.indicesSur === 32 ? peauF.b.readUInt32LE(debutIndices + t * 12) : peauF.b.readUInt16LE(debutIndices + t * 6);
+      if (peauF.b[peauF.debut + sommet * ep.octetsParSommet + 10] !== 0) gardes[t < ep.trianglesPairs ? 0 : 1]++;
+    }
+    // (La tête, les mains et les pieds sont finement maillés : ils font plus de la moitié des triangles de la peau,
+    // mais une petite part de sa surface ; ce qui n'est plus soumis, c'est toute la peau du tronc et des membres.)
+    assert.ok(voiles > 0 && gardes[0] > 5000 && gardes[0] < ep.trianglesPairs - 5000, 'la peau gardée laisse de côté celle du tronc et des membres : ' + gardes + ' sur ' + [ep.trianglesPairs, ep.trianglesImpairs]);
+    assert.deepEqual(soumis, [2 * modele.e.triangles + 2 * voiles + 2 * gardes[0] + gardes[1], modele.e.triangles]);
     assert.deepEqual(a.peau, [true, 1], 'sur une carte, la peau couvre la tête, les mains et les pieds');
+    // Cette peau a la teinte du corps (un gris entre celui des muscles au repos et celui des tendons, sans rien de la
+    // chair) ; en mode « Anatomie », aux couleurs naturelles, elle garde sa teinte naturelle. Vérifié sur les réglages
+    // du moteur, puis sur l'image elle-même : la couleur du nez, vu de près.
+    const nez = () => page.evaluate(() => new Promise(fin => {
+      const at = atlasMonte.atlas, toile = at.toile, avant = at.surImage;
+      at.placer({ az: 0, el: 0, cible: at.structures.find(s => s.id === 'nasal').centre, dist: 0.9 });
+      at.surImage = cam => {
+        if (avant) avant(cam);
+        const c = document.createElement('canvas'); c.width = toile.width; c.height = toile.height;
+        const x = c.getContext('2d'); x.drawImage(toile, 0, 0);
+        const d = x.getImageData(Math.round(toile.width / 2) - 4, Math.round(toile.height / 2) - 4, 9, 9).data, m = [0, 0, 0];
+        for (let i = 0; i < d.length; i += 4) for (let k = 0; k < 3; k++) m[k] += d[i + k] / 81;
+        at.surImage = avant;
+        fin({ px: m.map(Math.round), apparence: at.apparence(), neutres: neutresAtlas() });
+      };
+      at.redessiner();
+    }));
+    const surCarte = await nez();
+    assert.deepEqual([surCarte.apparence.chair, surCarte.apparence.teint], [0, surCarte.neutres.peau], 'sur une carte, la peau prend la teinte du corps');
+    assert.ok(/^#[0-9a-f]{6}$/.test(surCarte.neutres.peau) && surCarte.neutres.peau !== surCarte.neutres.muscle, 'une teinte de peau entre les muscles et les tendons : ' + surCarte.neutres.peau);
+    assert.ok(Math.max(...surCarte.px) - Math.min(...surCarte.px) < 26 && Math.min(...surCarte.px) > 40, 'le visage est gris comme le corps : ' + surCarte.px);
+    await page.evaluate(() => atlasMonte.choisirMode('anatomie'));
+    const naturelle = await nez();
+    assert.equal(naturelle.apparence.chair, 1, 'en mode Anatomie, la peau est vivante');
+    assert.ok(naturelle.px[0] - naturelle.px[2] > 35, 'en mode Anatomie, le visage a une teinte de chair : ' + naturelle.px);
+    await page.evaluate(() => { atlasMonte.choisirMode('semaine'); atlasMonte.atlas.reinitialiser(0); });
+    assert.equal(await page.evaluate(() => atlasMonte.atlas.apparence().chair), 0);
+    // Le thème d'une carte, côté moteur : sans indication, une peau naturelle ; avec une teinte, les poils la suivent.
+    assert.deepEqual(await page.evaluate(() => { const n = AnqaAtlas.themeDeCarte({}), g = AnqaAtlas.themeDeCarte({ peau: '#808080' }); return [n.chair, n.teint, g.chair, g.teint, g.poil]; }), [1, '#c89b80', 0, '#808080', [64, 64, 64]]);
     // Toucher un muscle pour de vrai (un clic au cœur de sa tache à l'écran) : sa fiche dit la zone de la semaine.
     await page.waitForFunction(() => !atlasMonte.atlas.mesures().enCours, null, { timeout: 60000 });
     const pt = await page.evaluate(() => { const c = atlasMonte.atlas.carteReperage(3)['pectoral_sternal|gauche'], r = atlasMonte.atlas.toile.getBoundingClientRect(); return { x: r.left + c.x, y: r.top + c.y, marge: c.marge }; });
@@ -7053,15 +7285,14 @@ test('atlas 3D : sans WebGL 2, aucun accès ; avec, la fenêtre s\'ouvre, anime 
     const e = await page.evaluate(() => ({ titre: document.getElementById('titre-atlas').textContent, mode: atlasMonte.etat().mode, anim: !!atlasMonte.animation(), scripts: [...document.scripts].map(s => s.getAttribute('src')).filter(s => s && s.startsWith('assets/atlas/')).length,
       pose: atlasMonte.animation().corps.monde('bassin').y < 0.93, colores: Object.keys(carteAtlas('exercice', atlasMonte.atlas.structures).couleurs).length }));
     assert.deepEqual([e.titre, e.mode, e.anim, e.scripts], ['Squat avec barre', 'exercice', true, 2]);
-    // Pendant un exercice, la peau est entière ; le bouton passe à la peau partielle, puis à l'écorché, et le choix est retenu.
+    // Une seule apparence, pendant un exercice comme sur une carte : le corps écorché, la peau gardée sur la tête, les
+    // mains et les pieds. Plus de bouton « Peau », plus de réglage retenu ; en profondeur, la peau s'efface.
     const peau = await page.evaluate(() => {
-      const r = [atlasMonte.etat().peau], b = document.querySelector('.atlas-peau');
-      b.click(); r.push(atlasMonte.etat().peau, JSON.parse(localStorage.getItem('anqa-atlas-peau')).exercice);
-      atlasMonte.couche(2); r.push(atlasMonte.etat().peau); atlasMonte.couche(1); r.push(atlasMonte.etat().peau);   // en profondeur, la peau s'efface
-      b.click(); r.push(atlasMonte.etat().peau); b.click(); r.push(atlasMonte.etat().peau, /^Peau : entière/.test(b.getAttribute('aria-label')));
+      const r = [atlasMonte.etat().peau, document.querySelectorAll('.atlas-peau').length, localStorage.getItem('anqa-atlas-peau')];
+      atlasMonte.couche(2); r.push(atlasMonte.etat().peau); atlasMonte.couche(1); r.push(atlasMonte.etat().peau);
       return r;
     });
-    assert.deepEqual(peau, [2, 1, 1, 0, 1, 0, 2, true]);
+    assert.deepEqual(peau, [1, 0, null, 0, 1]);
     assert.ok(e.pose, 'le bassin est descendu : le corps est en plein squat');
     assert.ok(e.colores > 10);
     // Un autre exercice de la bibliothèque, d'une autre famille de mouvements : animé lui aussi, rien à signaler.

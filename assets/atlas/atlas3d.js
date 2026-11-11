@@ -49,7 +49,7 @@ uniform mat4 u_vp;
 uniform vec3 u_cam;
 uniform float u_cote, u_passe, u_seuls, u_tire;
 uniform sampler2D u_etats;
-uniform highp sampler2D u_os;      // la pose : une matrice 3×4 par articulation (ligne 0 : côté gauche, ligne 1 : son miroir)
+uniform highp sampler2D u_os;      // la pose : lignes 2 et 3, un déplacement rigide par articulation (côté gauche, côté droit)
 out vec3 v_pos, v_nor;
 out float v_ombre, v_tendon;
 flat out vec4 v_teinte, v_etat;
@@ -73,16 +73,20 @@ void main() {
   bool voir = u_passe == 1.0 ? (presence > 0.004 && !plein) : plein;
   // Sous la peau, seuls comptent les muscles « vifs » : ceux qu'une carte colore, et celui qu'on a choisi.
   if (u_seuls > 0.5 && !(v_etat.r > 0.02 || (v_etat.g > 0.06 && v_etat.g < 0.2))) voir = false;
-  // Chaque sommet suit jusqu'à quatre articulations ; au repos, les matrices sont l'identité (ou le miroir).
-  vec4 r0 = vec4(0.0), r1 = vec4(0.0), r2 = vec4(0.0);
+  // Chaque sommet suit jusqu'à quatre articulations. Leurs déplacements se mélangent en quaternions duaux (une
+  // rotation et un glissement), pas en matrices : entre deux os qui tournent beaucoup l'un par rapport à l'autre
+  // (épaule, hanche), le muscle tourne alors d'une part de l'angle autour de l'articulation, à distance constante,
+  // au lieu de couper par la corde et de s'écraser. Le côté droit est le miroir du gauche, posé par ses propres os.
+  vec4 qr = vec4(0.0), qd = vec4(0.0);
   for (int k = 0; k < 4; k++) {
     float w = a_poids[k];
-    if (w > 0.0) { int j = int(a_os[k]) * 3; r0 += w * texelFetch(u_os, ivec2(j, cote), 0); r1 += w * texelFetch(u_os, ivec2(j + 1, cote), 0); r2 += w * texelFetch(u_os, ivec2(j + 2, cote), 0); }
+    if (w > 0.0) { int j = int(a_os[k]) * 3; qr += w * texelFetch(u_os, ivec2(j, 2 + cote), 0); qd += w * texelFetch(u_os, ivec2(j + 1, 2 + cote), 0); }
   }
-  vec4 p4 = vec4(u_min + a_pos * u_etendue, 1.0);
-  vec3 p = vec3(dot(r0, p4), dot(r1, p4), dot(r2, p4));
-  vec3 n0 = octa(a_nor);
-  vec3 n = normalize(vec3(dot(r0.xyz, n0), dot(r1.xyz, n0), dot(r2.xyz, n0)));
+  float l = 1.0 / max(length(qr), 1e-6); qr *= l; qd *= l;
+  vec3 p0 = u_min + a_pos * u_etendue, n0 = octa(a_nor);
+  if (cote == 1) { p0.x = -p0.x; n0.x = -n0.x; }
+  vec3 p = p0 + 2.0 * cross(qr.xyz, cross(qr.xyz, p0) + qr.w * p0) + 2.0 * (qr.w * qd.xyz - qd.w * qr.xyz + cross(qr.xyz, qd.xyz));
+  vec3 n = normalize(n0 + 2.0 * cross(qr.xyz, cross(qr.xyz, n0) + qr.w * n0));
   v_pos = p; v_nor = n;
   v_ombre = a_ombreTendon.x; v_tendon = a_ombreTendon.y;
   gl_Position = voir ? u_vp * vec4(p, 1.0) : vec4(2.0, 2.0, 2.0, 1.0);
@@ -144,7 +148,8 @@ in float v_ombre, v_short;
 flat in float v_zone;
 uniform vec3 u_cam, u_teint, u_tissu, u_poil;
 uniform mat3 u_lum;
-uniform float u_clair, u_niveau;
+uniform float u_clair;
+uniform float u_chair;        // 1 : une peau vivante (sang sous la surface, plis plus rouges, ongles rosés, iris bruns) ; 0 : une matière de la couleur u_teint, sans rien de la chair
 uniform vec2 u_short;
 uniform vec4 u_oeil;          // centre du globe de l'œil (corps au repos) et son rayon
 out vec4 o;
@@ -163,8 +168,9 @@ float ggx(float nh, float r) { float a = r * r, a2 = a * a, d = nh * nh * (a2 - 
 void main() {
   int zone = int(v_zone + 0.5);
   float short_ = v_short > 0.5 ? smoothstep(u_short.x - 0.0012, u_short.x + 0.0012, v_repos.y) * (1.0 - smoothstep(u_short.y - 0.0012, u_short.y + 0.0012, v_repos.y)) : 0.0;
-  // Niveau 1 : la peau ne reste que sur la tête, les mains et les pieds (le short va avec la peau entière).
-  if (u_niveau < 1.5 && zone == 0) discard;
+  // Peau partielle (tête, mains, pieds) : le moteur ne soumet que ses triangles — rien n'est rejeté ici, point par
+  // point (un rejet dans le nuanceur coûte cher sur les puces des téléphones, qui ne peuvent plus écarter d'avance
+  // les points cachés). Le short va avec la peau entière.
   vec3 N = normalize(v_nor), V = normalize(u_cam - v_pos);
   // L'envers de la peau (vu par une ouverture) : le triangle tourne le dos ET la surface aussi. Un triangle vu par la
   // tranche, au bord d'un pli ou de la silhouette, peut être pris pour un envers : sa normale, elle, ne trompe pas.
@@ -172,13 +178,14 @@ void main() {
   float nv = max(dot(N, V), 0.0);
   // Matière selon la zone : peau, ongle (plus clair, plus lisse), poils et cheveux, tissu du short.
   vec3 base = u_teint; float rug = 0.52, f0 = 0.028, chair = 1.0;
-  if (zone == 4) { base = mix(u_teint, vec3(0.78, 0.52, 0.47), 0.45) * 1.15; rug = 0.30; f0 = 0.045; }
+  if (zone == 4) { base = mix(u_teint, vec3(0.78, 0.52, 0.47), 0.45 * u_chair) * mix(1.07, 1.15, u_chair); rug = 0.30; f0 = 0.045; }
   else if (zone == 7) {
     // L'œil : blanc, iris et pupille d'après l'écart au regard (droit devant, un rien vers le nez).
     float c = dot(normalize(v_repos - u_oeil.xyz), normalize(vec3(-0.07, -0.02, 1.0)));
     float iris = smoothstep(0.868, 0.890, c), pupille = smoothstep(0.976, 0.986, c);
-    vec3 blanc = vec3(0.80, 0.78, 0.76) * mix(0.62, 1.0, smoothstep(0.35, 0.86, c));
-    vec3 couleurIris = mix(vec3(0.050, 0.026, 0.012), vec3(0.20, 0.105, 0.04), smoothstep(0.89, 0.975, c)) * 1.15;
+    // Peau d'une seule matière (u_chair à 0) : le blanc de l'œil reste un ton clair de la même teinte, l'iris un ton foncé.
+    vec3 blanc = mix(mix(u_teint, vec3(0.80), 0.55), vec3(0.80, 0.78, 0.76), u_chair) * mix(0.62, 1.0, smoothstep(0.35, 0.86, c));
+    vec3 couleurIris = mix(u_poil * mix(1.0, 2.6, smoothstep(0.89, 0.975, c)), mix(vec3(0.050, 0.026, 0.012), vec3(0.20, 0.105, 0.04), smoothstep(0.89, 0.975, c)) * 1.15, u_chair);
     base = mix(mix(blanc, couleurIris, iris), vec3(0.004), pupille);
     rug = 0.16; f0 = 0.045; chair = 0.0;
   }
@@ -186,8 +193,8 @@ void main() {
   if (short_ > 0.5) { base = u_tissu; rug = 0.66; f0 = 0.03; chair = 0.0; }
   float creux = mix(0.22, 1.0, smoothstep(0.05, 0.95, v_ombre));
   float creuxDirect = mix(0.42, 1.0, smoothstep(0.05, 0.85, v_ombre));
-  // Dans les plis, la peau est un peu plus rouge et plus sombre.
-  base *= mix(vec3(0.84, 0.70, 0.68), vec3(1.0), 1.0 - chair * (1.0 - smoothstep(0.20, 0.90, v_ombre)));
+  // Dans les plis, la peau est plus sombre, et plus rouge si elle est vivante.
+  base *= mix(mix(vec3(0.80), vec3(0.84, 0.70, 0.68), u_chair), vec3(1.0), 1.0 - chair * (1.0 - smoothstep(0.20, 0.90, v_ombre)));
   vec3 ciel = mix(vec3(0.200, 0.205, 0.225), vec3(0.30, 0.31, 0.34), u_clair), sol = mix(vec3(0.075, 0.062, 0.058), vec3(0.17, 0.155, 0.145), u_clair);
   vec3 lumiere = mix(sol, ciel, N.y * 0.5 + 0.5) * creux;
   vec3 reflets = vec3(0.0);
@@ -196,10 +203,10 @@ void main() {
   for (int i = 0; i < 3; i++) {
     vec3 L = u_lum * dirs[i];
     float nl = dot(N, L);
-    // La peau diffuse la lumière sous sa surface : la limite d'ombre est douce et tire sur le rouge.
+    // La peau diffuse la lumière sous sa surface : la limite d'ombre est douce et, sur une peau vivante, tire sur le rouge.
     float env = mix(0.06, 0.24, chair);
     float d = max((nl + env) / (1.0 + env), 0.0);
-    vec3 sang = mix(vec3(1.0), vec3(1.0, 0.42, 0.30), chair * smoothstep(0.34, 0.0, d) * 0.55);
+    vec3 sang = mix(vec3(1.0), vec3(1.0, 0.42, 0.30), chair * u_chair * smoothstep(0.34, 0.0, d) * 0.55);
     lumiere += cols[i] * d * sang * creuxDirect;
     vec3 H = normalize(L + V);
     float nh = max(dot(N, H), 0.0), vh = max(dot(V, H), 0.0);
@@ -331,15 +338,22 @@ void main() {
   o = vec4(c * a, a);
 }`;
 
-  // Le matériel (barre, haltères, banc) : des formes simples, éclairées comme le corps.
+  // Le matériel (barres, haltères, bancs, machines) : des formes simples, éclairées comme le corps. Chaque forme a un
+  // noyau (a_c), mis à la taille voulue, et un arrondi de rayon u_r porté le long de la normale : une boîte aux arêtes
+  // douces (un coussin), un cylindre au bord arrondi (un disque, une gélule), un anneau dont on choisit l'épaisseur.
+  // u_k dit de combien l'arrondi rentre dans chaque dimension ; sans arrondi, la forme est simplement mise à l'échelle.
   const OBJ_S = `#version 300 es
 precision highp float;
-layout(location=0) in vec3 a_p;
+layout(location=0) in vec3 a_c;
 layout(location=1) in vec3 a_n;
-uniform mat4 u_vp; uniform vec4 u_q; uniform vec3 u_t, u_s;
+uniform mat4 u_vp; uniform vec4 u_q; uniform vec3 u_t, u_s, u_k; uniform float u_r;
 out vec3 v_pos, v_nor;
 vec3 tourner(vec3 v, vec4 q) { return v + 2.0 * cross(q.xyz, cross(q.xyz, v) + q.w * v); }
-void main() { vec3 w = tourner(a_p * u_s, u_q) + u_t; v_pos = w; v_nor = tourner(a_n / u_s, u_q); gl_Position = u_vp * vec4(w, 1.0); }`;
+void main() {
+  vec3 w = tourner(a_c * (u_s - u_r * u_k) + a_n * u_r, u_q) + u_t;
+  v_pos = w; v_nor = tourner(u_r > 0.0 ? a_n : a_n / u_s, u_q);
+  gl_Position = u_vp * vec4(w, 1.0);
+}`;
   const OBJ_P = `#version 300 es
 precision highp float;
 in vec3 v_pos, v_nor;
@@ -366,28 +380,74 @@ void main() {
   c = c / (1.0 + max(max(c.r, c.g), c.b) * 0.25);
   o = vec4(pow(c, vec3(1.0 / 2.2)), 1.0);
 }`;
-  /* Formes de base, positions puis normales : un cylindre (rayon 1, hauteur 1, le long de Y), une boîte (côté 1),
-     une sphère (rayon 1) et un tore (anneau de rayon 1 dans le plan XY, tube de rayon 0,14). */
+  /* Formes de base : pour chaque sommet, un point du noyau puis une normale (voir OBJ_S).
+       cylindre — le long de Y : s = (rayon, hauteur, rayon) ; r arrondit le bord (r = rayon : une gélule) ;
+       boite    — s = ses trois côtés ; r arrondit arêtes et coins ;
+       sphere   — s = ses trois rayons ;
+       tore     — anneau dans le plan XY : s = rayon de l'anneau, r = rayon du tube ;
+       arc      — demi-anneau (la moitié du haut, y ≥ 0), bouts arrondis : mêmes réglages que le tore ;
+       hexa     — prisme à six pans le long de Y (tête d'haltère) : s = (rayon, hauteur, rayon), sans arrondi.
+     K_FORMES : de combien de fois l'arrondi rentre dans chaque dimension du noyau. */
+  const K_FORMES = { boite: [2, 2, 2], cylindre: [1, 2, 1] }, K_ZERO = [0, 0, 0];
   function formesDeBase() {
-    const cyl = [], N = 28;
-    for (let i = 0; i < N; i++) {
-      const a0 = i / N * 2 * Math.PI, a1 = (i + 1) / N * 2 * Math.PI, c0 = Math.cos(a0), s0 = Math.sin(a0), c1 = Math.cos(a1), s1 = Math.sin(a1);
-      cyl.push(c0, -0.5, s0, c0, 0, s0, c0, 0.5, s0, c0, 0, s0, c1, 0.5, s1, c1, 0, s1, c0, -0.5, s0, c0, 0, s0, c1, 0.5, s1, c1, 0, s1, c1, -0.5, s1, c1, 0, s1);
-      cyl.push(0, 0.5, 0, 0, 1, 0, c1, 0.5, s1, 0, 1, 0, c0, 0.5, s0, 0, 1, 0, 0, -0.5, 0, 0, -1, 0, c0, -0.5, s0, 0, -1, 0, c1, -0.5, s1, 0, -1, 0);
-    }
-    const boite = [];
-    for (const [n, u, v] of [[[1, 0, 0], [0, 1, 0], [0, 0, 1]], [[-1, 0, 0], [0, 0, 1], [0, 1, 0]], [[0, 1, 0], [0, 0, 1], [1, 0, 0]], [[0, -1, 0], [1, 0, 0], [0, 0, 1]], [[0, 0, 1], [1, 0, 0], [0, 1, 0]], [[0, 0, -1], [0, 1, 0], [1, 0, 0]]])
-      for (const [a, b] of [[-1, -1], [1, -1], [1, 1], [-1, -1], [1, 1], [-1, 1]]) boite.push(0.5 * (n[0] + a * u[0] + b * v[0]), 0.5 * (n[1] + a * u[1] + b * v[1]), 0.5 * (n[2] + a * u[2] + b * v[2]), n[0], n[1], n[2]);
-    // Sphère et tore : une grille de quadrilatères sur deux angles, chaque sommet avec sa normale.
-    const grille = (nu, nv, point) => {
-      const t = [], P = [];
-      for (let i = 0; i <= nu; i++) { P.push([]); for (let j = 0; j <= nv; j++) P[i].push(point(i / nu, j / nv)); }
-      for (let i = 0; i < nu; i++) for (let j = 0; j < nv; j++) for (const [a, b] of [[i, j], [i + 1, j], [i + 1, j + 1], [i, j], [i + 1, j + 1], [i, j + 1]]) t.push(...P[a][b]);
-      return new Float32Array(t);
+    // Les triangles sont remis face vers le dehors, d'après la normale (essayés sur une forme arrondie).
+    const atelier = k => {
+      const t = [], pos = v => [v[0] * (1 - 0.2 * k[0]) + v[3] * 0.2, v[1] * (1 - 0.2 * k[1]) + v[4] * 0.2, v[2] * (1 - 0.2 * k[2]) + v[5] * 0.2];
+      const tri = (a, b, c) => {
+        const A = pos(a), B = pos(b), C = pos(c), u = [B[0] - A[0], B[1] - A[1], B[2] - A[2]], v = [C[0] - A[0], C[1] - A[1], C[2] - A[2]], g = croix(u, v);
+        const sens = g[0] * (a[3] + b[3] + c[3]) + g[1] * (a[4] + b[4] + c[4]) + g[2] * (a[5] + b[5] + c[5]);
+        if (sens < 0) t.push(...a, ...c, ...b); else t.push(...a, ...b, ...c);
+      };
+      return { t, tri, quad(a, b, c, d) { tri(a, b, c); tri(a, c, d); } };
     };
-    const sphere = grille(28, 14, (u, v) => { const a = u * 2 * Math.PI, b = v * Math.PI, x = Math.sin(b) * Math.cos(a), y = Math.cos(b), z = Math.sin(b) * Math.sin(a); return [x, y, z, x, y, z]; });
-    const tore = grille(36, 10, (u, v) => { const a = u * 2 * Math.PI, b = v * 2 * Math.PI, cx = Math.cos(a), cy = Math.sin(a), nx = Math.cos(b) * cx, ny = Math.cos(b) * cy, nz = Math.sin(b); return [cx + 0.14 * nx, cy + 0.14 * ny, 0.14 * nz, nx, ny, nz]; });
-    return { cylindre: new Float32Array(cyl), boite: new Float32Array(boite), sphere, tore };
+    const PI2 = Math.PI / 2, S2 = [1, -1];
+    // Cylindre : le flanc, deux fonds, et entre eux un bord en quart de rond.
+    const C = atelier(K_FORMES.cylindre), N = 28, M = 4;
+    const pc = (i, sy, j) => { const a = i / N * 2 * Math.PI, e = j / M * PI2, c = Math.cos(a), si = Math.sin(a); return [c, 0.5 * sy, si, c * Math.sin(e), sy * Math.cos(e), si * Math.sin(e)]; };
+    for (let i = 0; i < N; i++) {
+      C.quad(pc(i, -1, M), pc(i + 1, -1, M), pc(i + 1, 1, M), pc(i, 1, M));
+      for (const sy of S2) {
+        C.tri([0, 0.5 * sy, 0, 0, sy, 0], pc(i, sy, 0), pc(i + 1, sy, 0));
+        for (let j = 0; j < M; j++) C.quad(pc(i, sy, j), pc(i + 1, sy, j), pc(i + 1, sy, j + 1), pc(i, sy, j + 1));
+      }
+    }
+    // Boîte : huit coins en huitième de sphère, douze arêtes en quart de rond, six faces.
+    const B = atelier(K_FORMES.boite), n = 4;
+    const pb = (sx, sy, sz, i, j) => { const th = i / n * PI2, ph = j / n * PI2; return [0.5 * sx, 0.5 * sy, 0.5 * sz, sx * Math.sin(th) * Math.cos(ph), sy * Math.cos(th), sz * Math.sin(th) * Math.sin(ph)]; };
+    for (const sx of S2) for (const sy of S2) for (const sz of S2) for (let i = 0; i < n; i++) for (let j = 0; j < n; j++) B.quad(pb(sx, sy, sz, i, j), pb(sx, sy, sz, i + 1, j), pb(sx, sy, sz, i + 1, j + 1), pb(sx, sy, sz, i, j + 1));
+    for (const u of S2) for (const v of S2) for (let i = 0; i < n; i++) {
+      B.quad(pb(-1, u, v, i, n), pb(1, u, v, i, n), pb(1, u, v, i + 1, n), pb(-1, u, v, i + 1, n));     // arêtes le long de X
+      B.quad(pb(u, v, -1, i, 0), pb(u, v, 1, i, 0), pb(u, v, 1, i + 1, 0), pb(u, v, -1, i + 1, 0));     // le long de Z
+      B.quad(pb(u, -1, v, n, i), pb(u, 1, v, n, i), pb(u, 1, v, n, i + 1), pb(u, -1, v, n, i + 1));     // le long de Y
+    }
+    for (const u of S2) {
+      B.quad(pb(-1, u, -1, 0, 0), pb(1, u, -1, 0, 0), pb(1, u, 1, 0, 0), pb(-1, u, 1, 0, 0));           // dessus, dessous
+      B.quad(pb(u, -1, -1, n, 0), pb(u, 1, -1, n, 0), pb(u, 1, 1, n, 0), pb(u, -1, 1, n, 0));           // côtés
+      B.quad(pb(-1, -1, u, n, n), pb(1, -1, u, n, n), pb(1, 1, u, n, n), pb(-1, 1, u, n, n));           // devant, derrière
+    }
+    // Sphère, anneau, demi-anneau : une grille de quadrilatères sur deux angles.
+    const grille = (A, nu, nv, point) => {
+      const P = [];
+      for (let i = 0; i <= nu; i++) { P.push([]); for (let j = 0; j <= nv; j++) P[i].push(point(i / nu, j / nv)); }
+      for (let i = 0; i < nu; i++) for (let j = 0; j < nv; j++) A.quad(P[i][j], P[i + 1][j], P[i + 1][j + 1], P[i][j + 1]);
+    };
+    const Sp = atelier(K_ZERO);
+    grille(Sp, 28, 14, (u, v) => { const a = u * 2 * Math.PI, b = v * Math.PI, x = Math.sin(b) * Math.cos(a), y = Math.cos(b), z = Math.sin(b) * Math.sin(a); return [x, y, z, x, y, z]; });
+    const anneau = (a, b) => { const cx = Math.cos(a), cy = Math.sin(a); return [cx, cy, 0, Math.cos(b) * cx, Math.cos(b) * cy, Math.sin(b)]; };
+    const T = atelier(K_ZERO);
+    grille(T, 36, 12, (u, v) => anneau(u * 2 * Math.PI, v * 2 * Math.PI));
+    const Ar = atelier(K_ZERO);
+    grille(Ar, 18, 12, (u, v) => anneau(u * Math.PI, v * 2 * Math.PI));
+    for (const a0 of [0, Math.PI]) grille(Ar, 3, 12, (u, v) => { const p = anneau(a0, v * 2 * Math.PI), e = u * PI2, c = Math.cos(e); return [p[0], p[1], p[2], p[3] * c, p[4] * c - Math.sin(e), p[5] * c]; });
+    // Prisme à six pans : faces plates.
+    const H = atelier(K_ZERO);
+    for (let i = 0; i < 6; i++) {
+      const a0 = i / 6 * 2 * Math.PI, a1 = (i + 1) / 6 * 2 * Math.PI, am = (a0 + a1) / 2, nx = Math.cos(am), nz = Math.sin(am);
+      const p = (a, y) => [Math.cos(a), y, Math.sin(a), nx, 0, nz];
+      H.quad(p(a0, -0.5), p(a1, -0.5), p(a1, 0.5), p(a0, 0.5));
+      for (const sy of S2) H.tri([0, 0.5 * sy, 0, 0, sy, 0], [Math.cos(a0), 0.5 * sy, Math.sin(a0), 0, sy, 0], [Math.cos(a1), 0.5 * sy, Math.sin(a1), 0, sy, 0]);
+    }
+    return { cylindre: new Float32Array(C.t), boite: new Float32Array(B.t), sphere: new Float32Array(Sp.t), tore: new Float32Array(T.t), arc: new Float32Array(Ar.t), hexa: new Float32Array(H.t) };
   }
 
   function programme(gl, vs, fs) {
@@ -430,6 +490,70 @@ void main() {
     return { entete, sommets: new Uint8Array(tampon, debut, octets), indices: entete.indicesSur === 32 ? new Uint32Array(tampon, debut + octets, nb) : new Uint16Array(tampon, debut + octets, nb) };
   }
 
+  /* ---------- La carrure ----------
+     Le corps de Z-Anatomy est celui d'un homme mince. Pour une carrure d'athlète, les chairs s'épaississent autour des
+     os — le squelette ne change pas, ni la tête, les mains et les pieds. Chaque sommet s'écarte de l'axe des os qu'il
+     suit : l'axe du membre (de l'épaule au coude, de la hanche au genou…) ou, pour le tronc, la verticale qui passe au
+     milieu du corps. Toutes les couches s'écartent ensemble, du même pourcentage : les muscles gardent leur forme, leurs
+     voisins et leurs tendons ; près d'une articulation ou d'une extrémité, le gain retombe.
+     plan[j] : pour l'articulation j, soit un membre { a, u (axe unitaire), l (longueur), profil [[t, gain], …] }, soit
+     un étage du tronc { z0, k }, soit rien. */
+  const CARRURE = {
+    humerus: [[0, 0.25], [0.5, 0.30], [1, 0.14]], avantBras: [[0, 0.14], [0.3, 0.19], [0.75, 0.07], [1, 0]],
+    femur: [[0, 0.13], [0.4, 0.18], [1, 0.07]], tibia: [[0, 0.07], [0.3, 0.18], [0.8, 0.05], [1, 0]],
+    tronc: { bassin: [0.09, 0.02], L5: [0.05, 0.035], L4: [0.045, 0.035], L3: [0.045, 0.035], L2: [0.045, 0.035], L1: [0.05, 0.035], thorax: [0.115, 0.05], clavicule: [0.13, -0.046], cou1: [0.07, 0.01], cou2: [0.04, 0], cou3: [0.015, 0] }
+  };
+  function planCarrure(SQ) {
+    const parNom = Object.fromEntries(SQ.map((a, i) => [a.nom, i])), c = n => SQ[parNom[n]].centre;
+    const membre = (de, vers, profil) => { const a = c(de), b = c(vers), u = [b[0] - a[0], b[1] - a[1], b[2] - a[2]], l = Math.hypot(u[0], u[1], u[2]) || 1; return { a, u: u.map(x => x / l), l, profil }; };
+    return SQ.map(art => {
+      const base = art.nom.replace(/\.[GD]$/, ''), cote = /\.D$/.test(art.nom) ? '.D' : '.G';
+      if (base === 'humerus') return membre('humerus' + cote, 'ulna' + cote, CARRURE.humerus);
+      if (base === 'ulna' || base === 'radius') return membre('ulna' + cote, 'main' + cote, CARRURE.avantBras);
+      if (base === 'femur') return membre('femur' + cote, 'tibia' + cote, CARRURE.femur);
+      if (base === 'tibia') return membre('tibia' + cote, 'pied' + cote, CARRURE.tibia);
+      const t = CARRURE.tronc[base];
+      return t ? { k: t[0], z0: art.centre[2] + t[1] } : null;
+    });
+  }
+  const gainProfil = (profil, t) => {
+    if (t <= profil[0][0]) return profil[0][1];
+    for (let i = 1; i < profil.length; i++) if (t <= profil[i][0]) { const x = (t - profil[i - 1][0]) / (profil[i][0] - profil[i - 1][0]); return profil[i - 1][1] + (profil[i][1] - profil[i - 1][1]) * x; }
+    return profil[profil.length - 1][1];
+  };
+  /* Étoffe un tableau de sommets (rangement de atlas.bin et de atlas-peau.bin : position sur 3 × 16 bits dans la boîte,
+     articulations aux octets 12 à 15, poids aux octets 16 à 19). Renvoie une copie des sommets et leur nouvelle boîte.
+     garder(v) : vrai pour un sommet qui ne bouge pas (les os) ; articulation(j) : pour la peau, ramène une articulation
+     intermédiaire à celle qu'elle accompagne. */
+  function etoffer(sommets, pas, boite, SQ, force, garder, articulation) {
+    const plan = planCarrure(SQ), nb = Math.floor(sommets.byteLength / pas), src = new DataView(sommets.buffer, sommets.byteOffset, sommets.byteLength);
+    const P = new Float32Array(nb * 3), mini = [Infinity, Infinity, Infinity], maxi = [-Infinity, -Infinity, -Infinity];
+    for (let v = 0; v < nb; v++) {
+      const o = v * pas;
+      let x = boite.min[0] + src.getUint16(o, true) / 65535 * boite.etendue[0], y = boite.min[1] + src.getUint16(o + 2, true) / 65535 * boite.etendue[1], z = boite.min[2] + src.getUint16(o + 4, true) / 65535 * boite.etendue[2];
+      if (!(garder && garder(v, o))) {
+        let dx = 0, dy = 0, dz = 0;
+        for (let k = 0; k < 4; k++) {
+          const w = sommets[o + 16 + k] / 255; if (!w) continue;
+          let j = sommets[o + 12 + k]; if (articulation) j = articulation(j);
+          const pl = plan[j]; if (!pl) continue;
+          if (pl.u) {
+            const ax = x - pl.a[0], ay = y - pl.a[1], az = z - pl.a[2], h = ax * pl.u[0] + ay * pl.u[1] + az * pl.u[2], g = w * gainProfil(pl.profil, h / pl.l);
+            dx += g * (ax - h * pl.u[0]); dy += g * (ay - h * pl.u[1]); dz += g * (az - h * pl.u[2]);
+          } else { dx += w * pl.k * x; dz += w * pl.k * (z - pl.z0); }
+        }
+        x += force * dx; y += force * dy; z += force * dz;
+      }
+      P[v * 3] = x; P[v * 3 + 1] = y; P[v * 3 + 2] = z;
+      if (x < mini[0]) mini[0] = x; if (y < mini[1]) mini[1] = y; if (z < mini[2]) mini[2] = z;
+      if (x > maxi[0]) maxi[0] = x; if (y > maxi[1]) maxi[1] = y; if (z > maxi[2]) maxi[2] = z;
+    }
+    const sortie = new Uint8Array(sommets.byteLength); sortie.set(sommets);
+    const dst = new DataView(sortie.buffer), etendue = [maxi[0] - mini[0] || 1, maxi[1] - mini[1] || 1, maxi[2] - mini[2] || 1];
+    for (let v = 0; v < nb; v++) for (let k = 0; k < 3; k++) dst.setUint16(v * pas + k * 2, Math.round((P[v * 3 + k] - mini[k]) / etendue[k] * 65535), true);
+    return { sommets: sortie, boite: { min: mini, etendue } };
+  }
+
   /* ---------- L'atlas ---------- */
   const VUES = { face: 0, gauche: 90, dos: 180, droite: -90 };
   const DEFAUTS = {
@@ -440,8 +564,21 @@ void main() {
     champ: 24,               // angle de champ vertical, en degrés (longue focale : peu de déformation)
     peau: null,              // le fichier de la peau (atlas-peau.bin), s'il est là
     niveauPeau: 0,           // 0 : écorché ; 1 : peau sur la tête, les mains et les pieds ; 2 : peau entière, avec un short
-    teint: '#c89b80', tissu: '#1d1e23', poil: '#1b1512'
+    teint: '#c89b80', tissu: '#1d1e23', poil: '#1b1512',
+    chair: 1,                // la peau : 1, vivante (teint de chair, sang sous la surface) ; 0, une matière de la couleur « teint », accordée au corps
+    carrure: 1               // carrure d'athlète : 0, le corps mince de Z-Anatomy ; 1, les chairs étoffées autour des os
   };
+
+  /* Le thème qu'une carte donne au corps : { muscle, tendon, os, estompe } et la peau. Sans indication, la peau est
+     vivante (teint de chair). Avec carte.peau, elle devient une matière de cette couleur, accordée au reste du corps :
+     carte.poil pour les cheveux et les sourcils (à défaut, la même teinte assombrie). */
+  function themeDeCarte(carte) {
+    const c = carte || {};
+    const t = { muscle: c.muscle || DEFAUTS.muscle, tendon: c.tendon || DEFAUTS.tendon, os: c.os || DEFAUTS.os, estompe: c.estompe != null ? c.estompe : DEFAUTS.estompe,
+      teint: DEFAUTS.teint, poil: DEFAUTS.poil, chair: 1 };
+    if (c.peau) { t.teint = c.peau; t.poil = c.poil || couleur(c.peau).map(x => Math.round(x * 0.5)); t.chair = 0; }
+    return t;
+  }
 
   function creer(conteneur, tampon, options) {
     const opt = Object.assign({}, DEFAUTS, options || {});
@@ -459,6 +596,38 @@ void main() {
     try { if (opt.peau) PE = lirePeau(opt.peau); } catch (e) { PE = null; }
     let niveauPeau = PE ? Math.max(0, Math.min(2, opt.niveauPeau | 0)) : 0;
     const NB = S.length, NUM_OS = [E.os.pair, E.os.impair];
+    // La carrure : les sommets du modèle (hors os) et ceux de la peau sont étoffés de la même façon, une fois pour toutes.
+    if (opt.carrure > 0 && E.squelette && E.squelette.length) {
+      const r = etoffer(M.sommets, E.octetsParSommet, E.boite, E.squelette, opt.carrure, (v, o) => M.sommets[o + 10] === NUM_OS[0] || M.sommets[o + 10] === NUM_OS[1]);
+      M.sommets = r.sommets; E.boite = r.boite;
+      if (PE && PE.entete.articulations === E.squelette.length) {
+        const X = PE.entete.intermediaires || [], nj = E.squelette.length, jum = E.squelette.map(a => a.jumeau);
+        // Une articulation intermédiaire de la peau compte pour celle qu'elle accompagne (côté gauche, puis côté droit).
+        const rp = etoffer(PE.sommets, PE.entete.octetsParSommet, PE.entete.boite, E.squelette, opt.carrure, null, j => (j < nj ? j : j < nj + X.length ? X[j - nj].vers : jum[X[j - nj - X.length].vers]));
+        PE.sommets = rp.sommets; PE.entete.boite = rp.boite;
+      }
+    }
+    // La peau partielle : les triangles de la tête, des mains et des pieds (ongles, poils, cheveux, yeux compris), mis
+    // à part une fois pour toutes — d'abord ceux des deux côtés, puis ceux du milieu, comme dans le fichier. Chaque
+    // triangle est d'une seule zone (un test le vérifie) : la zone de son premier sommet suffit.
+    if (PE) {
+      const H = PE.entete, pasP = H.octetsParSommet, src = PE.indices, garde = new src.constructor(src.length);
+      let n = 0;
+      const trier = (debut, fin) => { const n0 = n; for (let k = debut; k < fin; k += 3) if (PE.sommets[src[k] * pasP + 10] !== 0) { garde[n] = src[k]; garde[n + 1] = src[k + 1]; garde[n + 2] = src[k + 2]; n += 3; } return (n - n0) / 3; };
+      const pairs = trier(0, H.trianglesPairs * 3), impairs = trier(H.trianglesPairs * 3, (H.trianglesPairs + H.trianglesImpairs) * 3);
+      PE.partiel = { indices: garde.subarray(0, n), pairs, impairs };
+    }
+    // L'ordre de dessin : de la surface vers la profondeur (couche 1, puis 2, 3, 4, et le squelette pour finir). Un
+    // muscle de surface dessiné d'abord masque d'avance ceux qu'il recouvre : la carte graphique écarte leurs points
+    // au lieu de les colorer pour rien (l'ordre du fichier, alphabétique, colorait souvent les muscles profonds avant
+    // de les recouvrir). L'image ne change pas. debutDessin[i] : où commencent, dans cet ordre, les indices de la
+    // structure i. Si le fichier ne range pas les structures d'un seul tenant avant le squelette, son ordre est gardé.
+    const nbIndicesStructures = S.reduce((t, s) => t + s.nbIndices, 0);
+    const triParCouche = S.every(s => s.indices + s.nbIndices <= nbIndicesStructures) && nbIndicesStructures <= M.nbIndices;
+    const ordreDessin = S.map((s, i) => i);
+    if (triParCouche) ordreDessin.sort((a, b) => S[a].couche - S[b].couche || a - b);
+    const debutDessin = new Array(S.length);
+    { let k = 0; for (const i of ordreDessin) { debutDessin[i] = triParCouche ? k : S[i].indices; k += S[i].nbIndices; } }
     const parId = new Map(S.map((s, i) => [s.id, i]));
     const hauteur = E.boite.etendue[1], centreCorps = [0, E.boite.min[1] + hauteur / 2, E.boite.min[2] + E.boite.etendue[2] / 2];
 
@@ -477,7 +646,9 @@ void main() {
     // prennent place à la suite, côté gauche puis côté droit, et le moteur calcule leur pose à chaque changement.
     const INTER = PE && PE.entete.articulations === SQ.length && PE.entete.intermediaires ? PE.entete.intermediaires : [];
     const NX = INTER.length, NT = NJ + 2 * NX;
-    const pose = new Float32Array(NT * 3 * 4 * 2);
+    // Rangées 2 et 3 : pour les muscles et les os, le même déplacement écrit en quaternion dual (deux texels par
+    // articulation : la rotation, puis le glissement), côté gauche puis côté droit (celui de l'articulation jumelle).
+    const pose = new Float32Array(NT * 3 * 4 * 4), quats = new Float32Array(NJ * 8);
     let poseSale = true;
     const ID12 = [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0], tmp12 = new Float32Array(12);
     function intermediaire(mats, de, vers, part, c, retrait) {
@@ -508,7 +679,36 @@ void main() {
       }
       return R;
     }
+    /* Les quaternions duaux des articulations. Chaque rotation est prise du même côté que celle de son parent : le
+       mélange passe ainsi par le chemin que l'articulation a vraiment suivi, sans saut quand un os dépasse le demi-tour
+       par rapport à un os éloigné (le bras levé, vu du thorax). */
+    function ecrireQuaternions(mats) {
+      const q = quats;
+      for (let i = 0; i < NJ; i++) {
+        const o = i * 12, b = i * 8;
+        let x = 0, y = 0, z = 0, w = 1;
+        if (mats) {
+          const m00 = mats[o], m01 = mats[o + 1], m02 = mats[o + 2], m10 = mats[o + 4], m11 = mats[o + 5], m12 = mats[o + 6], m20 = mats[o + 8], m21 = mats[o + 9], m22 = mats[o + 10], tr = m00 + m11 + m22;
+          if (tr > 0) { const s = 0.5 / Math.sqrt(tr + 1); w = 0.25 / s; x = (m21 - m12) * s; y = (m02 - m20) * s; z = (m10 - m01) * s; }
+          else if (m00 > m11 && m00 > m22) { const s = 2 * Math.sqrt(1 + m00 - m11 - m22); w = (m21 - m12) / s; x = 0.25 * s; y = (m01 + m10) / s; z = (m02 + m20) / s; }
+          else if (m11 > m22) { const s = 2 * Math.sqrt(1 + m11 - m00 - m22); w = (m02 - m20) / s; x = (m01 + m10) / s; y = 0.25 * s; z = (m12 + m21) / s; }
+          else { const s = 2 * Math.sqrt(1 + m22 - m00 - m11); w = (m10 - m01) / s; x = (m02 + m20) / s; y = (m12 + m21) / s; z = 0.25 * s; }
+          const n = Math.hypot(x, y, z, w) || 1; x /= n; y /= n; z /= n; w /= n;
+          const p = SQ.length ? SQ[i].parent : -1;
+          if (p >= 0 && x * q[p * 8] + y * q[p * 8 + 1] + z * q[p * 8 + 2] + w * q[p * 8 + 3] < 0) { x = -x; y = -y; z = -z; w = -w; }
+        }
+        const tx = mats ? mats[o + 3] : 0, ty = mats ? mats[o + 7] : 0, tz = mats ? mats[o + 11] : 0;
+        q[b] = x; q[b + 1] = y; q[b + 2] = z; q[b + 3] = w;
+        q[b + 4] = 0.5 * (tx * w + ty * z - tz * y); q[b + 5] = 0.5 * (ty * w + tz * x - tx * z); q[b + 6] = 0.5 * (tz * w + tx * y - ty * x); q[b + 7] = -0.5 * (tx * x + ty * y + tz * z);
+      }
+      const G = NT * 24, D = NT * 36;
+      for (let i = 0; i < NJ; i++) {
+        const j = SQ.length ? SQ[i].jumeau : i;
+        for (let k = 0; k < 8; k++) { pose[G + i * 12 + k] = q[i * 8 + k]; pose[D + i * 12 + k] = q[j * 8 + k]; }
+      }
+    }
     function ecrirePose(mats) {
+      ecrireQuaternions(mats);
       for (let i = 0; i < NJ; i++) {
         const j = SQ.length ? SQ[i].jumeau : i;
         for (let k = 0; k < 12; k++) {
@@ -532,7 +732,7 @@ void main() {
     }
     ecrirePose(null);
 
-    let prog, progRep, progSol, progObj, progPeau = null, vaoPeau = null, vaoObj = {}, vao, vaoSol, tex, texOs, tamponSommets, tamponIndices, tamponSol, cadreRep = null, texRep, profRep;
+    let prog, progRep, progSol, progObj, progPeau = null, vaoPeau = null, vaoPeauPartielle = null, vaoObj = {}, vao, vaoSol, tex, texOs, tamponSommets, tamponIndices, tamponSol, cadreRep = null, texRep, profRep;
     let premierSommet = false;
     function installer() {
       // Sur les puces Apple (WebGL par Metal), une valeur « flat » coûte très cher avec la convention par défaut, où le
@@ -545,18 +745,24 @@ void main() {
       prog = programme(gl, SOMMETS, PIXELS); progRep = programme(gl, SOMMETS, PIXELS_REPERAGE); progSol = programme(gl, SOL_S, SOL_P); progObj = programme(gl, OBJ_S, OBJ_P);
       if (PE) {
         progPeau = programme(gl, SOMMETS_PEAU, PIXELS_PEAU);
-        vaoPeau = gl.createVertexArray(); gl.bindVertexArray(vaoPeau);
+        // Mêmes sommets pour la peau entière et la peau partielle ; seuls les triangles soumis diffèrent.
         const ts = gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER, ts); gl.bufferData(gl.ARRAY_BUFFER, PE.sommets, gl.STATIC_DRAW);
         const pasP = PE.entete.octetsParSommet;
-        gl.enableVertexAttribArray(0); gl.vertexAttribPointer(0, 3, gl.UNSIGNED_SHORT, true, pasP, 0);
-        gl.enableVertexAttribArray(1); gl.vertexAttribPointer(1, 2, gl.UNSIGNED_BYTE, true, pasP, 6);
-        gl.enableVertexAttribArray(2); gl.vertexAttribPointer(2, 2, gl.BYTE, true, pasP, 8);
-        gl.enableVertexAttribArray(3); gl.vertexAttribPointer(3, 1, gl.UNSIGNED_BYTE, false, pasP, 10);
-        gl.enableVertexAttribArray(4); gl.vertexAttribIPointer(4, 4, gl.UNSIGNED_BYTE, pasP, 12);
-        gl.enableVertexAttribArray(5); gl.vertexAttribPointer(5, 4, gl.UNSIGNED_BYTE, true, pasP, 16);
-        gl.enableVertexAttribArray(6); gl.vertexAttribPointer(6, 1, gl.UNSIGNED_BYTE, true, pasP, 11);
-        const ti = gl.createBuffer(); gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, ti); gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, PE.indices, gl.STATIC_DRAW);
-        gl.bindVertexArray(null);
+        const tableau = indices => {
+          const v = gl.createVertexArray(); gl.bindVertexArray(v);
+          gl.bindBuffer(gl.ARRAY_BUFFER, ts);
+          gl.enableVertexAttribArray(0); gl.vertexAttribPointer(0, 3, gl.UNSIGNED_SHORT, true, pasP, 0);
+          gl.enableVertexAttribArray(1); gl.vertexAttribPointer(1, 2, gl.UNSIGNED_BYTE, true, pasP, 6);
+          gl.enableVertexAttribArray(2); gl.vertexAttribPointer(2, 2, gl.BYTE, true, pasP, 8);
+          gl.enableVertexAttribArray(3); gl.vertexAttribPointer(3, 1, gl.UNSIGNED_BYTE, false, pasP, 10);
+          gl.enableVertexAttribArray(4); gl.vertexAttribIPointer(4, 4, gl.UNSIGNED_BYTE, pasP, 12);
+          gl.enableVertexAttribArray(5); gl.vertexAttribPointer(5, 4, gl.UNSIGNED_BYTE, true, pasP, 16);
+          gl.enableVertexAttribArray(6); gl.vertexAttribPointer(6, 1, gl.UNSIGNED_BYTE, true, pasP, 11);
+          const ti = gl.createBuffer(); gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, ti); gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, indices, gl.STATIC_DRAW);
+          gl.bindVertexArray(null);
+          return v;
+        };
+        vaoPeau = tableau(PE.indices); vaoPeauPartielle = tableau(PE.partiel.indices);
       }
       const formes = formesDeBase(); vaoObj = {};
       for (const nom in formes) {
@@ -575,7 +781,10 @@ void main() {
       gl.enableVertexAttribArray(3); gl.vertexAttribPointer(3, 1, gl.UNSIGNED_BYTE, false, pas, 10);
       gl.enableVertexAttribArray(4); gl.vertexAttribIPointer(4, 4, gl.UNSIGNED_BYTE, pas, 12);
       gl.enableVertexAttribArray(5); gl.vertexAttribPointer(5, 4, gl.UNSIGNED_BYTE, true, pas, 16);
-      tamponIndices = gl.createBuffer(); gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, tamponIndices); gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, M.indices(), gl.STATIC_DRAW);
+      // Les indices, rangés dans l'ordre de dessin (voir debutDessin) ; le squelette garde sa place, à la fin.
+      let indices = M.indices();
+      if (triParCouche) { const tri = new Uint32Array(indices.length); tri.set(indices.subarray(nbIndicesStructures), nbIndicesStructures); for (let i = 0; i < S.length; i++) tri.set(indices.subarray(S[i].indices, S[i].indices + S[i].nbIndices), debutDessin[i]); indices = tri; }
+      tamponIndices = gl.createBuffer(); gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, tamponIndices); gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, indices, gl.STATIC_DRAW);
       vaoSol = gl.createVertexArray(); gl.bindVertexArray(vaoSol);
       tamponSol = gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER, tamponSol); gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 1, -1, -1, 1, 1, 1]), gl.STATIC_DRAW);
       gl.enableVertexAttribArray(0); gl.vertexAttribPointer(0, 2, gl.FLOAT, false, 0, 0);
@@ -587,7 +796,7 @@ void main() {
       texOs = gl.createTexture(); gl.bindTexture(gl.TEXTURE_2D, texOs);
       gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
       gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-      gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA32F, NT * 3, 2, 0, gl.RGBA, gl.FLOAT, pose);
+      gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA32F, NT * 3, 4, 0, gl.RGBA, gl.FLOAT, pose);
       poseSale = false;
       // Petite image hors écran pour repérer la structure sous le doigt.
       cadreRep = gl.createFramebuffer(); gl.bindFramebuffer(gl.FRAMEBUFFER, cadreRep);
@@ -603,6 +812,11 @@ void main() {
 
     /* ----- Traduction de l'état en texture ----- */
     let transparents = false;
+    // Les triangles des structures translucides (fantômes, voiles), en plages d'indices : la passe qui les dessine ne
+    // soumet qu'elles, pas tout le modèle (à la couche 1, il n'y a qu'un voile sur 178 structures). Trop de plages
+    // (beaucoup de fantômes épars) : mieux vaut tout soumettre d'un coup, la carte graphique triera.
+    let plagesTranslucides = [];
+    const PLAGES_MAX = 24;
     function presence(i) {
       const s = S[i], e = etat[i];
       if (e.masque) return 0;
@@ -612,7 +826,17 @@ void main() {
     }
     function ecrireTexture() {
       const base = couleur(opt.muscle), cTendon = couleur(opt.tendon), cOs = couleur(opt.os);
-      transparents = false;
+      transparents = false; plagesTranslucides = [];
+      // Les plages translucides, dans l'ordre de dessin : des couches entières de fantômes ne font qu'une plage.
+      for (const i of ordreDessin) {
+        const p = presence(i);
+        if (p > 0 && (p < 1 || S[i].type === 'aponevrose')) {
+          const d = plagesTranslucides[plagesTranslucides.length - 1];
+          if (d && d[0] + d[1] === debutDessin[i]) d[1] += S[i].nbIndices; else plagesTranslucides.push([debutDessin[i], S[i].nbIndices]);
+        }
+      }
+      // Elles se dessinent du fond vers la surface : un fantôme de surface se pose sur ceux qu'il recouvre.
+      plagesTranslucides.reverse();
       for (let i = 0; i < NB; i++) {
         const s = S[i], e = etat[i], p = presence(i), voile = s.type === 'aponevrose';
         if (p > 0 && (p < 1 || voile)) transparents = true;
@@ -639,7 +863,7 @@ void main() {
 
     function envoyerPose() {
       gl.bindTexture(gl.TEXTURE_2D, texOs);
-      gl.texSubImage2D(gl.TEXTURE_2D, 0, 0, 0, NT * 3, 2, gl.RGBA, gl.FLOAT, pose);
+      gl.texSubImage2D(gl.TEXTURE_2D, 0, 0, 0, NT * 3, 4, gl.RGBA, gl.FLOAT, pose);
       poseSale = false;
     }
 
@@ -681,12 +905,27 @@ void main() {
     function passe(m, n) {
       const pr = n === 2 ? progRep : prog;
       gl.uniform1f(pr.u.u_passe, n);
+      // Passe 1 : les seules plages translucides, quand elles sont peu nombreuses.
+      const plages = n === 1 && plagesTranslucides.length <= PLAGES_MAX ? plagesTranslucides : null;
       for (let cote = 0; cote < 2; cote++) {
         gl.uniform1f(pr.u.u_cote, cote);
         gl.frontFace(cote ? gl.CW : gl.CCW);
-        gl.drawElements(gl.TRIANGLES, M.nbIndices, gl.UNSIGNED_INT, 0);
+        if (plages) for (const [debut, nb] of plages) gl.drawElements(gl.TRIANGLES, nb, gl.UNSIGNED_INT, debut * 4);
+        else gl.drawElements(gl.TRIANGLES, M.nbIndices, gl.UNSIGNED_INT, 0);
       }
       gl.frontFace(gl.CCW);
+    }
+    // Ce que chaque image soumet à la carte graphique, pour les mesures : la passe translucide (appels de dessin,
+    // triangles des deux côtés) et la peau (les deux côtés, plus le milieu ; deux fois pour la peau entière, qui se
+    // dessine hors des fenêtres puis dedans).
+    function passeTranslucide() {
+      if (!transparents || niveauPeau === 2) return { appels: 0, triangles: 0 };
+      if (plagesTranslucides.length > PLAGES_MAX) return { appels: 2, triangles: 2 * E.triangles };
+      return { appels: 2 * plagesTranslucides.length, triangles: 2 * plagesTranslucides.reduce((t, x) => t + x[1], 0) / 3 };
+    }
+    function trianglesPeau() {
+      if (!PE || !niveauPeau) return 0;
+      return niveauPeau === 2 ? 2 * (2 * PE.entete.trianglesPairs + PE.entete.trianglesImpairs) : 2 * PE.partiel.pairs + PE.partiel.impairs;
     }
     function preparer(m, reperage) {
       const pr = reperage ? progRep : prog;
@@ -716,14 +955,16 @@ void main() {
     function dessinerPeau(m, entiere) {
       const H = PE.entete, type = H.indicesSur === 32 ? gl.UNSIGNED_INT : gl.UNSIGNED_SHORT, oct = H.indicesSur === 32 ? 4 : 2;
       const pr = progPeau;
-      gl.useProgram(pr.p); gl.bindVertexArray(vaoPeau);
+      // Peau partielle : seuls les triangles de la tête, des mains et des pieds sont soumis.
+      const nPairs = entiere ? H.trianglesPairs : PE.partiel.pairs, nImpairs = entiere ? H.trianglesImpairs : PE.partiel.impairs;
+      gl.useProgram(pr.p); gl.bindVertexArray(entiere ? vaoPeau : vaoPeauPartielle);
       gl.activeTexture(gl.TEXTURE1); gl.bindTexture(gl.TEXTURE_2D, texOs); gl.uniform1i(pr.u.u_os, 1); gl.activeTexture(gl.TEXTURE0);
       gl.uniformMatrix4fv(pr.u.u_vp, false, m.vp);
       gl.uniform3fv(pr.u.u_min, H.boite.min); gl.uniform3fv(pr.u.u_etendue, H.boite.etendue);
       gl.uniform3fv(pr.u.u_cam, m.oeil);
       const c = Math.cos(m.az), s = Math.sin(m.az);
       gl.uniformMatrix3fv(pr.u.u_lum, false, [c, 0, -s, 0, 1, 0, s, 0, c]);
-      gl.uniform1f(pr.u.u_clair, opt.clair ? 1 : 0); gl.uniform1f(pr.u.u_niveau, niveauPeau);
+      gl.uniform1f(pr.u.u_clair, opt.clair ? 1 : 0); gl.uniform1f(pr.u.u_chair, Math.max(0, Math.min(1, +opt.chair)));
       gl.uniform2f(pr.u.u_short, H.short.bas, H.short.haut);
       if (H.oeil) gl.uniform4f(pr.u.u_oeil, H.oeil.centre[0], H.oeil.centre[1], H.oeil.centre[2], H.oeil.rayon);
       gl.uniform3fv(pr.u.u_teint, couleur(opt.teint).map(x => lin(x / 255))); gl.uniform3fv(pr.u.u_tissu, couleur(opt.tissu).map(x => lin(x / 255))); gl.uniform3fv(pr.u.u_poil, couleur(opt.poil).map(x => lin(x / 255)));
@@ -731,10 +972,10 @@ void main() {
       const tracer = () => {
         for (let cote = 0; cote < 2; cote++) {
           gl.uniform1f(pr.u.u_cote, cote); gl.frontFace(cote ? gl.CW : gl.CCW);
-          gl.drawElements(gl.TRIANGLES, H.trianglesPairs * 3, type, 0);
+          gl.drawElements(gl.TRIANGLES, nPairs * 3, type, 0);
         }
         gl.frontFace(gl.CCW); gl.uniform1f(pr.u.u_cote, 0);
-        if (H.trianglesImpairs) gl.drawElements(gl.TRIANGLES, H.trianglesImpairs * 3, type, H.trianglesPairs * 3 * oct);
+        if (nImpairs) gl.drawElements(gl.TRIANGLES, nImpairs * 3, type, nPairs * 3 * oct);
       };
       gl.uniform1f(pr.u.u_fenetre, 0);
       if (!entiere) { tracer(); return; }
@@ -793,6 +1034,11 @@ void main() {
           const v = vaoObj[f.forme]; if (!v) continue;
           gl.bindVertexArray(v.vao);
           gl.uniform4fv(progObj.u.u_q, f.q); gl.uniform3fv(progObj.u.u_t, f.p); gl.uniform3fv(progObj.u.u_s, f.s);
+          // L'arrondi ne dépasse jamais ce que la forme peut porter ; un anneau sans réglage garde son tube d'origine.
+          const anneau = f.forme === 'tore' || f.forme === 'arc';
+          let r = f.r != null ? f.r : anneau ? 0.14 * f.s[0] : 0;
+          if (f.forme === 'boite') r = Math.min(r, 0.5 * Math.min(f.s[0], f.s[1], f.s[2])); else if (f.forme === 'cylindre') r = Math.min(r, f.s[0], f.s[2], 0.5 * f.s[1]); else if (!anneau) r = 0;
+          gl.uniform3fv(progObj.u.u_k, K_FORMES[f.forme] || K_ZERO); gl.uniform1f(progObj.u.u_r, Math.max(0, r));
           gl.uniform3f(progObj.u.u_couleur, f.couleur[0] / 255, f.couleur[1] / 255, f.couleur[2] / 255); gl.uniform1f(progObj.u.u_metal, f.metal || 0);
           gl.drawArrays(gl.TRIANGLES, 0, v.n);
         }
@@ -1017,7 +1263,8 @@ void main() {
         ecrirePose(mats); demander();
         return { mats, centres: C };
       },
-      // Matériel : liste de formes { forme: 'cylindre' | 'boite' | 'sphere' | 'tore', s (tailles), q (rotation), p (position), couleur, metal }.
+      // Matériel : liste de formes { forme: 'cylindre' | 'boite' | 'sphere' | 'tore' | 'arc' | 'hexa', s (tailles), r (arrondi, en
+      // mètres ; facultatif), q (rotation), p (position), couleur, metal } — voir formesDeBase.
       objets(liste) { objets = liste || []; demander(); },
       // Ombre au sol : par défaut sous les pieds ; pendant un exercice, sous toute la scène ({ centre, taille, force }).
       ombre(o) { ombreSol = o || null; demander(); },
@@ -1074,6 +1321,8 @@ void main() {
       masques: () => S.filter((s, i) => etat[i].masque).map(s => s.id),
       toutAfficher() { etat.forEach(e => { e.masque = false; }); isoles = null; coucheMin = 1; texSale = true; demander(); },
       theme(o) { Object.assign(opt, o); texSale = true; demander(); },
+      // Les couleurs en vigueur (muscles au repos, tendons, os, peau, poils) : pour les contrôles.
+      apparence: () => ({ muscle: opt.muscle, tendon: opt.tendon, os: opt.os, teint: opt.teint, poil: opt.poil, chair: opt.chair }),
       // Place prise par l'interface en haut et en bas (pixels d'écran) : l'image se recentre en douceur.
       marges(m, immediat) {
         if (m.haut != null) marges.haut = m.haut; if (m.bas != null) marges.bas = m.bas;
@@ -1090,7 +1339,7 @@ void main() {
       },
       redessiner: demander,
       tailler,
-      mesures: () => ({ enCours: !!demande || !!transition, images: nbImages, dernierTempsMs: dernierTemps, largeur: larg, hauteur: haut, pixels: pp, echelleMouvement, triangles: E.triangles, sommets: E.sommets, appelsDeDessin: 1 + 2 * (transparents && niveauPeau < 2 ? 2 : 1) + 3 * niveauPeau, peau: niveauPeau, premierSommet }),
+      mesures: () => ({ enCours: !!demande || !!transition, images: nbImages, dernierTempsMs: dernierTemps, largeur: larg, hauteur: haut, pixels: pp, echelleMouvement, triangles: E.triangles, sommets: E.sommets, appelsDeDessin: 1 + 2 + passeTranslucide().appels + 3 * niveauPeau, trianglesSoumis: 2 * E.triangles + passeTranslucide().triangles + trianglesPeau(), peau: niveauPeau, premierSommet }),
       detruire() {
         vivant = false; if (demande) cancelAnimationFrame(demande);
         clearTimeout(minuterieNet); document.removeEventListener('visibilitychange', visible);
@@ -1323,9 +1572,6 @@ void main() {
     croix: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>',
     centrer: '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M12 2v4M12 18v4M2 12h4M18 12h4"/></svg>',
     isoler: '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9" stroke-dasharray="3 3.2"/><circle cx="12" cy="12" r="3.5"/></svg>',
-    peau2: '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="5.2" r="2.7" fill="currentColor"/><path fill="currentColor" d="M12 9.6c-3.2 0-5.2 1.7-5.2 4.3v2.6h2.1v5h6.2v-5h2.1v-2.6c0-2.6-2-4.3-5.2-4.3Z"/></svg>',
-    peau1: '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="5.2" r="2.7" fill="currentColor"/><path d="M12 9.6c-3.2 0-5.2 1.7-5.2 4.3v2.6h2.1v5h6.2v-5h2.1v-2.6c0-2.6-2-4.3-5.2-4.3Z"/></svg>',
-    peau0: '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="5.2" r="2.7" stroke-dasharray="2 2.4"/><path stroke-dasharray="2 2.4" d="M12 9.6c-3.2 0-5.2 1.7-5.2 4.3v2.6h2.1v5h6.2v-5h2.1v-2.6c0-2.6-2-4.3-5.2-4.3Z"/></svg>',
     masquer: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 3l18 18"/><path d="M10.6 5.1A10.6 10.6 0 0 1 12 5c6.5 0 10 7 10 7a17 17 0 0 1-3.1 3.9M6.6 6.6A16.6 16.6 0 0 0 2 12s3.5 7 10 7a10 10 0 0 0 4.3-1"/></svg>'
   };
   const NOMS_COUCHES = ['', 'Surface', 'Intermédiaire', 'Profonde', 'Très profonde'];
@@ -1363,9 +1609,6 @@ void main() {
     }
     const bVoile = el('button', 'atlas-rond atlas-verre atlas-fantomes', IC.voile); bVoile.type = 'button';
     bVoile.setAttribute('aria-label', 'Garder en transparence les muscles retirés');
-    // La peau : un bouton à trois positions (entière, avec un short ; tête, mains et pieds ; sans), absent si le fichier manque.
-    const bPeau = el('button', 'atlas-rond atlas-verre atlas-peau', IC.peau2); bPeau.type = 'button';
-    if (a.aPeau) { couches.appendChild(el('span', 'atlas-couches-titre', 'Peau')); couches.appendChild(bPeau); }
     couches.appendChild(el('span', 'atlas-couches-titre', 'Couches')); couches.appendChild(pile); couches.appendChild(bVoile);
 
     /* ----- Bas : légende, vues, index ----- */
@@ -1410,25 +1653,17 @@ void main() {
       majLecture();
     }
     const etat = () => ({ mode, choisi: choisi && choisi.id, couche: a.couche(), fantomes: a.fantomes(), isoles: a.isoles(), masques: a.masques(), peau: a.niveauPeau() });
-    /* La peau. Par défaut : entière pendant un exercice (les muscles qui travaillent se voient au travers) ; sur la tête,
-       les mains et les pieds pour les cartes et l'anatomie. Le choix fait au bouton est retenu, par sorte
-       de vue. Dès qu'on retire des couches ou qu'on isole un muscle, la peau s'efface : on regarde en profondeur. */
-    const PEAU_DEFAUT = Object.assign({ exercice: 2, cartes: 1, anatomie: 1 }, o.peauDefaut || {}), CLE_PEAU = 'anqa-atlas-peau';
-    const sortePeau = () => (mode === 'exercice' ? 'exercice' : mode === 'anatomie' ? 'anatomie' : 'cartes');
-    let choixPeau = {};
-    try { const v = JSON.parse(localStorage.getItem(CLE_PEAU) || '{}'); if (v && typeof v === 'object') choixPeau = v; } catch (e) { choixPeau = {}; }
-    const peauVoulue = () => { const v = choixPeau[sortePeau()]; return v === 0 || v === 1 || v === 2 ? v : PEAU_DEFAUT[sortePeau()]; };
-    const NOMS_PEAU = ['sans la peau', 'sur la tête, les mains et les pieds', 'entière'];
+    /* La peau : une seule apparence — le corps écorché, la peau gardée sur la tête, les mains et les pieds
+       (o.niveauPeau pour en changer : 0, sans peau ; 2, peau entière — l'appli ne le propose pas). Dès qu'on retire
+       des couches, qu'on isole un muscle ou qu'on en choisit un sous cette peau, elle s'efface : on regarde en profondeur. */
+    const NIVEAU_PEAU = o.niveauPeau === 0 || o.niveauPeau === 2 ? o.niveauPeau : 1;
     const SOUS_PEAU = new Set(['tete', 'main', 'pied']);   // régions dont les muscles sont cachés par la peau partielle
     function majPeau() {
       if (!a.aPeau) return;
-      const v = peauVoulue(), enProfondeur = a.couche() > 1 || !!a.isoles() || (!!choisi && SOUS_PEAU.has(choisi.region));
-      a.niveauPeau(enProfondeur ? 0 : v);
-      bPeau.innerHTML = IC['peau' + v];
-      bPeau.dataset.peau = v;
-      bPeau.setAttribute('aria-label', `Peau : ${NOMS_PEAU[v]}. Toucher pour passer à : ${NOMS_PEAU[(v + 2) % 3]}`);
+      const enProfondeur = a.couche() > 1 || !!a.isoles() || (!!choisi && SOUS_PEAU.has(choisi.region));
+      a.niveauPeau(enProfondeur ? 0 : NIVEAU_PEAU);
     }
-    function reglerPeau(v) { choixPeau[sortePeau()] = v; try { localStorage.setItem(CLE_PEAU, JSON.stringify(choixPeau)); } catch (e) { /* stockage indisponible : le choix vaut pour cette fois */ } majPeau(); }
+    try { localStorage.removeItem('anqa-atlas-peau'); } catch (e) { /* l'ancien réglage du bouton « Peau » n'a plus d'objet */ }
 
     function majMarges(immediat) {
       const hFiche = choisi ? fiche.getBoundingClientRect().height : 0;
@@ -1450,7 +1685,7 @@ void main() {
     function appliquerCarte() {
       carte = (o.carte && o.carte(mode, S)) || {};
       a.colorer(carte.couleurs || null, { tendons: carte.tendons || 0 });
-      a.theme({ muscle: carte.muscle || DEFAUTS.muscle, tendon: carte.tendon || DEFAUTS.tendon, os: carte.os || DEFAUTS.os, estompe: carte.estompe != null ? carte.estompe : DEFAUTS.estompe });
+      a.theme(themeDeCarte(carte));
       legende.innerHTML = (carte.legende || []).map(l => `<span><i style="background:${echap(l.c)}"></i>${echap(l.t)}</span>`).join('');
       legende.hidden = !(carte.legende && carte.legende.length);
       note.textContent = carte.note || ''; note.hidden = !carte.note;
@@ -1513,7 +1748,6 @@ void main() {
       if (choisi && choisi.couche < a.couche()) choisir(null);
     });
     bVoile.addEventListener('click', () => { a.fantomes(!a.fantomes()); majCouches(); });
-    bPeau.addEventListener('click', () => reglerPeau((peauVoulue() + 2) % 3));
     vues.addEventListener('click', e => { const b = e.target.closest('button'); if (b) a.vue(b.dataset.vue); });
     bRetour.addEventListener('click', () => { a.toutAfficher(); isoleGroupe = false; majCouches(); if (anim) anim.cadrer(); else a.reinitialiser(); });
     bLecture.addEventListener('click', () => { lecture = !lecture; majLecture(); });
@@ -1566,7 +1800,7 @@ void main() {
       atlas: a, racine, etat, choisirMode, choisir, montrer, ouvrirIndex,
       couche(k) { a.couche(k); majCouches(); if (choisi && choisi.couche < a.couche()) choisir(null); },
       fantomes(v) { a.fantomes(v); majCouches(); },
-      niveauPeau(v) { if (v === 0 || v === 1 || v === 2) reglerPeau(v); return a.niveauPeau(); },
+      niveauPeau: () => a.niveauPeau(),
       rafraichir: appliquerCarte,
       theme(clair) { o.clair = !!clair; racine.toggleAttribute('data-clair', o.clair); a.theme({ clair: o.clair, accent: o.accent || (o.clair ? '#db2777' : '#f472b6') }); appliquerCarte(); },
       animation: () => anim,
@@ -1575,5 +1809,53 @@ void main() {
     };
   }
 
-  window.AnqaAtlas = { creer, activerGestes, monter, VUES };
+  /* ---------- L'aperçu d'un exercice ----------
+     Le corps exécute un exercice dans un petit cadre (la fiche de l'exercice) : pas de modes, pas de fiche de muscle,
+     pas de couches — la vue complète est l'atlas. On le fait tourner du doigt, de gauche à droite ; un glissement
+     vertical fait défiler la page. options : { clair, accent, peau (fichier), carte ({ couleurs, muscle, tendon, os,
+     peau (teinte), tendons, estompe }, ou une fonction des structures qui la rend), exercice ({ exercice: identifiant }
+     ou { spec }) } ;
+     demande atlas-mouvements.js.
+     Renvoie { atlas, anime, lecture(v), detruire() }. */
+  function apercu(conteneur, tampon, options) {
+    const o = options || {};
+    const a = creer(conteneur, tampon, { clair: !!o.clair, accent: o.accent || (o.clair ? '#db2777' : '#f472b6'), peau: o.peau || null, niveauPeau: o.peau ? 1 : 0 });
+    const c = (typeof o.carte === 'function' ? o.carte(a.structures) : o.carte) || {};
+    a.theme(themeDeCarte(c));
+    a.colorer(c.couleurs || null, { tendons: c.tendons || 0 });
+    a.toile.setAttribute('aria-label', 'Le mouvement en trois dimensions : glisse de gauche à droite pour tourner autour du corps');
+    let anim = null, enMarche = false;
+    try { if (o.exercice && window.AnqaMouvements) anim = window.AnqaMouvements.creerAnimation(a, o.exercice, { clair: !!o.clair }); } catch (e) { anim = null; }
+    if (anim) { anim.rendre(0, 0); anim.cadrer(0); }
+    function lecture(v) {
+      if (v == null || !anim) return enMarche;
+      enMarche = !!v;
+      if (enMarche) anim.demarrer(); else anim.arreter();
+      return enMarche;
+    }
+    // Tourner : un glissement surtout horizontal ; sinon le geste reste à la page (défilement).
+    const toile = a.toile; toile.style.touchAction = 'pan-y'; toile.style.cursor = 'grab';
+    let geste = null;
+    const bas = e => { geste = { x: e.clientX, y: e.clientY, az: a.camera().az, tourne: false, id: e.pointerId }; };
+    const bouge = e => {
+      if (!geste || e.pointerId !== geste.id) return;
+      const dx = e.clientX - geste.x, dy = e.clientY - geste.y;
+      if (!geste.tourne && Math.abs(dx) > 8 && Math.abs(dx) > Math.abs(dy)) { geste.tourne = true; try { toile.setPointerCapture(e.pointerId); } catch (err) { /* capture indisponible : le geste continue tant qu'il reste sur l'image */ } }
+      if (geste.tourne) a.placer({ az: geste.az - dx * 0.45 });
+    };
+    const fin = () => { geste = null; };
+    toile.addEventListener('pointerdown', bas); toile.addEventListener('pointermove', bouge);
+    toile.addEventListener('pointerup', fin); toile.addEventListener('pointercancel', fin);
+    return {
+      atlas: a, anime: !!anim, lecture,
+      detruire() {
+        toile.removeEventListener('pointerdown', bas); toile.removeEventListener('pointermove', bouge);
+        toile.removeEventListener('pointerup', fin); toile.removeEventListener('pointercancel', fin);
+        if (anim) { anim.quitter(); anim = null; }
+        a.detruire();
+      }
+    };
+  }
+
+  window.AnqaAtlas = { creer, activerGestes, monter, apercu, VUES, etoffer, themeDeCarte };
 })();

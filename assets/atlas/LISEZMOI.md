@@ -8,8 +8,12 @@
   chacune avec son maillage propre, et le squelette. Seul le côté gauche est stocké : le droit en est le miroir.
 - `atlas-peau.bin` : la peau — la surface du corps (visage, oreilles, mains, pieds, ongles, sourcils, cils, cheveux),
   attachée au même squelette de mouvement que les muscles qu'elle recouvre. Facultative : sans elle, l'atlas reste
-  l'écorché. Trois positions dans l'interface : peau entière avec un short (les muscles colorés ou choisi se voient au
-  travers), peau sur la tête, les mains et les pieds, ou pas de peau.
+  l'écorché. L'appli la montre sur la tête, les mains et les pieds ; le reste du corps est l'écorché. Sur les cartes
+  et pendant un exercice, elle prend la teinte grise du corps ; en mode « Anatomie », elle garde sa teinte naturelle.
+
+Le moteur donne au corps une carrure d'athlète au chargement : les chairs sont étoffées autour des os, le squelette
+ne change pas, et les fichiers du modèle restent ceux décrits ici (option `carrure`, voir `outils/atlas/LISEZMOI.md`).
+Dès qu'on ouvre un exercice, sa fiche montre le mouvement (`AnqaAtlas.apercu`) ; l'atlas complet s'ouvre de là en grand.
 
 ## Origine et licence du modèle
 

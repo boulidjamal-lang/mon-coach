@@ -136,21 +136,40 @@
       }
       return m;
     }
-    /* La peau posée (les deux côtés), pour la pose en cours : appelle f(x, y, z) pour chaque point. */
+    /* Le déplacement de chaque articulation en quaternion dual (rotation, glissement), comme le moteur les mélange :
+       chaque rotation est prise du même côté que celle de son parent. */
+    quaternionsDuaux() {
+      const q = this.dq || (this.dq = new Float32Array(this.nb * 8));
+      for (let b = 0; b < this.nb; b++) {
+        const r = this.qw[b], c = this.tete[b], p = this.pw[b], pa = this.parent[b], o = b * 8;
+        let x = r.x, y = r.y, z = r.z, w = r.w;
+        if (pa >= 0 && x * q[pa * 8] + y * q[pa * 8 + 1] + z * q[pa * 8 + 2] + w * q[pa * 8 + 3] < 0) { x = -x; y = -y; z = -z; w = -w; }
+        // Le glissement : où va l'origine (p − R·c).
+        const ux = y * c.z - z * c.y, uy = z * c.x - x * c.z, uz = x * c.y - y * c.x;
+        const tx = p.x - (c.x + 2 * (w * ux + y * uz - z * uy)), ty = p.y - (c.y + 2 * (w * uy + z * ux - x * uz)), tz = p.z - (c.z + 2 * (w * uz + x * uy - y * ux));
+        q[o] = x; q[o + 1] = y; q[o + 2] = z; q[o + 3] = w;
+        q[o + 4] = 0.5 * (tx * w + ty * z - tz * y); q[o + 5] = 0.5 * (ty * w + tz * x - tx * z); q[o + 6] = 0.5 * (tz * w + tx * y - ty * x); q[o + 7] = -0.5 * (tx * x + ty * y + tz * z);
+      }
+      return q;
+    }
+    /* La peau posée (les deux côtés), pour la pose en cours : appelle f(x, y, z) pour chaque point. Même mélange que
+       le moteur (quaternions duaux) : ce qu'on mesure ici est ce qui se dessine. */
     peauPosee(regions, f) {
       const pe = this.peau(regions); if (!pe) return false;
-      const m = this.matrices(), S = this.S;
+      const q = this.quaternionsDuaux(), S = this.S;
       for (let cote = 0; cote < 2; cote++) for (let v = 0; v < pe.n; v++) {
         const X = cote ? -pe.P[v * 3] : pe.P[v * 3], Y = pe.P[v * 3 + 1], Z = pe.P[v * 3 + 2];
-        let x = 0, y = 0, z = 0;
+        let rx = 0, ry = 0, rz = 0, rw = 0, dx = 0, dy = 0, dz = 0, dw = 0;
         for (let k = 0; k < 4; k++) {
           const w = pe.W[v * 4 + k]; if (!w) continue;
-          const o = (cote ? S[pe.J[v * 4 + k]].jumeau : pe.J[v * 4 + k]) * 12;
-          x += w * (m[o] * X + m[o + 1] * Y + m[o + 2] * Z + m[o + 3]);
-          y += w * (m[o + 4] * X + m[o + 5] * Y + m[o + 6] * Z + m[o + 7]);
-          z += w * (m[o + 8] * X + m[o + 9] * Y + m[o + 10] * Z + m[o + 11]);
+          const o = (cote ? S[pe.J[v * 4 + k]].jumeau : pe.J[v * 4 + k]) * 8;
+          rx += w * q[o]; ry += w * q[o + 1]; rz += w * q[o + 2]; rw += w * q[o + 3]; dx += w * q[o + 4]; dy += w * q[o + 5]; dz += w * q[o + 6]; dw += w * q[o + 7];
         }
-        f(x, y, z);
+        const l = 1 / (Math.hypot(rx, ry, rz, rw) || 1); rx *= l; ry *= l; rz *= l; rw *= l; dx *= l; dy *= l; dz *= l; dw *= l;
+        const ux = ry * Z - rz * Y + rw * X, uy = rz * X - rx * Z + rw * Y, uz = rx * Y - ry * X + rw * Z;
+        f(X + 2 * (ry * uz - rz * uy) + 2 * (rw * dx - dw * rx + ry * dz - rz * dy),
+          Y + 2 * (rz * ux - rx * uz) + 2 * (rw * dy - dw * ry + rz * dx - rx * dz),
+          Z + 2 * (rx * uy - ry * ux) + 2 * (rw * dz - dw * rz + rx * dy - ry * dx));
       }
       return true;
     }

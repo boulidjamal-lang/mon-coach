@@ -62,7 +62,16 @@
     const p = { bassin: { pos, rot: qX(-90 + angle) }, lombaires: o.lomb == null ? -4 : o.lomb, thorax: o.thor == null ? -3 : o.thor, cou: o.cou == null ? 4 : o.cou, bras: pareil(brasRepos()), jambes: {} };
     const jb = o.jambes || (h > 0.2 ? 'sol' : 'plies');
     for (const [k, s] of COTES) {
-      if (jb === 'sol') p.jambes[k] = pied(c, s, { x: s * (o.ecartPieds || 0.27), ouv: 14, z: pos.z + (angle > 15 ? 0.42 : 0.5), pole: V(s * 0.25, 1, 0.3) });
+      if (jb === 'sol' && angle < 0) {
+        // Banc décliné : les genoux passent sur le boudin du haut, les chevilles se calent sous celui du bas.
+        p.jambes[k] = { cheville: V(s * 0.1, h - 0.115, 0.57), pole: V(0, 1, 0.2), pied: V(0, 0.5, 0.87), hautPied: V(0, 0.87, -0.5) };
+      } else if (jb === 'sol') {
+        // Pieds à plat par terre de part et d'autre du banc, tibias presque droits : le genou plie à l'équerre, le pied
+        // un rien en retrait du genou (c'est l'appui d'un développé couché).
+        const ec = o.ecartPieds || 0.26, hHanche = pos.y - 0.04 - (angle > 0 ? Math.sin(a) * 0.02 : 0), yGenou = L.chevilleH + L.jambe * 0.985;
+        const dz = Math.sqrt(Math.max(0.04, L.cuisse * L.cuisse - Math.pow(ec - L.hanche.x, 2) - Math.pow(hHanche - yGenou, 2)));
+        p.jambes[k] = pied(c, s, { x: s * ec, ouv: 16, z: pos.z + dz - 0.05, pole: V(s * 0.3, 1, 0.25) });
+      }
       else if (jb === 'plies') p.jambes[k] = pied(c, s, { x: s * 0.11, ouv: 4, z: pos.z + 0.47, y0: angle ? 0 : h, pole: V(0, 1, 0.2) });
       else if (jb === 'tendues') p.jambes[k] = J(angle, 4, 0, 2, 25);
       else if (jb === 'levees') p.jambes[k] = J(90, 3, 0, 90, 20);
