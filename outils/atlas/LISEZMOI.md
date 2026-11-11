@@ -113,6 +113,14 @@ autre membre passe devant.
   des pieds, triés au chargement, sans rejet point par point dans le nuanceur (qui empêcherait les puces des
   téléphones d'écarter d'avance les points cachés). Soit 495 000 triangles par image au lieu de 950 000, pour la même
   image au pixel près (`mesures().trianglesSoumis`, vérifié par un test).
+  Les structures se dessinent de la surface vers la profondeur (couche 1, puis 2, 3, 4, et le squelette) : un muscle
+  de surface dessiné d'abord masque d'avance ceux qu'il recouvre, que la carte graphique n'a plus à colorer pour
+  rien ; les fantômes, eux, se posent du fond vers la surface. Même image (au plus 2/255 d'écart sur les fantômes).
+- **Le mouvement dans la fiche ne tourne que s'il se voit.** `monterMouvementFiche` (dans `index.html`) regarde quatre
+  fois par seconde si le cadre est à l'écran (`cadreFicheVisible`) et met le mouvement en pause sinon. Pas
+  d'`IntersectionObserver` : dans le moteur web d'iOS, son premier verdict pouvait tomber pendant que la fiche glissait
+  en place (« pas visible »), puis plus rien tant que rien ne se redessinait — le mouvement restait figé. Le simulateur
+  iPhone l'a montré ; un test rejoue la panne.
 
 ## Le matériel
 
@@ -135,7 +143,11 @@ de 28 mm, disque de 45 cm, banc à 44 cm.
 - Le haut d'un grand bâti est marqué `hors` : il ne compte pas pour le cadrage, qui se règle sur le corps et sur ce
   qu'il touche.
 
-Les machines de cardio (tapis, vélo, rameur, elliptique) restent en formes simples.
+Les appareils de cardio (`mouvements/src/56-cardio.js`) sont dessinés avec les mêmes pièces : tapis roulant (plateau
+entre deux longerons, bande, capot du moteur, montants, console, mains courantes), vélo et air bike (poutre sur deux
+pieds, cadre en profilés, tige et selle, potence, console, roue carénée ou ventilateur dans sa cage, pédalier),
+rameur (rail, pieds, roue à air, écran, cale-pieds, siège), elliptique, simulateur d'escalier, ergomètre de ski,
+traîneau. Ils restent plus simples que les machines de musculation : pas de carénages moulés.
 
 ## Positions
 
@@ -187,7 +199,7 @@ Ajouter ou corriger le mouvement d'un exercice : modifier sa ligne dans `table.t
 relancer `construire.mjs`, puis `controle.mjs --table`, et regarder le résultat sur une planche. Un exercice ajouté
 à la bibliothèque sans ligne dans la table fait échouer les tests de l'appli.
 
-Ce que le mouvement ne montre pas : les machines de cardio restent en formes simples ; les
+Ce que le mouvement ne montre pas : les
 déplacements (fentes marchées, marches latérales) se font sur place ; les mouvements à plusieurs temps (relevé
 turc, haltérophilie) passent par quelques poses clés ; les muscles s'étirent et se raccourcissent avec les os mais
 ne gonflent pas à la contraction.

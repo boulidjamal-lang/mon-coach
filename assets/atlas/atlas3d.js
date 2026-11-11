@@ -617,6 +617,17 @@ void main() {
       const pairs = trier(0, H.trianglesPairs * 3), impairs = trier(H.trianglesPairs * 3, (H.trianglesPairs + H.trianglesImpairs) * 3);
       PE.partiel = { indices: garde.subarray(0, n), pairs, impairs };
     }
+    // L'ordre de dessin : de la surface vers la profondeur (couche 1, puis 2, 3, 4, et le squelette pour finir). Un
+    // muscle de surface dessiné d'abord masque d'avance ceux qu'il recouvre : la carte graphique écarte leurs points
+    // au lieu de les colorer pour rien (l'ordre du fichier, alphabétique, colorait souvent les muscles profonds avant
+    // de les recouvrir). L'image ne change pas. debutDessin[i] : où commencent, dans cet ordre, les indices de la
+    // structure i. Si le fichier ne range pas les structures d'un seul tenant avant le squelette, son ordre est gardé.
+    const nbIndicesStructures = S.reduce((t, s) => t + s.nbIndices, 0);
+    const triParCouche = S.every(s => s.indices + s.nbIndices <= nbIndicesStructures) && nbIndicesStructures <= M.nbIndices;
+    const ordreDessin = S.map((s, i) => i);
+    if (triParCouche) ordreDessin.sort((a, b) => S[a].couche - S[b].couche || a - b);
+    const debutDessin = new Array(S.length);
+    { let k = 0; for (const i of ordreDessin) { debutDessin[i] = triParCouche ? k : S[i].indices; k += S[i].nbIndices; } }
     const parId = new Map(S.map((s, i) => [s.id, i]));
     const hauteur = E.boite.etendue[1], centreCorps = [0, E.boite.min[1] + hauteur / 2, E.boite.min[2] + E.boite.etendue[2] / 2];
 
@@ -770,7 +781,10 @@ void main() {
       gl.enableVertexAttribArray(3); gl.vertexAttribPointer(3, 1, gl.UNSIGNED_BYTE, false, pas, 10);
       gl.enableVertexAttribArray(4); gl.vertexAttribIPointer(4, 4, gl.UNSIGNED_BYTE, pas, 12);
       gl.enableVertexAttribArray(5); gl.vertexAttribPointer(5, 4, gl.UNSIGNED_BYTE, true, pas, 16);
-      tamponIndices = gl.createBuffer(); gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, tamponIndices); gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, M.indices(), gl.STATIC_DRAW);
+      // Les indices, rangés dans l'ordre de dessin (voir debutDessin) ; le squelette garde sa place, à la fin.
+      let indices = M.indices();
+      if (triParCouche) { const tri = new Uint32Array(indices.length); tri.set(indices.subarray(nbIndicesStructures), nbIndicesStructures); for (let i = 0; i < S.length; i++) tri.set(indices.subarray(S[i].indices, S[i].indices + S[i].nbIndices), debutDessin[i]); indices = tri; }
+      tamponIndices = gl.createBuffer(); gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, tamponIndices); gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, indices, gl.STATIC_DRAW);
       vaoSol = gl.createVertexArray(); gl.bindVertexArray(vaoSol);
       tamponSol = gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER, tamponSol); gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 1, -1, -1, 1, 1, 1]), gl.STATIC_DRAW);
       gl.enableVertexAttribArray(0); gl.vertexAttribPointer(0, 2, gl.FLOAT, false, 0, 0);
@@ -813,13 +827,19 @@ void main() {
     function ecrireTexture() {
       const base = couleur(opt.muscle), cTendon = couleur(opt.tendon), cOs = couleur(opt.os);
       transparents = false; plagesTranslucides = [];
+      // Les plages translucides, dans l'ordre de dessin : des couches entières de fantômes ne font qu'une plage.
+      for (const i of ordreDessin) {
+        const p = presence(i);
+        if (p > 0 && (p < 1 || S[i].type === 'aponevrose')) {
+          const d = plagesTranslucides[plagesTranslucides.length - 1];
+          if (d && d[0] + d[1] === debutDessin[i]) d[1] += S[i].nbIndices; else plagesTranslucides.push([debutDessin[i], S[i].nbIndices]);
+        }
+      }
+      // Elles se dessinent du fond vers la surface : un fantôme de surface se pose sur ceux qu'il recouvre.
+      plagesTranslucides.reverse();
       for (let i = 0; i < NB; i++) {
         const s = S[i], e = etat[i], p = presence(i), voile = s.type === 'aponevrose';
-        if (p > 0 && (p < 1 || voile)) {
-          transparents = true;
-          const d = plagesTranslucides[plagesTranslucides.length - 1];
-          if (d && d[0] + d[1] === s.indices) d[1] += s.nbIndices; else plagesTranslucides.push([s.indices, s.nbIndices]);
-        }
+        if (p > 0 && (p < 1 || voile)) transparents = true;
         let c = e.couleur || (s.type !== 'muscle' ? cTendon : base);
         if (!e.couleur && s.type === 'muscle') { const v = 1 + (((i * 37) % 11) - 5) * 0.012; c = [borne(c[0] * v, 0, 255), borne(c[1] * v, 0, 255), borne(c[2] * v, 0, 255)]; }
         for (let cote = 0; cote < 2; cote++) {
