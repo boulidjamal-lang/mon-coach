@@ -165,8 +165,10 @@ void main() {
   float short_ = v_short > 0.5 ? smoothstep(u_short.x - 0.0012, u_short.x + 0.0012, v_repos.y) * (1.0 - smoothstep(u_short.y - 0.0012, u_short.y + 0.0012, v_repos.y)) : 0.0;
   // Niveau 1 : la peau ne reste que sur la tête, les mains et les pieds (le short va avec la peau entière).
   if (u_niveau < 1.5 && zone == 0) discard;
-  vec3 N = normalize(v_nor); float dedans = gl_FrontFacing ? 0.0 : 1.0; if (dedans > 0.5) N = -N;
-  vec3 V = normalize(u_cam - v_pos);
+  vec3 N = normalize(v_nor), V = normalize(u_cam - v_pos);
+  // L'envers de la peau (vu par une ouverture) : le triangle tourne le dos ET la surface aussi. Un triangle vu par la
+  // tranche, au bord d'un pli ou de la silhouette, peut être pris pour un envers : sa normale, elle, ne trompe pas.
+  float dedans = (!gl_FrontFacing && dot(N, V) < -0.2) ? 1.0 : 0.0; if (dedans > 0.5) N = -N;
   float nv = max(dot(N, V), 0.0);
   // Matière selon la zone : peau, ongle (plus clair, plus lisse), poils et cheveux, tissu du short.
   vec3 base = u_teint; float rug = 0.52, f0 = 0.028, chair = 1.0;
@@ -478,8 +480,10 @@ void main() {
     const pose = new Float32Array(NT * 3 * 4 * 2);
     let poseSale = true;
     const ID12 = [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0], tmp12 = new Float32Array(12);
-    function intermediaire(mats, de, vers, part, c) {
+    function intermediaire(mats, de, vers, part, c, retrait) {
       // Entre l'articulation « de » et sa suivante « vers », qui tourne autour de son centre c : la même rotation, pour une part.
+      // « retrait » (0 à 1) : la peau se rapproche du centre à mesure que l'articulation tourne, comme le creux de
+      // l'aisselle quand le bras se lève (0 : elle tourne à distance constante ; 1 : elle va droit, par la corde).
       const A = mats.subarray ? mats.subarray(de * 12, de * 12 + 12) : mats.slice(de * 12, de * 12 + 12), B = mats.subarray ? mats.subarray(vers * 12, vers * 12 + 12) : mats.slice(vers * 12, vers * 12 + 12);
       // Q = rotation de « vers » vue depuis « de ».
       const q = [0, 0, 0, 0, 0, 0, 0, 0, 0];
@@ -496,7 +500,8 @@ void main() {
       const r = [co + ax * ax * u, ax * ay * u - az * si, ax * az * u + ay * si, ay * ax * u + az * si, co + ay * ay * u, ay * az * u - ax * si, az * ax * u - ay * si, az * ay * u + ax * si, co + az * az * u];
       // R = (rotation de « de ») · r ; le centre suit « de » (et « vers », qui en dit autant).
       const R = tmp12;
-      for (let i = 0; i < 3; i++) for (let j = 0; j < 3; j++) R[i * 4 + j] = A[i * 4] * r[j] + A[i * 4 + 1] * r[3 + j] + A[i * 4 + 2] * r[6 + j];
+      const ech = retrait ? 1 - retrait * (1 - Math.sqrt(Math.max(0, (1 - part) * (1 - part) + part * part + 2 * part * (1 - part) * cs))) : 1;
+      for (let i = 0; i < 3; i++) for (let j = 0; j < 3; j++) R[i * 4 + j] = ech * (A[i * 4] * r[j] + A[i * 4 + 1] * r[3 + j] + A[i * 4 + 2] * r[6 + j]);
       for (let i = 0; i < 3; i++) {
         const pa = A[i * 4] * c[0] + A[i * 4 + 1] * c[1] + A[i * 4 + 2] * c[2] + A[i * 4 + 3], pb = B[i * 4] * c[0] + B[i * 4 + 1] * c[1] + B[i * 4 + 2] * c[2] + B[i * 4 + 3];
         R[i * 4 + 3] = pa + (pb - pa) * part - (R[i * 4] * c[0] + R[i * 4 + 1] * c[1] + R[i * 4 + 2] * c[2]);
@@ -514,8 +519,8 @@ void main() {
       }
       for (let k = 0; k < NX; k++) {
         const d = INTER[k], deD = SQ[d.de].jumeau, versD = SQ[d.vers].jumeau;
-        const g = mats ? Float32Array.from(intermediaire(mats, d.de, d.vers, d.part, SQ[d.vers].centre)) : ID12;
-        const dr = mats ? intermediaire(mats, deD, versD, d.part, SQ[versD].centre) : ID12;
+        const g = mats ? Float32Array.from(intermediaire(mats, d.de, d.vers, d.part, SQ[d.vers].centre, d.retrait || 0)) : ID12;
+        const dr = mats ? intermediaire(mats, deD, versD, d.part, SQ[versD].centre, d.retrait || 0) : ID12;
         const iG = NJ + k, iD = NJ + NX + k;
         for (let n = 0; n < 12; n++) {
           pose[iG * 12 + n] = g[n]; pose[iD * 12 + n] = dr[n];
