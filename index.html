@@ -7417,8 +7417,8 @@ function fermerModal(id) {
   if (id === 'compte-modal' && connexionObligatoire) return;
   if (id === 'accord-modal' && accordObligatoire) return;
   if (id === 'modal-bienvenue' && bilanForce) return;
-  if (id === 'fiche-exercice-modal') { arreterAnimationFiche(); if (typeof fermerCourbePleinEcran === 'function') fermerCourbePleinEcran(); }
-  if (id === 'atlas-modal' && typeof fermerSceneAtlas === 'function') fermerSceneAtlas();
+  if (id === 'fiche-exercice-modal') { fermerMediasFiche(); if (typeof fermerCourbePleinEcran === 'function') fermerCourbePleinEcran(); }
+  if (id === 'atlas-modal' && typeof fermerSceneAtlas === 'function') { fermerSceneAtlas(); setTimeout(reprendreMouvementFiche, 0); }
   // Sinon, fermer la séance/le programme en cours d'édition sans avoir
   // choisi d'option laissait le petit menu de type de série flotter,
   // orphelin, par-dessus tout le reste de l'appli.
@@ -21969,9 +21969,136 @@ function faisceauxFicheHTML(exo) {
   return `<div class="fiche-faisceaux-bloc"><div class="fiche-faisceaux-titre">Faisceaux</div>${figure}${lignes}
     ${estime ? '<p class="note" style="margin:4px 0 0;">Estimés d\'après le type de mouvement.</p>' : ''}</div>`;
 }
+/* La photo d'un exercice dans sa fiche (deux photos qui alternent), ou à défaut le corps dessiné. */
+function mediaStatiqueFicheHTML(e, media) {
+  if (media && media.img && media.img.length) {
+    // Deux photos (départ/arrivée) qui alternent, comme Strong et la
+    // plupart des applis du genre — ce n'est déjà pas un vrai GIF chez
+    // elles non plus, juste un fondu entre deux images fixes.
+    const illustration = estIllustrationVectorielle(media.img[0]);
+    return `<div class="fiche-exo-image" id="fiche-exo-image"${illustration ? ' style="background:#14171d;"' : ''}>
+      <img src="${escapeHtml(media.img[0])}" class="actif" alt="${escapeHtml(libelleExercice(e))}">
+      ${media.img[1] ? `<img src="${escapeHtml(media.img[1])}" alt="">` : ''}
+      ${media.img[1] ? `<button type="button" class="fiche-exo-anim-btn" id="fiche-exo-anim-btn" onclick="basculerPauseFiche()" aria-label="Pause"><svg class="icone-ui" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="14" y="3" width="5" height="18" rx="1" /><rect x="5" y="3" width="5" height="18" rx="1" /></svg></button>` : ''}
+    </div>
+    ${sourceImageExercice(media.img[0])}
+`;
+  }
+  const corps = corpsExerciceHTML(e);
+  return `<div class="fiche-exo-image${corps.mannequin ? ' fiche-exo-corps' : ''}"><div class="schema-repli">${corps.html}</div></div>
+    <p class="note fiche-exo-note-source">${corps.mannequin ? corps.legende : 'Pas de photo pour cet exercice précis : schéma du groupe musculaire ciblé.'}</p>`;
+}
+/* ---------- Le mouvement en 3D dans la fiche d'un exercice ----------
+   Dès qu'on ouvre un exercice, le corps de l'atlas l'exécute dans la fiche (même modèle, mêmes couleurs que l'atlas
+   en mode « Exercice »). Le cadre charge le modèle à la demande ; s'il ne peut pas s'afficher, la photo (ou le corps
+   dessiné) reprend sa place. Un seul cadre vivant à la fois : il est défait quand la fiche se ferme, quand on passe
+   à la photo, et pendant que l'atlas est ouvert en grand. */
+const IC_FICHE_3D = {
+  pause: '<svg class="icone-ui" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="14" y="3" width="5" height="18" rx="1" /><rect x="5" y="3" width="5" height="18" rx="1" /></svg>',
+  lecture: '<svg class="icone-ui" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 4.5v15a1 1 0 0 0 1.5.86l12.5-7.5a1 1 0 0 0 0-1.72L7.5 3.64A1 1 0 0 0 6 4.5z" /></svg>',
+  grand: '<svg class="icone-ui" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7" /></svg>'
+};
+let ficheMouvement = null, ficheMouvementJeton = 0;
+function mouvementFicheHTML(e, media) {
+  const photo = !!(media && media.img && media.img.length);
+  return `<div class="fiche-exo-3d" id="fiche-exo-3d" data-exercice="${escapeHtml(e.id)}">
+      <div class="atlas-attente" role="status"><i aria-hidden="true"></i>Chargement du mouvement…</div>
+    </div>
+    <p class="note fiche-exo-note-source">Mouvement en 3D : glisse de gauche à droite pour tourner.${photo ? ` <button type="button" class="lien-texte" onclick="basculerMediaFiche(${argJs(e.id)}, 'photo')">Voir la photo</button>` : ''}</p>`;
+}
+function fermerMouvementFiche() {
+  ficheMouvementJeton++;
+  if (!ficheMouvement) return;
+  const m = ficheMouvement; ficheMouvement = null;
+  try { if (m.observateur) m.observateur.disconnect(); m.apercu.detruire(); } catch (err) { /* contexte graphique déjà perdu : rien à défaire */ }
+}
+/* Ferme tout ce qui tourne dans la fiche : l'alternance des photos et le mouvement en 3D. */
+function fermerMediasFiche() { arreterAnimationFiche(); fermerMouvementFiche(); }
+async function monterMouvementFiche(exo) {
+  fermerMouvementFiche();
+  const cadre = document.getElementById('fiche-exo-3d');
+  if (!cadre) return;
+  const jeton = ficheMouvementJeton, mouvement = mouvementExercice(exo.id);
+  try {
+    const [[tampon, peau]] = await Promise.all([chargerModeleAtlas(), chargerScriptAtlas(ATLAS_FICHIERS.moteur), chargerScriptAtlas(ATLAS_FICHIERS.mouvements)]);
+    // Fiche refermée, autre exercice ouvert ou photo demandée pendant le chargement : on ne monte rien.
+    if (jeton !== ficheMouvementJeton || !document.body.contains(cadre)) return;
+    if (!(window.AnqaMouvements && AnqaMouvements.specDe(mouvement))) throw new Error('mouvement');
+    cadre.innerHTML = '';
+    const apercu = AnqaAtlas.apercu(cadre, tampon, {
+      clair: themeClairActif(), accent: couleurCssAtlas('--corps-cible', '#f472b6'), peau,
+      carte: structures => carteExerciceAtlas(exo, structures), exercice: { exercice: mouvement }
+    });
+    if (!apercu.anime) { apercu.detruire(); throw new Error('animation'); }
+    const reduit = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const m = ficheMouvement = { apercu, id: exo.id, voulu: !reduit, observateur: null };
+    cadre.insertAdjacentHTML('beforeend', `<button type="button" class="fiche-3d-btn fiche-3d-lecture" onclick="basculerLectureFiche()"></button>
+      <button type="button" class="fiche-3d-btn fiche-3d-grand" onclick="agrandirMouvementFiche()" aria-label="Ouvrir l'atlas en grand : muscles, couches, vues">${IC_FICHE_3D.grand}</button>`);
+    majLectureFiche();
+    // Le mouvement ne tourne que lorsqu'il se voit (autre onglet de la fiche, fiche défilée : en pause).
+    if (window.IntersectionObserver) {
+      m.observateur = new IntersectionObserver(vus => { if (ficheMouvement === m) apercu.lecture(m.voulu && vus[vus.length - 1].isIntersecting); }, { threshold: 0.15 });
+      m.observateur.observe(cadre);
+    } else apercu.lecture(m.voulu);
+  } catch (err) {
+    console.warn('[Atlas] fiche', err && err.message);
+    if (jeton !== ficheMouvementJeton) return;
+    fermerMouvementFiche();
+    basculerMediaFiche(exo.id, 'photo', true);
+  }
+}
+function majLectureFiche() {
+  const b = document.querySelector('#fiche-exo-3d .fiche-3d-lecture');
+  if (!b || !ficheMouvement) return;
+  b.innerHTML = ficheMouvement.voulu ? IC_FICHE_3D.pause : IC_FICHE_3D.lecture;
+  b.setAttribute('aria-label', ficheMouvement.voulu ? 'Mettre le mouvement en pause' : 'Lancer le mouvement');
+}
+function basculerLectureFiche() {
+  if (!ficheMouvement) return;
+  ficheMouvement.voulu = !ficheMouvement.voulu;
+  ficheMouvement.apercu.lecture(ficheMouvement.voulu);
+  majLectureFiche();
+}
+/* Passe de la 3D à la photo (ou au corps dessiné) et retour. `repli` : la 3D n'a pas pu s'afficher. */
+function basculerMediaFiche(id, vers, repli) {
+  const zone = document.getElementById('fiche-exo-media'), e = trouverExercice(id);
+  if (!zone || !e) return;
+  const media = mediaExercice(e);
+  fermerMediasFiche();
+  if (vers === 'photo') {
+    zone.innerHTML = mediaStatiqueFicheHTML(e, media)
+      + (repli ? '' : `<p class="note fiche-exo-note-source"><button type="button" class="lien-texte" onclick="basculerMediaFiche(${argJs(e.id)}, '3d')">Voir le mouvement en 3D</button></p>`);
+    if (media && media.img && media.img.length > 1) demarrerAnimationFiche();
+  } else {
+    zone.innerHTML = mouvementFicheHTML(e, media);
+    monterMouvementFiche(e);
+  }
+}
+/* Ouvre l'atlas en grand sur le même exercice. Le cadre de la fiche est défait pendant ce temps (voir
+   suspendreMouvementFiche) ; il revient quand l'atlas se referme. */
+function agrandirMouvementFiche() {
+  const id = ficheMouvement && ficheMouvement.id;
+  if (id) ouvrirAtlas('exercice', { exercice: id });
+}
+/* L'atlas s'ouvre par-dessus la fiche d'un exercice (bouton d'agrandissement ou « Explorer les muscles en 3D ») :
+   le cadre 3D de la fiche est défait, ou son chargement abandonné, pour ne garder qu'un corps en mémoire graphique. */
+function suspendreMouvementFiche() {
+  const cadre = document.getElementById('fiche-exo-3d');
+  if (!cadre) return;
+  fermerMouvementFiche();
+  cadre.innerHTML = '<div class="atlas-attente" role="status">Ouvert en grand</div>';
+}
+/* L'atlas vient de se refermer : si la fiche d'un exercice est restée ouverte dessous, son cadre 3D reprend. */
+function reprendreMouvementFiche() {
+  const cadre = document.getElementById('fiche-exo-3d'), fiche = document.getElementById('fiche-exercice-modal');
+  if (!cadre || ficheMouvement || !fiche || !fiche.classList.contains('show')) return;
+  const e = trouverExercice(cadre.dataset.exercice);
+  if (e) { cadre.innerHTML = '<div class="atlas-attente" role="status"><i aria-hidden="true"></i>Chargement du mouvement…</div>'; monterMouvementFiche(e); }
+}
 function afficherFicheExerciceBiblio(id, options) {
   const e = trouverExercice(id);
   if (!e) return;
+  fermerMouvementFiche();
   const opts = options || {};
   const histoSource = opts.historique || musculationHistorique;
   ficheHisto = { id, historique: histoSource, periode: ficheHisto ? ficheHisto.periode : '6m', metriques: ficheHisto ? ficheHisto.metriques : ['1rm', 'vol', 'reps'], grand: false };
@@ -21995,6 +22122,9 @@ function afficherFicheExerciceBiblio(id, options) {
   const video = videoBrute && videoBrute.video ? videoBrute : null;
   // Image collée à la place d'une vidéo introuvable : affichée comme photo.
   if (videoBrute && !videoBrute.video && videoBrute.poster && !(media && media.img && media.img.length)) media = { img: [videoBrute.poster] };
+  // Le mouvement en trois dimensions s'affiche d'emblée quand l'exercice en a un (et que l'appareil sait l'afficher) :
+  // il prend la place de la photo, qui reste à portée d'un bouton quand il y en a une.
+  const mouvement3d = !video && atlasDisponible() && mouvementExercice(e.id);
   if (video) {
     // Comme l'agrandissement (agrandirVideoExercice) : la mini-vidéo locale
     // (~10 Ko) joue tout de suite, la vidéo HD distante (~1 Mo) la recouvre
@@ -22004,29 +22134,17 @@ function afficherFicheExerciceBiblio(id, options) {
     const miniFiche = brutFiche ? 'assets/miniatures/' + brutFiche[0] : null;
     html += `<div class="fiche-exo-video${miniFiche ? ' fiche-exo-video--mini' : ''}">${miniFiche ? `<video class="mini" src="${miniFiche}.mp4" poster="${miniFiche}.jpg" autoplay muted loop playsinline disablepictureinpicture aria-hidden="true"></video>` : ''}<span class="hd-place" data-url="${escapeHtml(video.video)}"${video.poster && !miniFiche ? ` data-poster="${escapeHtml(video.poster)}"` : ''} data-label="Démonstration : ${escapeHtml(libelleExercice(e))}"></span></div>
     ${/smartworkout\.app/i.test(video.page) ? `<p class="note fiche-exo-note-source">Vidéo : <a href="${escapeHtml(video.page)}" target="_blank" rel="noopener" style="color:var(--accent);">SmartWorkout</a></p>` : ''}`;
-  } else if (media && media.img && media.img.length) {
-    // Deux photos (départ/arrivée) qui alternent, comme Strong et la
-    // plupart des applis du genre — ce n'est déjà pas un vrai GIF chez
-    // elles non plus, juste un fondu entre deux images fixes.
-    const illustration = estIllustrationVectorielle(media.img[0]);
-    html += `<div class="fiche-exo-image" id="fiche-exo-image"${illustration ? ' style="background:#14171d;"' : ''}>
-      <img src="${escapeHtml(media.img[0])}" class="actif" alt="${escapeHtml(libelleExercice(e))}">
-      ${media.img[1] ? `<img src="${escapeHtml(media.img[1])}" alt="">` : ''}
-      ${media.img[1] ? `<button type="button" class="fiche-exo-anim-btn" id="fiche-exo-anim-btn" onclick="basculerPauseFiche()" aria-label="Pause"><svg class="icone-ui" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="14" y="3" width="5" height="18" rx="1" /><rect x="5" y="3" width="5" height="18" rx="1" /></svg></button>` : ''}
-    </div>
-    ${sourceImageExercice(media.img[0])}
-`;
+  } else if (mouvement3d) {
+    html += `<div id="fiche-exo-media">${mouvementFicheHTML(e, media)}</div>`;
   } else {
-    const corps = corpsExerciceHTML(e);
-    html += `<div class="fiche-exo-image${corps.mannequin ? ' fiche-exo-corps' : ''}"><div class="schema-repli">${corps.html}</div></div>
-    <p class="note fiche-exo-note-source">${corps.mannequin ? corps.legende : 'Pas de photo pour cet exercice précis : schéma du groupe musculaire ciblé.'}</p>`;
+    html += `<div id="fiche-exo-media">${mediaStatiqueFicheHTML(e, media)}</div>`;
   }
 
   html += `<div class="fiche-bloc">
     <div class="fiche-bloc-titre">Muscles sollicités</div>
     <div class="fiche-muscles"><span class="principal">${escapeHtml(GROUPES_MUSCULAIRES[e.groupe] || '')}</span>${(e.secondaires || []).filter(g => g !== e.groupe && GROUPES_MUSCULAIRES[g]).map(g => `<span>${escapeHtml(GROUPES_MUSCULAIRES[g])}</span>`).join('')}</div>
     ${faisceauxFicheHTML(e)}
-    ${boutonAtlasHTML('exercice', e.id, mouvementExercice(e.id) ? 'Voir le mouvement en 3D' : 'Voir les muscles en 3D')}
+    ${boutonAtlasHTML('exercice', e.id, mouvement3d ? 'Explorer les muscles en 3D' : mouvementExercice(e.id) ? 'Voir le mouvement en 3D' : 'Voir les muscles en 3D')}
     <div class="fiche-record" style="margin-top:6px;"><span>Matériel</span><b>${MATERIELS[e.materiel].ic} ${escapeHtml(MATERIELS[e.materiel].label)}</b></div>
   </div>`;
 
@@ -22053,7 +22171,8 @@ function afficherFicheExerciceBiblio(id, options) {
   brancherVideosHD(document.getElementById('fiche-exercice-container'));
   rendreHistoriqueFiche();
   ouvrirModal('fiche-exercice-modal');
-  if (!video && media && media.img && media.img.length > 1) demarrerAnimationFiche();
+  if (mouvement3d) monterMouvementFiche(e);
+  else if (!video && media && media.img && media.img.length > 1) demarrerAnimationFiche();
   // Ouverture sur la vidéo (onglet Instructions), sauf onglet demandé
   // (ex. depuis les statistiques, on ouvre sur le résumé).
   choisirOngletFiche(opts.onglet || 'technique');
@@ -23589,6 +23708,20 @@ const JOURS_ATLAS = 28;
 let atlasMonte = null, atlasScripts = {}, atlasExercice = null, atlasDonnees = null;
 
 function atlasDisponible() { return typeof WebGL2RenderingContext !== 'undefined'; }
+/* Le modèle et la peau, lus une seule fois par visite : la fiche d'un exercice et l'atlas s'en servent tour à tour
+   (le moteur ne modifie pas ces tampons). La peau est facultative : si son fichier manque ou ne se charge pas, le
+   corps reste l'écorché. Un échec n'est pas retenu : la prochaine ouverture réessaie. */
+let atlasModele = null;
+function chargerModeleAtlas() {
+  if (!atlasModele) {
+    atlasModele = Promise.all([
+      fetch(ATLAS_FICHIERS.modele).then(r => { if (!r.ok) throw new Error('modèle'); return r.arrayBuffer(); }),
+      fetch(ATLAS_FICHIERS.peau).then(r => (r.ok ? r.arrayBuffer() : null)).catch(() => null)
+    ]);
+    atlasModele.catch(() => { atlasModele = null; });
+  }
+  return atlasModele;
+}
 function chargerScriptAtlas(src) {
   if (!atlasScripts[src]) atlasScripts[src] = new Promise((ok, ko) => {
     const s = document.createElement('script');
@@ -23682,6 +23815,10 @@ function dateDansPhraseAtlas(iso) {
 function neutresAtlas() {
   return themeClairActif() ? { muscle: '#c9c9d0', tendon: '#e3e3e8', os: '#dadadf' } : { muscle: '#6c6c75', tendon: '#9d9da5', os: '#8c8c94' };
 }
+/* Pendant un exercice, le corps bouge : il lui faut plus de lumière que sur une carte immobile. */
+function neutresExerciceAtlas() {
+  return themeClairActif() ? { muscle: '#c3c4cc', tendon: '#e6e6ea', os: '#dcdce0' } : { muscle: '#a2a4af', tendon: '#d3d4da', os: '#c0c1c8' };
+}
 /* Niveaux des faisceaux d'un exercice, tous groupes confondus : 2 = principal, 1 = un peu (comme sur sa fiche). */
 function niveauxFaisceauxExercice(exo) {
   const tous = {};
@@ -23712,21 +23849,40 @@ function teinteLienAtlas(mode, lien, D) {
     if (D.entraine && ZONES_VOLUME[g] && cleZoneVolume(g, (D.volume[g] || 0) * 7 / JOURS_ATLAS) === 'sous') return { c: ZONES_INFO.sous.couleur, k: 1 };
     return null;
   }
-  if (mode === 'exercice' && atlasExercice) {
-    const exo = atlasExercice.exo, principal = g === exo.groupe, secondaire = !principal && (exo.secondaires || []).includes(g);
-    if (!principal && !secondaire) return null;
-    const niveaux = atlasExercice.niveaux || (atlasExercice.niveaux = niveauxFaisceauxExercice(exo));
-    let k = principal ? 1 : 0.45;
-    // Les faisceaux de la fiche de l'exercice : principal, un peu, ou à peine.
-    if (lien.faisceau && groupesAFaisceaux(exo).includes(g)) k *= niveaux[lien.faisceau] === 2 ? 1 : niveaux[lien.faisceau] === 1 ? 0.55 : 0.25;
-    return { c: rose, k };
-  }
+  if (mode === 'exercice' && atlasExercice) return teinteExerciceAtlas(atlasExercice, lien);
   return null;
+}
+/* La teinte d'un lien pour un exercice donné. ctx : { exo, niveaux (mis de côté ici) }. */
+function teinteExerciceAtlas(ctx, lien) {
+  const exo = ctx.exo, g = lien.groupe, principal = g === exo.groupe, secondaire = !principal && (exo.secondaires || []).includes(g);
+  if (!principal && !secondaire) return null;
+  const niveaux = ctx.niveaux || (ctx.niveaux = niveauxFaisceauxExercice(exo));
+  let k = principal ? 1 : 0.45;
+  // Les faisceaux de la fiche de l'exercice : principal, un peu, ou à peine.
+  if (lien.faisceau && groupesAFaisceaux(exo).includes(g)) k *= niveaux[lien.faisceau] === 2 ? 1 : niveaux[lien.faisceau] === 1 ? 0.55 : 0.25;
+  return { c: couleurCssAtlas('--corps-cible', '#f472b6'), k };
+}
+/* Les couleurs du corps pour un exercice (l'atlas en mode « Exercice », et le mouvement dans la fiche de l'exercice) :
+   les muscles qui travaillent en rose, les autres dans un gris clair qui laisse lire le corps en mouvement. */
+function carteExerciceAtlas(exo, structures, ctx) {
+  const N = neutresExerciceAtlas(), c = ctx || { exo }, couleurs = {};
+  structures.forEach(s => {
+    let mieux = null;
+    s.app.forEach(lien => { const t = teinteExerciceAtlas(c, lien); if (t) { const k = t.k * POIDS_ROLE_ATLAS[lien.role]; if (!mieux || k > mieux.k) mieux = { c: t.c, k }; } });
+    if (mieux) couleurs[s.id] = melangerCouleurs(N.muscle, mieux.c, Math.max(0.18, Math.min(1, mieux.k)));
+  });
+  return { couleurs, muscle: N.muscle, tendon: N.tendon, os: N.os, tendons: 0.3, estompe: 0.5 };
 }
 /* Les couleurs de tout le corps pour un mode : appelée par l'atlas à chaque changement de mode. */
 function carteAtlas(mode, structures) {
   const D = atlasDonnees;
   if (mode === 'anatomie' || !D) return { estompe: 0.7 };
+  if (mode === 'exercice' && atlasExercice) {
+    const rose = couleurCssAtlas('--corps-cible', '#f472b6'), carte = carteExerciceAtlas(atlasExercice.exo, structures, atlasExercice);
+    carte.legende = [{ c: rose, t: 'Muscle principal' }, { c: melangerCouleurs(carte.muscle, rose, 0.45), t: 'Travaille aussi' }];
+    carte.note = atlasExercice.mouvement ? '' : 'Pas de mouvement animé pour cet exercice : ses muscles, corps au repos.';
+    return carte;
+  }
   const N = neutresAtlas(), couleurs = {};
   structures.forEach(s => {
     let mieux = null;
@@ -23751,9 +23907,6 @@ function carteAtlas(mode, structures) {
   } else if (mode === 'equilibre') {
     carte.legende = [{ c: couleurCssAtlas('--attention', '#ff9f0a'), t: 'Faisceau en retard dans son groupe' }, { c: ZONES_INFO.sous.couleur, t: 'Sous le volume d\'entretien' }];
     carte.note = !D.entraine ? `Aucune séance sur les ${JOURS_ATLAS} derniers jours.` : Object.keys(couleurs).length ? `Sur ${JOURS_ATLAS} jours` : `Rien à signaler sur ${JOURS_ATLAS} jours.`;
-  } else if (mode === 'exercice' && atlasExercice) {
-    carte.legende = [{ c: rose, t: 'Muscle principal' }, { c: melangerCouleurs(N.muscle, rose, 0.45), t: 'Travaille aussi' }];
-    carte.note = atlasExercice.mouvement ? '' : 'Pas de mouvement animé pour cet exercice : ses muscles, corps au repos.';
   }
   return carte;
 }
@@ -23807,16 +23960,15 @@ async function ouvrirAtlas(mode, options) {
   atlasExercice = exo ? { exo, mouvement: mouvementExercice(exo.id) } : null;
   const scene = document.getElementById('atlas-scene');
   fermerSceneAtlas();
+  suspendreMouvementFiche();
   document.getElementById('titre-atlas').textContent = exo ? libelleExercice(exo) : 'Atlas musculaire';
   scene.innerHTML = '<div class="atlas-attente" role="status"><i aria-hidden="true"></i>Chargement du corps…</div>';
   ouvrirModal('atlas-modal', true);
   try {
-    // La peau est facultative : si son fichier manque ou ne se charge pas, l'atlas s'ouvre en écorché, comme avant.
-    const [tampon, , , peau] = await Promise.all([
-      fetch(ATLAS_FICHIERS.modele).then(r => { if (!r.ok) throw new Error('modèle'); return r.arrayBuffer(); }),
+    const [[tampon, peau]] = await Promise.all([
+      chargerModeleAtlas(),
       chargerScriptAtlas(ATLAS_FICHIERS.moteur),
-      atlasExercice && atlasExercice.mouvement ? chargerScriptAtlas(ATLAS_FICHIERS.mouvements) : null,
-      fetch(ATLAS_FICHIERS.peau).then(r => (r.ok ? r.arrayBuffer() : null)).catch(() => null)
+      atlasExercice && atlasExercice.mouvement ? chargerScriptAtlas(ATLAS_FICHIERS.mouvements) : null
     ]);
     if (!document.getElementById('atlas-modal').classList.contains('show')) return;   // refermé pendant le chargement
     // La table des mouvements fait foi : un exercice qu'elle ne connaît pas reste au repos, et la fenêtre le dit.
@@ -28499,7 +28651,8 @@ function fermerBackdropSiCible(target) {
     if (target.id === 'accord-modal' && accordObligatoire) return false;
     if (target.id === 'modal-bienvenue' && bilanForce) return false;
     if (target.id === 'barcode-modal') stopperScanner();
-    if (target.id === 'fiche-exercice-modal') arreterAnimationFiche();
+    if (target.id === 'fiche-exercice-modal') fermerMediasFiche();
+    if (target.id === 'atlas-modal') { fermerSceneAtlas(); setTimeout(reprendreMouvementFiche, 0); }
     // Sans ça, un clic sur le fond laisse la promesse de
     // demanderResetMdp() sans réponse pour toujours : le bouton "Se
     // connecter" resterait bloqué sur "Connexion en cours…".
@@ -28557,7 +28710,10 @@ window.addEventListener('keydown', (e) => {
     if (dessus.id === 'accord-modal' && accordObligatoire) return;
     if (dessus.id === 'modal-bienvenue' && bilanForce) return;
     if (dessus.id === 'barcode-modal') stopperScanner();
-    if (dessus.id === 'fiche-exercice-modal') arreterAnimationFiche();
+    if (dessus.id === 'fiche-exercice-modal') fermerMediasFiche();
+    // L'atlas : sa scène est défaite (sinon elle resterait en mémoire graphique, fenêtre cachée), et la fiche de
+    // l'exercice restée ouverte dessous reprend son mouvement.
+    if (dessus.id === 'atlas-modal') { fermerSceneAtlas(); setTimeout(reprendreMouvementFiche, 0); }
     if (dessus.id === 'modal-creer-compte' && confirmCompteResolve) { confirmCompteResolve(false); confirmCompteResolve = null; }
     if (dessus.id === 'modal-dialogue' && dialogueFin) { dialogueFin(false); return; }
     dessus.classList.remove('show');

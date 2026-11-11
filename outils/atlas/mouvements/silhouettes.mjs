@@ -12,15 +12,26 @@ const ici = path.dirname(new URL(import.meta.url).pathname);
 const DEPOT = path.join(ici, '..', '..', '..', 'assets', 'atlas');
 export const FICHIER_ATLAS = process.env.ATLAS || (fs.existsSync(path.join(DEPOT, 'atlas.bin')) ? path.join(DEPOT, 'atlas.bin') : path.join(ici, '..', 'donnees', 'atlas.bin'));
 export const FICHIER_MOUVEMENTS = process.env.MOUVEMENTS || (fs.existsSync(path.join(DEPOT, 'atlas.bin')) ? path.join(DEPOT, 'atlas-mouvements.js') : path.join(ici, '..', 'appli', 'atlas-mouvements.js'));
+/* Le modèle tel que le moteur le montre : avec sa carrure (les chairs étoffées autour des os), calculée par la même
+   fonction que dans l'appli. CARRURE=0 : le corps d'origine. */
 export function chargerAtlas(fichier) {
-  const b = fs.readFileSync(fichier), n = b.readUInt32LE(8), E = JSON.parse(b.slice(12, 12 + n).toString('utf8'));
+  const brut = fs.readFileSync(fichier), n = brut.readUInt32LE(8), E = JSON.parse(brut.slice(12, 12 + n).toString('utf8'));
   const debut = 12 + Math.ceil(n / 4) * 4, pas = E.octetsParSommet;
+  let b = brut.subarray(debut, debut + E.sommets * pas);
+  const force = process.env.CARRURE == null ? 1 : +process.env.CARRURE;
+  if (force > 0) {
+    const ctx = { window: {}, Math, Float32Array, Uint8Array, Uint16Array, Uint32Array, DataView, JSON, Object, Array, Infinity, console };
+    vm.createContext(ctx);
+    vm.runInContext(fs.readFileSync(path.join(path.dirname(fichier), 'atlas3d.js'), 'utf8'), ctx);
+    const r = ctx.window.AnqaAtlas.etoffer(new Uint8Array(b.buffer, b.byteOffset, b.length), pas, E.boite, E.squelette, force, (v, o) => b[o + 10] === E.os.pair || b[o + 10] === E.os.impair);
+    b = Buffer.from(r.sommets.buffer, r.sommets.byteOffset, r.sommets.length); E.boite = r.boite;
+  }
   const peau = regions => {
     const P = [], J = [], W = [];
     for (const s of E.structures) {
       if (regions && !regions.includes(s.region)) continue;
       for (let v = s.sommets; v < s.sommets + s.nbSommets; v += 6) {
-        const o = debut + v * pas;
+        const o = v * pas;
         for (let k = 0; k < 3; k++) P.push(E.boite.min[k] + b.readUInt16LE(o + k * 2) / 65535 * E.boite.etendue[k]);
         for (let k = 0; k < 4; k++) { J.push(b.readUInt8(o + 12 + k)); W.push(b.readUInt8(o + 16 + k) / 255); }
       }

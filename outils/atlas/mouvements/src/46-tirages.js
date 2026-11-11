@@ -48,9 +48,13 @@
       // Assis : à la poulie basse, jambes devant, pieds calés ; à la machine, poitrine contre le coussin.
       if (o.machine) { p = assis(c, { h: 0.5, zPieds: 0.32 }); const t0 = c.tronc(p); fixe = poseFixe(MAT.siege(C, 0.5)).concat([pret(boite(0.3, 0.45, 0.07, 0, t0.epaules.G.y - 0.22, t0.epaules.G.z + 0.2, C.banc, 0))]); ancre = s => V(s * 0.2, t0.epaules.G.y - (o.haut ? -0.5 : 0.25), t0.epaules.G.z + 0.95); }
       else {
-        p = assis(c, { h: 0.42, jambes: J(74, 8, 0, 24, 5), penche: -2 }); p.jambes = pareil(J(74, 8, 0, 24, 5));
-        fixe = poseFixe(MAT.banc(C, 0, 0.42, 0.6, 0.3), V(0, 0, 0.1)).concat([pret(boite(0.5, 0.3, 0.05, 0, 0.42, 0.98, C.cadre, 0.5, qX(-25)))]);
-        const t0 = c.tronc(p); ancre = () => V(0, o.haut ? 1.9 : 0.72, t0.epaules.G.z + 1.5);
+        // Les pieds à plat sur les repose-pieds (inclinés, devant le banc), genoux un peu pliés.
+        const zRp = 0.76, yRp = 0.36, pente = rad(62), nPl = V(0, Math.cos(pente), -Math.sin(pente)), dPl = V(0, Math.sin(pente), Math.cos(pente));
+        const jb = {};
+        for (const [k, s] of COTES) jb[k] = { cheville: V(s * 0.13, yRp - 0.05, zRp).add(nPl.clone().multiplyScalar(L.chevilleH + 0.012)), pole: V(s * 0.25, 1, 0.1), pied: dPl.clone(), hautPied: nPl.clone() };
+        p = assis(c, { h: 0.42, penche: -2 }); p.jambes = jb;
+        const t0 = c.tronc(p), zTour = t0.epaules.G.z + 1.62; ancre = () => V(0, o.haut ? 1.9 : 0.66, zTour);
+        fixe = poseFixe(MAT.banc(C, 0, 0.42, 0.62, 0.34), V(0, 0, 0.12)).concat(poseFixe(MAT.reposePieds(C, yRp, zRp, 62, 0.4, zTour - 0.1)));
       }
       vue = { az: 70, el: 10 };
     } else if (o.debout) {
@@ -58,8 +62,8 @@
       ancre = () => V(0, o.haut ? 1.95 : o.bas ? 0.2 : 1.1, 1.5); vue = { az: 70, el: 8 };
     } else if (o.genoux || o.demigenou) { p = o.genoux ? aGenoux(c, { penche: 6 }) : demiGenou(c, { penche: 6 }); ancre = () => V(0, o.haut ? 2.0 : 1.0, 1.5); vue = { az: 70, el: 8 }; }
     else {
-      const a = o.pendlay ? 80 : o.yates ? 36 : o.penche && o.penche !== true ? o.penche : 56;
-      p = debout(c, { dy: -0.05 - a * 0.0012, dz: -0.06 - a * 0.0026, penche: a, lomb: 3, thor: 4, cou: -a * 0.5, ecart: o.gorille ? 0.3 : 0.15, ouv: 10 });
+      const a = o.pendlay ? 82 : o.yates ? 40 : o.penche && o.penche !== true ? o.penche : 66;
+      p = debout(c, { dy: -0.07 - a * 0.0016, dz: -0.08 - a * 0.0028, penche: a, lomb: 2, thor: 2, cou: -a * 0.42, ecart: o.gorille ? 0.3 : 0.17, ouv: 12 });
       pendante = true; ancre = () => V(0, 0.15, 1.2);
     }
     const t = c.tronc(p), dT = (x, y, z) => V(x, y, z).applyQuaternion(t.qThorax);
@@ -106,7 +110,7 @@
   FAM.tirage = (c, o, C) => {
     const L = c.L, m = coteDe(o);
     if (!(o.machine || o.elas)) o.poulie = true;
-    let p, fixe = [], vue = { az: 150, el: 8 };
+    let p, fixe = [], vue = { az: 150, el: 8 }, poste = false;
     if (o.tendus) {
       // Debout face à la poulie haute, buste un peu penché : les bras tendus descendent jusqu'aux cuisses.
       p = debout(c, { penche: 22, dy: -0.05, dz: -0.06, lomb: 2, cou: -12, ecart: 0.13 });
@@ -117,7 +121,7 @@
     }
     if (o.genoux) p = aGenoux(c, {}); else if (o.demigenou) p = demiGenou(c, {});
     else if (o.debout) { p = debout(c, { penche: 30, dy: -0.08, dz: -0.1, cou: -15 }); }
-    else { p = assis(c, { h: 0.5, zPieds: 0.3 }); fixe = poseFixe(MAT.siege(C, 0.5)).concat([pret(cyl(0.05, 0.4, 0, 0.5 + 0.2, 0.26, C.banc, 0))]); }
+    else { p = assis(c, { h: 0.5, zPieds: 0.3 }); poste = true; }
     const t = c.tronc(p), dT = (x, y, z) => V(x, y, z).applyQuaternion(t.qThorax);
     const e = o.large ? 0.43 : o.serre ? 0.1 : o.sup ? 0.19 : 0.3, portee = (L.bras + L.prise) * 0.97;
     const anc = V(0, t.epaules.G.y + 1.0, t.epaules.G.z + 0.14);
@@ -129,7 +133,9 @@
     // Le buste part un peu en arrière en tirant.
     if (!o.nuque) { d.b.lombaires = -9; d.b.thorax = -5; }
     const r = { ancre: () => anc, bout: m === 'GD' ? 'barre' : null, lCable: o.large ? 1.15 : o.serre ? 0.3 : 0.8, deElas: () => anc, pivot: s => V(s * 0.3, anc.y, anc.z - 0.5) };
-    if (o.poulie) fixe = fixe.concat([pret(seg(V(0, 0, anc.z + 0.45), V(0, anc.y + 0.1, anc.z + 0.45), 0.03, C.cadre, 0.5)), pret(seg(V(0, anc.y + 0.1, anc.z + 0.45), V(0, anc.y + 0.1, anc.z), 0.025, C.cadre, 0.5))]);
+    // Assis : le poste de tirage (bâti, potence, assise, boudins) ; sinon une tour de poulie haute devant soi.
+    if (poste) fixe = fixe.concat(poseFixe(o.poulie || o.machine ? MAT.tirageHaut(C, anc, 0.5, 0) : MAT.siege(C, 0.5)));
+    else if (o.poulie) fixe = fixe.concat(poseFixe(MAT.colonne(C, anc, V(0, 0, anc.z + 0.3))));
     return Object.assign(d, { fixe, vue, tenu: tenuDe(o, m, r) });
   };
 
@@ -162,7 +168,13 @@
     if (o.anneaux) { d.tenu = [{ t: 'sangle', de: s => V(s * ecart, H + 1.0, 0.02), m: 'G' }]; d.tenu = [{ t: 'sangle', de: V(ecart, H + 1.1, 0.02), m: 'G', bout: 'anneau' }, { t: 'sangle', de: V(-ecart, H + 1.1, 0.02), m: 'D', bout: 'anneau' }]; }
     if (o.leste) d.objets = (info, u, sortie) => { const b = info.bassin; sortie.push(pret(cyl(0.16, 0.04, b.x, b.y - 0.42, b.z + 0.04, C.fonte, 0, DEBOUT_Q))); sortie.push(pret(seg(V(b.x, b.y - 0.08, b.z + 0.08), V(b.x, b.y - 0.42, b.z + 0.04), 0.006, C.cadre, 0.6))); };
     if (o.elastique) d.objets = (info, u, sortie) => { const pi = info.chevilles.G.clone().add(info.chevilles.D).multiplyScalar(0.5); sortie.push(pret(seg(V(0, H, 0.02), pi, 0.008, C.elastique, 0))); };
-    if (o.machine) d.objets = (info, u, sortie) => { const g = info.genoux.G.clone().add(info.genoux.D).multiplyScalar(0.5); sortie.push(pret(boite(0.45, 0.06, 0.3, 0, g.y - 0.09, g.z - 0.08, C.banc, 0))); sortie.push(pret(seg(V(0, 0, g.z + 0.5), V(0, g.y - 0.1, g.z - 0.05), 0.03, C.cadre, 0.5))); };
+    if (o.machine) {
+      // Machine à tractions assistées : une tour derrière soi, et un bras qui soutient le plateau où posent les genoux.
+      const zT = -0.72;
+      d.fixe = d.fixe.concat(poseFixe(horsCadre(deplacer(bati(C, 2.2, 0), V(0, 0, zT)))));
+      d.objets = (info, u, sortie) => { const g = info.genoux.G.clone().add(info.genoux.D).multiplyScalar(0.5), pl = V(0, g.y - 0.09, g.z - 0.08); sortie.push(pret(coussin(0.46, 0.065, 0.3, pl.x, pl.y, pl.z, C))); sortie.push(pret(tube(V(0, 0.75, zT + 0.05), V(0, pl.y - 0.04, pl.z), 0.05, C.cadre))); };
+      d.levee = (info, u) => 0.5 * (1 - u);
+    }
     return d;
   };
 

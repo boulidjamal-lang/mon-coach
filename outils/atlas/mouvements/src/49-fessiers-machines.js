@@ -43,6 +43,30 @@
     return d;
   };
 
+  /* Bras de levier d'une machine de jambes : il pivote dans l'axe des genoux et porte un boudin contre les chevilles
+     (sens = -1 : devant le tibia, pour l'extension ; +1 : derrière, pour le curl). */
+  function levierGenou(C, info, cotes, sens, sortie) {
+    const moy = pts => pts.reduce((a, b) => a.add(b), V()).multiplyScalar(1 / pts.length);
+    const g = moy(cotes.map(k => info.genoux[k])), ch = moy(cotes.map(k => info.chevilles[k])), dj = unite(ch.clone().sub(g));
+    // Le devant du tibia : perpendiculaire à la jambe, du côté des orteils.
+    let dev = perp(info.orteils[cotes[0]].clone().sub(info.chevilles[cotes[0]]).setX(0), dj); if (dev.lengthSq() < 1e-6) dev = perpendiculaire(dj); dev.normalize();
+    const pp = ch.clone().add(dev.clone().multiplyScalar(-sens * 0.09)).add(dj.clone().multiplyScalar(-0.03)), l = cotes.length > 1 ? 0.44 : 0.2;
+    poserObjet(MAT.coussin(C, l, 0.052), pp, null, sortie);
+    for (const s of cotes.length > 1 ? [1, -1] : [cotes[0] === 'G' ? 1 : -1]) {
+      const x = cotes.length > 1 ? s * 0.26 : g.x + s * 0.13, pivot = V(x, g.y, g.z);
+      sortie.push(pret(tube(pivot, V(x, pp.y, pp.z), 0.035, C.cadre)));
+      sortie.push(pret(cyl(0.05, 0.03, x, g.y, g.z, C.cadre, 0.5, null, 0.008)));
+    }
+  }
+  /* Le bâti d'une machine où l'on est assis (extension, curl assis) : la pile de poids derrière le dossier, une poutre
+     au sol, une poignée sous chaque main ; la pile monte avec le mouvement. */
+  function machineAssise(c, C, d, fixe, h, dossier) {
+    const i0 = c.poser(d.a), zP = i0.tete.z - 0.5;
+    fixe.push(...poseFixe(deplacer(bati(C, 1.45, 0), V(0, 0, zP))), pret(tube(V(0, 0.03, zP), V(0, 0.03, 0.2), 0.05, C.cadre)));
+    for (const k of ['G', 'D']) { const pr = i0.prises[k]; fixe.push(...poserObjet(MAT.poignee(C, 0.12), pr, LONG_Z, []), pret(tube(V(pr.x, pr.y, pr.z - 0.07), V(pr.x * 0.6, h - 0.1, pr.z - 0.12), 0.03, C.cadre))); }
+    d.levee = (info, u) => 0.28 * u;
+  }
+
   /* Machines et exercices des cuisses, assis ou couché.
      presse (presse à cuisses à 45° ; horizontale ; verticale ; unejambe ; large, serre ; mollets : presse à mollets) ;
      extension (leg extension ; uni) ; curl (ischios : couché par défaut, assis, debout ; machine, poulie, elas, hal ;
@@ -57,9 +81,25 @@
       const ha = c.tronc(base).hanches.G, ecart = o.large ? 0.26 : o.serre ? 0.07 : 0.15;
       const plie = ha.clone().setX(0).add(r.clone().multiplyScalar(o.verticale ? 0.36 : 0.3)).add(e.clone().multiplyScalar(o.verticale ? 0 : 0.26)), course = o.mollets ? 0.05 : 0.4;
       d.pose = u => { const p = cloner(base), k = o.mollets ? 1 : u, pt = o.mollets ? 34 * u : 0; for (const [kk, s] of COTES) { const ch = plie.clone().add(r.clone().multiplyScalar((0.4 * k) + (o.mollets ? 0.05 * u : 0))).setX(s * ecart); const dir = e.clone().multiplyScalar(Math.cos(rad(pt))).add(r.clone().multiplyScalar(Math.sin(rad(pt)))), hautP = r.clone().multiplyScalar(-Math.cos(rad(pt))).add(e.clone().multiplyScalar(Math.sin(rad(pt)))); p.jambes[kk] = { cheville: ch, pole: e.clone().add(V(s * (o.large ? 0.6 : 0.25), 0, 0)).add(r.clone().multiplyScalar(-0.2)), pied: dir, hautPied: hautP, orteils: pt }; } if (o.unejambe) p.jambes.D = pied(c, -1, { x: -0.3, z: ha.z + 0.45, ouv: 20, pole: V(-0.5, 1, 0.3) }); for (const [kk, s] of COTES) p.bras[kk] = B(60, 22, 0, 30, 90, { doigts: 'barre' }); return p; };
-      // Le plateau suit les pieds ; le siège est fixe.
+      // Le siège est fixe ; le chariot (plateau, traverse, disques) suit les pieds le long de deux rails.
       if (!o.verticale) fixe.push(...poseFixe(MAT.banc(C, dossier, 0.3, 0.8, 0.34)));
-      d.objets = (info, u, sortie) => { const m = info.chevilles.G.clone().setX(0).add(r.clone().multiplyScalar(L.chevilleH + 0.03)).add(e.clone().multiplyScalar(0.06)), q = arc(AY, r); sortie.push({ forme: 'boite', s: [0.62, 0.04, 0.42], p: [m.x, m.y, m.z], q: [q.x, q.y, q.z, q.w], couleur: C.cadre, metal: 0.5 }); const bout = m.clone().add(r.clone().multiplyScalar(0.75)); sortie.push(pret(seg(m, bout, 0.03, C.cadre, 0.5))); if (ang === 45) for (const s of [1, -1]) sortie.push(pret(cyl(0.2, 0.05, s * 0.42, m.y + 0.02, m.z + 0.02, C.fonte, 0))); };
+      const plateau = info => info.chevilles.G.clone().setX(0).add(r.clone().multiplyScalar(L.chevilleH + 0.03)).add(e.clone().multiplyScalar(0.06));
+      const P0 = plateau(c.poser(d.pose(0))), qPl = arc(AY, r), bas = P0.clone().add(e.clone().multiplyScalar(-0.27));
+      const sMin = ang > 5 ? (0.07 - bas.y) / r.y : -0.45, sMax = course + 0.5, xR = 0.39;
+      for (const s of [1, -1]) {
+        const a = bas.clone().add(r.clone().multiplyScalar(sMin)).setX(s * xR), b = bas.clone().add(r.clone().multiplyScalar(sMax)).setX(s * xR);
+        fixe.push(pret(tube(a, b, 0.055, C.cadre)));
+        if (ang < 80) { fixe.push(pret(tube(V(b.x, 0.03, b.z), b, 0.055, C.cadre))); if (ang <= 5) fixe.push(pret(tube(V(a.x, 0.03, a.z), a, 0.055, C.cadre))); }
+        fixe.push(...poseFixe(patin(C, V(s * xR, 0.028, Math.min(a.z, b.z) - 0.08), V(s * xR, 0.028, Math.max(a.z, b.z) + 0.08), 0.05)));
+      }
+      { const b = bas.clone().add(r.clone().multiplyScalar(sMax)); fixe.push(Object.assign(pret(tube(V(-xR, b.y, b.z), V(xR, b.y, b.z), 0.055, C.cadre)), { hors: 1 })); }
+      d.objets = (info, u, sortie) => {
+        const m = plateau(info), tr = m.clone().add(e.clone().multiplyScalar(-0.27)).add(r.clone().multiplyScalar(0.035));
+        sortie.push(pret(boite(0.62, 0.035, 0.46, m.x, m.y, m.z, C.fonte, 0.3, qPl, 0.012)));
+        sortie.push(pret(tube(tr.clone().setX(-xR - 0.05), tr.clone().setX(xR + 0.05), 0.05, C.cadre)));
+        sortie.push(pret(tube(tr, m.clone().add(r.clone().multiplyScalar(0.03)), 0.04, C.cadre)));
+        if (ang === 45) for (const s of [1, -1]) poserObjet(MAT.disque(C, 0.2), tr.clone().setX(s * (xR + 0.11)), null, sortie);
+      };
       d.vue = { az: 66, el: 12 }; return d;
     }
     if (o.extension) {
@@ -67,7 +107,8 @@
       fixe.push(...poseFixe(MAT.banc(C, 76, 0.58)));
       const cle = u => { const p = cloner(base); for (const k of ['G', 'D']) { p.jambes[k] = J(74, 5, 0, lerp(94, 6, u), -10 * u); p.bras[k] = B(80, 14, 0, 35, 90); } if (o.uni) p.jambes.D = J(74, 5, 0, 92, 0); return p; };
       d.a = cle(0); d.b = cle(1);
-      d.objets = (info, u, sortie) => { for (const k of o.uni ? ['G'] : ['G', 'D']) { const g = info.genoux[k], ch = info.chevilles[k], av = unite(ch.clone().sub(g)).cross(AX).multiplyScalar(-1); } const g = info.genoux.G.clone().setX(0), ch = info.chevilles.G.clone().setX(0), dj = unite(ch.clone().sub(g)), dev = dj.clone().cross(AX).normalize(), pp = ch.clone().add(dev.multiplyScalar(-0.085)).add(dj.clone().multiplyScalar(-0.03)); sortie.push(pret(cyl(0.05, 0.4, 0, pp.y, pp.z, C.banc, 0))); sortie.push(pret(seg(V(0.24, g.y - 0.02, g.z - 0.02), V(0.24, pp.y, pp.z), 0.018, C.cadre, 0.5))); };
+      d.objets = (info, u, sortie) => levierGenou(C, info, o.uni ? ['G'] : ['G', 'D'], -1, sortie);
+      machineAssise(c, C, d, fixe, 0.58, 76);
       return d;
     }
     if (o.curl) {
@@ -94,7 +135,8 @@
         fixe.push(...poseFixe(MAT.banc(C, 76, 0.6)));
         const cle = u => { const p = cloner(base); for (const k of ['G', 'D']) { p.jambes[k] = J(74, 5, 0, lerp(10, 104, u), 0); p.bras[k] = B(80, 14, 0, 35, 90); } if (o.uni) p.jambes.D = J(74, 5, 0, 10, 0); return p; };
         d.a = cle(0); d.b = cle(1);
-        d.objets = (info, u, sortie) => { const g = info.genoux.G.clone().setX(0), ch = info.chevilles.G.clone().setX(0), dj = unite(ch.clone().sub(g)), der = dj.clone().cross(AX).normalize(), pp = ch.clone().add(der.multiplyScalar(0.085)); sortie.push(pret(cyl(0.05, 0.4, 0, pp.y, pp.z, C.banc, 0))); sortie.push(pret(seg(V(0.24, g.y, g.z), V(0.24, pp.y, pp.z), 0.018, C.cadre, 0.5))); sortie.push(pret(cyl(0.045, 0.4, 0, g.y + 0.1, g.z - 0.06, C.banc, 0))); };
+        d.objets = (info, u, sortie) => { levierGenou(C, info, o.uni ? ['G'] : ['G', 'D'], 1, sortie); const g = info.genoux.G.clone().add(info.genoux.D).multiplyScalar(0.5); poserObjet(MAT.coussin(C, 0.44, 0.05), V(0, g.y + 0.11, g.z - 0.1), null, sortie); };
+        machineAssise(c, C, d, fixe, 0.6, 76);
         return d;
       }
       if (o.debout) {
@@ -114,7 +156,14 @@
       d.a = cle(0); d.b = cle(1); d.vue = { az: 62, el: 12 };
       if (o.hal) d.objets = (info, u, sortie) => { const m = info.chevilles.G.clone().add(info.chevilles.D).multiplyScalar(0.5), pd = unite(info.orteils.G.clone().sub(info.chevilles.G)); poserObjet(MAT.haltere(C, 1.1), m.clone().add(pd.multiplyScalar(0.1)), qTenu(pd, AX), sortie); };
       else if (o.elas) d.objets = (info, u, sortie) => sortie.push(pret(seg(V(0, 0.3, info.chevilles.G.z - 1.0 + 0 * u), info.chevilles.G.clone().setX(0), 0.008, C.elastique, 0)));
-      else d.objets = (info, u, sortie) => { const g = info.genoux.G.clone().setX(0), ch = info.chevilles.G.clone().setX(0), dj = unite(ch.clone().sub(g)), der = AX.clone().cross(dj).normalize(), pp = ch.clone().add(der.multiplyScalar(0.09)); sortie.push(pret(cyl(0.05, 0.4, 0, pp.y, pp.z, C.banc, 0))); sortie.push(pret(seg(V(0.24, g.y - 0.03, g.z), V(0.24, pp.y, pp.z), 0.018, C.cadre, 0.5))); };
+      else {
+        // La machine : le boudin derrière les chevilles sur son bras de levier, deux poignées sous la tête, la pile de poids.
+        d.objets = (info, u, sortie) => levierGenou(C, info, o.uni ? ['G'] : ['G', 'D'], 1, sortie);
+        const i0 = c.poser(d.a), zT = i0.tete.z + 0.75;
+        fixe.push(...poseFixe(deplacer(bati(C, 1.4, 0), V(0, 0, zT), qY(180))), pret(tube(V(0, 0.03, i0.bassin.z), V(0, 0.03, zT), 0.05, C.cadre)));
+        for (const k of ['G', 'D']) { const pr = i0.prises[k]; fixe.push(...poserObjet(MAT.poignee(C, 0.12), pr, LONG_Z, []), pret(tube(V(pr.x, pr.y, pr.z + 0.07), V(pr.x * 0.4, 0.5, pr.z + 0.1), 0.03, C.cadre))); }
+        d.levee = (info, u) => 0.3 * u;
+      }
       return d;
     }
     if (o.tke) {
@@ -146,7 +195,7 @@
     if (o.assis) {
       // Assis, genoux à angle droit, la charge sur les genoux : seuls les talons montent.
       const cle = u => { const p = assis(c, { h: 0.5, zPieds: 0.42, pointe: 36 * u, ecart: 0.11, ouv: 4 }); const t = c.tronc(p); if (o.uni) p.jambes.D = pied(c, -1, { x: -0.2, z: p.bassin.pos.z + 0.6, ouv: 10 }); for (const [k, s] of COTES) p.bras[k] = { prise: V(s * 0.16, p.jambes.G.cheville.y + L.jambe + 0.1, p.bassin.pos.z + 0.4), pole: V(s * 1, 0, -0.5), paume: V(0, -1, 0), doigts: 'barre' }; return p; };
-      d.pose = cle; fixe.push(...poseFixe(MAT.siege(C, 0.5)), pret(boite(0.4, 0.08, 0.3, 0, 0.04, 0.5, C.cadre, 0.5)));
+      d.pose = cle; fixe.push(...poseFixe(MAT.siege(C, 0.5)), pret(boite(0.46, 0.08, 0.3, 0, 0.04, 0.5, C.fonte, 0.3, null, 0.012)), pret(tube(V(0, 0.03, 0.2), V(0, 0.03, 0.95), 0.05, C.cadre)), pret(tube(V(0, 0.03, 0.95), V(0, 0.62, 0.95), 0.055, C.cadre)));
       d.objets = (info, u, sortie) => { const g = info.genoux.G.clone().add(o.uni ? info.genoux.G : info.genoux.D).multiplyScalar(0.5); if (o.hal) poserObjet(MAT.haltere(C, 1.2), g.clone().add(V(0, 0.09, -0.04)), null, sortie); else if (o.barre || o.smith) poserObjet(MAT.barre(C, 1.6, 0.18), g.clone().add(V(0, 0.085, -0.05)), null, sortie); else sortie.push(pret(cyl(0.05, 0.42, g.x, g.y + 0.1, g.z - 0.05, C.banc, 0))); };
       if (o.smith) fixe.push(...poseFixe(MAT.smith(C, 0.37)));
       return d;
@@ -163,6 +212,12 @@
     };
     d.pose = cle; cle(0);
     if (o.smith) { const info = c.poser(cle(0)); fixe.push(...poseFixe(MAT.smith(C, info.prises.G.z))); }
-    if (o.machine) d.objets = (info, u, sortie) => { for (const k of ['G', 'D']) { const e = info.epaules[k]; sortie.push(pret(boite(0.14, 0.06, 0.2, e.x, e.y + 0.09, e.z, C.banc, 0))); sortie.push(pret(seg(V(e.x, e.y + 0.1, e.z - 0.08), V(e.x, e.y + 0.1, e.z - 0.6), 0.02, C.cadre, 0.5))); } };
+    if (o.machine) {
+      // Machine à mollets debout : le bâti derrière soi, deux bras jusqu'aux épaulières ; la pile monte avec les talons.
+      const zT = z0 - 0.78;
+      fixe.push(...poseFixe(horsCadre(deplacer(bati(C, 1.95, 0), V(0, 0, zT)))), pret(tube(V(0, 0.03, zT), V(0, 0.03, z0 + 0.1), 0.05, C.cadre)));
+      d.objets = (info, u, sortie) => { for (const k of ['G', 'D']) { const e = info.epaules[k]; sortie.push(pret(coussin(0.15, 0.065, 0.2, e.x, e.y + 0.095, e.z, C))); sortie.push(pret(tube(V(e.x, e.y + 0.1, e.z - 0.08), V(e.x * 0.9, e.y + 0.02, zT + 0.04), 0.04, C.cadre))); } };
+      d.levee = (info, u) => 0.12 * u;
+    }
     return d;
   };

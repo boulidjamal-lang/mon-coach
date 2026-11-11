@@ -16,8 +16,16 @@
         // À la machine, assis : le buste part penché en avant et pousse le coussin vers l'arrière.
         const base = assis(c, { h: 0.5, zPieds: 0.34 });
         d.pose = u => { const p = cloner(base); p.bassin.rot = qX(lerp(34, -18, u)); p.lombaires = lerp(10, -4, u); const t = c.tronc(p); p.bras = mains(c, t, 'poitrine'); return p; };
-        fixe.push(...poseFixe(MAT.siege(C, 0.5)));
-        d.objets = (info, u, sortie) => { const e = info.epaules.G.clone().add(info.epaules.D).multiplyScalar(0.5), q = info.qThorax, pp = e.clone().add(V(0, -0.08, -0.17).applyQuaternion(q)); sortie.push({ forme: 'cylindre', s: [0.06, 0.4, 0.06], p: [pp.x, pp.y, pp.z], q: [COUCHE.x, COUCHE.y, COUCHE.z, COUCHE.w], couleur: C.banc, metal: 0 }); };
+        // La machine : l'assise, un repose-pieds, le bâti derrière ; le boudin du haut du dos tient au bout d'un bras
+        // qui pivote à hauteur des hanches.
+        const zT = -0.95;
+        fixe.push(...poseFixe(MAT.siege(C, 0.5)), ...poseFixe(horsCadre(deplacer(bati(C, 1.5, 0), V(0, 0, zT)))), pret(tube(V(0, 0.03, zT), V(0, 0.03, 0.3), 0.05, C.cadre)), pret(tube(V(-0.2, 0.12, 0.42), V(0.2, 0.12, 0.42), 0.045, C.cadre)));
+        d.objets = (info, u, sortie) => {
+          const e = info.epaules.G.clone().add(info.epaules.D).multiplyScalar(0.5), q = info.qThorax, pp = e.clone().add(V(0, -0.08, -0.17).applyQuaternion(q));
+          poserObjet(MAT.coussin(C, 0.42, 0.06), pp, null, sortie);
+          for (const s of [1, -1]) { sortie.push(pret(tube(V(s * 0.25, 0.62, -0.12), V(s * 0.25, pp.y, pp.z), 0.04, C.cadre))); sortie.push(pret(cyl(0.045, 0.03, s * 0.25, 0.62, -0.12, C.cadre, 0.5, null, 0.008))); }
+        };
+        d.levee = (info, u) => 0.25 * u;
         d.vue = { az: 70, el: 10 }; return d;
       }
       // Les pieds sont tenus au sol derrière, les cuisses appuyées sur le coussin incliné.

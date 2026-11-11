@@ -36,13 +36,25 @@
       // Disque serré entre les deux paumes, poussé droit devant la poitrine.
       bas = s => V(s * 0.02, -0.12, 0.2); hautP = s => V(s * 0.02, -0.1, portee - 0.04); pole = s => V(s * 0.8, -0.7, -0.2); dirMain = V(0, 0.2, 1); paumeA = paumeB = s => V(-s, 0, 0);
     } else {
-      const zBas = o.sol ? 0.2 : o.partiel ? 0.2 : 0.135;
-      bas = s => V(s * eBas, o.banc > 20 ? -0.07 : -0.115, zBas + (libre ? 0.02 : 0));
-      hautP = s => V(s * eHaut, o.banc > 20 ? 0.0 : -0.02, portee);
-      pole = s => (o.serre ? V(s * 0.3, -0.6, -1) : V(s * 0.75, -0.35, -1));
+      if (P.sorte === 'dos') {
+        // Couché : les bras tendus sont à la verticale (quelle que soit l'inclinaison du banc), au-dessus des épaules ;
+        // la charge descend au bas des pectoraux sur un banc plat ou décliné, vers le haut de la poitrine sur un banc
+        // incliné. La barre s'arrête contre la poitrine ; les haltères descendent à côté d'elle ; par terre, ce sont
+        // les bras qui s'arrêtent au sol.
+        const A = o.sol ? 0 : (o.plat ? 0 : o.decline ? -18 : o.banc === true ? 45 : +o.banc || 0), an = rad(A);
+        const yBas = (A > 0 ? lerp(-0.19, -0.08, borne(A / 40, 0, 1)) : A < 0 ? -0.22 : -0.19) + (libre ? 0.04 : 0);
+        const zBas = o.sol ? 0.25 : o.partiel ? 0.24 : libre ? 0.12 : 0.166;
+        bas = s => V(s * eBas, yBas, zBas);
+        hautP = s => V(s * eHaut, -0.03 + portee * Math.sin(an) * 0.94, portee * (1 - 0.06 * Math.abs(Math.sin(an))) * Math.cos(an) + portee * (1 - Math.cos(an)) * 0.0);
+      } else {
+        const zBas = o.partiel ? 0.2 : 0.135;
+        bas = s => V(s * eBas, -0.115, zBas + (libre ? 0.02 : 0));
+        hautP = s => V(s * eHaut, -0.02, portee);
+      }
+      pole = s => (o.serre ? V(s * 0.3, -0.6, -1) : V(s * 0.75, -0.5, -1));
       dirMain = V(0, 0, 1); paumeA = paumeB = s => (o.neutre || o.marteau ? V(-s, 0, 0) : V(0, -1, 0));
       // Assis à la machine, la poussée peut monter (incline) ou descendre (decline).
-      if (montee) { const an = rad(montee); bas = s => V(s * eBas, montee > 0 ? -0.06 : -0.17, zBas + 0.02); hautP = s => V(s * eHaut, (montee > 0 ? -0.02 : -0.06) + portee * Math.sin(an) * 0.96, portee * Math.cos(an)); }
+      if (montee) { const an = rad(montee); bas = s => V(s * eBas, montee > 0 ? -0.06 : -0.17, 0.155); hautP = s => V(s * eHaut, (montee > 0 ? -0.02 : -0.06) + portee * Math.sin(an) * 0.96, portee * Math.cos(an)); }
       if (o.autour) { bas = s => V(s * 0.3, -0.12, 0.12); hautP = s => V(-s * 0.1, -0.16, portee - 0.06); pole = s => V(s * 0.6, -0.8, -0.4); paumeA = paumeB = s => V(-s, 0, 0); vue = { az: 25, el: 8 }; }
     }
     const bras = (f, pa, doigts) => {
@@ -75,6 +87,11 @@
     if (o.smith) {
       const zB = t.duThorax(hautP(1)).z;
       fixe = fixe.concat(poseFixe(MAT.smith(C, zB)));
+    }
+    // Développé couché à la barre : les supports de barre, derrière la tête, crochets juste sous la barre bras tendus.
+    if (o.barre && !o.smith && P.sorte === 'dos' && !o.sol && !haut) {
+      const hautBarre = t.duThorax(hautP(1));
+      fixe = fixe.concat(poseFixe(MAT.supports(C, hautBarre.y - 0.075, 0.53, hautBarre.z - 0.27)));
     }
     // Barre retenue par des élastiques (développé couché avec bandes) : une bande de chaque main jusqu'au sol.
     if (o.barre && o.elas && !haut) { const zB = t.duThorax(hautP(1)).z; for (const k of ['G', 'D']) tenu.push({ t: 'elastique', de: V((k === 'G' ? 1 : -1) * 0.5, 0.03, zB), m: k, bout: 'rien' }); }

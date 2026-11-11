@@ -13,7 +13,7 @@ function bibliotheque(DEPOT) {
   return { tous: BASE, visibles, GROUPES, specDe, specs: [...new Set(visibles.map(e => specDe[e.id]))] };
 }
 /* Les couleurs des muscles de chaque exercice, telles que l'appli les calcule (carteAtlas, mode « exercice »), et les teintes
-   neutres du reste du corps. clair : thème clair. */
+   neutres du reste du corps pendant un exercice. clair : thème clair. */
 async function couleursExercices(DEPOT, ids, clair) {
   const { chromium } = require(path.join(DEPOT, 'node_modules', 'playwright-core'));
   const { ouvrirAppli } = require(path.join(DEPOT, 'tests', 'outils'));
@@ -28,7 +28,7 @@ async function couleursExercices(DEPOT, ids, clair) {
       atlasDonnees = donneesAtlas();
       for (const id of ids) { const exo = trouverExercice(id); if (!exo) continue; atlasExercice = { exo, mouvement: mouvementExercice(exo.id) }; couleurs[id] = carteAtlas('exercice', S).couleurs; }
       atlasExercice = null; atlasDonnees = null;
-      return { couleurs, neutres: neutresAtlas(), accent: couleurCssAtlas('--corps-cible', '#f472b6') };
+      return { couleurs, neutres: typeof neutresExerciceAtlas === 'function' ? neutresExerciceAtlas() : neutresAtlas(), accent: couleurCssAtlas('--corps-cible', '#f472b6') };
     }, [ids, S]);
   } finally { await nav.close(); }
 }

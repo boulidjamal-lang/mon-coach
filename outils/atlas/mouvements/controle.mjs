@@ -35,8 +35,8 @@ export function controlerSpec(M, corps, C, spec) {
     try { pose = M.poseA(d, 0, u); info = corps.poser(pose); formes = M.materielDe(d, info, u, C, {}); } catch (e) { noter('err', 'erreur à u=' + u + ' : ' + String(e.message).slice(0, 120)); continue; }
     // Le matériel : des formes connues du moteur, à des endroits bien définis.
     for (const f of formes) {
-      if (!['cylindre', 'boite', 'sphere', 'tore'].includes(f.forme)) noter('forme', 'forme inconnue : ' + f.forme);
-      if (![...f.p, ...f.q, ...f.s].every(Number.isFinite)) { noter('mat', 'matériel mal placé (valeur non finie, u=' + u + ')'); break; }
+      if (!['cylindre', 'boite', 'sphere', 'tore', 'arc', 'hexa'].includes(f.forme)) noter('forme', 'forme inconnue : ' + f.forme);
+      if (![...f.p, ...f.q, ...f.s, f.r || 0].every(Number.isFinite)) { noter('mat', 'matériel mal placé (valeur non finie, u=' + u + ')'); break; }
     }
     const m = corps.matrices(); let fini = true;
     for (let i = 0; i < m.length; i++) if (!Number.isFinite(m[i])) { fini = false; break; }

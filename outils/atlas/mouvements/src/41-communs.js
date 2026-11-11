@@ -22,7 +22,7 @@
     else if (o.penche) {
       const a = o.penche === true ? (defauts.penche || 60) : o.penche;
       p = debout(c, { dy: -0.05 - a * 0.0012, dz: -0.06 - a * 0.0026, penche: a, lomb: 3, thor: 4, cou: -a * 0.55, ecart: 0.14, ouv: 10 }); vue = { az: 122, el: 10 }; sorte = 'penche';
-    } else p = debout(c, { ecart: defauts.ecart == null ? 0.11 : defauts.ecart, ouv: 10, penche: defauts.penche || 0, dy: defauts.dy || 0, dz: defauts.dz || 0 });
+    } else p = debout(c, { ecart: defauts.ecart == null ? 0.14 : defauts.ecart, ouv: 12, penche: defauts.penche || 0, dy: defauts.dy || 0, dz: defauts.dz || 0 });
     return { p, fixe, vue, sorte };
   }
   /* Deux poses qui ne diffèrent que par les bras. a, b : angles (ou cibles) des bras au départ et à l'arrivée, pour
@@ -58,7 +58,7 @@
     const t = [], pt = (v, k) => (typeof v === 'function' && v.length ? v(k === 'D' ? -1 : 1, k) : v);
     const cotes = m === 'GD' || !m ? ['G', 'D'] : [m];
     if (o.barre) t.push({ t: 'barre', l: r.lBarre || 1.6, d: r.disques });
-    else if (o.ez) t.push({ t: 'barre', l: 1.2, d: 0.09 });
+    else if (o.ez) t.push({ t: 'barre', ez: true });
     else if (o.hal) t.push({ t: 'haltere', m });
     else if (o.kb) t.push({ t: 'kb', m, sens: r.sensKb });
     else if (o.disque) t.push({ t: 'disque', m: 'GD' });
