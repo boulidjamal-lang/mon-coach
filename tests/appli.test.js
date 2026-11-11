@@ -6767,6 +6767,16 @@ test('atlas 3D : la fiche d\'un exercice montre son mouvement dès l\'ouverture,
     await page.waitForFunction(() => !ficheMouvement.apercu.lecture(), null, { timeout: 20000 });
     await page.evaluate(() => choisirOngletFiche('technique'));
     await page.waitForFunction(() => ficheMouvement.apercu.lecture(), null, { timeout: 20000 });
+    // Une pause qui ne vient pas du bouton ne dure pas : tant que le mouvement est voulu et que son cadre se voit, il
+    // repart de lui-même. (Dans le moteur web d'iOS, un verdict de visibilité rendu pendant que la fiche glissait en
+    // place le laissait figé : le simulateur iPhone l'a montré.)
+    assert.deepEqual(await page.evaluate(() => { ficheMouvement.apercu.lecture(false); return [ficheMouvement.voulu, ficheMouvement.apercu.lecture()]; }), [true, false]);
+    await page.waitForFunction(() => ficheMouvement.apercu.lecture(), null, { timeout: 20000 });
+    // Hors de l'écran (la fiche défilée loin), il se met en pause ; revenu, il reprend.
+    await page.evaluate(() => { document.getElementById('fiche-exo-3d').style.transform = 'translateY(3000px)'; });
+    await page.waitForFunction(() => !ficheMouvement.apercu.lecture(), null, { timeout: 20000 });
+    await page.evaluate(() => { document.getElementById('fiche-exo-3d').style.transform = ''; });
+    await page.waitForFunction(() => ficheMouvement.apercu.lecture(), null, { timeout: 20000 });
     // Tourner du doigt : un glissement horizontal change l'angle de vue.
     const boite = await page.evaluate(() => { const r = document.querySelector('#fiche-exo-3d canvas').getBoundingClientRect(); return { x: r.left + r.width / 2, y: r.top + r.height / 2, az: ficheMouvement.apercu.atlas.camera().az }; });
     await page.mouse.move(boite.x, boite.y); await page.mouse.down(); await page.mouse.move(boite.x + 80, boite.y + 4, { steps: 6 }); await page.mouse.up();

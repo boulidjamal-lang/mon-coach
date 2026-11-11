@@ -22010,7 +22010,8 @@ function fermerMouvementFiche() {
   ficheMouvementJeton++;
   if (!ficheMouvement) return;
   const m = ficheMouvement; ficheMouvement = null;
-  try { if (m.observateur) m.observateur.disconnect(); m.apercu.detruire(); } catch (err) { /* contexte graphique déjà perdu : rien à défaire */ }
+  clearInterval(m.veille);
+  try { m.apercu.detruire(); } catch (err) { /* contexte graphique déjà perdu : rien à défaire */ }
 }
 /* Ferme tout ce qui tourne dans la fiche : l'alternance des photos et le mouvement en 3D. */
 function fermerMediasFiche() { arreterAnimationFiche(); fermerMouvementFiche(); }
@@ -22031,21 +22032,31 @@ async function monterMouvementFiche(exo) {
     });
     if (!apercu.anime) { apercu.detruire(); throw new Error('animation'); }
     const reduit = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
-    const m = ficheMouvement = { apercu, id: exo.id, voulu: !reduit, observateur: null };
+    const m = ficheMouvement = { apercu, id: exo.id, voulu: !reduit, veille: 0 };
     cadre.insertAdjacentHTML('beforeend', `<button type="button" class="fiche-3d-btn fiche-3d-lecture" onclick="basculerLectureFiche()"></button>
       <button type="button" class="fiche-3d-btn fiche-3d-grand" onclick="agrandirMouvementFiche()" aria-label="Ouvrir l'atlas en grand : muscles, couches, vues">${IC_FICHE_3D.grand}</button>`);
     majLectureFiche();
-    // Le mouvement ne tourne que lorsqu'il se voit (autre onglet de la fiche, fiche défilée : en pause).
-    if (window.IntersectionObserver) {
-      m.observateur = new IntersectionObserver(vus => { if (ficheMouvement === m) apercu.lecture(m.voulu && vus[vus.length - 1].isIntersecting); }, { threshold: 0.15 });
-      m.observateur.observe(cadre);
-    } else apercu.lecture(m.voulu);
+    // Le mouvement ne tourne que lorsqu'il se voit (autre onglet de la fiche, fiche défilée, appli en arrière-plan : en
+    // pause). Une veille regarde la place du cadre à l'écran quatre fois par seconde. Pas d'IntersectionObserver ici :
+    // dans le moteur web d'iOS, il peut rendre son premier verdict (« pas visible ») pendant que la fiche finit de
+    // glisser en place, puis se taire tant que rien ne se redessine — et le mouvement, mis en pause, ne repartait plus.
+    const veiller = () => { if (ficheMouvement !== m) return; const veut = m.voulu && cadreFicheVisible(cadre); if (veut !== apercu.lecture()) apercu.lecture(veut); };
+    m.veille = setInterval(veiller, 250);
+    veiller();
   } catch (err) {
     console.warn('[Atlas] fiche', err && err.message);
     if (jeton !== ficheMouvementJeton) return;
     fermerMouvementFiche();
     basculerMediaFiche(exo.id, 'photo', true);
   }
+}
+/* Le cadre du mouvement se voit-il ? Présent, affiché (un autre onglet de la fiche le réduit à rien), et à l'écran pour
+   une part suffisante de sa hauteur. */
+function cadreFicheVisible(cadre) {
+  if (document.hidden || !cadre.isConnected) return false;
+  const r = cadre.getBoundingClientRect();
+  if (r.width < 2 || r.height < 2) return false;
+  return Math.min(innerHeight, r.bottom) - Math.max(0, r.top) >= 0.15 * r.height;
 }
 function majLectureFiche() {
   const b = document.querySelector('#fiche-exo-3d .fiche-3d-lecture');
