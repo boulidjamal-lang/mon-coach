@@ -28,19 +28,46 @@
       };
       if (charge) d.tenu = [{ t: o.kb ? 'kb' : 'haltere', m: o.uni ? 'G' : 'GD', k: 1.2 }];
       if (o.tapis) {
-        // Tapis roulant : la bande, les montants, la console et ses poignées.
+        // Tapis roulant : le plateau entre ses deux longerons, la bande (plus sombre), le capot du moteur à l'avant, deux
+        // montants, la console inclinée vers le coureur et ses deux mains courantes gainées.
         const q = qX(-pente), pose = (f, x, y, z) => poserObjet([f], V(0, y0 - 0.07, 0).add(V(x, y, z).applyQuaternion(q)), q, fixe);
-        pose(boite(0.62, 0.14, 1.75, 0, 0, 0, C.banc, 0), 0, 0, 0.1);
-        for (const s of [1, -1]) { pose(boite(0.05, 1.2, 0.06, 0, 0, 0, C.cadre, 0.5), s * 0.33, 0.6, 0.9); pose(cyl(0.018, 0.5, 0, 0, 0, C.metal, 0.8, LONG_Z), s * 0.33, 1.05, 0.66); }
-        pose(boite(0.72, 0.2, 0.06, 0, 0, 0, C.fonte, 0.2), 0, 1.22, 0.92);
+        pose(boite(0.56, 0.12, 1.7, 0, 0, 0, C.banc, 0, null, 0.012), 0, -0.012, 0.08);
+        pose(boite(0.5, 0.012, 1.52, 0, 0, 0, C.gomme, 0, null, 0.004), 0, 0.054, 0.02);
+        pose(boite(0.66, 0.2, 0.36, 0, 0, 0, C.fonte, 0.2, null, 0.04), 0, 0.045, 1.0);
+        for (const s of [1, -1]) {
+          pose(boite(0.06, 0.15, 1.76, 0, 0, 0, C.cadre, 0.45, null, 0.014), s * 0.31, 0.0, 0.1);
+          pose(boite(0.07, 0.04, 0.1, 0, 0, 0, C.gomme, 0, null, 0.01), s * 0.31, -0.085, -0.72); pose(boite(0.07, 0.04, 0.1, 0, 0, 0, C.gomme, 0, null, 0.01), s * 0.31, -0.085, 0.92);
+          pose(boite(0.055, 1.2, 0.06, 0, 0, 0, C.cadre, 0.45, qX(7), 0.012), s * 0.33, 0.64, 0.93);
+          pose(cyl(0.019, 0.52, 0, 0, 0, C.metal, 0.8, LONG_Z, 0.008), s * 0.33, 1.06, 0.62); pose(cyl(0.024, 0.2, 0, 0, 0, C.gomme, 0, LONG_Z, 0.008), s * 0.33, 1.06, 0.46);
+        }
+        pose(boite(0.74, 0.22, 0.07, 0, 0, 0, C.fonte, 0.2, qX(-28), 0.02), 0, 1.25, 0.84);
+        pose(cyl(0.019, 0.62, 0, 0, 0, C.metal, 0.8, null, 0.008), 0, 1.1, 0.8);
       }
       if (o.escalier) {
-        // Simulateur d'escalier : trois marches, deux rampes, une console.
-        for (let k = -1; k < 3; k++) fixe.push(pret(boite(0.6, 0.2, 0.27, 0, y0 - 0.1 - k * 0.2, 0.04 - k * 0.27, C.banc, 0)));
-        for (const s of [1, -1]) { fixe.push(pret(boite(0.05, y0 + 1.25, 0.06, s * 0.36, (y0 + 1.25) / 2, 0.66, C.cadre, 0.5))); fixe.push(pret(cyl(0.02, 0.6, s * 0.36, y0 + 1.02, 0.38, C.metal, 0.8, LONG_Z))); }
-        fixe.push(pret(boite(0.78, 0.2, 0.06, 0, y0 + 1.25, 0.68, C.fonte, 0.2)), pret(boite(0.7, 0.05, 1.3, 0, 0.025, -0.1, C.cadre, 0.5)));
+        // Simulateur d'escalier : les marches (nez gainé) entre deux limons, le socle sur ses pieds, deux montants,
+        // la console inclinée et deux mains courantes gainées.
+        for (let k = -1; k < 3; k++) fixe.push(pret(boite(0.56, 0.2, 0.27, 0, y0 - 0.1 - k * 0.2, 0.04 - k * 0.27, C.banc, 0, null, 0.012)), pret(boite(0.56, 0.02, 0.05, 0, y0 - 0.005 - k * 0.2, -0.07 - k * 0.27, C.gomme, 0, null, 0.006)));
+        for (const s of [1, -1]) {
+          // Le limon : un profilé sous le nez des marches, du sol au palier.
+          fixe.push(pret(tube(V(s * 0.31, 0.04, -0.34), V(s * 0.31, 0.62, 0.44), 0.07, C.cadre)));
+          fixe.push(pret(tube(V(s * 0.36, 0.05, 0.66), V(s * 0.36, y0 + 1.22, 0.6), 0.055, C.cadre)), pret(cyl(0.02, 0.62, s * 0.36, y0 + 1.02, 0.32, C.metal, 0.8, LONG_Z, 0.008)), pret(cyl(0.025, 0.22, s * 0.36, y0 + 1.02, 0.14, C.gomme, 0, LONG_Z, 0.008)));
+        }
+        fixe.push(pret(boite(0.8, 0.22, 0.07, 0, y0 + 1.25, 0.6, C.fonte, 0.2, qX(-24), 0.02)), pret(boite(0.72, 0.06, 1.36, 0, 0.03, -0.1, C.cadre, 0.45, null, 0.014)));
+        fixe.push(...poseFixe(patin(C, V(-0.38, 0.03, 0.62), V(0.38, 0.03, 0.62), 0.055)), ...poseFixe(patin(C, V(-0.38, 0.03, -0.8), V(0.38, 0.03, -0.8), 0.055)));
       }
-      if (o.traineau) d.objets = (info, u, sortie) => { const mi = info.prises.G.clone().add(info.prises.D).multiplyScalar(0.5); for (const s of [1, -1]) sortie.push(pret(seg(V(s * 0.2, 0.06, mi.z + 0.12), V(s * 0.2, mi.y + 0.12, mi.z), 0.02, C.cadre, 0.5))); sortie.push(pret(boite(0.6, 0.06, 0.9, 0, 0.03, mi.z + 0.5, C.cadre, 0.5)), pret(cyl(0.2, 0.12, 0, 0.14, mi.z + 0.6, C.fonte, 0, DEBOUT_Q))); };
+      // Le traîneau : deux patins relevés à l'avant, trois traverses, un axe qui porte les disques, et les deux montants
+      // que l'on pousse (gainés là où on les tient).
+      if (o.traineau) d.objets = (info, u, sortie) => {
+        const mi = info.prises.G.clone().add(info.prises.D).multiplyScalar(0.5), z0 = mi.z + 0.1, z1 = mi.z + 1.0;
+        for (const s of [1, -1]) {
+          sortie.push(pret(tube(V(s * 0.26, 0.03, z0), V(s * 0.26, 0.03, z1), 0.05, C.cadre)), pret(tube(V(s * 0.26, 0.03, z1), V(s * 0.26, 0.1, z1 + 0.12), 0.05, C.cadre)));
+          sortie.push(pret(tube(V(s * 0.2, 0.05, z0 + 0.04), V(s * 0.2, mi.y + 0.14, mi.z), 0.04, C.cadre)), pret(seg(V(s * 0.2, mi.y - 0.07, mi.z + 0.008), V(s * 0.2, mi.y + 0.09, mi.z - 0.004), 0.027, C.gomme, 0, 0.008)));
+        }
+        for (const z of [z0 + 0.04, (z0 + z1) / 2, z1 - 0.04]) sortie.push(pret(tube(V(-0.26, 0.05, z), V(0.26, 0.05, z), 0.045, C.cadre)));
+        const zc = (z0 + z1) / 2 + 0.1;
+        sortie.push(pret(cyl(0.025, 0.42, 0, 0.26, zc, C.metal, 0.85, DEBOUT_Q, 0.008)));
+        for (let i = 0; i < 3; i++) sortie.push(pret(cyl(0.225, 0.045, 0, 0.1 + i * 0.05, zc, C.fonte, 0.05, DEBOUT_Q, 0.014)), pret(tore(0.17, 0, 0.123 + i * 0.05, zc, C.fonte, 0.05, qX(90), 0.005)));
+      };
       d.vue = { az: 70, el: 8 }; return d;
     }
     if (o.velo || o.airbike) {
@@ -57,16 +84,36 @@
         }
         return p;
       };
-      // Le vélo : cadre, selle, guidon, roue d'inertie, pédalier.
-      const tube = (a, b, r) => fixe.push(pret(seg(a, b, r || 0.022, C.cadre, 0.5)));
-      tube(ax, selle, 0.024); tube(ax, V(0, 0.36, 0.72)); tube(V(0, 0.36, 0.72), V(0, gui.y - 0.02, gui.z + 0.02)); tube(V(0, 0.05, -0.42), ax); tube(V(0, 0.05, 0.86), V(0, 0.36, 0.72));
-      fixe.push(pret(boite(0.17, 0.05, 0.27, selle.x, selle.y, selle.z, C.fonte, 0)), pret(cyl(0.26, o.airbike ? 0.05 : 0.08, 0, 0.36, 0.72, C.fonte, 0.2)), pret(boite(0.5, 0.04, 0.06, 0, 0.02, -0.42, C.cadre, 0.5)), pret(boite(0.5, 0.04, 0.06, 0, 0.02, 0.86, C.cadre, 0.5)));
-      if (!o.airbike) fixe.push(pret(cyl(0.015, 0.46, gui.x, gui.y, gui.z, C.metal, 0.8)));
+      // Le vélo : une poutre au sol sur deux pieds, le cadre en profilés, la tige de selle chromée et la selle rembourrée,
+      // la potence, la console, la roue d'inertie carénée (une cage de ventilateur pour l'air bike), le pédalier.
+      const P = (a, b, e) => fixe.push(pret(tube(a, b, e || 0.05, C.cadre)));
+      const roue = V(0, 0.38, 0.72), tete = V(0, gui.y - 0.1, gui.z + 0.06);
+      fixe.push(...poseFixe(patin(C, V(-0.27, 0.03, -0.46), V(0.27, 0.03, -0.46), 0.055)), ...poseFixe(patin(C, V(-0.27, 0.03, 0.98), V(0.27, 0.03, 0.98), 0.055)));
+      P(V(0, 0.055, -0.46), V(0, 0.055, 0.98), 0.06);
+      P(V(0, 0.07, -0.2), ax, 0.055); P(ax, V(0, 0.72, -0.105), 0.055); P(ax, roue, 0.05); P(V(0, 0.07, 0.86), tete, 0.055); P(V(0, 0.62, -0.05), V(0, 0.66, 0.66), 0.045);
+      fixe.push(pret(seg(V(0, 0.7, -0.095), V(0, selle.y - 0.02, selle.z + 0.01), 0.017, C.metal, 0.85)), pret(coussin(0.2, 0.065, 0.27, selle.x, selle.y + 0.005, selle.z, C)), pret(boite(0.11, 0.05, 0.1, selle.x, selle.y + 0.012, selle.z + 0.17, C.banc, 0.12, null, 0.02)));
+      // La roue : un volant plein sous un carter (vélo), ou un ventilateur dans sa cage (air bike).
+      if (o.airbike) {
+        fixe.push(pret(cyl(0.27, 0.06, roue.x, roue.y, roue.z, C.gomme, 0.1, null, 0.01)), pret(cyl(0.05, 0.13, roue.x, roue.y, roue.z, C.metal, 0.8, null, 0.008)));
+        for (const x of [-0.05, 0.05]) for (const r of [0.28, 0.2, 0.12]) fixe.push(pret(tore(r, x, roue.y, roue.z, C.cadre, 0.5, ANNEAU_X, 0.006)));
+      } else {
+        fixe.push(pret(cyl(0.25, 0.07, roue.x, roue.y, roue.z, C.fonte, 0.25, null, 0.014)), pret(cyl(0.06, 0.1, roue.x, roue.y, roue.z, C.metal, 0.8, null, 0.008)), pret(tore(0.235, roue.x + 0.036, roue.y, roue.z, C.metal, 0.8, ANNEAU_X, 0.006)), pret(tore(0.235, roue.x - 0.036, roue.y, roue.z, C.metal, 0.8, ANNEAU_X, 0.006)));
+        fixe.push(pret(boite(0.11, 0.2, 0.34, 0, roue.y + 0.19, roue.z - 0.05, C.cadre, 0.45, qX(-18), 0.03)));
+      }
+      // Le guidon (vélo) et la console.
+      P(tete, V(0, gui.y - 0.02, gui.z + 0.02), 0.04);
+      fixe.push(pret(boite(0.17, 0.11, 0.035, 0, gui.y + 0.13, gui.z + 0.07, C.fonte, 0.2, qX(-32), 0.012)), pret(seg(V(0, gui.y - 0.02, gui.z + 0.03), V(0, gui.y + 0.09, gui.z + 0.075), 0.014, C.cadre, 0.5)));
+      if (!o.airbike) { fixe.push(pret(cyl(0.016, 0.46, gui.x, gui.y, gui.z, C.metal, 0.8, null, 0.006))); for (const s of [1, -1]) fixe.push(pret(cyl(0.021, 0.12, s * 0.2, gui.y, gui.z, C.gomme, 0, null, 0.008))); }
+      else for (const s of [1, -1]) fixe.push(pret(cyl(0.02, 0.1, s * 0.16, 0.3, 0.36, C.gomme, 0, null, 0.008)), pret(seg(V(s * 0.1, 0.36, 0.42), V(s * 0.25, 0.45, 0.42), 0.02, C.cadre, 0.5)));
+      // Le plateau du pédalier.
+      fixe.push(pret(cyl(0.095, 0.012, 0.062, ax.y, ax.z, C.metal, 0.75, null, 0.004)), pret(cyl(0.03, 0.16, 0, ax.y, ax.z, C.cadre, 0.5, null, 0.006)));
       d.objets = (info, u, sortie) => {
         for (const [k, s] of COTES) {
           const a = TAU * ((u || 0) + (k === 'D' ? 0.5 : 0)), pd = ax.clone().add(V(s * 0.12, R * Math.cos(a), R * Math.sin(a)));
-          sortie.push(pret(seg(ax.clone().add(V(s * 0.07, 0, 0)), pd.clone().setX(s * 0.07), 0.012, C.metal, 0.8)), pret(boite(0.09, 0.02, 0.08, pd.x, pd.y, pd.z, C.fonte, 0)));
-          if (o.airbike) sortie.push(pret(seg(V(s * 0.25, 0.45, 0.42), info.prises[k], 0.016, C.cadre, 0.5)));
+          // La manivelle, la pédale et sa sangle.
+          sortie.push(pret(seg(ax.clone().add(V(s * 0.078, 0, 0)), pd.clone().setX(s * 0.078), 0.013, C.metal, 0.85, 0.006)), pret(boite(0.1, 0.024, 0.09, pd.x, pd.y, pd.z, C.gomme, 0, null, 0.008)), pret(boite(0.1, 0.006, 0.03, pd.x, pd.y + 0.06, pd.z + 0.01, C.banc, 0.1, null, 0.003)));
+          // Air bike : les leviers, du pivot aux mains, avec leurs poignées.
+          if (o.airbike) sortie.push(pret(seg(V(s * 0.25, 0.45, 0.42), info.prises[k], 0.018, C.cadre, 0.5, 0.008)), pret(seg(info.prises[k].clone().add(V(0, -0.06, 0)), info.prises[k].clone().add(V(0, 0.06, 0)), 0.021, C.gomme, 0, 0.008)));
         }
       };
       d.vue = { az: 68, el: 8 }; return d;
@@ -84,8 +131,21 @@
         }
         return p;
       };
-      fixe.push(pret(boite(0.5, 0.08, 1.5, 0, 0.04, 0.1, C.cadre, 0.5)), pret(boite(0.28, 0.5, 0.4, 0, 0.33, 0.72, C.fonte, 0.2)), pret(seg(V(0, 0.5, 0.75), V(0, 1.45, 0.6), 0.03, C.cadre, 0.5)), pret(boite(0.3, 0.2, 0.05, 0, 1.5, 0.6, C.fonte, 0.2)));
-      d.objets = (info, u, sortie) => { for (const [k, s] of COTES) { const a = TAU * ((u || 0) + (k === 'D' ? 0.5 : 0)), pd = pied(a, s); sortie.push(pret(boite(0.12, 0.03, 0.34, pd.x, pd.y - 0.015, pd.z, C.banc, 0)), pret(seg(pd.clone().add(V(0, -0.02, 0.17)), V(s * 0.13, 0.42, 0.7), 0.014, C.cadre, 0.5)), pret(seg(V(s * 0.25, 0.5, 0.62), info.prises[k], 0.015, C.cadre, 0.5))); } };
+      // L'elliptique : une poutre sur deux pieds, le carter de la roue à l'avant (la roue se devine sur ses flancs), le
+      // mât et sa console, deux rails à l'arrière où roulent les pédales.
+      fixe.push(...poseFixe(patin(C, V(-0.3, 0.03, -0.62), V(0.3, 0.03, -0.62), 0.055)), ...poseFixe(patin(C, V(-0.3, 0.03, 0.92), V(0.3, 0.03, 0.92), 0.055)));
+      fixe.push(pret(tube(V(0, 0.055, -0.62), V(0, 0.055, 0.92), 0.07, C.cadre)), pret(boite(0.26, 0.52, 0.5, 0, 0.36, 0.7, C.fonte, 0.2, null, 0.07)));
+      for (const s of [1, -1]) fixe.push(pret(cyl(0.2, 0.012, s * 0.134, 0.38, 0.7, C.cadre, 0.5, null, 0.004)), pret(cyl(0.035, 0.03, s * 0.15, 0.38, 0.7, C.metal, 0.8, null, 0.006)), pret(tube(V(s * 0.13, 0.1, -0.56), V(s * 0.13, 0.1, 0.3), 0.035, C.metal, 0.7)));
+      fixe.push(pret(tube(V(0, 0.58, 0.78), V(0, 1.42, 0.62), 0.06, C.cadre)), pret(boite(0.3, 0.2, 0.05, 0, 1.5, 0.6, C.fonte, 0.2, qX(-25), 0.016)), pret(cyl(0.022, 0.5, 0, 0.5, 0.62, C.cadre, 0.5, null, 0.008)));
+      d.objets = (info, u, sortie) => {
+        for (const [k, s] of COTES) {
+          const a = TAU * ((u || 0) + (k === 'D' ? 0.5 : 0)), pd = pied(a, s);
+          // La pédale (un plateau bordé), sa bielle jusqu'à la roue, et le levier que tient la main.
+          sortie.push(pret(boite(0.13, 0.03, 0.36, pd.x, pd.y - 0.015, pd.z, C.gomme, 0, null, 0.01)), pret(boite(0.13, 0.05, 0.03, pd.x, pd.y + 0.012, pd.z + 0.17, C.gomme, 0, null, 0.01)));
+          sortie.push(pret(seg(pd.clone().add(V(0, -0.03, 0.17)), V(s * 0.15, 0.38 + 0.12 * Math.sin(a), 0.7 + 0.12 * Math.cos(a)), 0.016, C.cadre, 0.5, 0.007)));
+          sortie.push(pret(seg(V(s * 0.25, 0.5, 0.62), info.prises[k], 0.017, C.cadre, 0.5, 0.008)), pret(seg(info.prises[k].clone().add(V(0, -0.07, 0)), info.prises[k].clone().add(V(0, 0.07, 0)), 0.021, C.gomme, 0, 0.008)));
+        }
+      };
       d.vue = { az: 70, el: 8 }; return d;
     }
     if (o.rameur) {
@@ -102,8 +162,21 @@
         return p;
       };
       d.rythme = 'boucle'; d.periode = 2.6; d.cles = [[0, cle(0, 0, 0)], [0.22, cle(0.85, 0.25, 0)], [0.4, cle(1, 1, 1)], [0.5, cle(1, 1, 1)], [0.66, cle(1, 0.3, 0)], [1, cle(0, 0, 0)]];
-      fixe.push(pret(boite(0.08, 0.06, 1.9, 0, hS - 0.1, -0.1, C.cadre, 0.5)), pret(boite(0.36, hS - 0.13, 0.06, 0, (hS - 0.13) / 2, -0.95, C.cadre, 0.5)), pret(cyl(0.26, 0.1, 0, 0.42, 1.05, C.fonte, 0.2)), pret(boite(0.4, 0.3, 0.08, 0, 0.2, 0.78, C.cadre, 0.5)), pret(boite(0.34, 0.02, 0.3, 0, cale.y - 0.02, cale.z, C.banc, 0, qX(-42))));
-      d.objets = (info, u, sortie) => { const mi = info.prises.G.clone().add(info.prises.D).multiplyScalar(0.5); sortie.push(pret(seg(V(0, 0.55, 0.95), mi, 0.004, C.cable, 0.6)), pret(seg(info.prises.G.clone().add(V(0.07, 0, 0)), info.prises.D.clone().add(V(-0.07, 0, 0)), 0.014, C.metal, 0.8)), pret(boite(0.26, 0.05, 0.24, 0, hS - 0.045, info.bassin.z - 0.02, C.fonte, 0))); };
+      // Le rameur : le rail (un profilé d'aluminium) sur son pied arrière, le pied avant, la roue à air dans sa cage,
+      // le bras de l'écran, les deux cale-pieds inclinés avec leur talonnière ; la chaîne, la poignée et le siège bougent.
+      const roue = V(0, 0.42, 1.08);
+      fixe.push(pret(tube(V(0, hS - 0.1, -1.02), V(0, hS - 0.1, 0.72), 0.075, C.metal, 0.6)), pret(tube(V(0, 0.05, -0.98), V(0, hS - 0.12, -0.98), 0.06, C.cadre)), ...poseFixe(patin(C, V(-0.2, 0.03, -0.98), V(0.2, 0.03, -0.98), 0.055)));
+      fixe.push(...poseFixe(patin(C, V(-0.28, 0.03, 0.84), V(0.28, 0.03, 0.84), 0.055)), pret(tube(V(0, 0.05, 0.84), V(0, hS - 0.1, 0.7), 0.06, C.cadre)), pret(tube(V(0, hS - 0.1, 0.7), V(0, 0.34, 0.98), 0.06, C.cadre)));
+      fixe.push(pret(cyl(0.27, 0.11, roue.x, roue.y, roue.z, C.fonte, 0.2, null, 0.02)), pret(cyl(0.06, 0.13, roue.x, roue.y, roue.z, C.metal, 0.8, null, 0.008)));
+      for (const x of [-0.058, 0.058]) for (const r of [0.25, 0.17, 0.09]) fixe.push(pret(tore(r, x, roue.y, roue.z, C.cadre, 0.5, ANNEAU_X, 0.005)));
+      fixe.push(pret(seg(V(0, 0.62, 1.0), V(0, 0.98, 0.78), 0.016, C.cadre, 0.5, 0.006)), pret(boite(0.2, 0.14, 0.03, 0, 1.02, 0.76, C.fonte, 0.2, qX(-20), 0.012)));
+      for (const s of [1, -1]) fixe.push(pret(boite(0.12, 0.022, 0.31, s * 0.11, cale.y - 0.02, cale.z, C.gomme, 0, qX(-42), 0.008)), pret(boite(0.12, 0.07, 0.022, s * 0.11, cale.y - 0.115, cale.z - 0.085, C.gomme, 0, qX(-42), 0.008)), pret(tube(V(s * 0.11, hS - 0.1, 0.6), V(s * 0.11, cale.y - 0.05, cale.z + 0.03), 0.03, C.cadre)));
+      d.objets = (info, u, sortie) => {
+        const mi = info.prises.G.clone().add(info.prises.D).multiplyScalar(0.5);
+        sortie.push(pret(seg(V(0, 0.52, 0.86), mi, 0.005, C.cable, 0.6)), pret(seg(info.prises.G.clone().add(V(0.09, 0, 0)), info.prises.D.clone().add(V(-0.09, 0, 0)), 0.016, C.gomme, 0, 0.007)));
+        // Le siège : une assise moulée sur son chariot.
+        sortie.push(pret(coussin(0.28, 0.055, 0.25, 0, hS - 0.04, info.bassin.z - 0.02, C)), pret(boite(0.14, 0.03, 0.2, 0, hS - 0.075, info.bassin.z - 0.02, C.cadre, 0.5, null, 0.006)));
+      };
       d.vue = { az: 70, el: 10 }; return d;
     }
     if (o.skierg) {
@@ -117,7 +190,13 @@
       };
       d.rythme = 'rep'; d.periode = 2; d.cles = [0, 0.33, 0.66, 1].map(u => [u, cle(u)]);
       d.tenu = [{ t: 'cable', de: anc(1), m: 'G', bout: 'poignee' }, { t: 'cable', de: anc(-1), m: 'D', bout: 'poignee' }];
-      fixe.push(pret(boite(0.34, 2.15, 0.1, 0, 1.075, 0.72, C.cadre, 0.5)), pret(cyl(0.2, 0.12, 0, 1.75, 0.72, C.fonte, 0.2)), pret(boite(0.6, 0.04, 0.9, 0, 0.02, 0.35, C.cadre, 0.5)));
+      // L'appareil : une plate-forme antidérapante sur deux pieds, le mât, la roue à air dans sa cage en haut du mât,
+      // son écran, et les deux sorties de corde.
+      fixe.push(pret(boite(0.62, 0.035, 0.95, 0, 0.0175, 0.3, C.gomme, 0, null, 0.012)), ...poseFixe(patin(C, V(-0.33, 0.03, 0.8), V(0.33, 0.03, 0.8), 0.055)));
+      fixe.push(pret(tube(V(0, 0.04, 0.74), V(0, 2.12, 0.74), 0.11, C.cadre)), pret(cyl(0.22, 0.13, 0, 1.76, 0.86, C.fonte, 0.2, null, 0.02)), pret(cyl(0.05, 0.15, 0, 1.76, 0.86, C.metal, 0.8, null, 0.008)));
+      for (const x of [-0.068, 0.068]) for (const r of [0.2, 0.13]) fixe.push(pret(tore(r, x, 1.76, 0.86, C.cadre, 0.5, ANNEAU_X, 0.005)));
+      fixe.push(pret(boite(0.18, 0.13, 0.03, 0, 1.36, 0.66, C.fonte, 0.2, qX(18), 0.012)));
+      for (const s of [1, -1]) fixe.push(pret(tube(V(0, 2.08, 0.72), anc(s), 0.035, C.cadre)), pret(cyl(0.03, 0.02, anc(s).x, anc(s).y, anc(s).z, C.gomme, 0.1, null, 0.006)));
       d.vue = { az: 66, el: 8 }; return d;
     }
     if (o.jacks) {
