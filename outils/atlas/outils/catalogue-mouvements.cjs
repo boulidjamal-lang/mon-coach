@@ -41,7 +41,7 @@ const cleDe = texte => crypto.createHash('sha1').update(texte).digest('hex').sli
       p.on('pageerror', e => erreurs.push(e.message));
       await p.goto(`http://atlas.local/appli/essai-mouvement.html?spec=repos&pp=1${PEAU ? '&peau=' + PEAU : ''}${clair ? '&clair=1' : ''}`);
       await p.waitForFunction(() => window.pret, null, { timeout: 180000 });
-      await p.evaluate(n => { window.atlas.theme({ muscle: n.muscle, tendon: n.tendon, os: n.os, estompe: 0.5 }); }, neutres);
+      await p.evaluate(n => { window.atlas.theme(AnqaAtlas.themeDeCarte(Object.assign({}, n, { estompe: 0.5 }))); }, neutres);
       for (;;) {
         const i = suivant++; if (i >= liste.length) break;
         const [k, r] = liste[i];

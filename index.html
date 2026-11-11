@@ -23813,12 +23813,16 @@ function dateDansPhraseAtlas(iso) {
 }
 /* Couleurs neutres du corps quand il sert de carte (les couleurs sont réservées aux données). */
 function neutresAtlas() {
-  return themeClairActif() ? { muscle: '#c9c9d0', tendon: '#e3e3e8', os: '#dadadf' } : { muscle: '#6c6c75', tendon: '#9d9da5', os: '#8c8c94' };
+  return avecPeauAtlas(themeClairActif() ? { muscle: '#c9c9d0', tendon: '#e3e3e8', os: '#dadadf' } : { muscle: '#6c6c75', tendon: '#9d9da5', os: '#8c8c94' });
 }
 /* Pendant un exercice, le corps bouge : il lui faut plus de lumière que sur une carte immobile. */
 function neutresExerciceAtlas() {
-  return themeClairActif() ? { muscle: '#c3c4cc', tendon: '#e6e6ea', os: '#dcdce0' } : { muscle: '#a2a4af', tendon: '#d3d4da', os: '#c0c1c8' };
+  return avecPeauAtlas(themeClairActif() ? { muscle: '#c3c4cc', tendon: '#e6e6ea', os: '#dcdce0' } : { muscle: '#a2a4af', tendon: '#d3d4da', os: '#c0c1c8' });
 }
+/* La peau gardée sur la tête, les mains et les pieds prend la teinte du corps, pour un corps d'un seul tenant : un ton
+   entre celui des muscles au repos et celui des tendons (lisse, sans sillons, elle paraîtrait plus sombre que les
+   muscles à teinte égale). Le mode « Anatomie », aux couleurs naturelles, garde une peau naturelle. */
+function avecPeauAtlas(N) { N.peau = melangerCouleurs(N.muscle, N.tendon, 0.35); return N; }
 /* Niveaux des faisceaux d'un exercice, tous groupes confondus : 2 = principal, 1 = un peu (comme sur sa fiche). */
 function niveauxFaisceauxExercice(exo) {
   const tous = {};
@@ -23871,7 +23875,7 @@ function carteExerciceAtlas(exo, structures, ctx) {
     s.app.forEach(lien => { const t = teinteExerciceAtlas(c, lien); if (t) { const k = t.k * POIDS_ROLE_ATLAS[lien.role]; if (!mieux || k > mieux.k) mieux = { c: t.c, k }; } });
     if (mieux) couleurs[s.id] = melangerCouleurs(N.muscle, mieux.c, Math.max(0.18, Math.min(1, mieux.k)));
   });
-  return { couleurs, muscle: N.muscle, tendon: N.tendon, os: N.os, tendons: 0.3, estompe: 0.5 };
+  return { couleurs, muscle: N.muscle, tendon: N.tendon, os: N.os, peau: N.peau, tendons: 0.3, estompe: 0.5 };
 }
 /* Les couleurs de tout le corps pour un mode : appelée par l'atlas à chaque changement de mode. */
 function carteAtlas(mode, structures) {
@@ -23889,7 +23893,7 @@ function carteAtlas(mode, structures) {
     s.app.forEach(lien => { const t = teinteLienAtlas(mode, lien, D); if (t) { const k = t.k * POIDS_ROLE_ATLAS[lien.role]; if (!mieux || k > mieux.k) mieux = { c: t.c, k }; } });
     if (mieux) couleurs[s.id] = melangerCouleurs(N.muscle, mieux.c, Math.max(0.18, Math.min(1, mieux.k)));
   });
-  const carte = { couleurs, muscle: N.muscle, tendon: N.tendon, os: N.os, tendons: 0.3, estompe: 0.5 };
+  const carte = { couleurs, muscle: N.muscle, tendon: N.tendon, os: N.os, peau: N.peau, tendons: 0.3, estompe: 0.5 };
   const rose = couleurCssAtlas('--corps-cible', '#f472b6'), date = iso => formatDateDisplay(iso).toLowerCase();
   if (mode === 'semaine') {
     carte.legende = ['sous', 'mv', 'mev', 'mav', 'mrv'].map(k => ({ c: ZONES_INFO[k].couleur, t: ZONES_INFO[k].court }));

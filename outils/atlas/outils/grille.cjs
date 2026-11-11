@@ -25,7 +25,7 @@ const fs = require('fs'), path = require('path');
     const r = await p.evaluate(([spec, titre, u, vue, champ, centre, c, n]) => {
       try {
         window.changer(spec, titre, vue);
-        if (n) window.atlas.theme({ muscle: n.muscle, tendon: n.tendon, os: n.os, estompe: 0.5 });
+        if (n) window.atlas.theme(AnqaAtlas.themeDeCarte(Object.assign({}, n, { estompe: 0.5 })));
         window.atlas.colorer(c || {}, { tendons: 0.3 });
         window.anim.rendre(0, u);
         if (champ) { const b = window.anim.boite, ce = centre || [(b.min[0] + b.max[0]) / 2, (b.min[1] + b.max[1]) / 2, (b.min[2] + b.max[2]) / 2]; window.atlas.placer({ cible: ce, dist: champ * 1.08 / 2 / Math.tan(12 * Math.PI / 180) }); }

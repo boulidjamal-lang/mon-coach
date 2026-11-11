@@ -100,6 +100,12 @@ autre membre passe devant.
 - **Une seule apparence.** L'appli montre toujours le corps écorché, la peau gardée sur la tête, les mains et les
   pieds (plus de bouton « Peau »). La peau entière (`niveauPeau: 2`) existe encore dans le moteur, mais n'est plus
   proposée ni contrôlée depuis la carrure et le nouveau mélange : la remettre demanderait de la revoir.
+- **La teinte de la peau.** Sur une carte comme pendant un exercice, le corps est gris et les muscles en couleur : la
+  peau gardée prend la teinte du corps (un gris entre celui des muscles au repos et celui des tendons, voir
+  `avecPeauAtlas` dans `index.html`), cheveux et sourcils dans la même teinte, plus sombre. La carte la donne au moteur
+  par son champ `peau` (`AnqaAtlas.themeDeCarte`) : la peau n'est alors plus qu'une matière de cette couleur (`chair`
+  à 0 : ni sang sous la surface, ni ongles rosés, ni iris bruns). Sans ce champ — le mode « Anatomie », aux couleurs
+  naturelles — la peau reste naturelle. `apparence()` rend les couleurs en vigueur, pour les contrôles.
 
 ## Le matériel
 

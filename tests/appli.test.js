@@ -6755,6 +6755,8 @@ test('atlas 3D : la fiche d\'un exercice montre son mouvement dès l\'ouverture,
     assert.match(f.boutons[1], /Ouvrir l'atlas en grand/);
     assert.ok(f.colores > 10, 'les muscles de l\'exercice sont colorés');
     assert.deepEqual(f.scripts, ['assets/atlas/atlas-mouvements.js', 'assets/atlas/atlas3d.js']);
+    // La peau gardée (tête, mains, pieds) a la teinte du corps, pas celle de la chair.
+    assert.deepEqual(await page.evaluate(() => { const ap = ficheMouvement.apercu.atlas.apparence(), n = neutresExerciceAtlas(); return [ap.chair, ap.teint === n.peau, ap.muscle === n.muscle]; }), [0, true, true]);
     // Lecture et pause.
     const lecture = await page.evaluate(() => { const r = [ficheMouvement.voulu]; basculerLectureFiche(); r.push(ficheMouvement.voulu, ficheMouvement.apercu.lecture()); if (!ficheMouvement.voulu) basculerLectureFiche(); r.push(ficheMouvement.voulu); return r; });
     assert.equal(lecture[1], !lecture[0]);
@@ -6925,6 +6927,35 @@ test('atlas 3D : sans WebGL 2, aucun accès ; avec, la fenêtre s\'ouvre, anime 
     // Tout le corps en 5 appels de dessin (sol, muscles et voiles des deux côtés), 3 de plus pour la peau partielle.
     assert.ok(a.structures > 170 && a.appels <= 8 && a.legende === 5 && a.lecture, JSON.stringify([a.structures, a.appels, a.legende, a.lecture]));
     assert.deepEqual(a.peau, [true, 1], 'sur une carte, la peau couvre la tête, les mains et les pieds');
+    // Cette peau a la teinte du corps (un gris entre celui des muscles au repos et celui des tendons, sans rien de la
+    // chair) ; en mode « Anatomie », aux couleurs naturelles, elle garde sa teinte naturelle. Vérifié sur les réglages
+    // du moteur, puis sur l'image elle-même : la couleur du nez, vu de près.
+    const nez = () => page.evaluate(() => new Promise(fin => {
+      const at = atlasMonte.atlas, toile = at.toile, avant = at.surImage;
+      at.placer({ az: 0, el: 0, cible: at.structures.find(s => s.id === 'nasal').centre, dist: 0.9 });
+      at.surImage = cam => {
+        if (avant) avant(cam);
+        const c = document.createElement('canvas'); c.width = toile.width; c.height = toile.height;
+        const x = c.getContext('2d'); x.drawImage(toile, 0, 0);
+        const d = x.getImageData(Math.round(toile.width / 2) - 4, Math.round(toile.height / 2) - 4, 9, 9).data, m = [0, 0, 0];
+        for (let i = 0; i < d.length; i += 4) for (let k = 0; k < 3; k++) m[k] += d[i + k] / 81;
+        at.surImage = avant;
+        fin({ px: m.map(Math.round), apparence: at.apparence(), neutres: neutresAtlas() });
+      };
+      at.redessiner();
+    }));
+    const surCarte = await nez();
+    assert.deepEqual([surCarte.apparence.chair, surCarte.apparence.teint], [0, surCarte.neutres.peau], 'sur une carte, la peau prend la teinte du corps');
+    assert.ok(/^#[0-9a-f]{6}$/.test(surCarte.neutres.peau) && surCarte.neutres.peau !== surCarte.neutres.muscle, 'une teinte de peau entre les muscles et les tendons : ' + surCarte.neutres.peau);
+    assert.ok(Math.max(...surCarte.px) - Math.min(...surCarte.px) < 26 && Math.min(...surCarte.px) > 40, 'le visage est gris comme le corps : ' + surCarte.px);
+    await page.evaluate(() => atlasMonte.choisirMode('anatomie'));
+    const naturelle = await nez();
+    assert.equal(naturelle.apparence.chair, 1, 'en mode Anatomie, la peau est vivante');
+    assert.ok(naturelle.px[0] - naturelle.px[2] > 35, 'en mode Anatomie, le visage a une teinte de chair : ' + naturelle.px);
+    await page.evaluate(() => { atlasMonte.choisirMode('semaine'); atlasMonte.atlas.reinitialiser(0); });
+    assert.equal(await page.evaluate(() => atlasMonte.atlas.apparence().chair), 0);
+    // Le thème d'une carte, côté moteur : sans indication, une peau naturelle ; avec une teinte, les poils la suivent.
+    assert.deepEqual(await page.evaluate(() => { const n = AnqaAtlas.themeDeCarte({}), g = AnqaAtlas.themeDeCarte({ peau: '#808080' }); return [n.chair, n.teint, g.chair, g.teint, g.poil]; }), [1, '#c89b80', 0, '#808080', [64, 64, 64]]);
     // Toucher un muscle pour de vrai (un clic au cœur de sa tache à l'écran) : sa fiche dit la zone de la semaine.
     await page.waitForFunction(() => !atlasMonte.atlas.mesures().enCours, null, { timeout: 60000 });
     const pt = await page.evaluate(() => { const c = atlasMonte.atlas.carteReperage(3)['pectoral_sternal|gauche'], r = atlasMonte.atlas.toile.getBoundingClientRect(); return { x: r.left + c.x, y: r.top + c.y, marge: c.marge }; });

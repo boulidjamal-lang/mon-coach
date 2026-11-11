@@ -149,6 +149,7 @@ flat in float v_zone;
 uniform vec3 u_cam, u_teint, u_tissu, u_poil;
 uniform mat3 u_lum;
 uniform float u_clair, u_niveau;
+uniform float u_chair;        // 1 : une peau vivante (sang sous la surface, plis plus rouges, ongles rosés, iris bruns) ; 0 : une matière de la couleur u_teint, sans rien de la chair
 uniform vec2 u_short;
 uniform vec4 u_oeil;          // centre du globe de l'œil (corps au repos) et son rayon
 out vec4 o;
@@ -176,13 +177,14 @@ void main() {
   float nv = max(dot(N, V), 0.0);
   // Matière selon la zone : peau, ongle (plus clair, plus lisse), poils et cheveux, tissu du short.
   vec3 base = u_teint; float rug = 0.52, f0 = 0.028, chair = 1.0;
-  if (zone == 4) { base = mix(u_teint, vec3(0.78, 0.52, 0.47), 0.45) * 1.15; rug = 0.30; f0 = 0.045; }
+  if (zone == 4) { base = mix(u_teint, vec3(0.78, 0.52, 0.47), 0.45 * u_chair) * mix(1.07, 1.15, u_chair); rug = 0.30; f0 = 0.045; }
   else if (zone == 7) {
     // L'œil : blanc, iris et pupille d'après l'écart au regard (droit devant, un rien vers le nez).
     float c = dot(normalize(v_repos - u_oeil.xyz), normalize(vec3(-0.07, -0.02, 1.0)));
     float iris = smoothstep(0.868, 0.890, c), pupille = smoothstep(0.976, 0.986, c);
-    vec3 blanc = vec3(0.80, 0.78, 0.76) * mix(0.62, 1.0, smoothstep(0.35, 0.86, c));
-    vec3 couleurIris = mix(vec3(0.050, 0.026, 0.012), vec3(0.20, 0.105, 0.04), smoothstep(0.89, 0.975, c)) * 1.15;
+    // Peau d'une seule matière (u_chair à 0) : le blanc de l'œil reste un ton clair de la même teinte, l'iris un ton foncé.
+    vec3 blanc = mix(mix(u_teint, vec3(0.80), 0.55), vec3(0.80, 0.78, 0.76), u_chair) * mix(0.62, 1.0, smoothstep(0.35, 0.86, c));
+    vec3 couleurIris = mix(u_poil * mix(1.0, 2.6, smoothstep(0.89, 0.975, c)), mix(vec3(0.050, 0.026, 0.012), vec3(0.20, 0.105, 0.04), smoothstep(0.89, 0.975, c)) * 1.15, u_chair);
     base = mix(mix(blanc, couleurIris, iris), vec3(0.004), pupille);
     rug = 0.16; f0 = 0.045; chair = 0.0;
   }
@@ -190,8 +192,8 @@ void main() {
   if (short_ > 0.5) { base = u_tissu; rug = 0.66; f0 = 0.03; chair = 0.0; }
   float creux = mix(0.22, 1.0, smoothstep(0.05, 0.95, v_ombre));
   float creuxDirect = mix(0.42, 1.0, smoothstep(0.05, 0.85, v_ombre));
-  // Dans les plis, la peau est un peu plus rouge et plus sombre.
-  base *= mix(vec3(0.84, 0.70, 0.68), vec3(1.0), 1.0 - chair * (1.0 - smoothstep(0.20, 0.90, v_ombre)));
+  // Dans les plis, la peau est plus sombre, et plus rouge si elle est vivante.
+  base *= mix(mix(vec3(0.80), vec3(0.84, 0.70, 0.68), u_chair), vec3(1.0), 1.0 - chair * (1.0 - smoothstep(0.20, 0.90, v_ombre)));
   vec3 ciel = mix(vec3(0.200, 0.205, 0.225), vec3(0.30, 0.31, 0.34), u_clair), sol = mix(vec3(0.075, 0.062, 0.058), vec3(0.17, 0.155, 0.145), u_clair);
   vec3 lumiere = mix(sol, ciel, N.y * 0.5 + 0.5) * creux;
   vec3 reflets = vec3(0.0);
@@ -200,10 +202,10 @@ void main() {
   for (int i = 0; i < 3; i++) {
     vec3 L = u_lum * dirs[i];
     float nl = dot(N, L);
-    // La peau diffuse la lumière sous sa surface : la limite d'ombre est douce et tire sur le rouge.
+    // La peau diffuse la lumière sous sa surface : la limite d'ombre est douce et, sur une peau vivante, tire sur le rouge.
     float env = mix(0.06, 0.24, chair);
     float d = max((nl + env) / (1.0 + env), 0.0);
-    vec3 sang = mix(vec3(1.0), vec3(1.0, 0.42, 0.30), chair * smoothstep(0.34, 0.0, d) * 0.55);
+    vec3 sang = mix(vec3(1.0), vec3(1.0, 0.42, 0.30), chair * u_chair * smoothstep(0.34, 0.0, d) * 0.55);
     lumiere += cols[i] * d * sang * creuxDirect;
     vec3 H = normalize(L + V);
     float nh = max(dot(N, H), 0.0), vh = max(dot(V, H), 0.0);
@@ -562,8 +564,20 @@ void main() {
     peau: null,              // le fichier de la peau (atlas-peau.bin), s'il est là
     niveauPeau: 0,           // 0 : écorché ; 1 : peau sur la tête, les mains et les pieds ; 2 : peau entière, avec un short
     teint: '#c89b80', tissu: '#1d1e23', poil: '#1b1512',
+    chair: 1,                // la peau : 1, vivante (teint de chair, sang sous la surface) ; 0, une matière de la couleur « teint », accordée au corps
     carrure: 1               // carrure d'athlète : 0, le corps mince de Z-Anatomy ; 1, les chairs étoffées autour des os
   };
+
+  /* Le thème qu'une carte donne au corps : { muscle, tendon, os, estompe } et la peau. Sans indication, la peau est
+     vivante (teint de chair). Avec carte.peau, elle devient une matière de cette couleur, accordée au reste du corps :
+     carte.poil pour les cheveux et les sourcils (à défaut, la même teinte assombrie). */
+  function themeDeCarte(carte) {
+    const c = carte || {};
+    const t = { muscle: c.muscle || DEFAUTS.muscle, tendon: c.tendon || DEFAUTS.tendon, os: c.os || DEFAUTS.os, estompe: c.estompe != null ? c.estompe : DEFAUTS.estompe,
+      teint: DEFAUTS.teint, poil: DEFAUTS.poil, chair: 1 };
+    if (c.peau) { t.teint = c.peau; t.poil = c.poil || couleur(c.peau).map(x => Math.round(x * 0.5)); t.chair = 0; }
+    return t;
+  }
 
   function creer(conteneur, tampon, options) {
     const opt = Object.assign({}, DEFAUTS, options || {});
@@ -887,7 +901,7 @@ void main() {
       gl.uniform3fv(pr.u.u_cam, m.oeil);
       const c = Math.cos(m.az), s = Math.sin(m.az);
       gl.uniformMatrix3fv(pr.u.u_lum, false, [c, 0, -s, 0, 1, 0, s, 0, c]);
-      gl.uniform1f(pr.u.u_clair, opt.clair ? 1 : 0); gl.uniform1f(pr.u.u_niveau, niveauPeau);
+      gl.uniform1f(pr.u.u_clair, opt.clair ? 1 : 0); gl.uniform1f(pr.u.u_niveau, niveauPeau); gl.uniform1f(pr.u.u_chair, Math.max(0, Math.min(1, +opt.chair)));
       gl.uniform2f(pr.u.u_short, H.short.bas, H.short.haut);
       if (H.oeil) gl.uniform4f(pr.u.u_oeil, H.oeil.centre[0], H.oeil.centre[1], H.oeil.centre[2], H.oeil.rayon);
       gl.uniform3fv(pr.u.u_teint, couleur(opt.teint).map(x => lin(x / 255))); gl.uniform3fv(pr.u.u_tissu, couleur(opt.tissu).map(x => lin(x / 255))); gl.uniform3fv(pr.u.u_poil, couleur(opt.poil).map(x => lin(x / 255)));
@@ -1244,6 +1258,8 @@ void main() {
       masques: () => S.filter((s, i) => etat[i].masque).map(s => s.id),
       toutAfficher() { etat.forEach(e => { e.masque = false; }); isoles = null; coucheMin = 1; texSale = true; demander(); },
       theme(o) { Object.assign(opt, o); texSale = true; demander(); },
+      // Les couleurs en vigueur (muscles au repos, tendons, os, peau, poils) : pour les contrôles.
+      apparence: () => ({ muscle: opt.muscle, tendon: opt.tendon, os: opt.os, teint: opt.teint, poil: opt.poil, chair: opt.chair }),
       // Place prise par l'interface en haut et en bas (pixels d'écran) : l'image se recentre en douceur.
       marges(m, immediat) {
         if (m.haut != null) marges.haut = m.haut; if (m.bas != null) marges.bas = m.bas;
@@ -1606,7 +1622,7 @@ void main() {
     function appliquerCarte() {
       carte = (o.carte && o.carte(mode, S)) || {};
       a.colorer(carte.couleurs || null, { tendons: carte.tendons || 0 });
-      a.theme({ muscle: carte.muscle || DEFAUTS.muscle, tendon: carte.tendon || DEFAUTS.tendon, os: carte.os || DEFAUTS.os, estompe: carte.estompe != null ? carte.estompe : DEFAUTS.estompe });
+      a.theme(themeDeCarte(carte));
       legende.innerHTML = (carte.legende || []).map(l => `<span><i style="background:${echap(l.c)}"></i>${echap(l.t)}</span>`).join('');
       legende.hidden = !(carte.legende && carte.legende.length);
       note.textContent = carte.note || ''; note.hidden = !carte.note;
@@ -1734,14 +1750,15 @@ void main() {
      Le corps exécute un exercice dans un petit cadre (la fiche de l'exercice) : pas de modes, pas de fiche de muscle,
      pas de couches — la vue complète est l'atlas. On le fait tourner du doigt, de gauche à droite ; un glissement
      vertical fait défiler la page. options : { clair, accent, peau (fichier), carte ({ couleurs, muscle, tendon, os,
-     tendons, estompe }, ou une fonction des structures qui la rend), exercice ({ exercice: identifiant } ou { spec }) } ;
+     peau (teinte), tendons, estompe }, ou une fonction des structures qui la rend), exercice ({ exercice: identifiant }
+     ou { spec }) } ;
      demande atlas-mouvements.js.
      Renvoie { atlas, anime, lecture(v), detruire() }. */
   function apercu(conteneur, tampon, options) {
     const o = options || {};
     const a = creer(conteneur, tampon, { clair: !!o.clair, accent: o.accent || (o.clair ? '#db2777' : '#f472b6'), peau: o.peau || null, niveauPeau: o.peau ? 1 : 0 });
     const c = (typeof o.carte === 'function' ? o.carte(a.structures) : o.carte) || {};
-    a.theme({ muscle: c.muscle || DEFAUTS.muscle, tendon: c.tendon || DEFAUTS.tendon, os: c.os || DEFAUTS.os, estompe: c.estompe != null ? c.estompe : DEFAUTS.estompe });
+    a.theme(themeDeCarte(c));
     a.colorer(c.couleurs || null, { tendons: c.tendons || 0 });
     a.toile.setAttribute('aria-label', 'Le mouvement en trois dimensions : glisse de gauche à droite pour tourner autour du corps');
     let anim = null, enMarche = false;
@@ -1777,5 +1794,5 @@ void main() {
     };
   }
 
-  window.AnqaAtlas = { creer, activerGestes, monter, apercu, VUES, etoffer };
+  window.AnqaAtlas = { creer, activerGestes, monter, apercu, VUES, etoffer, themeDeCarte };
 })();

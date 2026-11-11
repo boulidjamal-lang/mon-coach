@@ -30,7 +30,7 @@ const fs = require('fs'), path = require('path');
     const it = items[i];
     await p.evaluate(([spec, titre, vue, couleurs, neutres]) => {
       window.changer(spec, titre, vue);
-      if (couleurs) { window.atlas.theme({ muscle: neutres.muscle, tendon: neutres.tendon, os: neutres.os, estompe: 0.5 }); window.atlas.colorer(couleurs, { tendons: 0.3 }); }
+      if (couleurs) { window.atlas.theme(AnqaAtlas.themeDeCarte(Object.assign({}, neutres, { estompe: 0.5 }))); window.atlas.colorer(couleurs, { tendons: 0.3 }); }
       else window.atlas.colorer(null);
     }, [it.spec, it.titre, it.vue, it.couleurs || null, neutres]);
     for (let k = 0; k < N; k++) {

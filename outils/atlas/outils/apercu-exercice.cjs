@@ -16,7 +16,7 @@ const fs = require('fs'), path = require('path');
   for (const n of niveaux) {
     await p.goto(`http://atlas.local/appli/essai-mouvement.html?spec=repos&pp=1${n ? '&peau=' + n : ''}${clair ? '&clair=1' : ''}`);
     await p.waitForFunction(() => window.pret, null, { timeout: 180000 });
-    await p.evaluate(([spec, c, n, u, vue]) => { window.changer(spec, '', vue); window.atlas.theme({ muscle: n.muscle, tendon: n.tendon, os: n.os, estompe: 0.5 }); window.atlas.colorer(c, { tendons: 0.3 }); window.anim.rendre(0, u); return new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r))); }, [spec, couleurs[id] || {}, neutres, +uTxt, vue]);
+    await p.evaluate(([spec, c, n, u, vue]) => { window.changer(spec, '', vue); window.atlas.theme(AnqaAtlas.themeDeCarte(Object.assign({}, n, { estompe: 0.5 }))); window.atlas.colorer(c, { tendons: 0.3 }); window.anim.rendre(0, u); return new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r))); }, [spec, couleurs[id] || {}, neutres, +uTxt, vue]);
     const f = sortie.replace(/\.(jpg|png)$/, `-${n}.png`); await p.screenshot({ path: f }); fichiers.push(f);
   }
   await nav.close();
