@@ -6,6 +6,10 @@
   Fichier assemblé : ses sources sont dans `outils/atlas/mouvements/`.
 - `atlas.bin` : le modèle — 178 structures (175 muscles, tendon calcanéen, ligne blanche, tractus ilio-tibial),
   chacune avec son maillage propre, et le squelette. Seul le côté gauche est stocké : le droit en est le miroir.
+- `atlas-peau.bin` : la peau — la surface du corps (visage, oreilles, mains, pieds, ongles, sourcils, cils, cheveux),
+  attachée au même squelette de mouvement que les muscles qu'elle recouvre. Facultative : sans elle, l'atlas reste
+  l'écorché. Trois positions dans l'interface : peau entière avec un short (les muscles colorés ou choisi se voient au
+  travers), peau sur la tête, les mains et les pieds, ou pas de peau.
 
 ## Origine et licence du modèle
 
@@ -19,15 +23,18 @@ lui-même dérivé de **BodyParts3D**. Mentions demandées par leurs auteurs :
 Ce que nous avons changé : choix des structures utiles à un atlas d'entraînement, allègement des maillages (erreur
 bornée à 0,5 mm), ouverture de la gaine du grand droit de l'abdomen, classement en couches de profondeur, ombrage de
 relief calculé par sommet, noms français d'usage, articulation du corps (chaque sommet attaché à ses os ; centres
-d'articulation repris de Z-Biomechanics, même auteur, même licence).
+d'articulation repris de Z-Biomechanics, même auteur, même licence). Pour la peau : régions de la surface du corps
+(collection « Regions of human body ») assemblées en une seule surface, fentes refermées, région uro-génitale adoucie
+(le corps porte un short), peau tenue au-dessus des muscles, attaches au squelette reprises des muscles recouverts,
+ombrage de relief ; les yeux sont deux globes placés au centre des sclères du modèle.
 
-**`atlas.bin` est une œuvre dérivée : il est diffusé sous la même licence, Creative Commons Attribution - Partage dans
-les mêmes conditions 4.0 International** (<https://creativecommons.org/licenses/by-sa/4.0/deed.fr>). Chacun peut le
-reprendre et le modifier aux mêmes conditions. Le code de l'appli (dont `atlas3d.js`) n'est pas concerné par cette
+**`atlas.bin` et `atlas-peau.bin` sont des œuvres dérivées : ils sont diffusés sous la même licence, Creative Commons
+Attribution - Partage dans les mêmes conditions 4.0 International** (<https://creativecommons.org/licenses/by-sa/4.0/deed.fr>). Chacun peut les
+reprendre et les modifier aux mêmes conditions. Le code de l'appli (dont `atlas3d.js`) n'est pas concerné par cette
 licence : il ne fait qu'afficher le modèle.
 
 Point à faire confirmer par un juriste avant une diffusion payante : la licence interdit d'ajouter des verrous
-techniques qui empêcheraient d'exercer ces droits. Le fichier reste librement téléchargeable à cette adresse du site,
+techniques qui empêcheraient d'exercer ces droits. Les fichiers restent librement téléchargeables à cette adresse du site,
 hors de toute protection de l'App Store ; c'est la parade habituelle, pas un avis juridique.
 
 ## Refaire le modèle

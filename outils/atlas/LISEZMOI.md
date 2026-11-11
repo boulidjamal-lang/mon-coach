@@ -28,6 +28,31 @@ Contrôles : `appli/essai.html`, `appli/essai-ui.html` et `appli/essai-mouvement
 `outils/essais-fonctionnels.cjs` (gestes, sélection, couches, index, reprise du contexte graphique),
 `outils/appli-atlas.cjs` (captures de l'atlas dans la vraie appli).
 
+## La peau
+
+`assets/atlas/atlas-peau.bin` se refait en deux temps, une fois `atlas.bin` prêt (elle s'y attache) :
+
+1. `python outils/extraire_peau.py <Startup.blend> peau/regions.bin` : extrait de Z-Anatomy la surface du corps
+   (collection « 9: Regions of human body » : la peau découpée en régions, les oreilles, les ongles, les poils),
+   sans les épaisseurs (modificateur SOLIDIFY).
+2. `node outils/peau.mjs peau/regions.bin donnees/atlas.bin peau/atlas-peau.bin` : assemble le côté gauche en une
+   seule surface (sommets soudés, frontières en T réparées, petits trous bouchés), la range en zones (corps, tête,
+   main, pied, ongle, poil, cheveux, œil), adoucit la région uro-génitale, la tient au-dessus des muscles et des os,
+   l'attache au squelette (chaque sommet reprend les attaches des muscles qu'il recouvre), calcule l'ombrage de
+   relief et l'épaisseur sous la peau (ce dont elle doit reculer pour laisser voir un muscle), et écrit le fichier.
+   Copier ensuite le résultat dans `assets/atlas/`.
+
+Articulations intermédiaires : entre deux os qui tournent beaucoup l'un par rapport à l'autre, une peau attachée
+moitié-moitié se pince ou se vrille (l'avant-bras en pronation). La peau s'attache donc aussi à des articulations
+fictives, qui font une fraction de la rotation (avant-bras, coude, poignet, épaule, aisselle, hanche, genou,
+cheville) ; leur liste est dans l'en-tête du fichier, et le moteur calcule leur pose à chaque image. Les muscles,
+eux, ne s'en servent pas.
+
+Dans le moteur (`atlas3d.js`) : la peau a son propre programme de dessin. Peau partielle : la tête, les mains et
+les pieds, dessinés un rien en avant. Peau entière : seuls les muscles colorés (ou choisi) sont dessinés, ils
+marquent le pochoir, et la peau du corps recule derrière eux à cet endroit — une fenêtre, qui ne s'ouvre pas si un
+autre membre passe devant.
+
 ## Les mouvements des exercices
 
 Chaque exercice de la bibliothèque (`EXERCICES_BASE` dans `index.html`) a son mouvement. Tout est dans `mouvements/` :
@@ -47,13 +72,19 @@ Chaque exercice de la bibliothèque (`EXERCICES_BASE` dans `index.html`) a son m
   les problèmes ; `node mouvements/controle.mjs "curl hal assis"` pour un seul mouvement. Le même contrôle tourne
   dans la suite de tests de l'appli.
 - `node outils/planche-mouvements.cjs sortie.png "pompe diamant" "dips anneaux | Dips aux anneaux"` : planche de
-  contrôle dans le vrai rendu (début, milieu, fin de la répétition) ; `node outils/video-planche.cjs sortie.mp4 …` :
-  la même chose en vidéo. `appli/essai-mouvement.html?spec=…` ou `?ex=<identifiant>` montre un mouvement seul.
+  contrôle dans le vrai rendu (début, milieu, fin de la répétition). `appli/essai-mouvement.html?spec=…` ou
+  `?ex=<identifiant>` montre un mouvement seul (`&peau=1` ou `&peau=2` pour la peau).
+- `node outils/video-planche.cjs sortie.mp4 "ex=e338" "ex=e20 | Traction"` : plusieurs exercices côte à côte, en
+  vidéo, tels que l'appli les montre (peau, muscles de l'exercice en couleur) ; `node outils/apercu-exercice.cjs
+  sortie.jpg e338` : un exercice sous ses trois peaux. Les couleurs sont calculées par l'appli elle-même
+  (`outils/exercices-appli.cjs` l'ouvre dans le navigateur de test).
 - `node mouvements/sonde.mjs "<mouvement>" [instant]` : hauteur du point le plus bas de chaque région du corps,
   pour régler une pose au sol.
 - `node outils/catalogue-mouvements.cjs <dossier>` : le catalogue de toute la bibliothèque, groupe par groupe —
-  pour chaque exercice, le départ et l'arrivée de son mouvement dans le vrai rendu (planches `cat-<groupe>-<n>.jpg`
-  et `catalogue.json`, qui dit où trouver chaque exercice). Long : plusieurs dizaines de minutes en rendu logiciel.
+  pour chaque exercice, le départ et l'arrivée de son mouvement, tel que l'appli le montre (planches
+  `cat-<groupe>-<n>.jpg` et `catalogue.json`, qui dit où trouver chaque exercice). Les vues sont gardées d'une fois
+  sur l'autre : seuls les mouvements nouveaux ou modifiés sont rendus (un quart d'heure pour tout refaire, en rendu
+  logiciel).
 
 Ajouter ou corriger le mouvement d'un exercice : modifier sa ligne dans `table.txt` (ou la famille dans `src/`),
 relancer `construire.mjs`, puis `controle.mjs --table`, et regarder le résultat sur une planche. Un exercice ajouté

@@ -95,9 +95,9 @@ const MVT = { squat: 'squat', developpeCouche: 'développé couché', curl: 'cur
   await p.click('.atlas-pile [data-couche="2"]'); await repos();
   const c2c = await carte(3), couchesVues = await ev(ids => ids.map(k => monte.atlas.structures[monte.atlas.indice(k.split('|')[0])].couche), Object.keys(c2c));
   noter('couche 2 : seuls les muscles de couche 2 et plus se touchent (à travers les fantômes)', couchesVues.length > 20 && couchesVues.every(c => c >= 2), `${Object.keys(avantC).length} structures touchables en surface, ${couchesVues.length} en couche 2, couche minimale ${Math.min(...couchesVues)}`);
-  await p.click('.atlas-couches > .atlas-rond'); await repos();
+  await p.click('.atlas-fantomes'); await repos();
   noter('le bouton de transparence retire les fantômes', (await ev(() => monte.atlas.fantomes())) === false && (await ev(() => monte.atlas.mesures().appelsDeDessin)) === 3, `fantômes ${(await ev(() => monte.atlas.fantomes())) ? 'encore là' : 'retirés'}, ${await ev(() => monte.atlas.mesures().appelsDeDessin)} appels de dessin (5 avec eux)`);
-  await p.click('.atlas-couches > .atlas-rond');
+  await p.click('.atlas-fantomes');
   await p.click(`.atlas-pile [data-couche="${await ev(() => monte.atlas.entete.couches + 1)}"]`); await repos();
   const cOs = await carte(3);
   noter('dernier cran : squelette seul', Object.keys(cOs).length === 0, `${Object.keys(cOs).length} muscle touchable`);
@@ -231,6 +231,24 @@ const MVT = { squat: 'squat', developpeCouche: 'développé couché', curl: 'cur
   }
   noter('une double touche choisit le muscle et le cadre, du côté touché', doubles.every(x => x.choisi === x.id && x.bonCote && x.dist < dE * 0.75 && Math.abs(x.y - x.milieu) < 40), doubles.map(x => `${nom(x.choisi)} ${x.cote}${x.bonCote ? '' : ' (mauvais côté)'} à ${x.dist.toFixed(2)} m, centre à ${Math.round(x.y - x.milieu)} px du milieu de la zone libre`).join(' ; '));
   await ev(() => { monte.choisir(null); monte.atlas.reinitialiser(0); }); await repos();
+
+  // La peau : trois positions au bouton ; sous la peau entière, on touche un muscle à travers elle ; en profondeur, elle s'efface.
+  if (await ev(() => monte.atlas.aPeau)) {
+    const bilan = await ev(() => {
+      const b = document.querySelector('.atlas-peau'), r = { depart: monte.etat().peau, tour: [] };
+      for (let i = 0; i < 3; i++) { b.click(); r.tour.push(monte.etat().peau); }
+      monte.niveauPeau(2); r.entiere = monte.etat().peau; r.appels = monte.atlas.mesures().appelsDeDessin;
+      monte.couche(3); r.profond = monte.etat().peau; monte.couche(1); r.retour = monte.etat().peau;
+      return r;
+    });
+    await ev(() => monte.atlas.vue('face', 0)); await repos();
+    const pt = await pointDe('pectoral_sternal'); await toucher(pt.x, pt.y); await repos();
+    const sousPeau = await ev(() => [monte.etat().choisi, monte.etat().peau]);
+    await ev(() => { monte.choisir(null); monte.niveauPeau(1); }); await repos();
+    noter('la peau : trois positions au bouton, un muscle touché à travers la peau entière, effacée en profondeur',
+      bilan.depart === 1 && bilan.tour.join() === '0,2,1' && bilan.entiere === 2 && bilan.profond === 0 && bilan.retour === 2 && sousPeau[0] === 'pectoral_sternal' && sousPeau[1] === 2,
+      `au départ ${bilan.depart}, puis ${bilan.tour.join(' → ')} ; peau entière : ${bilan.appels} appels de dessin, ${nom(sousPeau[0])} touché à travers elle ; couche 3 : peau ${bilan.profond}`);
+  }
 
   await nav.close();
   // Mouvements : la pose reste saine du début à la fin, les mains tiennent le matériel, le corps se touche encore.

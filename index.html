@@ -23763,7 +23763,7 @@ function couleursSemaine() {
    Chargé à la demande. Sans WebGL 2, les boutons d'accès n'apparaissent
    pas : le mannequin dessiné reste seul.
    ===================================================================== */
-const ATLAS_FICHIERS = { moteur: 'assets/atlas/atlas3d.js', mouvements: 'assets/atlas/atlas-mouvements.js', modele: 'assets/atlas/atlas.bin' };
+const ATLAS_FICHIERS = { moteur: 'assets/atlas/atlas3d.js', mouvements: 'assets/atlas/atlas-mouvements.js', modele: 'assets/atlas/atlas.bin', peau: 'assets/atlas/atlas-peau.bin' };
 /* Tous les exercices de la bibliothèque ont leur mouvement (la table est dans atlas-mouvements.js, chargé à la
    demande). Un exercice fusionné dans un autre joue le mouvement de celui qui l'a remplacé, comme partout ailleurs
    dans l'appli. Un exercice créé par l'utilisateur ou venu de la communauté, ou un ancien exercice sorti de la
@@ -24002,10 +24002,12 @@ async function ouvrirAtlas(mode, options) {
   scene.innerHTML = '<div class="atlas-attente" role="status"><i aria-hidden="true"></i>Chargement du corps…</div>';
   ouvrirModal('atlas-modal', true);
   try {
-    const [tampon] = await Promise.all([
+    // La peau est facultative : si son fichier manque ou ne se charge pas, l'atlas s'ouvre en écorché, comme avant.
+    const [tampon, , , peau] = await Promise.all([
       fetch(ATLAS_FICHIERS.modele).then(r => { if (!r.ok) throw new Error('modèle'); return r.arrayBuffer(); }),
       chargerScriptAtlas(ATLAS_FICHIERS.moteur),
-      atlasExercice && atlasExercice.mouvement ? chargerScriptAtlas(ATLAS_FICHIERS.mouvements) : null
+      atlasExercice && atlasExercice.mouvement ? chargerScriptAtlas(ATLAS_FICHIERS.mouvements) : null,
+      fetch(ATLAS_FICHIERS.peau).then(r => (r.ok ? r.arrayBuffer() : null)).catch(() => null)
     ]);
     if (!document.getElementById('atlas-modal').classList.contains('show')) return;   // refermé pendant le chargement
     // La table des mouvements fait foi : un exercice qu'elle ne connaît pas reste au repos, et la fenêtre le dit.
@@ -24016,7 +24018,7 @@ async function ouvrirAtlas(mode, options) {
     atlasMonte = AnqaAtlas.monter(scene, tampon, {
       clair: themeClairActif(), accent: couleurCssAtlas('--corps-cible', '#f472b6'), modes,
       mode: atlasExercice ? 'exercice' : (modes.some(m => m.id === mode) ? mode : 'semaine'),
-      carte: carteAtlas, fiche: ficheAtlas, groupe: groupeAtlas,
+      carte: carteAtlas, fiche: ficheAtlas, groupe: groupeAtlas, peau,
       exercice: atlasExercice && atlasExercice.mouvement ? { exercice: atlasExercice.mouvement } : null
     });
   } catch (e) {

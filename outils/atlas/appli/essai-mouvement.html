@@ -7,8 +7,9 @@
 const q = new URLSearchParams(location.search);
 if (q.get('clair')) document.body.classList.add('clair');
 const exoDe = () => q.get('spec') ? { spec: q.get('spec') } : q.get('ex') ? { exercice: q.get('ex') } : { mouvement: q.get('m') || 'squat' };
-fetch('../donnees/atlas.bin').then(r => r.arrayBuffer()).then(t => {
-  const a = window.atlas = AnqaAtlas.creer(document.getElementById('scene'), t, { clair: !!q.get('clair'), ppMax: +(q.get('pp') || 2) });
+// &peau=1 (peau sur la tête, les mains, les pieds, et short) ou &peau=2 (peau entière) : charge aussi le fichier de la peau.
+Promise.all([fetch('../donnees/atlas.bin').then(r => r.arrayBuffer()), q.get('peau') ? fetch('../donnees/atlas-peau.bin').then(r => r.ok ? r.arrayBuffer() : null).catch(() => null) : null]).then(([t, peau]) => {
+  const a = window.atlas = AnqaAtlas.creer(document.getElementById('scene'), t, { clair: !!q.get('clair'), ppMax: +(q.get('pp') || 2), peau, niveauPeau: +(q.get('peau') || 0) });
   window.changer = (exo, titre, vue) => {
     if (window.anim) window.anim.quitter();
     document.getElementById('titre').textContent = titre || '';
