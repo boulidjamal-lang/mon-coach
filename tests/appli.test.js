@@ -6489,6 +6489,13 @@ function enteteAtlas() {
   assert.equal(b.toString('latin1', 0, 4), 'ANQA');
   return JSON.parse(b.subarray(12, 12 + b.readUInt32LE(8)).toString('utf8'));
 }
+/* La peau (assets/atlas/atlas-peau.bin) : en-tête et sommets (20 octets chacun, comme le modèle). */
+function peauAtlas() {
+  const b = fs.readFileSync(path.join(RACINE, 'assets', 'atlas', 'atlas-peau.bin'));
+  assert.equal(b.toString('latin1', 0, 4), 'ANQP');
+  const lg = b.readUInt32LE(8), H = JSON.parse(b.subarray(12, 12 + lg).toString('utf8'));
+  return { H, octets: b.length, sommets: b.subarray(12 + lg, 12 + lg + H.sommets * H.octetsParSommet), indices: b.subarray(12 + lg + H.sommets * H.octetsParSommet) };
+}
 /* Quatre semaines et plus de séances d'essai : pectoraux le jour même, dos il y a 2 jours, jambes il y a 4 jours,
    avec des charges qui montent un peu de semaine en semaine. */
 const HISTORIQUE_ATLAS = `(() => {
@@ -6572,6 +6579,34 @@ test('atlas 3D : les mouvements des 823 exercices se posent sans défaut', async
   const defauts = [];
   for (const spec of specs) { const pb = controlerSpec(M, corps, M.TEINTES.clair, spec); if (pb.length) defauts.push(spec + ' : ' + pb.join(' ; ')); }
   assert.deepEqual(defauts, [], 'mouvements à revoir');
+});
+
+test('atlas 3D : la peau va avec le modèle (zones, attaches au squelette, articulations intermédiaires)', () => {
+  const E = enteteAtlas(), { H, octets, sommets, indices } = peauAtlas();
+  assert.equal(H.format, 'anqa-peau');
+  assert.match(H.source, /Z-Anatomy.*CC BY-SA 4\.0/, 'la peau vient de la même source que les muscles, sous la même licence');
+  assert.deepEqual(H.zones, ['corps', 'tete', 'main', 'pied', 'ongle', 'poil', 'cheveux', 'oeil']);
+  assert.equal(H.articulations, E.squelette.length, 'la peau est attachée au squelette de ce modèle');
+  assert.ok(octets < 1.2e6, 'la peau reste légère : ' + octets + ' octets');
+  // Les articulations intermédiaires relient deux articulations du squelette, pour une part de leur rotation.
+  for (const d of H.intermediaires) assert.ok(E.squelette[d.vers].parent >= 0 && d.de >= 0 && d.de < E.squelette.length && d.part > 0 && d.part < 1, 'articulation intermédiaire valide');
+  // Chaque sommet : une zone connue, des attaches à des articulations qui existent, des poids dont la somme fait le tout.
+  const NT = E.squelette.length + 2 * H.intermediaires.length, pas = H.octetsParSommet, parZone = new Array(H.zones.length).fill(0);
+  let defauts = 0;
+  for (let i = 0; i < H.sommets; i++) {
+    const o = i * pas, zone = sommets[o + 10]; let somme = 0;
+    if (zone >= H.zones.length) defauts++; else parZone[zone]++;
+    for (let k = 0; k < 4; k++) { const w = sommets[o + 16 + k]; somme += w; if (w && sommets[o + 12 + k] >= NT) defauts++; }
+    if (somme !== 255) defauts++;
+  }
+  assert.equal(defauts, 0, 'sommets de la peau sans défaut');
+  assert.ok(parZone.every(n => n > 0), 'chaque zone a ses sommets : ' + parZone.join(', '));
+  // Les triangles ne nomment que des sommets qui existent.
+  const nb = (H.trianglesPairs + H.trianglesImpairs) * 3, lire = H.indicesSur === 32 ? k => indices.readUInt32LE(k * 4) : k => indices.readUInt16LE(k * 2);
+  let hors = 0; for (let k = 0; k < nb; k++) if (lire(k) >= H.sommets) hors++;
+  assert.equal(hors, 0);
+  // Le short tient entre le haut des cuisses et la taille ; l'œil est à hauteur de tête.
+  assert.ok(H.short.bas > 0.5 && H.short.haut > H.short.bas && H.short.haut < 1.1 && H.oeil.centre[1] > 1.5 && H.oeil.rayon > 0.008 && H.oeil.rayon < 0.02);
 });
 
 test('atlas 3D : les cartes viennent de l\'historique réel, et restent neutres sans donnée', () => avecAppli({}, async ({ page }) => {
@@ -6672,12 +6707,14 @@ test('atlas 3D : sans WebGL 2, aucun accès ; avec, la fenêtre s\'ouvre, anime 
     await page.evaluate(() => { ouvrirAtlas('semaine'); });
     await pret();
     const a = await page.evaluate(() => ({ scripts: [...document.scripts].map(s => s.getAttribute('src')).filter(s => s && s.startsWith('assets/atlas/')), modes: [...document.querySelectorAll('.atlas-modes button')].map(b => b.textContent),
-      actif: document.querySelector('.atlas-modes button[aria-pressed="true"]').textContent, structures: atlasMonte.atlas.structures.length, appels: atlasMonte.atlas.mesures().appelsDeDessin,
+      actif: document.querySelector('.atlas-modes button[aria-pressed="true"]').textContent, structures: atlasMonte.atlas.structures.length, appels: atlasMonte.atlas.mesures().appelsDeDessin, peau: [atlasMonte.atlas.aPeau, atlasMonte.etat().peau],
       legende: document.querySelectorAll('.atlas-legende span').length, lecture: document.querySelector('.atlas-barre .atlas-rond[aria-label*="mouvement"]').hidden }));
     assert.deepEqual(a.scripts, ['assets/atlas/atlas3d.js'], 'les mouvements ne se chargent que pour un exercice');
     assert.deepEqual(a.modes, ['Semaine', 'Dernière séance', 'Fréquence', 'Progression', 'Équilibre', 'Anatomie']);
     assert.equal(a.actif, 'Semaine');
-    assert.ok(a.structures > 170 && a.appels <= 5 && a.legende === 5 && a.lecture);
+    // Tout le corps en 5 appels de dessin (sol, muscles et voiles des deux côtés), 3 de plus pour la peau partielle.
+    assert.ok(a.structures > 170 && a.appels <= 8 && a.legende === 5 && a.lecture, JSON.stringify([a.structures, a.appels, a.legende, a.lecture]));
+    assert.deepEqual(a.peau, [true, 1], 'sur une carte, la peau couvre la tête, les mains et les pieds');
     // Toucher un muscle pour de vrai (un clic au cœur de sa tache à l'écran) : sa fiche dit la zone de la semaine.
     await page.waitForFunction(() => !atlasMonte.atlas.mesures().enCours, null, { timeout: 60000 });
     const pt = await page.evaluate(() => { const c = atlasMonte.atlas.carteReperage(3)['pectoral_sternal|gauche'], r = atlasMonte.atlas.toile.getBoundingClientRect(); return { x: r.left + c.x, y: r.top + c.y, marge: c.marge }; });
@@ -6696,6 +6733,15 @@ test('atlas 3D : sans WebGL 2, aucun accès ; avec, la fenêtre s\'ouvre, anime 
     const e = await page.evaluate(() => ({ titre: document.getElementById('titre-atlas').textContent, mode: atlasMonte.etat().mode, anim: !!atlasMonte.animation(), scripts: [...document.scripts].map(s => s.getAttribute('src')).filter(s => s && s.startsWith('assets/atlas/')).length,
       pose: atlasMonte.animation().corps.monde('bassin').y < 0.93, colores: Object.keys(carteAtlas('exercice', atlasMonte.atlas.structures).couleurs).length }));
     assert.deepEqual([e.titre, e.mode, e.anim, e.scripts], ['Squat avec barre', 'exercice', true, 2]);
+    // Pendant un exercice, la peau est entière ; le bouton passe à la peau partielle, puis à l'écorché, et le choix est retenu.
+    const peau = await page.evaluate(() => {
+      const r = [atlasMonte.etat().peau], b = document.querySelector('.atlas-peau');
+      b.click(); r.push(atlasMonte.etat().peau, JSON.parse(localStorage.getItem('anqa-atlas-peau')).exercice);
+      atlasMonte.couche(2); r.push(atlasMonte.etat().peau); atlasMonte.couche(1); r.push(atlasMonte.etat().peau);   // en profondeur, la peau s'efface
+      b.click(); r.push(atlasMonte.etat().peau); b.click(); r.push(atlasMonte.etat().peau, /^Peau : entière/.test(b.getAttribute('aria-label')));
+      return r;
+    });
+    assert.deepEqual(peau, [2, 1, 1, 0, 1, 0, 2, true]);
     assert.ok(e.pose, 'le bassin est descendu : le corps est en plein squat');
     assert.ok(e.colores > 10);
     // Un autre exercice de la bibliothèque, d'une autre famille de mouvements : animé lui aussi, rien à signaler.

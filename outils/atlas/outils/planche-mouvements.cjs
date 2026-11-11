@@ -1,7 +1,7 @@
 // Planche de contrôle des mouvements, dans le vrai rendu de l'atlas : pour chaque exercice, quelques instants de la répétition.
 // Usage : node outils/planche-mouvements.cjs <sortie.png> "<spec>[ | titre[ | az,el]]" …   (ou --fichier liste.txt, une ligne par exercice)
 // Variables : L, H (taille d'une vignette), COLS (exercices par rangée), PAR (exercices par page), INSTANTS (ex. "0,0.5,1"),
-//             CLAIR=1, PP (densité de pixels).
+//             CLAIR=1, PP (densité de pixels), PEAU (1 : tête, mains et pieds ; 2 : entière ; sans : écorché).
 const { ouvrir } = require('./photo.cjs');
 const { execFileSync } = require('child_process');
 const fs = require('fs'), path = require('path');
@@ -15,7 +15,7 @@ const ff = args => execFileSync('ffmpeg', ['-y', '-loglevel', 'error', ...args])
   const { nav, ctx } = await ouvrir({ viewport: { width: L, height: H }, deviceScaleFactor: PP });
   const p = await ctx.newPage(); const erreurs = [];
   p.on('pageerror', e => erreurs.push(e.message)); p.on('console', c => { if (c.type() === 'error') erreurs.push(c.text()); });
-  await p.goto(`http://atlas.local/appli/essai-mouvement.html?spec=repos&pp=${PP}${process.env.CLAIR ? '&clair=1' : ''}`);
+  await p.goto(`http://atlas.local/appli/essai-mouvement.html?spec=repos&pp=${PP}${process.env.CLAIR ? '&clair=1' : ''}${process.env.PEAU ? '&peau=' + process.env.PEAU : ''}`);
   await p.waitForFunction(() => window.pret, null, { timeout: 180000 });
   const tmp = sortie.replace(/\.png$/, '-tmp'); fs.rmSync(tmp, { recursive: true, force: true }); fs.mkdirSync(tmp, { recursive: true });
   const cellules = [];

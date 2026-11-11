@@ -8,9 +8,10 @@ html,body{margin:0;height:100%}body{background:var(--bg);color:var(--text);font-
 <body><div id="scene"></div><script src="atlas3d.js"></script><script>
 const q = new URLSearchParams(location.search);
 const clair = !!q.get('clair'); document.documentElement.dataset.theme = clair ? 'light' : 'dark';
-fetch('../donnees/atlas.bin').then(r => r.arrayBuffer()).then(t => {
+// La peau est chargée comme dans l'appli (&peau=0 pour s'en passer).
+Promise.all([fetch('../donnees/atlas.bin').then(r => r.arrayBuffer()), q.get('peau') === '0' ? null : fetch('../donnees/atlas-peau.bin').then(r => r.ok ? r.arrayBuffer() : null).catch(() => null)]).then(([t, peau]) => {
   const m = window.monte = AnqaAtlas.monter(document.getElementById('scene'), t, {
-    clair, modes: [{ id: 'semaine', nom: 'Semaine' }, { id: 'anatomie', nom: 'Anatomie' }, { id: 'frequence', nom: 'Fréquence' }, { id: 'priorites', nom: 'Priorités' }], mode: q.get('mode') || 'anatomie',
+    clair, peau, modes: [{ id: 'semaine', nom: 'Semaine' }, { id: 'anatomie', nom: 'Anatomie' }, { id: 'frequence', nom: 'Fréquence' }, { id: 'priorites', nom: 'Priorités' }], mode: q.get('mode') || 'anatomie',
     carte: (mode, S) => mode === 'anatomie' ? {} : { muscle: clair ? '#c9c9d1' : '#56565e', tendon: clair ? '#e4e4ea' : '#8a8a92', os: clair ? '#dcdce2' : '#77777f', tendons: 0.35, couleurs: Object.fromEntries(S.filter(s => s.app.length).map(s => [s.id, ['#6b7385', '#4f7cff', '#c5e34a', '#10b981', '#ff453a'][(s.id.length * 7) % 5]])), legende: [{ c: '#6b7385', t: 'Trop peu' }, { c: '#4f7cff', t: 'Entretien' }, { c: '#c5e34a', t: 'Progression' }, { c: '#10b981', t: 'Zone idéale' }, { c: '#ff453a', t: 'Trop' }], note: 'Couleurs de démonstration (page d’essai)' },
     fiche: (s, mode) => s.app.length ? '<b>' + s.app.map(a => a.groupe + (a.faisceau ? ' · ' + a.faisceau : '') + ' (' + a.role + ')').join(', ') + '</b>' : 'Pas de suivi dédié dans Anqā.',
     groupe: s => s.app.length ? { nom: s.app[0].groupe, ids: m.atlas.structures.filter(x => x.app.some(a => a.groupe === s.app[0].groupe)).map(x => x.id) } : null
@@ -18,6 +19,7 @@ fetch('../donnees/atlas.bin').then(r => r.arrayBuffer()).then(t => {
   const a = m.atlas;
   const cam = {}; ['az', 'el', 'dist'].forEach(k => { if (q.get(k) != null) cam[k] = +q.get(k); });
   if (Object.keys(cam).length) a.placer(cam);
+  if (q.get('niveau') != null) m.niveauPeau(+q.get('niveau'));
   if (q.get('couche')) m.couche(+q.get('couche'));
   if (q.get('fantomes') === '0') a.fantomes(false);
   if (q.get('choisi')) m.choisir(q.get('choisi'), { cadrer: !!q.get('cadrer') });
