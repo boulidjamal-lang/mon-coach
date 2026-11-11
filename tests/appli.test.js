@@ -6926,6 +6926,22 @@ test('atlas 3D : sans WebGL 2, aucun accès ; avec, la fenêtre s\'ouvre, anime 
     assert.equal(a.actif, 'Semaine');
     // Tout le corps en 5 appels de dessin (sol, muscles et voiles des deux côtés), 3 de plus pour la peau partielle.
     assert.ok(a.structures > 170 && a.appels <= 8 && a.legende === 5 && a.lecture, JSON.stringify([a.structures, a.appels, a.legende, a.lecture]));
+    // Chaque image ne soumet à la carte graphique que ce qui se voit : le modèle une fois par côté, les seuls triangles
+    // du voile (et non tout le modèle une seconde fois), et de la peau les seuls triangles de la tête, des mains et des
+    // pieds. Le décompte attendu est refait ici d'après les fichiers.
+    const soumis = await page.evaluate(() => { const m = atlasMonte.atlas.mesures(); return [m.trianglesSoumis, m.triangles]; });
+    const enTete = f => { const b = fs.readFileSync(path.join(__dirname, '..', 'assets', 'atlas', f)), lg = b.readUInt32LE(8); return { b, debut: 12 + lg, e: JSON.parse(b.subarray(12, 12 + lg).toString('utf8')) }; };
+    const modele = enTete('atlas.bin'), peauF = enTete('atlas-peau.bin'), ep = peauF.e;
+    const voiles = modele.e.structures.filter(x => x.type === 'aponevrose').reduce((t, x) => t + x.nbIndices / 3, 0);
+    const debutIndices = peauF.debut + ep.sommets * ep.octetsParSommet, gardes = [0, 0];
+    for (let t = 0; t < ep.trianglesPairs + ep.trianglesImpairs; t++) {
+      const sommet = ep.indicesSur === 32 ? peauF.b.readUInt32LE(debutIndices + t * 12) : peauF.b.readUInt16LE(debutIndices + t * 6);
+      if (peauF.b[peauF.debut + sommet * ep.octetsParSommet + 10] !== 0) gardes[t < ep.trianglesPairs ? 0 : 1]++;
+    }
+    // (La tête, les mains et les pieds sont finement maillés : ils font plus de la moitié des triangles de la peau,
+    // mais une petite part de sa surface ; ce qui n'est plus soumis, c'est toute la peau du tronc et des membres.)
+    assert.ok(voiles > 0 && gardes[0] > 5000 && gardes[0] < ep.trianglesPairs - 5000, 'la peau gardée laisse de côté celle du tronc et des membres : ' + gardes + ' sur ' + [ep.trianglesPairs, ep.trianglesImpairs]);
+    assert.deepEqual(soumis, [2 * modele.e.triangles + 2 * voiles + 2 * gardes[0] + gardes[1], modele.e.triangles]);
     assert.deepEqual(a.peau, [true, 1], 'sur une carte, la peau couvre la tête, les mains et les pieds');
     // Cette peau a la teinte du corps (un gris entre celui des muscles au repos et celui des tendons, sans rien de la
     // chair) ; en mode « Anatomie », aux couleurs naturelles, elle garde sa teinte naturelle. Vérifié sur les réglages

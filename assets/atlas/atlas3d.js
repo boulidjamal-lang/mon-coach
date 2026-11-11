@@ -148,7 +148,7 @@ in float v_ombre, v_short;
 flat in float v_zone;
 uniform vec3 u_cam, u_teint, u_tissu, u_poil;
 uniform mat3 u_lum;
-uniform float u_clair, u_niveau;
+uniform float u_clair;
 uniform float u_chair;        // 1 : une peau vivante (sang sous la surface, plis plus rouges, ongles rosés, iris bruns) ; 0 : une matière de la couleur u_teint, sans rien de la chair
 uniform vec2 u_short;
 uniform vec4 u_oeil;          // centre du globe de l'œil (corps au repos) et son rayon
@@ -168,8 +168,9 @@ float ggx(float nh, float r) { float a = r * r, a2 = a * a, d = nh * nh * (a2 - 
 void main() {
   int zone = int(v_zone + 0.5);
   float short_ = v_short > 0.5 ? smoothstep(u_short.x - 0.0012, u_short.x + 0.0012, v_repos.y) * (1.0 - smoothstep(u_short.y - 0.0012, u_short.y + 0.0012, v_repos.y)) : 0.0;
-  // Niveau 1 : la peau ne reste que sur la tête, les mains et les pieds (le short va avec la peau entière).
-  if (u_niveau < 1.5 && zone == 0) discard;
+  // Peau partielle (tête, mains, pieds) : le moteur ne soumet que ses triangles — rien n'est rejeté ici, point par
+  // point (un rejet dans le nuanceur coûte cher sur les puces des téléphones, qui ne peuvent plus écarter d'avance
+  // les points cachés). Le short va avec la peau entière.
   vec3 N = normalize(v_nor), V = normalize(u_cam - v_pos);
   // L'envers de la peau (vu par une ouverture) : le triangle tourne le dos ET la surface aussi. Un triangle vu par la
   // tranche, au bord d'un pli ou de la silhouette, peut être pris pour un envers : sa normale, elle, ne trompe pas.
@@ -606,6 +607,16 @@ void main() {
         PE.sommets = rp.sommets; PE.entete.boite = rp.boite;
       }
     }
+    // La peau partielle : les triangles de la tête, des mains et des pieds (ongles, poils, cheveux, yeux compris), mis
+    // à part une fois pour toutes — d'abord ceux des deux côtés, puis ceux du milieu, comme dans le fichier. Chaque
+    // triangle est d'une seule zone (un test le vérifie) : la zone de son premier sommet suffit.
+    if (PE) {
+      const H = PE.entete, pasP = H.octetsParSommet, src = PE.indices, garde = new src.constructor(src.length);
+      let n = 0;
+      const trier = (debut, fin) => { const n0 = n; for (let k = debut; k < fin; k += 3) if (PE.sommets[src[k] * pasP + 10] !== 0) { garde[n] = src[k]; garde[n + 1] = src[k + 1]; garde[n + 2] = src[k + 2]; n += 3; } return (n - n0) / 3; };
+      const pairs = trier(0, H.trianglesPairs * 3), impairs = trier(H.trianglesPairs * 3, (H.trianglesPairs + H.trianglesImpairs) * 3);
+      PE.partiel = { indices: garde.subarray(0, n), pairs, impairs };
+    }
     const parId = new Map(S.map((s, i) => [s.id, i]));
     const hauteur = E.boite.etendue[1], centreCorps = [0, E.boite.min[1] + hauteur / 2, E.boite.min[2] + E.boite.etendue[2] / 2];
 
@@ -710,7 +721,7 @@ void main() {
     }
     ecrirePose(null);
 
-    let prog, progRep, progSol, progObj, progPeau = null, vaoPeau = null, vaoObj = {}, vao, vaoSol, tex, texOs, tamponSommets, tamponIndices, tamponSol, cadreRep = null, texRep, profRep;
+    let prog, progRep, progSol, progObj, progPeau = null, vaoPeau = null, vaoPeauPartielle = null, vaoObj = {}, vao, vaoSol, tex, texOs, tamponSommets, tamponIndices, tamponSol, cadreRep = null, texRep, profRep;
     let premierSommet = false;
     function installer() {
       // Sur les puces Apple (WebGL par Metal), une valeur « flat » coûte très cher avec la convention par défaut, où le
@@ -723,18 +734,24 @@ void main() {
       prog = programme(gl, SOMMETS, PIXELS); progRep = programme(gl, SOMMETS, PIXELS_REPERAGE); progSol = programme(gl, SOL_S, SOL_P); progObj = programme(gl, OBJ_S, OBJ_P);
       if (PE) {
         progPeau = programme(gl, SOMMETS_PEAU, PIXELS_PEAU);
-        vaoPeau = gl.createVertexArray(); gl.bindVertexArray(vaoPeau);
+        // Mêmes sommets pour la peau entière et la peau partielle ; seuls les triangles soumis diffèrent.
         const ts = gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER, ts); gl.bufferData(gl.ARRAY_BUFFER, PE.sommets, gl.STATIC_DRAW);
         const pasP = PE.entete.octetsParSommet;
-        gl.enableVertexAttribArray(0); gl.vertexAttribPointer(0, 3, gl.UNSIGNED_SHORT, true, pasP, 0);
-        gl.enableVertexAttribArray(1); gl.vertexAttribPointer(1, 2, gl.UNSIGNED_BYTE, true, pasP, 6);
-        gl.enableVertexAttribArray(2); gl.vertexAttribPointer(2, 2, gl.BYTE, true, pasP, 8);
-        gl.enableVertexAttribArray(3); gl.vertexAttribPointer(3, 1, gl.UNSIGNED_BYTE, false, pasP, 10);
-        gl.enableVertexAttribArray(4); gl.vertexAttribIPointer(4, 4, gl.UNSIGNED_BYTE, pasP, 12);
-        gl.enableVertexAttribArray(5); gl.vertexAttribPointer(5, 4, gl.UNSIGNED_BYTE, true, pasP, 16);
-        gl.enableVertexAttribArray(6); gl.vertexAttribPointer(6, 1, gl.UNSIGNED_BYTE, true, pasP, 11);
-        const ti = gl.createBuffer(); gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, ti); gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, PE.indices, gl.STATIC_DRAW);
-        gl.bindVertexArray(null);
+        const tableau = indices => {
+          const v = gl.createVertexArray(); gl.bindVertexArray(v);
+          gl.bindBuffer(gl.ARRAY_BUFFER, ts);
+          gl.enableVertexAttribArray(0); gl.vertexAttribPointer(0, 3, gl.UNSIGNED_SHORT, true, pasP, 0);
+          gl.enableVertexAttribArray(1); gl.vertexAttribPointer(1, 2, gl.UNSIGNED_BYTE, true, pasP, 6);
+          gl.enableVertexAttribArray(2); gl.vertexAttribPointer(2, 2, gl.BYTE, true, pasP, 8);
+          gl.enableVertexAttribArray(3); gl.vertexAttribPointer(3, 1, gl.UNSIGNED_BYTE, false, pasP, 10);
+          gl.enableVertexAttribArray(4); gl.vertexAttribIPointer(4, 4, gl.UNSIGNED_BYTE, pasP, 12);
+          gl.enableVertexAttribArray(5); gl.vertexAttribPointer(5, 4, gl.UNSIGNED_BYTE, true, pasP, 16);
+          gl.enableVertexAttribArray(6); gl.vertexAttribPointer(6, 1, gl.UNSIGNED_BYTE, true, pasP, 11);
+          const ti = gl.createBuffer(); gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, ti); gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, indices, gl.STATIC_DRAW);
+          gl.bindVertexArray(null);
+          return v;
+        };
+        vaoPeau = tableau(PE.indices); vaoPeauPartielle = tableau(PE.partiel.indices);
       }
       const formes = formesDeBase(); vaoObj = {};
       for (const nom in formes) {
@@ -781,6 +798,11 @@ void main() {
 
     /* ----- Traduction de l'état en texture ----- */
     let transparents = false;
+    // Les triangles des structures translucides (fantômes, voiles), en plages d'indices : la passe qui les dessine ne
+    // soumet qu'elles, pas tout le modèle (à la couche 1, il n'y a qu'un voile sur 178 structures). Trop de plages
+    // (beaucoup de fantômes épars) : mieux vaut tout soumettre d'un coup, la carte graphique triera.
+    let plagesTranslucides = [];
+    const PLAGES_MAX = 24;
     function presence(i) {
       const s = S[i], e = etat[i];
       if (e.masque) return 0;
@@ -790,10 +812,14 @@ void main() {
     }
     function ecrireTexture() {
       const base = couleur(opt.muscle), cTendon = couleur(opt.tendon), cOs = couleur(opt.os);
-      transparents = false;
+      transparents = false; plagesTranslucides = [];
       for (let i = 0; i < NB; i++) {
         const s = S[i], e = etat[i], p = presence(i), voile = s.type === 'aponevrose';
-        if (p > 0 && (p < 1 || voile)) transparents = true;
+        if (p > 0 && (p < 1 || voile)) {
+          transparents = true;
+          const d = plagesTranslucides[plagesTranslucides.length - 1];
+          if (d && d[0] + d[1] === s.indices) d[1] += s.nbIndices; else plagesTranslucides.push([s.indices, s.nbIndices]);
+        }
         let c = e.couleur || (s.type !== 'muscle' ? cTendon : base);
         if (!e.couleur && s.type === 'muscle') { const v = 1 + (((i * 37) % 11) - 5) * 0.012; c = [borne(c[0] * v, 0, 255), borne(c[1] * v, 0, 255), borne(c[2] * v, 0, 255)]; }
         for (let cote = 0; cote < 2; cote++) {
@@ -859,12 +885,27 @@ void main() {
     function passe(m, n) {
       const pr = n === 2 ? progRep : prog;
       gl.uniform1f(pr.u.u_passe, n);
+      // Passe 1 : les seules plages translucides, quand elles sont peu nombreuses.
+      const plages = n === 1 && plagesTranslucides.length <= PLAGES_MAX ? plagesTranslucides : null;
       for (let cote = 0; cote < 2; cote++) {
         gl.uniform1f(pr.u.u_cote, cote);
         gl.frontFace(cote ? gl.CW : gl.CCW);
-        gl.drawElements(gl.TRIANGLES, M.nbIndices, gl.UNSIGNED_INT, 0);
+        if (plages) for (const [debut, nb] of plages) gl.drawElements(gl.TRIANGLES, nb, gl.UNSIGNED_INT, debut * 4);
+        else gl.drawElements(gl.TRIANGLES, M.nbIndices, gl.UNSIGNED_INT, 0);
       }
       gl.frontFace(gl.CCW);
+    }
+    // Ce que chaque image soumet à la carte graphique, pour les mesures : la passe translucide (appels de dessin,
+    // triangles des deux côtés) et la peau (les deux côtés, plus le milieu ; deux fois pour la peau entière, qui se
+    // dessine hors des fenêtres puis dedans).
+    function passeTranslucide() {
+      if (!transparents || niveauPeau === 2) return { appels: 0, triangles: 0 };
+      if (plagesTranslucides.length > PLAGES_MAX) return { appels: 2, triangles: 2 * E.triangles };
+      return { appels: 2 * plagesTranslucides.length, triangles: 2 * plagesTranslucides.reduce((t, x) => t + x[1], 0) / 3 };
+    }
+    function trianglesPeau() {
+      if (!PE || !niveauPeau) return 0;
+      return niveauPeau === 2 ? 2 * (2 * PE.entete.trianglesPairs + PE.entete.trianglesImpairs) : 2 * PE.partiel.pairs + PE.partiel.impairs;
     }
     function preparer(m, reperage) {
       const pr = reperage ? progRep : prog;
@@ -894,14 +935,16 @@ void main() {
     function dessinerPeau(m, entiere) {
       const H = PE.entete, type = H.indicesSur === 32 ? gl.UNSIGNED_INT : gl.UNSIGNED_SHORT, oct = H.indicesSur === 32 ? 4 : 2;
       const pr = progPeau;
-      gl.useProgram(pr.p); gl.bindVertexArray(vaoPeau);
+      // Peau partielle : seuls les triangles de la tête, des mains et des pieds sont soumis.
+      const nPairs = entiere ? H.trianglesPairs : PE.partiel.pairs, nImpairs = entiere ? H.trianglesImpairs : PE.partiel.impairs;
+      gl.useProgram(pr.p); gl.bindVertexArray(entiere ? vaoPeau : vaoPeauPartielle);
       gl.activeTexture(gl.TEXTURE1); gl.bindTexture(gl.TEXTURE_2D, texOs); gl.uniform1i(pr.u.u_os, 1); gl.activeTexture(gl.TEXTURE0);
       gl.uniformMatrix4fv(pr.u.u_vp, false, m.vp);
       gl.uniform3fv(pr.u.u_min, H.boite.min); gl.uniform3fv(pr.u.u_etendue, H.boite.etendue);
       gl.uniform3fv(pr.u.u_cam, m.oeil);
       const c = Math.cos(m.az), s = Math.sin(m.az);
       gl.uniformMatrix3fv(pr.u.u_lum, false, [c, 0, -s, 0, 1, 0, s, 0, c]);
-      gl.uniform1f(pr.u.u_clair, opt.clair ? 1 : 0); gl.uniform1f(pr.u.u_niveau, niveauPeau); gl.uniform1f(pr.u.u_chair, Math.max(0, Math.min(1, +opt.chair)));
+      gl.uniform1f(pr.u.u_clair, opt.clair ? 1 : 0); gl.uniform1f(pr.u.u_chair, Math.max(0, Math.min(1, +opt.chair)));
       gl.uniform2f(pr.u.u_short, H.short.bas, H.short.haut);
       if (H.oeil) gl.uniform4f(pr.u.u_oeil, H.oeil.centre[0], H.oeil.centre[1], H.oeil.centre[2], H.oeil.rayon);
       gl.uniform3fv(pr.u.u_teint, couleur(opt.teint).map(x => lin(x / 255))); gl.uniform3fv(pr.u.u_tissu, couleur(opt.tissu).map(x => lin(x / 255))); gl.uniform3fv(pr.u.u_poil, couleur(opt.poil).map(x => lin(x / 255)));
@@ -909,10 +952,10 @@ void main() {
       const tracer = () => {
         for (let cote = 0; cote < 2; cote++) {
           gl.uniform1f(pr.u.u_cote, cote); gl.frontFace(cote ? gl.CW : gl.CCW);
-          gl.drawElements(gl.TRIANGLES, H.trianglesPairs * 3, type, 0);
+          gl.drawElements(gl.TRIANGLES, nPairs * 3, type, 0);
         }
         gl.frontFace(gl.CCW); gl.uniform1f(pr.u.u_cote, 0);
-        if (H.trianglesImpairs) gl.drawElements(gl.TRIANGLES, H.trianglesImpairs * 3, type, H.trianglesPairs * 3 * oct);
+        if (nImpairs) gl.drawElements(gl.TRIANGLES, nImpairs * 3, type, nPairs * 3 * oct);
       };
       gl.uniform1f(pr.u.u_fenetre, 0);
       if (!entiere) { tracer(); return; }
@@ -1276,7 +1319,7 @@ void main() {
       },
       redessiner: demander,
       tailler,
-      mesures: () => ({ enCours: !!demande || !!transition, images: nbImages, dernierTempsMs: dernierTemps, largeur: larg, hauteur: haut, pixels: pp, echelleMouvement, triangles: E.triangles, sommets: E.sommets, appelsDeDessin: 1 + 2 * (transparents && niveauPeau < 2 ? 2 : 1) + 3 * niveauPeau, peau: niveauPeau, premierSommet }),
+      mesures: () => ({ enCours: !!demande || !!transition, images: nbImages, dernierTempsMs: dernierTemps, largeur: larg, hauteur: haut, pixels: pp, echelleMouvement, triangles: E.triangles, sommets: E.sommets, appelsDeDessin: 1 + 2 + passeTranslucide().appels + 3 * niveauPeau, trianglesSoumis: 2 * E.triangles + passeTranslucide().triangles + trianglesPeau(), peau: niveauPeau, premierSommet }),
       detruire() {
         vivant = false; if (demande) cancelAnimationFrame(demande);
         clearTimeout(minuterieNet); document.removeEventListener('visibilitychange', visible);

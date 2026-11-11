@@ -106,6 +106,13 @@ autre membre passe devant.
   par son champ `peau` (`AnqaAtlas.themeDeCarte`) : la peau n'est alors plus qu'une matière de cette couleur (`chair`
   à 0 : ni sang sous la surface, ni ongles rosés, ni iris bruns). Sans ce champ — le mode « Anatomie », aux couleurs
   naturelles — la peau reste naturelle. `apparence()` rend les couleurs en vigueur, pour les contrôles.
+- **Ce que chaque image soumet.** Le mouvement tourne dans la fiche de chaque exercice : le dessin de cette apparence
+  ne soumet à la carte graphique que ce qui se voit. Le modèle une fois par côté ; la passe des structures translucides
+  (fantômes, voiles) ne soumet que leurs plages d'indices — à la couche 1, un seul voile sur 178 structures — et retombe
+  sur le modèle entier au-delà de 24 plages ; la peau partielle ne soumet que les triangles de la tête, des mains et
+  des pieds, triés au chargement, sans rejet point par point dans le nuanceur (qui empêcherait les puces des
+  téléphones d'écarter d'avance les points cachés). Soit 495 000 triangles par image au lieu de 950 000, pour la même
+  image au pixel près (`mesures().trianglesSoumis`, vérifié par un test).
 
 ## Le matériel
 
