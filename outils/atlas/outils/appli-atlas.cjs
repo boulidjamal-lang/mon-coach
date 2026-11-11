@@ -40,8 +40,19 @@ const { ouvrirAppli } = require(path.join(DEPOT, 'tests', 'outils'));
   await page.evaluate(() => ouvrirAtlas('exercice', { exercice: 'e265' })); await attendreAtlas(); await page.waitForTimeout(1200); await photo('5-exercice-squat');
   const ex = await page.evaluate(() => ({ titre: document.getElementById('titre-atlas').textContent, anim: !!atlasMonte.animation(), mode: atlasMonte.etat().mode, lecture: !document.querySelector('.atlas-barre .atlas-rond[hidden]') }));
   await page.evaluate(() => fermerAtlas());
-  await page.evaluate(() => ouvrirAtlas('exercice', { exercice: 'e39' })); await attendreAtlas(); await photo('6-exercice-sans-mouvement');
+  // D'autres exercices de la bibliothèque, d'autres familles de mouvements (EXOS=id,id… pour en choisir d'autres).
+  const autres = (process.env.EXOS || 'e39,e119,e1136').split(',').filter(Boolean), animes = [];
+  for (const id of autres) {
+    await page.evaluate(id => ouvrirAtlas('exercice', { exercice: id }), id); await attendreAtlas(); await page.waitForTimeout(1200); await photo('6-exercice-' + id);
+    animes.push(await page.evaluate(() => [document.getElementById('titre-atlas').textContent, !!atlasMonte.animation(), document.querySelector('.atlas-note').textContent]));
+    await page.evaluate(() => fermerAtlas());
+  }
+  // Un exercice créé par l'utilisateur : ses muscles, corps au repos, et la fenêtre le dit.
+  await page.evaluate(() => { musculationExosPerso.push({ id: 'exercice-maison', nom: 'Exercice maison', groupe: 'biceps', secondaires: [], materiel: 'haltere' }); ouvrirAtlas('exercice', { exercice: 'exercice-maison' }); });
+  await attendreAtlas(); await photo('7-exercice-maison');
+  const maison = await page.evaluate(() => [!!atlasMonte.animation(), document.querySelector('.atlas-note').textContent]);
   await page.evaluate(() => fermerAtlas());
+  console.log('autres exercices', JSON.stringify(animes), '| exercice maison', JSON.stringify(maison));
   console.log('libéré à la fermeture', JSON.stringify(libere), '| exercice', JSON.stringify(ex), '| erreurs', JSON.stringify(erreurs));
   await nav.close();
 })().catch(e => { console.error(e); process.exit(1); });

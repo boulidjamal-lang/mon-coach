@@ -1,0 +1,839 @@
+# identifiant | mouvement | nom (anglais) — une ligne par exercice de la bibliothèque ; voir outils/atlas/LISEZMOI.md
+# abdos
+e119 | planche rollout | Ab Wheel Rollout
+sw-crunchs-abdominaux | abdos | Abdominal Crunches
+sw-aspiration-abdominale | abdos vacuum | Abdominal Vacuum
+sw-taps-de-cheville | abdos chevilles | Ankle Taps
+sw-crunchs-velos-avec-elastique | abdos velo | Band Bicycle Crunches
+sw-rotation-a-genou-avec-elastique | rotation hache elas demigenou | Band Half Kneeling Chop
+sw-crunch-torsion-a-genoux-avec-bande | abdos elas torsion | Band Kneeling Twisting Crunch
+sw-press-pallof-avec-bande | rotation pallof elas | Band Pallof Press
+sw-rotation-russe-avec-elastique | rotation russe elas | Band Russian Twist
+sw-crunchs-debout-avec-elastique | abdos elas debout | Band Standing Crunches
+sw-flexion-laterale-debout-avec-bande-elastique | rotation flexion elas | Band Standing Side Bend
+sw-crunchs-debout-avec-rotation-et-elastique | abdos elas debout torsion | Band Standing Twisting Crunches
+sw-rotation-horizontale-avec-bande-elastique | rotation debout elas | Band Twist (horizontal)
+sw-deroule-a-la-barre-a-genoux | planche rollout barre | Barbell Rollout - Kneeling
+sw-rotation-debout-avec-barre | rotation debout barre | Barbell Standing Twist
+sw-planche-de-l-x27-ours | planche ours | Bear Plank
+e244 | abdos velo | Bicycle Crunch
+sw-crunchs-en-bicyclette | abdos velo | Bicycle Crunches
+e225 | planche birddog | Bird Dog
+sw-planche-avec-extension-bras-et-jambe-opposes | planche birddog planche mains | Bird Dog Plank
+sw-moulinet-au-poids-du-corps | rotation moulinet | Bodyweight Windmill
+sw-rotation-ascendante | rotation hache bas | Bottom up rotation
+sw-pallof-press-horizontal-a-la-poulie | rotation pallof poulie | Cable Horizontal Pallof Press
+sw-crunch-lateral-a-genoux-avec-cable | abdos poulie lateral | Cable Kneeling Side Crunch
+sw-rotation-avec-cable-horizontale | rotation debout poulie | Cable Twist (horizontal)
+sw-rotation-avec-cable-haut-bas | rotation hache poulie | Cable Twist (up down)
+sw-elevations-de-jambes-droites-a-la-chaise-romaine | suspendu chaise jambes | Captain's Chair Straight Leg Raises
+e1026 | suspendu chaise | Captains Chair Knee Raises
+sw-posture-du-crabe | planche crabe | Crab Pose
+e226 | abdos deadbug | Dead Bug
+sw-dead-bug-avec-ballon | abdos deadbug balle | Dead Bug with Ball
+sw-crunchs-sur-banc-decline | abdos decline | Decline Crunch
+e123 | abdos dragon | Dragon Flag
+sw-rotation-russe-avec-halteres | rotation russe hal | Dumbbell Russian Twist
+sw-pont-lateral-avec-halteres | planche cote hal | Dumbbell Side Bridge
+sw-inclinaison-laterale-debout-avec-halteres | rotation flexion hal | Dumbbell Standing Side Bend
+sw-crunch-grenouille | abdos grenouille | Frog Crunch
+sw-elevation-suspendue-des-jambes-en-prise-garhammer | suspendu garhammer | Hanging Garhammer Raise
+sw-demi-moulinet-suspendu | suspendu moulinet | Hanging Half Windmill
+sw-cercles-de-genoux-en-suspension | suspendu cercles | Hanging Knee Circles
+sw-elevations-de-genoux-suspendues | suspendu | Hanging Knee Raises
+sw-elevation-des-genoux-a-la-poitrine-en-suspension | suspendu poitrine | Hanging Knee To Chest
+sw-genoux-aux-coudes-suspendus | suspendu coudes | Hanging Knees to Elbows
+sw-elevation-des-jambes-suspendues-a-la-barre | suspendu barre | Hanging Leg Raise To Bar
+sw-elevation-des-genoux-obliques-en-suspension | suspendu oblique | Hanging Oblique Knee Raise
+sw-ciseaux-suspendus | suspendu ciseaux | Hanging Scissors Kicks
+sw-elevation-des-jambes-suspendues | suspendu jambes | Hanging Straight Leg Raise
+sw-coup-de-hache-de-haut-en-bas-avec-bande-elastique | rotation hache elas | High To Low Band Woodchopper
+e200 | abdos hollow | Hollow Body Hold
+e204 | abdos jambes incline | Incline Bench Leg Raises
+sw-redressement-assis-incline-avec-rotation | abdos situp decline torsion | Incline Twisting Sit Up
+sw-releve-de-buste-janda | abdos situp | Janda Sit Up
+e1099 | rotation moulinet kb | Kettlebell Windmill
+sw-releve-de-genoux-a-l-x27-ab-coaster | suspendu chaise | Knee Raise Ab Coaster
+sw-crunch-avec-ramene-de-genoux | abdos genoux | Knee Tuck Crunch
+sw-crunchs-abdominaux-a-genoux-avec-bande | abdos elas | Kneeling Band Abs Crunches
+e199 | abdos poulie | Kneeling Cable Abs Crunches
+sw-rotation-du-tronc-a-la-poulie-en-position-a-genoux | rotation hache poulie genoux | Kneeling Cable Woodchop
+e1101 | gym lsit | L-Sit
+sw-rotation-avec-barre-en-t | rotation landmine | Landmine Twist
+sw-flexion-et-extension-des-jambes | abdos inout | Leg In and Out
+sw-pallof-press-horizontal-a-la-poulie-basse | rotation pallof poulie bas genoux | Low Cable Horizontal Pallof Press
+sw-torsion-vertebrale-couchee | rotation couche | Lying Spinal Twist
+e114 | abdos jambes | Lying Stright Leg Raise
+sw-crunchs-abdominaux-a-la-machine | abdos machine | Machine Abdominal Crunches
+sw-crunch-allonge-a-la-machine | abdos | Machine Lying Crunch
+sw-rotation-russe-avec-medecine-ball | rotation russe balle | Medicine Ball Russian Twist
+e1104 | halt balle | Medicine Ball Slam
+e120 | planche grimpeur | Mountain climber
+sw-coudes-opposes-au-genou | rotation genoucoude | Opposite side elbow to knee
+e115 | planche | Plank
+e1130 | abdos inverse | Reverse Crunches
+sw-pike-sur-anneaux | planche pike | Ring Pike
+sw-rotation-du-tronc-a-la-machine | rotation machine | Rotary Torso
+sw-planche-scie | planche scie | Saw Plank
+sw-ciseaux | abdos ciseaux | Scissors
+sw-crunch-abdominal-assis-a-la-cable | abdos poulie assis | Seated Ab Cable Crunch
+sw-crunchs-alternes-assis | abdos genoux alt | Seated Alternate Crunches
+sw-rotation-russe-avec-barre | rotation assis barre | Seated Barbell Twist
+sw-battement-de-jambes-assis | abdos battements assis | Seated Flutter Kick
+sw-elevation-des-jambes-assis | abdos assisJambes | Seated Leg Raise
+sw-rotation-du-tronc-a-la-machine-assise | rotation machine | Seated Machine Trunk Rotation
+sw-crunchs-inverses-en-cercle-assis | abdos cercles | Seated Reverse Circle Crunches
+sw-touche-d-x27-epaule | planche epaule | Shoulder Tap
+sw-posture-de-la-chandelle | abdos chandelle | Shoulderstand Pose
+sw-crunch-lateral | abdos lateral | Side Crunch
+e116 | planche cote | Side Plank
+e205 | abdos situp | Sit Up
+sw-rotation-assise | rotation assis | Sitting Twist
+sw-crunch-sur-ballon-de-stabilite | abdos ballon | Stability Ball Crunch
+sw-velo-air-debout | rotation genoucoude | Standing Air Bike
+sw-crunch-debout-a-la-poulie | abdos poulie debout | Standing Cable Ab Crunch
+sw-rotation-du-tronc-debout | rotation debout | Standing Russian Twist
+sw-elevation-des-jambes-tendues-sur-barres-paralleles | suspendu paralleles jambes | Straight Leg Raise on Dip Bars
+sw-v-ups-en-suspension | planche pike | Suspension V-Ups
+sw-planche-sur-ballon-suisse | planche ballon | Swiss Ball Plank
+sw-toucher-des-orteils | abdos toucher | Toe Touches
+e202 | suspendu barre | Toes To Bar
+sw-bird-dog-unilateral-avec-trx | planche trx | TRX Single Leg Bird Dog
+e140 | halt getup | Turkish Get Up
+sw-chien-tete-en-haut | planche chienHaut | Upward Dog
+sw-crunch-en-v | abdos vsit | V-Sit Crunch
+e122 | abdos vup | V-Up
+sw-crunchs-abdominaux-ponderes | abdos leste | Weighted Ab Crunches
+sw-insecte-mort-leste | abdos deadbug balle | Weighted Dead Bug
+sw-crunch-decline-avec-poids | abdos decline leste | Weighted Decline Crunch
+sw-elevation-des-jambes-suspendues-avec-poids | suspendu jambes leste | Weighted Hanging Leg Raise
+sw-maintien-en-position-creuse-lestee | abdos hollow leste | Weighted Hollow Body Hold
+sw-planche-avec-poids | planche leste | Weighted Plank
+sw-rotation-russe-avec-poids | rotation russe disque | Weighted Russian Twist
+e201 | abdos situp leste | Weighted Sit Up
+sw-crunch-avec-bras-tendus-et-poids | abdos tendus | Weighted Straight Arm Crunch
+sw-coup-de-hache-avec-charge | rotation hache hal | Weighted Woodchopper
+# adduc
+sw-etirement-90-a-90 | etire 9090 | 90 To 90 Stretch
+sw-etirement-papillon-incline-vers-l-x27-avant | etire papillon avant | Butterfly Lean Forward Stretch
+sw-etirement-papillon | etire papillon | Butterfly Stretch
+e239 | hanche adduction poulie | Cable Hip Adduction
+sw-squat-cosaque | squat cosaque | Cossack Squat
+sw-cercles-de-hanches | hanche cercles | Hip Circles
+sw-posture-du-papillon-couche | etire papillon couche | Lying Butterfly Pose
+e243 | hanche adduction elas | Resistance Band Hip Adduction
+sw-grenouille-balancante | etire grenouille | Rocking Frog
+sw-etirement-de-la-demi-grenouille-en-mouvement | etire grenouille demi | Rocking Half Frog Stretch
+sw-adduction-des-hanches-assis | hanche adduction assis machine | Seated Hip Adduction
+sw-balancements-lateraux-de-jambe | hanche balancement lateral | Side Leg Swings
+sw-squat-sumo-sur-stepbox | souleve kb sumo deficit | Sumo Squat off Stepbox
+# avant
+e67 | curl barre pro | Barbell Reverse Grip Forearm Curl
+e125 | poignet barre inverse | Barbell Reverse Wrist Curl
+sw-curl-des-poignets-debout-avec-barre | poignet dos barre | Barbell Standing Back Wrist Curl
+sw-curl-poignet-debout-avec-barre | poignet debout barre | Barbell Standing Wrist Curl
+e124 | poignet barre | Barbell Wrist Curl
+sw-enroulement-de-poignet-debout-a-la-cable | poignet rouleau poulie | Cable Standing Wrist Roll
+e312 | poignet poulie | Cable Wrist Curl
+e127 | traction pendu | Dead Hang
+sw-porte-de-fermier-avec-halteres | cardio marche hal | Dumbbell Farmer Carry
+e341 | poignet pronation couche uni | Dumbbell Lying Pronation
+sw-curl-inverse-des-biceps-avec-halteres | curl hal pro | Dumbbell Reverse Curl
+e206 | poignet debout hal inverse | Dumbbell Standing Reverse Wrist Curls
+sw-flexion-des-poignets-debout-avec-halteres | poignet debout hal | Dumbbell Standing Wrist Curl
+sw-curl-inverse-des-biceps-avec-barre-ez | curl ez pro | EZ-Bar Reverse Grip Biceps Curl
+sw-curl-araignee-inverse-a-la-barre-ez | curl ez pro araignee | EZ-Bar Reverse Spider Curl
+sw-curl-inverse-des-poignets-assis-avec-barre-ez | poignet ez inverse | EZ-Bar Seated Reverse Wrist Curl
+sw-flexion-des-poignets-assis-avec-barre-ez | poignet ez | EZ-Bar Seated Wrist Curl
+sw-marche-du-fermier | cardio marche hal | Farmer Walk
+sw-hand-gripper-poignee-de-musculation | poignet pince | Machine Hand Grip
+sw-curl-inverse-du-poignet-avec-haltere-a-un-bras | poignet hal inverse uni | One-Arm Dumbbell Reverse Wrist Curl
+sw-supination-couchee-avec-halteres | poignet supination uni | One-Arm Dumbbell Supination
+sw-curl-haltere-a-un-bras-en-prise-neutre | poignet neutre uni | One-Arm Neutral Wrist Dumbbell Curl
+sw-flexion-du-poignet-a-un-bras-avec-haltere | poignet hal uni | One-Arm Wrist Curl Dumbbell
+sw-curl-inverse-a-la-poulie | curl poulie pro | Reverse Grip Cable Curl
+sw-pompes-completes-sur-les-poignets | pompe genoux poignets | Reverse Wrist Push-Up
+sw-flexion-des-poignets-a-la-poulie-assis | poignet poulie | Seated Cable Wrist Curl
+sw-marche-du-fermier-unilaterale | cardio marche kb uni | Unilateral Farmer Walk
+sw-machine-de-flexion-des-poignets | poignet machine | Wrist Curl on Machine
+sw-pompes-sur-les-poignets | pompe genoux poignets | Wrist Push-Up
+e1190 | poignet rouleau | Wrist Roller
+# bicep
+e336 | curl hal alt | Alternate Biceps Curl
+e245 | curl hal marteau alt | Alternate Dumbbell Hammer Curl
+sw-curl-biceps-avec-halteres-et-support-de-bras | curl hal | Arm Blaster Biceps Dumbbell Curl
+sw-band-biceps-curl | curl elas | Band Biceps Curl
+sw-curl-marteau-avec-bande | curl elas marteau | Band Hammer Curl
+sw-curl-biceps-a-la-barre-avec-cable | curl poulie barreP | Bar Cable Biceps Curl
+sw-curl-a-la-barre | curl barre | Barbell Biceps Curl
+e172 | curl barre drag | Barbell Drag Curl
+e61 | curl barre pupitre | Barbell Preacher Curl
+sw-curl-incline-avec-barre-en-pronation | curl barre araignee | Barbell Prone Incline Curl
+sw-curl-mural-avec-barre | curl barre mur | Barbell Wall Curl
+sw-curl-bayesien-a-la-poulie | curl poulie bayesien uni | Bayesian Cable Curl
+sw-curl-a-la-poulie-en-position-inversee | curl poulie bayesien uni | Bayesian Cable Curl (Face Away)
+sw-curl-biceps-assis-avec-cable | curl poulie bayesien uni | Bayesian Cable Curl Seated
+e303 | curl poulie pupitre barreP | Cable Preacher Curl
+sw-curl-a-genoux-avec-cable | curl poulie accroupi barreP | Cable Squatting Curl
+sw-curl-biceps-prise-serree | curl barre serre | Close Grip Biceps Curl
+e323 | curl ez serre | Close-grip EZ Bar Curl
+sw-curl-marteau-de-concentration | curl hal concentre marteau uni | Concentration Hammer Curl
+sw-curl-au-pupitre-avec-halteres | curl hal pupitre | Double Dumbbell Preacher Curl
+sw-curl-alterne-avec-halteres-en-supination | curl hal alt | Dumbbell Alternate Supinated Curl
+e338 | curl hal | Dumbbell Biceps Curl
+e60 | curl hal concentre uni | Dumbbell Concentration Curl
+e328 | curl hal croise marteau alt | Dumbbell Cross Body Hammer Curl
+sw-curl-en-traction-avec-halteres | curl hal drag | Dumbbell Drag Curl
+e58 | curl hal marteau | Dumbbell Hammer Curl
+e247 | curl hal incline alt | Dumbbell Incline Alternate Supinated Curl
+sw-curl-marteau-incline-avec-halteres | curl hal incline marteau | Dumbbell Incline Hammer Curl
+sw-curl-marteau-alterne-assis-avec-halteres | curl hal assis marteau alt | Dumbbell Seated Alternate Hammer Curl
+sw-curl-araignee-avec-halteres | curl hal araignee | Dumbbell Spider Curl
+sw-curl-avec-halteres-en-supination | curl hal | Dumbbell Supinated Curl
+sw-curl-predicateur-supination-avec-halteres | curl hal pupitre | Dumbbell Supinated Preacher Curl
+e56 | curl ez | EZ-Bar Biceps Curl
+sw-curl-au-pupitre-avec-barre-ez | curl ez pupitre | EZ-Bar Preacher Curl
+sw-curl-araignee-avec-barre-ez | curl ez araignee | EZ-Bar Spider Curl
+sw-curl-heracles | curl poulie hercule | Hercules Curl
+e173 | curl poulie incline | Incline Cable Curl
+sw-curl-biceps-avec-kettlebell | curl kb | Kettlebell Biceps Curl
+sw-curl-des-biceps-a-la-poulie-en-position-allongee | curl poulie allonge barreP | Lying Cable Biceps Curl
+sw-curl-biceps-a-la-machine | curl machine pupitre | Machine Biceps Curl
+e417 | curl machine pupitre | Machine Preacher Curl
+sw-curl-biceps-unilateral-a-la-cable | curl poulie uni | One-Arm Cable Biceps Curl
+sw-curl-au-pupitre-avec-haltere-a-un-bras | curl hal pupitre uni | One-Arm Dumbbell Preacher Curl
+sw-one-arm-hammer-cable-curl-flexion-du-bras-a-la-corde-en-prise-marteau | curl poulie marteau uni | One-Arm Hammer Cable Curl
+sw-curl-au-pupitre-a-un-bras-a-la-machine | curl machine pupitre uni | One-Arm Machine Preacher Curl
+sw-curl-marteau-sur-pupitre-avec-un-bras | curl hal pupitre marteau uni | One-Arm Preacher Hammer Curl
+sw-curl-marteau-au-pupitre | curl hal pupitre marteau | Preacher Hammer Curl
+e295 | curl poulie corde marteau | Rope Cable Hammer Curl
+sw-curl-assis-avec-halteres | curl hal assis | Seated Dumbbell Curl
+sw-curl-marteau-assis | curl hal assis marteau | Seated Hammer Curl
+sw-curl-incline-assis-pour-biceps | curl hal incline | Seated Incline Biceps Curl
+sw-curl-avec-haltere-unique | curl hal uni | Single Dumbbell Curl
+sw-curl-marteau-araignee | curl hal araignee marteau | Spider Hammer Curl
+sw-curl-biceps-avec-trx | suspension curl sangles | TRX Biceps Curl
+sw-curl-debout-a-la-barre-avec-prise-large | curl barre large | Wide Grip Standing Barbell Curl
+e170 | curl hal zottman | Zottman Curl
+# cardi
+sw-velo-d-x27-assaut-air | cardio airbike | Assault Air Bike
+e215 | cardio cordes | Battle Ropes
+e135 | cardio burpee | Burpee
+sw-entraineur-elliptique | cardio elliptique | Elliptical Trainer
+e1086 | cardio jacks | Jumping Jacks
+sw-kickboxing | cardio kickboxing | Kickboxing
+sw-boxe-avec-sac-de-frappe | cardio boxe | Punching Bag Boxing
+e131 | cardio rameur | Rowing Machine
+e1139 | cardio course | Running
+sw-ergometre-de-ski | cardio skierg | Ski Ergometer
+e212 | cardio escalier | Stair Climber
+e211 | cardio velo | Stationary Bike
+sw-montee-sur-tapis-roulant | cardio marche tapis pente | Treadmill Climbing
+sw-course-sur-tapis-roulant | cardio course tapis | Treadmill Run
+sw-marche-cardio | cardio marche | Walking Cardio
+# dos
+sw-rangee-alternee-en-position-de-planche | planche renegat | Alternate Renegade Row
+e154 | traction machine | Assisted Pull-Up
+sw-traction-australienne-prise-supination | suspension row sup | Australian Pull-Up Underhand Grip
+e1005 | gym levier dos | Back Lever
+sw-traction-assistee-par-bande-elastique | traction elastique | Band Assisted Pull Up
+sw-tirage-lateral-avec-bande-en-position-penchee | tirage elas debout | Band Bent Over Lat Pulldown
+sw-tirage-large-avec-bande-ancree-en-hauteur | rowing elas debout haut large | Band High Anchor Wide Row
+sw-tirage-a-la-bande-derriere-la-nuque | tirage elas genoux nuque | Band Pulldown Behind Neck
+e24 | rowing barre | Barbell Bent Over Row
+sw-rowing-barre-penche-depuis-pin | rowing barre pendlay | Barbell Bent Over Row From Pin
+sw-rowing-barre-incline-prise-large | rowing barre ventre=35 large | Barbell Incline Wide Grip Row
+sw-pullover-avec-barre | pullover barre | Barbell Pullover
+e157 | souleve blocs | Barbell Rack Pull
+sw-rowing-a-la-barre-en-pronation-inversee-penche-en-avant | rowing barre sup | Barbell Reverse Grip Bent Over Row
+sw-rowing-penche-avec-kettlebell | rowing kb | Bent Over Kettlebell Row
+e23 | tirage serre | Cable Close Grip Lat Pulldown
+sw-tirage-vertical-a-la-poulie | tirage | Cable Lat Pulldown
+sw-tirage-vertical-a-la-poulie-prise-neutre | tirage neutre | Cable Neutral Grip Lat Pulldown
+sw-tirage-a-la-poulie-haute-prise-inversee | tirage sup | Cable Reverse Grip Pulldown
+sw-tirage-assis-a-la-poulie-avec-prise-neutre | rowing poulie assis neutre | Cable Seated Row Neutral Grip
+sw-tirage-assis-a-la-poulie-avec-prise-supine | rowing poulie assis sup | Cable Seated Supine Grip Row
+sw-rameur-kayak-thibaudeau-a-cable | tirage tendus | Cable Thibaudeau Kayak Row
+sw-tirage-a-la-cable-prise-large-derriere-la-nuque | tirage large nuque | Cable Wide Grip Behind Neck Pulldown
+e22 | tirage large neutre | Cable Wide Neutral Grip Lat Pulldown
+e1213 | etire chatvache | Cat Cow
+e159 | rowing machine | Chest Supported Machine Row
+sw-rowing-t-bar-avec-appui-poitrine | rowing barre ventre=40 neutre | Chest Supported T-Bar Row
+e1215 | etire enfant | Child’s Pose
+e21 | traction sup | Chin-Up
+sw-rameur-a-prise-serree-avec-barre-au-sol | rowing landmine serre | Close Grip Landmine Row
+sw-traction-en-prise-serree | traction serre | Close Grip Pull Up
+sw-rowing-buste-penche-avec-halteres | rowing hal | Double Dumbbell Bent Over Row
+e275 | rowing hal appui uni | Dumbbell Bent Over Row
+sw-rowing-incline-avec-halteres-prise-neutre | rowing hal ventre=35 neutre | Dumbbell Neutral Grip Incline Bench Row
+e9 | pullover hal | Dumbbell Pullover
+sw-pull-over-avec-halteres-et-jambes-elevees | pullover hal jambesHautes | Dumbbell Pullover with Legs Raised
+sw-rowing-halteres-sur-banc-incline | rowing hal seal | Dumbbell Seal Row
+e1066 | halt hal arrache | Dumbbell Snatch
+sw-drapeau | gym drapeau | Flag
+e1074 | gym levier | Front Lever
+sw-traction-en-levier-avant | gym levier traction | Front Lever Pull-Up
+sw-rowing-gorilla | rowing kb gorille alt | Gorilla Row
+e353 | halt arrache suspendu | Hang Snatch
+sw-retractions-scapulaires-suspendues | traction scapulaire | Hanging Scapular Retractions
+sw-rowing-large-incline-avec-halteres | rowing hal ventre=35 haut | Incline Bench Dumbbell Wide Row
+sw-rowing-incline-avec-barre-poitrine-soutenue | rowing barre ventre=35 | Incline Chest Supported Barbell Row
+e155 | suspension row | Inverted Row
+sw-arrache-avec-kettlebell | halt kb | Kettlebell Clean
+sw-rameur-renegat-avec-kettlebell | planche renegat kb | Kettlebell Renegade Row
+sw-etirement-en-rotation-du-dos-a-genoux | etire rotationdos | Kneeling Back Rotation Stretch
+sw-tirage-vertical-a-genoux-a-la-poulie | tirage genoux | Kneeling Cable Lat Pulldown
+e1266 | tirage machine | Lat Pulldown Machine
+sw-tirage-haut-a-la-machine | rowing machine haut | Lever High Row
+sw-tirage-bas-avec-levier | rowing machine | Lever Low Row
+sw-pull-over-a-la-machine | pullover machine | Machine Pullover
+sw-muscle-up | gym muscleup | Muscle-up
+sw-traction-australienne-a-prise-etroite-avec-anneaux | suspension row anneaux | Narrow Grip Australian Pull-Up With Rings
+e160 | traction negative | Negative Pull-Up
+sw-traction-a-la-barre-fixe-avec-prise-neutre-et-charge-additionnelle | traction neutre leste | Neutral Grip Weighted Pull-Up
+sw-traction-en-prise-neutre | traction neutre | Neutral-Grip Pull-Up
+sw-tirage-vertical-a-un-bras-avec-bande-elastique | tirage elas genoux uni | One-Arm Band Kneeling Lat Pulldown
+sw-tirage-a-la-poulie-unilateral-en-demi-genou | tirage demigenou uni | One-Arm Cable Half-Kneeling Lat Pulldown
+sw-tirage-bas-a-un-bras-a-la-poulie | rowing poulie assis uni | One-Arm Cable Low Row
+sw-tirage-unilateral-a-la-poulie | rowing poulie debout uni | One-Arm Cable Row
+sw-tirage-a-un-bras-sur-machine-avec-support-pour-la-poitrine | rowing machine uni | One-Arm Chest Supported Row Machine
+sw-tirage-haut-unilateral-a-la-cable | rowing poulie demigenou haut uni | One-Arm High Row Cable
+sw-rowing-a-un-bras-avec-barre-fixee-au-sol-en-position-penchee | rowing landmine uni | One-Arm Landmine Bent Over Row
+sw-tirage-vertical-a-un-bras | tirage uni | One-Arm Lat Pulldown
+sw-tirage-haut-a-un-bras-avec-levier | rowing machine haut uni | One-Arm Lever High Row
+sw-rowing-assis-a-un-bras-avec-poulie-basse | rowing poulie assis uni | One-Arm Low Cable Seated Row
+sw-tirage-assis-a-un-bras | rowing machine uni | One-Arm Seated Row
+sw-tirage-vertical-unilateral-a-la-poulie | tirage tendus uni | One-Arm Straight-Arm Cable Lat Pulldown
+e149 | rowing barre pendlay | Pendlay Row
+e377 | halt arrache | Power Snatch
+sw-nageur-en-decubitus-ventral | planche nageur | Prone Swimmer
+sw-tirage-circulaire | traction autour | Pull Around
+e20 | traction | Pull-Up
+sw-tractions-prise-large | traction large | Pull-Up Wide Grip
+sw-muscle-up-aux-anneaux | gym muscleup anneaux | Ring Muscle Up
+sw-traction-aux-anneaux | traction anneaux | Rings Pull-Up
+sw-tirage-a-la-corde-bras-tendus | tirage tendus corde | Rope Straight-Arm Lat Pulldown
+e150 | rowing barre seal | Seal Row
+sw-rameur-assis-a-la-poulie-en-flexion | rowing poulie assis | Seated Cable Flexion Row
+sw-tirage-bas-assis-a-la-poulie-avec-prise-neutre | rowing poulie assis neutre | Seated Cable Low Row Neutral Grip
+e27 | rowing poulie assis | Seated Cable Row
+e151 | rowing poulie assis large | Seated Cable Wide Grip Row
+sw-rowing-penche-a-la-barre-guidee | rowing smith | Smith Machine Bent Over Row
+sw-snatch-arrache | halt arrache squat | Snatch
+sw-etirement-lateral-debout | etire lateral | Standing Side Lat Stretch
+sw-tirage-vertical-bras-tendus | tirage tendus | Straight-Arm Lat Pulldown
+sw-rangee-inversee-en-suspension | suspension row sangles | Suspension Inverted Row
+sw-rangee-en-suspension | suspension row sangles | Suspension Row
+sw-rameur-a-la-barre-en-t-penche | rowing tbar | T-Bar Bent Over Row
+sw-traction-avec-charge | traction sup leste | Weighted Chin Up
+sw-muscle-up-avec-charge | gym muscleup leste | Weighted Muscle-Up
+e153 | traction leste | Weighted Pull-Up
+sw-rowing-a-prise-large-sur-banc-incline | rowing machine large | Wide Grip Chest Supported Row
+sw-tirage-poitrine-verticale-barre | tirage large | Wide Grip Lat Pulldown
+sw-traction-arriere-prise-large | traction large nuque | Wide Grip Rear Pull-Up
+e37 | rowing barre yates | Yates Row
+# epaul
+sw-elevation-laterale-inversee-avec-halteres-en-position-penchee | elevation arriere hal penche alt | Alternate Bent Over Dumbbell Reverse Fly
+sw-cercles-d-x27-epaules | elevation cercles pc | Arm Circles
+sw-elevation-laterale-avec-bande | elevation lat elas | Band Lateral Raise
+sw-passage-de-bande-au-dessus-des-epaules | elevation passage elas | Band Pass Through Shoulders
+sw-developpe-epaules-avec-bande-elastique | developpe epaules elas | Band Shoulder Press
+e404 | elevation menton elas | Band Upright Row
+sw-echauffement-dynamique-des-epaules-avec-bande-elastique | elevation passage elas | Band Warm-Up Dynamic Shoulder Stretch
+sw-tirage-visage-avec-bande-elastique | elevation facepull elas | Banded Face Pull
+e162 | developpe epaules barre nuque | Barbell Behind Neck Shoulder Press
+e45 | elevation front barre | Barbell Front Raise
+sw-rowing-vertical-a-la-barre-avec-prise-serree | elevation menton barre serre | Barbell Narrow Grip Upright Row
+e39 | developpe epaules barre | Barbell Overhead Press
+e1129 | developpe epaules barre pousse | Barbell Push Press
+sw-elevation-arriere-des-deltoides-avec-barre | elevation arriere barre penche | Barbell Rear Delt Raise
+e258 | rowing barre haut large | Barbell Rear Delt Row
+sw-rowing-menton-a-la-barre-prise-largeur-d-epaules | elevation menton barre | Barbell Shoulder Grip Upright Row
+sw-tirage-vertical-a-la-barre-avec-prise-large | elevation menton barre large | Barbell Wide Grip Upright Row
+e163 | elevation arriere hal penche | Bent Over Dumbbell Lateral Raise
+e33 | elevation facepull poulie | Cable Face Pull
+sw-elevation-frontale-a-la-poulie | elevation front poulie | Cable Front Raise
+sw-elevation-en-y-sur-banc-incline-avec-support-dorsal | elevation y poulie banc=60 | Cable Incline Y Raise Back Supported
+e43 | elevation lat poulie | Cable Lateral Raise
+e304 | elevation arriere poulie | Cable Rear Delt Fly
+sw-elevation-laterale-arriere-assise-a-la-cable | elevation arriere poulie tabouret | Cable Seated Rear Lateral Raise
+sw-tirage-visage-a-la-poulie-en-supination | elevation facepull poulie sup | Cable Supinated Face Pull
+e49 | elevation menton poulie | Cable Upright Row
+sw-elevation-en-y-a-la-poulie | elevation y poulie | Cable Y Raise
+sw-elevation-laterale-en-t-avec-support-poitrine | elevation arriere t ventre=35 pc | Chest Supported Lateral T Raise
+sw-elevation-frontale-alternee-avec-halteres | elevation front hal alt | Dumbbell Alternate Front Raise
+sw-dumbbell-alternate-hammer-front-raise-elevation-frontale-alternee-avec-halteres-en-prise-marteau | elevation front hal marteau alt | Dumbbell Alternate Hammer Front Raise
+sw-rotation-cubaine-avec-halteres | elevation cubain hal | Dumbbell Cuban Rotation
+e44 | elevation front hal | Dumbbell Front Raise
+sw-developpe-epaules-avec-halteres-en-position-demi-genouillee | developpe epaules hal demigenou uni | Dumbbell Half Kneeling Shoulder Press
+sw-elevations-laterales-incline-avec-support-pour-la-poitrine-et-halteres | elevation lat hal ventre=40 | Dumbbell Incline Chest Supported Lateral Raises
+sw-elevation-laterale-arriere-en-t-incline-avec-halteres | elevation arriere t hal ventre=35 | Dumbbell Incline Rear Lateral T Raise
+sw-elevation-en-t-incline-avec-halteres | elevation arriere t hal ventre=35 | Dumbbell Incline T Raise
+e42 | elevation lat hal | Dumbbell Lateral Raise
+sw-elevation-laterale-poliquin-avec-halteres | elevation lat hal poliquin | Dumbbell Poliquin Lateral Raise
+sw-developpe-pousse-avec-halteres | developpe epaules hal pousse | Dumbbell Push Press
+sw-rowing-arriere-avec-halteres-pour-deltoides-posterieurs | rowing hal haut | Dumbbell Rear Delt Row
+sw-tirage-haut-assis-penche-avec-halteres | rowing hal haut | Dumbbell Seated Bent Over High Row
+sw-developpe-alterne-debout-avec-halteres | developpe epaules hal alt | Dumbbell Standing Alternate Press
+sw-driver-debout-avec-halteres | elevation front volant hal | Dumbbell Standing Driver
+e394 | elevation menton hal | Dumbbell Upright Row
+sw-planche-grenouille | gym planche grenouille | Frog Planche
+sw-planche-complete | gym planche | Full Planche
+sw-pompe-en-planche-complete | pompe planche | Full Planche Push-Up
+sw-maintien-en-equilibre-sur-les-mains | gym equilibre mur | Handstand Hold
+e52 | pompe equilibre | Handstand Push-Up
+sw-elevation-de-powell-inclinee | elevation lat hal cote uni | Incline Powell Raise
+sw-rotation-autour-de-la-tete-avec-kettlebell | elevation tete kb | Kettlebell Around the Head Rotation
+e165 | elevation lat landmine uni | Landmine Lateral Raise
+e148 | developpe landmine debout | Landmine Press
+sw-elevation-laterale-a-frontale | elevation lat hal latfront | Lateral to Front Raise
+sw-planche-inclinee | gym planche penchee | Lean Planche
+sw-elevation-laterale-inclinee-a-la-poulie | elevation lat poulie uni penchecote | Lean-Away Cable Lateral Raise
+sw-presse-epaules-assis-prise-marteau-a-levier | developpe epaules machine assis neutre | Lever Seated Hammer Grip Shoulder Press
+sw-elevations-laterales-avec-halteres | elevation lat hal lu | Lu Raises
+sw-tirage-visage-couche-a-la-poulie | elevation facepull poulie sol | Lying Cable Face Pull
+sw-elevation-laterale-arriere-avec-halteres-allonge | elevation arriere poulie plat | Lying Cross Lateral Cable Fly
+e51 | elevation lat machine | Machine Lateral Raise
+sw-butterfly-inverse | elevation arriere machine | Machine Reverse Flyes
+e47 | developpe epaules machine assis | Machine Shoulder Press
+sw-elevation-laterale-penchee-a-un-bras-avec-cable | elevation arriere poulie penche uni | One-Arm Cable Bent Over Lateral Raise
+sw-elevation-frontale-a-la-corde-avec-un-bras | elevation front poulie uni | One-Arm Cable Front Raise
+sw-elevation-laterale-a-un-bras-avec-cable | elevation lat poulie uni | One-Arm Cable Lateral Raise
+sw-elevation-arriere-des-deltoides-a-un-bras-avec-cable | elevation arriere poulie uni | One-Arm Cable Rear Delt Fly
+sw-elevation-laterale-inclinee-avec-haltere-a-un-bras | elevation lat hal cote uni | One-Arm Dumbbell Incline Lateral Raise
+sw-elevation-laterale-a-un-bras-avec-haltere | elevation lat hal uni | One-Arm Dumbbell Lateral Raise
+sw-elevation-laterale-avec-haltere-a-un-bras-en-appui-penche | elevation arriere hal penche uni | One-Arm Dumbbell Supported Bent Over Lateral Raise
+sw-developpe-avec-kettlebell-a-un-bras-au-dessus-de-la-tete | developpe epaules kb uni | One-Arm Kettlebell Overhead Press
+sw-presse-epaule-a-un-bras-en-demi-genou-avec-landmine | developpe landmine demigenou uni | One-Arm Landmine Half Kneeling Shoulder Press
+sw-developpe-epaules-a-un-bras-avec-landmine-en-position-debout | developpe landmine debout uni | One-Arm Landmine Standing Shoulder Press
+sw-elevation-posterieure-a-un-bras | elevation arriere machine uni | One-Arm Rear Delt Fly
+sw-developpe-epaules-a-un-bras-avec-haltere | developpe epaules hal uni | One-Arm Shoulder Press Dumbbell
+e53 | pompe pike | Pike Push-Up
+sw-pompe-en-pike-entre-bancs | pompe pike entre | Pike Push-Up Between Benches
+sw-pompe-en-pike-entre-des-chaises | pompe pike entre | Pike Push-Up Between Chairs
+sw-pompe-en-pike-sur-banc | pompe pike banc | Pike Push-Up On Bench
+sw-conducteur-de-volant-avec-disque | elevation front volant disque | Plate Bus Driver
+sw-elevation-frontale-avec-disque | elevation front disque | Plate Front Raise
+sw-elevations-frontales-avec-rotation | elevation front disque haut | Plate Front Raise Drive
+sw-elevation-de-powell | elevation lat hal cote uni | Powell Raise
+sw-etirement-du-deltoide-posterieur | etire deltarriere | Rear Deltoid Stretch
+sw-tirage-facial-aux-anneaux | suspension facepull anneaux | Ring Face Pull
+e41 | developpe epaules hal arnold assis | Seated Arnold Dumbbell Press
+e261 | developpe epaules barre assis | Seated Barbell Shoulder Press
+sw-press-cubain-assis | elevation cubain hal tabouret | Seated Cuban Press
+sw-elevation-laterale-assise-avec-halteres | elevation lat hal tabouret | Seated Dumbbell Lateral Raise
+e40 | developpe epaules hal assis | Seated Dumbbell Shoulder Press
+sw-tirage-visage-assis | elevation facepull poulie tabouret | Seated Face Pull
+sw-rotation-externe-de-l-x27-epaule-en-position-assise | elevation rotext hal tabouret uni | Seated Shoulder External Rotation
+sw-developpe-epaules-assis-prise-neutre | developpe epaules hal assis neutre | Seated Shoulder Press Neutral Grip
+sw-rotation-externe-en-decubitus-lateral | elevation rotext hal cote uni | Side Lying External Rotation
+e391 | elevation menton barre | Smith Machine Upright Row
+sw-developpe-derriere-la-nuque-a-la-machine-smith-en-position-assise | developpe epaules smith nuque assis | Smith Seated Behind Neck Press
+sw-developpe-epaules-assis-a-la-smith-machine | developpe epaules smith assis | Smith Shoulder Press
+sw-presse-cubaine-debout | elevation cubain hal | Standing Cuban Press
+sw-developpe-epaules-debout-avec-halteres | developpe epaules hal | Standing Dumbbell Shoulder Press
+sw-gainage-frontal-statique | elevation tenue disque | Static Front Hold
+sw-planche-ecartee | gym planche ecart | Straddle Planche
+sw-posture-sur-la-tete-avec-appui-sirsasana | gym tete | Supported Headstand
+sw-developpe-epaules-tsunami | developpe epaules barre | Tsunami Overhead Press
+sw-ange-mural | elevation ange | Wall Angel
+# fessi
+e104 | hanche elas | Band Hip Abduction
+sw-coquilles-avec-bande-elastique-en-position-allongee | hanche coquille elas | Band Lying Clamshells
+sw-hyperextension-inversee-avec-bande | hanche hyperinverse elas | Band Reverse Hyperextension
+sw-extension-de-la-hanche-en-equilibre-avec-bande | hanche kickback elas | Band Standing Balance Glute Kickback
+e255 | pont barre sol | Barbell Glute Bridge
+e99 | pont banc barre | Barbell Hip Thrust
+sw-abduction-de-la-hanche-a-la-poulie | hanche poulie | Cable Hip Abduction
+sw-coup-de-pied-de-mule | hanche kickback quatrepattes | Donkey Kick
+e100 | pont banc hal | Dumbbell Hip Thrust
+sw-releve-de-bassin-unilateral-avec-haltere | pont banc hal unejambe | Dumbbell Single Leg Hip Thrust
+sw-etirement-en-figure-4-sur-chaise | etire figure4 | Figure 4 Stretch on Chair
+sw-marche-monstre-avant-avec-bande | hanche monstre elas | Forward Band Monster Walk
+e193 | pont grenouille | Frog Pump
+e101 | pont | Glute Bridge
+sw-pont-fessier-sur-banc | pont banc | Glute Bridge on Bench
+e388 | pont unejambe | Glute Bridge Single Leg
+sw-extension-de-la-hanche-a-la-poulie | hanche kickback poulie | Glute Cable Kickback
+sw-extension-des-hanches-a-la-machine | hanche kickback machine | Glute Machine Kickback
+sw-roulement-des-fessiers | etire rouleau fessiers | Glutes Roll
+sw-charniere-de-hanche | souleve charniere | Hip Hinge
+sw-releve-de-bassin | pont banc | Hip Thrust
+sw-extension-de-la-hanche-a-la-machine-smith | pont banc smith | Hip Thrust Smith Machine
+sw-pont-fessier-kas | pont banc kas | KAS Glute Bridge
+e136 | souleve swing | Kettlebell Swing
+sw-extension-de-jambe-avec-bande-elastique | hanche kickback quatrepattes elas | Kneeling Resistance Band Glute Kickback
+sw-marche-laterale-avec-bande | hanche monstre lateral elas | Lateral Monster Walk
+sw-etirement-couche-genou-poitrine | etire genoupoitrine couche | Lying Knee To Chest Stretch
+e192 | pont banc machine | Machine Hip Thrust
+sw-pont-fessier-avec-mini-bande | pont elas | Mini Band Glute Bridge
+sw-balancement-a-un-bras-avec-kettlebell | souleve swing uni | One-Arm Kettlebell Swing
+sw-posture-du-pigeon | etire pigeon | Pigeon Pose
+e1013 | hanche assis elas | Seated Band Hip Abduction
+sw-etirement-en-position-assise-en-figure-4 | etire figure4 | Seated Figure 4 Stretch
+sw-abduction-de-la-hanche-assis | hanche assis machine | Seated Hip Abduction
+e1144 | hanche cote | Side Lying Hip Abduction
+sw-planche-laterale-avec-coquille | planche cote coquille | Side Plank Clamshell
+sw-planche-laterale-avec-abduction-de-la-hanche | planche cote abduction | Side Plank Hip Abduction
+sw-pont-fessier-unilateral-avec-charge | pont unejambe disque | Single Leg Weighted Glute Bridge
+sw-releve-de-bassin-a-genoux-a-la-smith-machine | pont genoux | Smith Kneeling Hip Thrust
+sw-extension-de-la-hanche-a-la-machine-smith-2 | hanche kickback smith | Smith Machine Glute Kickback
+e1015 | hanche elas | Standing Hip Abduction
+e31 | souleve sumo | Sumo Deadlift
+sw-pont-fessier-avec-poids | pont disque | Weighted Glute Bridge
+sw-etirement-complet-du-corps | etire monde | World’s Greatest Stretch
+# ischi
+sw-souleve-de-terre-roumain-en-position-b | souleve roumain bstance kb | B Stance Romanian Deadlift
+sw-curl-des-ischio-jambiers-allonge-avec-bande-elastique | jambes curl elas | Band Lying Leg Curl
+e36 | souleve goodmorning | Barbell Good Morning
+sw-souleve-de-terre-jambes-tendues-avec-barre | souleve tendues | Barbell Straight Leg Deadlift
+sw-presse-a-cuisses-avec-ceinture | souleve roumain poulie | Belt Squat Machine Romanian Deadlift with V-Grip
+e195 | souleve poulie | Cable Pull Through
+sw-souleve-de-terre-roumain-a-la-poulie | souleve roumain poulie | Cable Romanian Deadlift
+e29 | souleve | Deadlift
+sw-souleve-de-terre-a-partir-de-blocs | souleve blocs | Deadlift from Blocks
+sw-squat-profond-avec-flexion-large-et-maintien-du-pied | etire squatpli | Deep Squat to Wide Fold with Foot Hold
+e334 | souleve deficit | Deficit Deadlift
+sw-chien-tete-en-bas | etire chienbas | Downward Dog
+sw-souleve-de-terre-avec-halteres | souleve hal | Dumbbell Deadlift
+sw-curl-des-ischio-jambiers-couche-avec-halteres | jambes curl hal | Dumbbell Lying Leg Curl
+sw-souleve-de-terre-roumain-avec-halteres | souleve roumain hal | Dumbbell Romanian Deadlift
+sw-souleve-de-terre-jambes-tendues-avec-halteres | souleve tendues hal | Dumbbell Straight Leg Deadlift
+sw-elevation-ischio-jambiers-gluteaux-1-2 | jambes curl ghr | Glute-Ham Raise 1/2
+sw-hang-power-clean | halt suspendu | Hang Power Clean
+e1226 | etire bebe | Happy Baby Pose
+e1085 | souleve jefferson hal | Jefferson Curl
+sw-souleve-de-terre-avec-kettlebell | souleve kb | Kettlebell Deadlift
+e1229 | etire genoupoitrine | Knee To Chest Stretch
+sw-etirement-des-ischio-jambiers-a-genoux | etire ischios | Kneeling Hamstring Stretch
+sw-balancements-de-jambes | hanche balancement | Leg Swings
+sw-etirement-en-fente | etire fente | Lunge Stretch
+e97 | jambes curl nordique | Nordic Hamstring Curl
+sw-curl-des-ischio-jambiers-en-position-couchee | jambes curl machine | Prone Lying Leg Curl
+sw-curl-des-ischio-jambiers-avec-anneaux | jambes curl anneaux | Ring Leg Curl
+e30 | souleve roumain | Romanian Deadlift
+e1250 | etire ischios assis deux | Seated Forward Fold
+e384 | souleve goodmorning assis | Seated Good Morning
+e94 | jambes curl assis machine | Seated Leg Curl
+sw-curl-ischio-jambiers-assis-a-une-jambe | jambes curl assis machine uni | Seated Single Leg Curl
+sw-etirement-ischio-jambiers-unilateral-assis | etire ischios assis | Seated Single Leg Hamstring Stretch
+sw-souleve-de-terre-sur-une-jambe-avec-haltere | souleve unejambe hal | Single Leg Dumbbell Deadlift
+e190 | souleve unejambe roumain hal | Single Leg Romanian Deadlift
+sw-curl-ischio-jambier-unilateral-a-la-poulie | jambes curl debout poulie uni | Single-Leg Cable Leg Curl
+sw-souleve-de-terre-unilateral | souleve unejambe | Single-Leg Deadlift
+sw-curl-ischio-jambier-unilateral-couche | jambes curl machine uni | Single-Leg Lying Curl
+sw-curl-des-ischio-jambiers-en-glissement | jambes curl glisse | Sliding Leg Curl
+e1157 | souleve goodmorning smith | Smith Machine Good Morning
+sw-souleve-de-terre-roumain-a-la-smith-machine | souleve roumain smith | Smith Machine Romanian Deadlift
+sw-tirage-d-x27-arrache | halt arrache tirage | Snatch Pull
+sw-flexion-avant-debout | etire pli | Standing Forward Bend
+sw-curl-des-ischio-jambiers-debout | jambes curl debout machine | Standing Leg Curl
+sw-curl-des-jambes-sur-swiss-ball | jambes curl ballon | Swiss Ball Leg Curl
+# lomba
+sw-extension-du-dos-avec-haltere | souleve extension hal | Back Extension With Dumbbell
+sw-extension-dorsale-sur-machine | souleve extension machine | Lever Back Extension
+e35 | planche superman | Superman
+sw-extension-du-dos | souleve extension hal | Weighted Back Extension
+# molle
+sw-elevation-des-mollets-avec-barre | mollets barre | Barbell Calf Raise
+e108 | jambes presse mollets | Calf Leg Press
+e109 | mollets hal | Dumbbell Standing Calf Raises
+sw-tapping-genou-haut-en-sautant | saut genoux | Hopping High Knee Tap
+e134 | cardio sauter | Jump Rope
+sw-sauts-sur-place | saut pogo | Pogo Jumps
+sw-roulement-des-mollets | etire rouleau mollets | Roll Calves
+sw-roulement-du-pied | etire rouleau pied | Roll Foot
+sw-elevation-des-mollets-a-la-machine | mollets machine | Rotary Calf Raise
+e260 | mollets assis machine | Seated Calf Raise
+sw-elevation-des-mollets-a-une-jambe-sur-machine-assise | mollets assis machine uni | Single Leg Seated Calf Machine Raise
+sw-elevation-des-mollets-unilaterale-a-la-smith-machine | mollets smith uni | Single Leg Smith Calf Raise
+e1153 | mollets uni | Single-Leg Calf Raise
+sw-elevations-unilaterales-avec-haltere | mollets hal uni | Single-Leg Calf Raise with Dumbbell
+sw-elevation-du-mollet-assis-sur-une-jambe-avec-haltere | mollets assis hal uni | Single-Leg Seated Calf Raise with Dumbbell
+sw-elevations-des-mollets-a-la-machine-smith | mollets smith | Smith Calf Raises
+sw-elevation-des-mollets-assis-a-la-machine-smith | mollets assis smith | Smith Seated Calf Raise
+e393 | mollets | Standing Calf Raise
+sw-elevation-du-tibial-anterieur-en-position-debout | mollets tibial | Standing Tibialis Raise
+sw-elevation-des-mollets-assis-avec-poids | mollets assis hal | Weighted Seated Calf Raise
+# pecto
+sw-pompes-archer | pompe archer | Archer Push-Up
+sw-developpe-couche-avec-bande | developpe elas | Band Bench Chest Press
+sw-ecarte-avec-bande-elastique | ecarte elas | Band Chest Fly
+e1 | developpe barre | Barbell Bench Press
+e270 | developpe barre | Barbell Bench Press with Chains
+e1073 | developpe barre sol | Barbell Floor Press
+sw-developpe-couche-larsen-avec-barre | developpe barre larsen | Barbell Larsen Press
+sw-developpe-couche-avec-bande-de-resistance | developpe barre | Bench Press With Resistance Band
+sw-etirement-de-la-poitrine-avec-bras-flechis | etire pectoraux coude | Bent Arm Chest Stretch
+sw-pompe-avec-extension-bras-jambe-opposes | pompe birddog | Bird Dog Push-Up
+sw-developpe-couche-a-la-cable | developpe poulie plat | Cable Bench Press
+sw-ecarte-a-la-poulie-haute-a-basse-a-genoux | ecarte poulie haut genoux | Cable Kneeling High To Low Fly
+sw-ecarte-a-la-corde-pour-le-milieu-de-la-poitrine | ecarte poulie | Cable Middle Chest Fly
+sw-pression-debout-circulaire | developpe poulie autour uni | Cable Press Around
+e16 | dips pecs | Chest Dips
+sw-pompes-avec-claquement | pompe claquement | Clap Push-Up
+e322 | developpe hal serre neutre | Close Grip Dumbbell Press
+sw-pompe-cobra | pompe cobra | Cobra Push-Up
+sw-developpe-unilateral-en-travers-du-corps | developpe machine assis uni | Cross Body One-Arm Strength Press
+e3 | developpe barre decline | Decline Barbell Bench Press
+sw-developpe-couche-decline-a-la-poulie | developpe poulie decline | Decline Cable Chest Press
+sw-developpe-couche-decline | developpe machine assis | Decline Chest Press
+e6 | developpe hal decline | Decline Dumbbell Bench Press
+e332 | ecarte hal decline | Decline Dumbbell Fly
+e15 | pompe decline | Decline Push-Up
+e333 | developpe smith decline | Decline Smith Bench Press
+sw-pompe-profonde-sur-barres-paralleles | pompe profonde | Deep Push Up On Parallel Bars
+e1219 | etire pectoraux porte | Doorway Chest Stretch
+e4 | developpe hal | Dumbbell Bench Press
+sw-ecarte-couche-avec-halteres | ecarte hal | Dumbbell Chest Fly
+sw-pompes-profondes-avec-halteres | pompe hal | Dumbbell Deep Push Up
+sw-ecarte-couche-au-sol-avec-halteres | ecarte hal sol | Dumbbell Floor Chest Fly
+sw-developpe-larsen-avec-halteres | developpe hal larsen | Dumbbell Larsen Press
+sw-ecarte-avec-halteres-de-bas-en-haut | ecarte hal debout bas | Dumbbell Low to High Fly
+sw-developpe-poliquin-avec-halteres | developpe hal | Dumbbell Poliquin Press
+sw-etirement-de-la-poitrine-avec-les-coudes-ecartes | etire pectoraux coudes | Elbow Out Chest Stretch
+sw-pompe-sur-les-doigts | pompe doigts | Finger Push-Up
+sw-developpe-couche-au-sol-avec-halteres | developpe hal sol | Floor Dumbbell Press
+sw-developpe-couche-avec-halteres-en-prise-marteau | developpe hal neutre | Hammer Grip Dumbbell Bench Press
+sw-ecartes-a-la-poulie | ecarte poulie haut | High Low Cable Chest Fly
+e2 | developpe barre banc=30 | Incline Barbell Bench Press
+sw-ecarte-couche-incline-a-la-poulie | ecarte poulie banc=30 | Incline Bench Cable Fly
+e5 | developpe hal banc=30 | Incline Dumbbell Bench Press
+sw-ecarte-couche-incline-avec-halteres | ecarte hal banc=30 | Incline Dumbbell Chest Fly
+sw-developpe-incline-marteau | developpe machine assis | Incline Hammer Chest Press
+sw-developpe-incline-avec-halteres-en-prise-neutre | developpe hal banc=30 neutre | Incline Neutral Grip Dumbbell Press
+e14 | pompe incline | Incline Push-Up
+sw-pompes-jack | pompe jack | Jack Push-Up
+e1111 | developpe kb sol uni | Kettlebell One Arm Floor Press
+sw-pompes-sur-les-genoux | pompe genoux | Knee Push-Up
+sw-pompes-aux-anneaux-a-genoux | pompe genoux anneaux | Kneeling Ring Push-Up
+sw-pompes-larges-a-genoux | pompe genoux large | Kneeling Wide Push-Up
+sw-pompe-sur-les-jointures | pompe jointures | Knuckle Push-Up
+sw-dips-coreens | dips coreen | Korean Dip
+sw-developpe-incline-a-la-poulie-basse | developpe poulie banc=30 | Low Cable Incline Bench Press
+sw-ecarte-incline-avec-halteres | ecarte hal banc=15 | Low Incline Dumbbell Fly
+sw-ecarte-couche-a-la-poulie-basse-haute | ecarte poulie bas | Low-to-High Cable Fly
+sw-ecarte-couche-a-la-poulie | ecarte poulie plat | Lying Cable Fly
+sw-developpe-couche-prise-marteau | developpe machine | Lying Chest Press
+sw-ecarte-a-la-machine-pour-pectoraux | ecarte machine | Machine Chest Fly
+e10 | developpe machine assis | Machine Chest Press
+sw-presse-a-pectoraux-a-prise-marteau-sur-machine | developpe machine assis neutre | Machine Chest Press Hammer Grip
+sw-pompe-negative | pompe negatif | Negative Push-Up
+sw-ecarte-a-un-bras-a-la-poulie | ecarte poulie uni | One-Arm Cable Fly
+sw-developpe-couche-a-un-bras-avec-haltere | developpe hal uni | One-Arm Dumbbell Bench Press
+sw-developpe-incline-avec-haltere-a-un-bras | developpe hal banc=30 uni | One-Arm Dumbbell Incline Bench Press
+sw-ecarte-a-la-poulie-haute-vers-basse-a-un-bras | ecarte poulie haut uni | One-Arm High-to-Low Cable Fly
+sw-ecarte-a-un-bras-avec-haltere-en-position-basse | ecarte hal debout bas uni | One-Arm Low Fly Dumbbell
+sw-pompe-a-un-bras | pompe unbras | One-Arm Push-Up
+sw-ecarte-a-la-machine-pec-deck | ecarte machine pecdeck | Pec Deck Chest Fly
+sw-developpe-couche-avec-arret | developpe barre partiel | Pin Bench Press
+sw-dips-en-planche | pompe planche | Planche Dips
+sw-pompes-pseudo-planche | pompe pseudo | Planche Push-Up
+sw-presse-pectorale-a-la-machine | developpe machine assis | Plate-Loaded Chest Press
+sw-ecartes-poliquin | ecarte hal | Poliquin Flyes
+e13 | pompe | Push-Up
+sw-pompes-sur-poignees | pompe poignees | Push-Up on Parallel Bars
+sw-pompes-avec-bande-de-resistance | pompe elas | Resistance Band Push-Up
+e1136 | dips anneaux | Ring Dips
+e145 | pompe anneaux | Ring Push-Up
+sw-pompes-scapulaires | pompe scapulaire | Scapula Push-Up
+e292 | developpe poulie assis | Seated Cable Chest Press
+sw-ecarte-a-la-poulie-assis | ecarte poulie assis | Seated Cable Fly
+sw-coquille-thoracique-assise | etire pectoraux coudes | Seated Chest Clam
+sw-developpe-couche-a-la-smith-machine | developpe smith | Smith Bench Press
+sw-developpe-incline-a-la-machine-smith | developpe smith banc=30 | Smith Incline Chest Press
+e1160 | developpe barre partiel | Spoto Press
+sw-developpe-debout-a-la-poulie-pour-les-pectoraux | developpe poulie debout | Standing Cable Chest Press
+sw-presse-a-la-poitrine-basse-avec-cable-en-position-debout | developpe poulie debout bas | Standing Cable Low Chest Press
+sw-ouverture-de-la-poitrine-en-position-debout | etire pectoraux coudes | Standing Chest Opener
+sw-chien-tete-en-bas-debout | etire chienbas debout | Standing Downward Dog
+sw-ecarte-incline-debout-avec-bande-elastique | ecarte elas bas | Standing Incline Band Chest Fly
+e1165 | dips barre | Straight Bar Dips
+sw-pompe-superman | pompe superman | Superman Push-Up
+sw-ecarte-couche-en-suspension | suspension ecarte sangles | Suspension Chest Fly
+e1169 | developpe svend debout | Svend Press
+e144 | pompe leste | Weighted Push-Up
+sw-pompes-mains-larges | pompe large | Wide Push-Up
+# quadr
+sw-squat-anderson | squat barre partiel | Anderson Squat
+sw-squat-pistolet-assiste | squat pistolet assiste | Assisted Pistol Squat
+e1014 | squat elas | Band Squat
+sw-squat-bulgare-avec-barre | fente bulgare barre | Barbell Bulgarian Squat
+sw-squat-cosaque-avec-barre-olympique | squat cosaque barre | Barbell Cossack Squat
+sw-fente-avant-avec-barre | fente avant barre | Barbell Forward Lunge
+sw-squat-hack-a-la-barre | squat barre hack | Barbell Hack Squat
+e1116 | squat barre tete | Barbell Overhead Squat
+sw-fente-arriere-avec-barre-sur-step | fente arriere deficit barre | Barbell Rear Lunge On Step
+sw-fentes-arriere-avec-barre | fente arriere barre | Barbell Reverse Lunges
+sw-fente-avec-barre | fente barre | Barbell Split Squat
+e265 | squat barre | Barbell Squat
+sw-montee-sur-banc-avec-barre | fente step barre | Barbell Step-up
+sw-squat-sumo-avec-barre | squat barre sumo | Barbell Sumo Squat
+sw-thruster-avec-barre | squat barre avant thruster | Barbell Thruster
+sw-fentes | fente marchee barre | Barbell Walking Lunges
+sw-squat-avant-avec-barre-sur-banc | squat barre avant boite | Bench Front Squat
+e216 | saut boite | Box Jumps
+sw-squat-sur-boite | squat barre boite | Box Squat
+sw-montee-sur-boite | fente step | Box step-up
+sw-saut-en-longueur | saut longueur | Broad Jump
+sw-bulgarian-bag-walking-lunges-fentes-marchees-avec-sac-bulgare | fente marchee sac | Bulgarian Bag Walking Lunges
+sw-squat-saute-bulgare | fente bulgare pliometrique | Bulgarian Jump Squat
+sw-fente-bulgare | fente bulgare | Bulgarian Squat
+sw-fente-bulgare-a-la-smith-machine | fente bulgare smith | Bulgarian Squat Smith
+sw-montee-sur-banc-avec-cable | fente step poulie | Cable Step Up
+sw-extension-du-genou-a-la-poulie | jambes tke poulie | Cable Terminal Knee Extension
+sw-squat-avec-epaule | halt squat | Clean Squat
+sw-squat-cycliste | squat barre cycliste | Cyclist Squat
+sw-squat-bulgare-avec-halteres | fente bulgare hal | Dumbbell Bulgarian Squat
+sw-squat-cosaque-avec-halteres | squat cosaque gobelet | Dumbbell Cossack Squat
+e81 | squat gobelet | Dumbbell Goblet Squat
+sw-saut-avec-halteres | squat saut hal | Dumbbell Jump
+e84 | fente avant hal | Dumbbell Lunges
+sw-fente-arriere-avec-halteres | fente arriere hal | Dumbbell Rear Lunge
+sw-fente-arriere-avec-halteres-sur-marche | fente arriere deficit hal | Dumbbell Reverse Lunge off Step
+sw-fentes-laterales-avec-halteres | fente laterale hal | Dumbbell Side Lunges
+sw-fente-avec-halteres | fente hal | Dumbbell Split Squat
+sw-squat-avec-halteres | squat hal | Dumbbell Squat
+e91 | fente step hal | Dumbbell Step-Up
+e105 | squat sumo gobelet | Dumbbell Sumo Squat
+e85 | fente marchee hal | Dumbbell Walking Lunges
+e80 | squat barre avant | Front Squat
+sw-squat-gobelet | squat gobelet | Goblet Squat
+sw-etirement-du-quadriceps-en-demi-agenouillement | etire quadriceps | Half Kneeling Quad Stretch
+sw-demi-squat | squat barre demi | Half Squat
+sw-squat-avec-barre-haute | squat barre | High-Bar Squat
+e89 | squat saut | Jump Squat
+sw-epaule-jete-avec-kettlebell | halt jete kb | Kettlebell Clean and Jerk
+sw-squat-gobelet-avec-kettlebell | squat kb | Kettlebell Goblet Squat
+sw-fente-arriere-avec-kettlebell | fente arriere kb | Kettlebell Rear Lunge
+sw-squat-avec-barre-pivotante | squat landmine | Landmine Squat
+e82 | jambes presse | Leg Press
+sw-presse-a-cuisses-en-position-large | jambes presse large | Leg Press Wide Stance
+sw-presse-a-cuisses-horizontale | jambes presse horizontale | Lever Horizontal Leg Press
+sw-posture-du-lezard | etire lezard | Lizard Pose
+sw-squat-avec-barre-basse | squat barre basse | Lowbar Squat
+sw-etirement-des-quadriceps-en-position-allongee | etire quadriceps couche | Lying Quadriceps Stretch
+sw-squat-a-la-machine-avec-ceinture | squat ceinture | Machine Belt Squat
+e88 | squat hack | Machine Hack Squat
+sw-squat-hack-inverse-a-la-machine | squat hack | Machine Reverse Hack Squat
+sw-presse-a-cuisses-a-45-degres-avec-pieds-rapproches | jambes presse serre | Narrow Stance 45 Degree Leg Press
+sw-squat-avant-avec-arret | squat barre avant partiel | Pin Front Squat
+sw-squat-partiel | squat barre partiel | Pin Squat
+sw-squat-sur-boite-en-pistolet | squat pistolet boite | Pistol Box Squat
+e185 | squat pistolet | Pistol Squat
+sw-fente-laterale-plyometrique | fente laterale pliometrique | Plyo side lunge
+sw-montee-sur-banc-poliquin | fente step poliquin | Poliquin Step-Up
+e375 | halt | Power Clean
+sw-traineau-prowler | cardio traineau | Prowler Sled
+sw-fente-arriere | fente arriere | Rear Lunge
+sw-squat-sissy-a-genoux | jambes nordiqueInverse | Reverse Nordic Curl
+e87 | jambes extension | Seated Leg Extension Machine
+e1143 | fente laterale | Side Lunges
+sw-etirement-des-quadriceps-en-position-laterale-couche | etire quadriceps cote | Side Lying Quadriceps Stretch
+e182 | jambes presse unejambe | Single Leg Press
+sw-saut-sur-boite-a-une-jambe | saut boite unejambe | Single-Leg Box Jump
+sw-extension-unilaterale-de-la-jambe | jambes extension uni | Single-Leg Extension
+e92 | squat sissy | Sissy Squat
+sw-squat-chaise-sur-smith-machine | squat smith | Smith Chair Squat
+sw-squat-avant-a-la-smith-machine | squat smith avant | Smith Front Squat
+sw-squat-hack-a-la-machine-smith | squat smith | Smith Hack Squat
+sw-fente-arriere-a-la-smith-machine | fente arriere smith | Smith Rear Lunge
+sw-fente-sur-machine-smith | fente smith | Smith Split Squat
+sw-squat-au-smith-machine | squat smith | Smith Squat
+sw-squat-au-banc-avec-smith-machine | squat smith boite | Smith Squat To Bench
+sw-squat-zercher-a-la-smith-machine | squat smith zercher | Smith Zercher Squat
+sw-fente-bulgare-2 | fente | Split Squat
+sw-fente-avec-pied-avant-sureleve | fente piedAvantHaut barre | Split Squat Front Foot Elevated
+sw-squat | squat | Squat
+sw-squat-contre-le-mur-avec-ballon-de-stabilite | squat mur ballon | Stabillity Ball Wall Squat
+sw-etirement-des-quadriceps-en-position-debout | etire quadriceps debout | Standing Quadriceps Stretch
+sw-squat-sumo | squat sumo | Sumo Squat
+sw-squat-sumo-avec-smith-machine | squat smith sumo | Sumo Squat With Smith
+e1018 | jambes tke elas | Terminal Knee Extension
+e156 | souleve trapbar | Trap Bar Deadlift
+sw-presse-a-jambes-verticale-sur-machine-smith | jambes presse verticale | Vertical Leg Press Smith Machine
+sw-fentes-marchees | fente marchee | Walking Lunges
+e1182 | squat mur | Wall Sit
+sw-squat-cosaque-avec-poids | squat cosaque gobelet | Weighted Cossack Squat
+sw-squat-pistole-avec-poids | squat pistolet kb | Weighted Pistol Squat
+sw-squat-sissy-pondere-en-position-agenouillee | jambes nordiqueInverse disque | Weighted Reverse Nordic Curl
+sw-squat-sissy-avec-poids | squat sissy | Weighted Sissy Squat
+e180 | squat barre zercher | Zercher Squat
+# trape
+sw-haussement-d-x27-epaules-avec-barre | elevation shrug barre | Barbell Shoulder Shrug
+e262 | elevation shrug barre dos | Barbell Shrug Behind The Back
+e311 | elevation shrug poulie | Cable Shrug
+sw-haussements-d-x27-epaules-en-dips | dips shrug | Dip Shrugs
+sw-haussements-d-x27-epaules-kelso-avec-halteres | elevation shrug hal kelso | Dumbbell Kelso Shrugs
+sw-haussements-d-x27-epaules-avec-halteres | elevation shrug hal | Dumbbell Shoulder Shrugs
+sw-haussement-d-x27-epaules-inverse | gym equilibre mur shrug | Inverted Shrug
+e130 | elevation shrug machine | Machine Shrugs
+sw-flexion-du-cou | etire cou curl | Neck Curl
+e1239 | etire cou | Neck Side Stretch
+sw-rowing-unilateral-avec-haltere-en-appui-sur-scapula-en-flexion-du-tronc | rowing hal appui uni amp=0.25 | One-Arm Dumbbell Bent Over Scapula Row
+sw-haussements-d-x27-epaules-avec-halteres-en-position-assise | elevation shrug hal tabouret | Seated Dumbbell Shrugs
+sw-haussement-d-x27-epaules-a-la-smith-machine | elevation shrug barre | Smith Shoulder Shrug
+sw-haussements-d-x27-epaules-avec-barre-hexagonale | elevation shrug hal | Trap Bar Shrugs
+sw-elevation-en-y-pour-trapezes | elevation y hal ventre=30 | Trap Y Raise
+# trice
+e1003 | dips machine | Assisted Machine Dips
+sw-extension-des-triceps-avec-bande-elastique | triceps elas | Band Triceps Pushdown
+sw-extension-des-triceps-a-la-barre-droite-en-position-couchee | triceps pullover barre | Barbell Triceps Pullover
+sw-extension-des-triceps-a-la-poulie-croisee | triceps croise poulie | Cable Cross Triceps Extension
+sw-extension-des-triceps-a-deux-bras-a-la-poulie | triceps kickback poulie | Cable Double-Arm Tricep Kickback
+sw-extension-des-triceps-a-la-poulie-inclinee | triceps front poulie banc=30 | Cable Incline Skull Crusher
+e306 | triceps nuque poulie corde | Cable Overhead Triceps Extension
+sw-extensions-a-la-poulie | triceps poulie barreP | Cable Triceps Pushdown
+sw-developpe-californien | triceps jm barre | California Press
+e17 | developpe barre serre | Close Grip Bench Press
+sw-developpe-couche-incline-avec-halteres-prise-serree | developpe hal banc=30 serre neutre | Close Grip Incline Dumbbell Bench Press
+sw-pompes-prise-serree | pompe serre | Close Grip Push-Up
+sw-developpe-couche-jm-smith | developpe smith serre | Close Grip Smith Bench Press
+sw-pompes-bras-croises | pompe serre | Cross Arms Push-Up
+sw-developpe-couche-decline-a-la-barre | triceps front barre decline | Decline Barbell French Press
+sw-pompe-diamant-en-declinaison | pompe decline diamant | Decline Diamond Push-Up
+e77 | pompe diamant | Diamond Push-Up
+sw-dips | dips | Dips
+e1103 | triceps front hal | Dumbbell Lying Triceps Extension
+e1142 | triceps nuque hal assis | Dumbbell Seated Triceps Extension
+sw-extension-des-triceps-assis-a-la-barre-ez | triceps nuque ez assis | EZ-Bar Seated Triceps Extension
+sw-extension-des-triceps-a-la-barre-ez | triceps poulie barreP | EZ-Bar Tricep Pushdown
+sw-extension-des-triceps-a-la-poulie-haute | triceps nuque poulie haute | High Pulley Overhead Triceps Extension
+sw-extension-des-triceps-a-la-barre-sur-banc-incline | triceps front barre banc=30 | Incline Barbell Triceps Extension
+sw-pompe-inclinee-prise-serree | pompe incline serre | Incline Close Grip Push-Up
+sw-extension-des-triceps-avec-halteres-sur-banc-incline | triceps front hal banc=30 | Incline Dumbbell Triceps Extension
+sw-developpe-couche-prise-serree-a-la-machine-smith | triceps jm barre | JM Press on Smith
+sw-extension-triceps-katana | triceps nuque poulie katana uni | Katana Triceps Extension
+sw-pompes-serrees-sur-les-genoux | pompe genoux serre | Knee Close Grip Push-Up
+sw-pompes-diamant-sur-les-genoux | pompe genoux diamant | Knee Diamond Push-Up
+sw-extensions-triceps | triceps front barre | Lying Barbell Triceps Extension
+sw-extension-des-triceps-a-la-poulie-en-position-couchee | triceps front poulie | Lying Cable Skull Crusher
+sw-extension-des-triceps-allonge-a-la-barre-ez | triceps front ez | Lying EZ-Bar Triceps Extension
+e76 | triceps machine | Machine Triceps Extension
+sw-extension-horizontale-du-triceps-debout-a-un-bras-avec-cable | triceps travers poulie uni | One-Arm Cable Cross Body Triceps Extension
+sw-extension-unilaterale-a-la-poulie | triceps poulie uni | One-Arm Cable Pushdown
+sw-kickback-assis-avec-haltere-a-un-bras | triceps kickback hal uni | One-Arm Dumbbell Seated Kickback
+sw-extension-triceps-au-dessus-de-la-tete-a-un-bras | triceps nuque poulie katana uni | One-Arm Katana Triceps Overhead Extension
+sw-extension-triceps-unilaterale-au-dessus-de-la-tete | triceps nuque hal uni | One-Arm Overhead Triceps Extension
+sw-extension-triceps-unilaterale-en-prise-inversee-a-la-poulie | triceps poulie sup uni | One-Arm Reverse Grip Triceps Cable Pushdown
+sw-extension-des-triceps-a-un-bras-a-la-poulie | triceps poulie uni | One-Arm Triceps Cable Pushdown
+sw-extension-des-triceps-au-dessus-de-la-tete-avec-bande-elastique | triceps nuque elas | Overhead Band Triceps Extension
+sw-extension-des-triceps-a-la-poulie-haute-barre | triceps nuque poulie barreP | Overhead Cable Triceps Extension (Bar)
+e1240 | etire triceps | Overhead Triceps Stretch
+sw-extension-des-triceps-a-la-poulie-prise-inversee | triceps poulie sup barreP | Reverse Grip Cable Triceps Pushdown
+sw-pompe-inversee | pompe inverse | Reverse Hand Push-Up
+sw-extension-des-triceps-aux-anneaux | suspension triceps anneaux | Ring Triceps Extension
+e69 | triceps corde | Rope Triceps Pushdown
+sw-extension-des-triceps-a-la-poulie-horizontale-assis | triceps horizontal poulie | Seated Cable Horizontal French Press
+sw-presse-a-triceps-a-la-machine | dips assis | Seated Dip Machine
+sw-dips-triceps-assis-sur-banc | dips banc | Seated Triceps Bench Dip
+sw-extension-triceps-a-un-haltere-debout | triceps nuque hal1 | Standing One Dumbbell French Press
+sw-extension-des-triceps-a-la-barre-au-dessus-de-la-tete-en-position-debout | triceps nuque barre | Standing Overhead Barbell Triceps Extension
+sw-extension-des-triceps-en-suspension | suspension triceps sangles | Suspension Triceps Extension
+sw-presse-tate | triceps tate hal | Tate Press
+e177 | triceps kickback poulie uni | Triceps Cable Kickback
+sw-pompes-triceps | pompe triceps | Triceps Push-Up
+e1178 | triceps poulie barreP | Triceps Pushdown V-Bar
+sw-extension-des-triceps-en-prise-supine | suspension triceps sup | Underhand Triceps Extension
+sw-dips-sur-banc-avec-poids | dips banc leste | Weighted Bench Dips
+e143 | dips leste | Weighted Dips

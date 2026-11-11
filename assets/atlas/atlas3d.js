@@ -237,7 +237,8 @@ void main() {
   c = c / (1.0 + max(max(c.r, c.g), c.b) * 0.25);
   o = vec4(pow(c, vec3(1.0 / 2.2)), 1.0);
 }`;
-  /* Formes de base : un cylindre (rayon 1, hauteur 1, le long de Y) et une boîte (côté 1), positions puis normales. */
+  /* Formes de base, positions puis normales : un cylindre (rayon 1, hauteur 1, le long de Y), une boîte (côté 1),
+     une sphère (rayon 1) et un tore (anneau de rayon 1 dans le plan XY, tube de rayon 0,14). */
   function formesDeBase() {
     const cyl = [], N = 28;
     for (let i = 0; i < N; i++) {
@@ -248,7 +249,16 @@ void main() {
     const boite = [];
     for (const [n, u, v] of [[[1, 0, 0], [0, 1, 0], [0, 0, 1]], [[-1, 0, 0], [0, 0, 1], [0, 1, 0]], [[0, 1, 0], [0, 0, 1], [1, 0, 0]], [[0, -1, 0], [1, 0, 0], [0, 0, 1]], [[0, 0, 1], [1, 0, 0], [0, 1, 0]], [[0, 0, -1], [0, 1, 0], [1, 0, 0]]])
       for (const [a, b] of [[-1, -1], [1, -1], [1, 1], [-1, -1], [1, 1], [-1, 1]]) boite.push(0.5 * (n[0] + a * u[0] + b * v[0]), 0.5 * (n[1] + a * u[1] + b * v[1]), 0.5 * (n[2] + a * u[2] + b * v[2]), n[0], n[1], n[2]);
-    return { cylindre: new Float32Array(cyl), boite: new Float32Array(boite) };
+    // Sphère et tore : une grille de quadrilatères sur deux angles, chaque sommet avec sa normale.
+    const grille = (nu, nv, point) => {
+      const t = [], P = [];
+      for (let i = 0; i <= nu; i++) { P.push([]); for (let j = 0; j <= nv; j++) P[i].push(point(i / nu, j / nv)); }
+      for (let i = 0; i < nu; i++) for (let j = 0; j < nv; j++) for (const [a, b] of [[i, j], [i + 1, j], [i + 1, j + 1], [i, j], [i + 1, j + 1], [i, j + 1]]) t.push(...P[a][b]);
+      return new Float32Array(t);
+    };
+    const sphere = grille(28, 14, (u, v) => { const a = u * 2 * Math.PI, b = v * Math.PI, x = Math.sin(b) * Math.cos(a), y = Math.cos(b), z = Math.sin(b) * Math.sin(a); return [x, y, z, x, y, z]; });
+    const tore = grille(36, 10, (u, v) => { const a = u * 2 * Math.PI, b = v * 2 * Math.PI, cx = Math.cos(a), cy = Math.sin(a), nx = Math.cos(b) * cx, ny = Math.cos(b) * cy, nz = Math.sin(b); return [cx + 0.14 * nx, cy + 0.14 * ny, 0.14 * nz, nx, ny, nz]; });
+    return { cylindre: new Float32Array(cyl), boite: new Float32Array(boite), sphere, tore };
   }
 
   function programme(gl, vs, fs) {
@@ -740,7 +750,7 @@ void main() {
         ecrirePose(mats); demander();
         return { mats, centres: C };
       },
-      // Matériel : liste de formes { forme: 'cylindre' | 'boite', s (tailles), q (rotation), p (position), couleur, metal }.
+      // Matériel : liste de formes { forme: 'cylindre' | 'boite' | 'sphere' | 'tore', s (tailles), q (rotation), p (position), couleur, metal }.
       objets(liste) { objets = liste || []; demander(); },
       // Ombre au sol : par défaut sous les pieds ; pendant un exercice, sous toute la scène ({ centre, taille, force }).
       ombre(o) { ombreSol = o || null; demander(); },
@@ -1108,7 +1118,8 @@ void main() {
     [haut, couches, bas, indice, fiche, index].forEach(n => racine.appendChild(n));
 
     let mode = null, carte = {}, choisi = null, coteChoisi = null, isoleGroupe = false;   // coteChoisi : le côté touché ('gauche' ou 'droit'), s'il y en a un
-    // Un exercice à montrer ({ mouvement }) : dans le mode « exercice », le corps l'exécute en boucle.
+    // Un exercice à montrer ({ exercice: identifiant }, ou { mouvement } pour un mouvement nommé) : dans le mode
+    // « exercice », le corps l'exécute en boucle.
     let anim = null, lecture = !(window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches);
     function majLecture() {
       bLecture.innerHTML = lecture ? IC.pause : IC.lecture;
@@ -1117,9 +1128,9 @@ void main() {
       if (lecture && !choisi) anim.demarrer(); else { anim.arreter(); if (!lecture) anim.rendre(0, 0.5); }
     }
     function majExercice() {
-      const ex = o.exercice, actif = !!(ex && ex.mouvement && window.AnqaMouvements && mode === (ex.mode || 'exercice'));
+      const ex = o.exercice, actif = !!(ex && (ex.exercice || ex.mouvement) && window.AnqaMouvements && mode === (ex.mode || 'exercice'));
       if (actif && !anim) {
-        try { anim = window.AnqaMouvements.creerAnimation(a, { mouvement: ex.mouvement }, { clair: o.clair }); } catch (e) { anim = null; }
+        try { anim = window.AnqaMouvements.creerAnimation(a, ex.exercice ? { exercice: ex.exercice } : { mouvement: ex.mouvement }, { clair: o.clair }); } catch (e) { anim = null; }
         if (anim) { anim.rendre(0, lecture ? 0 : 0.5); anim.cadrer(0); }
       } else if (!actif && anim) { anim.quitter(); anim = null; a.quitterScene(); a.reinitialiser(0); }
       bLecture.hidden = !anim;

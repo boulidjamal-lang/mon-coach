@@ -8,8 +8,10 @@ async function ouvrir(options = {}) {
   const nav = await chromium.launch({ args: ['--use-gl=angle', '--use-angle=swiftshader', '--enable-unsafe-swiftshader'] });
   const ctx = await nav.newContext(options);
   await ctx.route('http://atlas.local/**', route => {
-    const f = path.join(RACINE, decodeURIComponent(new URL(route.request().url()).pathname));
-    if (!f.startsWith(RACINE) || !fs.existsSync(f) || fs.statSync(f).isDirectory()) return route.fulfill({ status: 404, body: 'introuvable' });
+    let f = path.join(RACINE, decodeURIComponent(new URL(route.request().url()).pathname));
+    // Dans le dépôt, le moteur, les mouvements et le modèle sont ceux que sert l'appli (assets/atlas).
+    if (!fs.existsSync(f) && ['atlas3d.js', 'atlas-mouvements.js', 'atlas.bin'].includes(path.basename(f))) f = path.join(RACINE, '..', '..', 'assets', 'atlas', path.basename(f));
+    if (!fs.existsSync(f) || fs.statSync(f).isDirectory()) return route.fulfill({ status: 404, body: 'introuvable' });
     return route.fulfill({ status: 200, contentType: TYPES[path.extname(f)] || 'application/octet-stream', body: fs.readFileSync(f) });
   });
   return { nav, ctx };
