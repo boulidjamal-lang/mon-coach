@@ -4,11 +4,13 @@
      rotext (rotation externe), cubain (rotation cubaine), lu, cercles, ange (ange mural), passage (bande passée
      par-dessus la tête), tete (kettlebell autour de la tête), volant (disque tourné comme un volant), tenue (maintien
      bras tendus devant). Options : hal, barre, disque, poulie, elas, machine, kb ; uni, alt ; postures de postureDe ;
-     marteau ; serre, large (rowing menton) ; dos (barre derrière le dos) ; kelso (haussement, buste sur banc incliné). */
+     marteau ; serre, large (rowing menton) ; dos (barre derrière le dos) ; kelso (haussement, buste sur banc incliné) ;
+     smith (la barre coulisse entre deux rails) ; trapbar (haussement à la barre hexagonale). */
   FAM.elevation = (c, o, C) => {
     // Sorte par défaut, admise dans l'écriture : o.lat (élévation latérale).
     const m = coteDe(o);
-    if (!(o.barre || o.ez || o.kb || o.poulie || o.elas || o.machine || o.disque || o.pc || o.balle)) o.hal = true;
+    if (o.smith) o.barre = true;
+    if (!(o.barre || o.ez || o.kb || o.poulie || o.elas || o.machine || o.disque || o.pc || o.balle || o.trapbar)) o.hal = true;
     let P, p, fixe, vue, a, b, ancre = null, autre = null, r = { disques: 0.13, lCable: 0.5 }, plus = {};
     const pose = def => { P = postureDe(c, o, C, def); p = P.p; fixe = P.fixe; vue = P.vue; };
     if (o.front) {
@@ -47,7 +49,7 @@
       // Haussement d'épaules : bras tendus, seules les épaules montent.
       if (o.kelso) o.ventre = 40;
       pose();
-      const base = o.kelso ? B(4, 40, 0, 5, 90) : o.dos ? B(0, -12, 0, 6, 0) : o.barre ? B(0, 8, -25, 6, 180) : B(90, 5, 0, 6, 90);
+      const base = o.kelso ? B(4, 40, 0, 5, 90) : o.dos ? B(0, -12, 0, 6, 0) : o.barre ? B(0, 8, -25, 6, 180) : o.trapbar ? B(90, 11, 0, 6, 90) : B(90, 5, 0, 6, 90);
       a = Object.assign({}, base, o.kelso ? { avance: 10 } : {}); b = Object.assign({}, base, o.kelso ? { avance: -14, hausse: 8 } : { hausse: 26 });
       ancre = s => V(s * 0.28, 0.05, 0.02); if (o.machine) r.pivot = s => V(s * 0.3, 0.3, -0.5);
     } else if (o.facepull) {
@@ -103,6 +105,8 @@
     const ancres = !ancre ? null : typeof ancre === 'function' ? [ancre(1), ancre(-1)].slice(0, m === 'GD' ? 2 : 1) : ancre;
     const d = Object.assign(parLesBras(p, a, b, m, autre), { fixe: colonneSi(o, C, ancres, fixe || []), vue, tenu: tenuDe(o, m, r) }, rythmeDe(o));
     if (plus.rythme) d.rythme = plus.rythme;
+    if (o.smith) { const info = c.poser(d.a); d.tenu = [{ t: 'barre', l: 1.6, d: 0.18 }]; d.fixe = d.fixe.concat(poseFixe(MAT.smith(C, (info.prises.G.z + info.prises.D.z) / 2))); }
+    if (o.trapbar) { d.tenu = []; d.objets = barreHexagonale(C); }
     if (o.landmine) {
       // La barre tenue par un bout, l'autre bout posé au sol devant soi : elle suit la main.
       const piv = V(0, 0.05, 1.5); d.tenu = [];

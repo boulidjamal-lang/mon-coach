@@ -245,6 +245,15 @@ const MVT = { squat: 'squat', developpeCouche: 'développé couché', curl: 'cur
       bilan.push([m, r.fini, +r.mains.toFixed(3), r.touchables]);
     }
     noter('les huit mouvements : poses saines, mains à la même hauteur, corps toujours touchable muscle par muscle', bilan.every(b => b[1] && b[2] < 0.01 && b[3] > 60), bilan.map(b => `${MVT[b[0]] || b[0]} (${b[3]} structures touchables)`).join(', '));
+    // D'autres familles de mouvements : un exercice de chacune, ouvert par son identifiant dans la bibliothèque.
+    const autres = [];
+    for (const [id, nom] of [['e1136', 'dips aux anneaux'], ['e77', 'pompes diamant'], ['e120', 'grimpeur'], ['sw-rotation-russe-avec-medecine-ball', 'rotation russe'], ['e131', 'rameur'], ['sw-posture-du-pigeon', 'posture du pigeon'], ['sw-muscle-up', 'muscle-up'], ['e136', 'balancement de kettlebell']]) {
+      await p.goto('http://atlas.local/appli/essai-mouvement.html?ex=' + id + '&pp=1');
+      await p.waitForFunction(() => window.pret, null, { timeout: 120000 });
+      const r = await ev(() => { const res = { fini: true, touchables: 0 }, d = anim.definition, libre = d.rythme === 'continu' || d.rythme === 'boucle'; for (const u of [0, 0.5, 1]) { if (libre) anim.rendre(u * (d.periode || 1.2)); else anim.rendre(0, u); const mats = anim.corps.matrices(); for (let i = 0; i < mats.length; i++) if (!Number.isFinite(mats[i])) res.fini = false; } res.touchables = Object.keys(atlas.carteReperage(3) || {}).length; return res; });
+      autres.push([nom, r.fini, r.touchables]);
+    }
+    noter("huit exercices d'autres familles, ouverts par leur identifiant : poses saines, corps toujours touchable muscle par muscle", autres.every(b => b[1] && b[2] > 50), autres.map(b => `${b[0]} (${b[2]} structures touchables)`).join(', '));
     nav = nav3;
   }
   noter('aucune erreur dans la console', !erreurs.length, erreurs.length ? erreurs.join(' | ') : 'aucune, sur les trois passes');

@@ -36,6 +36,21 @@
     }
     return { a: A, b: Z };
   }
+  /* Barre hexagonale (trap bar) : un cadre autour du corps, une poignée de chaque côté, les disques au bout.
+     Elle suit les mains : les poignées passent par elles, quel que soit leur écart. */
+  function barreHexagonale(C) {
+    return (info, u, sortie) => {
+      const m = info.prises.G.clone().add(info.prises.D).multiplyScalar(0.5), e = Math.abs(info.prises.G.x - info.prises.D.x) / 2, y = m.y - 0.06;
+      for (const s of [1, -1]) {
+        sortie.push(pret(cyl(0.014, 0.4, m.x + s * e, m.y, m.z, C.metal, 1, LONG_Z)));                                      // la poignée
+        for (const z of [0.2, -0.2]) sortie.push(pret(seg(V(m.x + s * e, m.y, m.z + z), V(m.x + s * 0.12, y, m.z + z * 1.7), 0.014, C.metal, 1)));   // les pans du cadre
+        sortie.push(pret(seg(V(m.x + s * e, y, m.z), V(m.x + s * (e + 0.04), y, m.z), 0.014, C.metal, 1)));
+        sortie.push(pret(cyl(0.025, 0.4, m.x + s * (e + 0.23), y, m.z, C.metal, 1)));                                        // le manchon
+        sortie.push(pret(cyl(0.225, 0.05, m.x + s * (e + 0.3), y, m.z, C.fonte, 0)));                                        // le disque
+        for (const z of [0.34, -0.34]) sortie.push(pret(seg(V(m.x + s * 0.12, y, m.z + z), V(m.x - s * 0.12, y, m.z + z), 0.014, C.metal, 1)));      // devant, derrière
+      }
+    };
+  }
   /* Le matériel tenu, d'après les options : hal, barre, ez, kb, disque, balle, poulie, elas, machine, sangles.
      r : réglages de la famille { ancre (poulie : point ou fonction du côté), bout, pivot (machine), deElas, lBarre }. */
   function tenuDe(o, m, r) {

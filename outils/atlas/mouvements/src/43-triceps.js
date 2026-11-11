@@ -67,8 +67,12 @@
       if (!o.elas && !o.poulie) o.poulie = true;
     }
     r.ancre = ancre;
+    if (o.smith) o.barre = true;
     if (!(o.barre || o.ez || o.hal || o.kb || o.poulie || o.elas || o.machine || o.hal1)) o.hal = true;
     if (o.elas && ancre) r.deElas = ancre;
     const ancres = !ancre ? null : typeof ancre === 'function' ? [ancre(1), ancre(-1)].slice(0, m === 'GD' ? 2 : 1) : ancre;
-    return Object.assign(parLesBras(p, a, b, m, autre), { fixe: colonneSi(o, C, ancres, fixe || []), vue, tenu: tenu || tenuDe(o, m, r) }, rythmeDe(o));
+    const d = Object.assign(parLesBras(p, a, b, m, autre), { fixe: colonneSi(o, C, ancres, fixe || []), vue, tenu: tenu || tenuDe(o, m, r) }, rythmeDe(o));
+    // Smith machine (développé JM) : la barre coulisse entre deux rails.
+    if (o.smith) { const info = c.poser(d.a); d.tenu = [{ t: 'barre', l: 1.6, d: 0.18 }]; d.fixe = d.fixe.concat(poseFixe(MAT.smith(C, (info.prises.G.z + info.prises.D.z) / 2))); }
+    return d;
   };

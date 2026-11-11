@@ -172,7 +172,7 @@ sw-curl-incline-avec-barre-en-pronation | curl barre araignee | Barbell Prone In
 sw-curl-mural-avec-barre | curl barre mur | Barbell Wall Curl
 sw-curl-bayesien-a-la-poulie | curl poulie bayesien uni | Bayesian Cable Curl
 sw-curl-a-la-poulie-en-position-inversee | curl poulie bayesien uni | Bayesian Cable Curl (Face Away)
-sw-curl-biceps-assis-avec-cable | curl poulie bayesien uni | Bayesian Cable Curl Seated
+sw-curl-biceps-assis-avec-cable | curl poulie bayesien uni tabouret | Bayesian Cable Curl Seated
 e303 | curl poulie pupitre barreP | Cable Preacher Curl
 sw-curl-a-genoux-avec-cable | curl poulie accroupi barreP | Cable Squatting Curl
 sw-curl-biceps-prise-serree | curl barre serre | Close Grip Biceps Curl
@@ -258,7 +258,7 @@ sw-tirage-a-la-cable-prise-large-derriere-la-nuque | tirage large nuque | Cable 
 e22 | tirage large neutre | Cable Wide Neutral Grip Lat Pulldown
 e1213 | etire chatvache | Cat Cow
 e159 | rowing machine | Chest Supported Machine Row
-sw-rowing-t-bar-avec-appui-poitrine | rowing barre ventre=40 neutre | Chest Supported T-Bar Row
+sw-rowing-t-bar-avec-appui-poitrine | rowing tbar ventre | Chest Supported T-Bar Row
 e1215 | etire enfant | Child’s Pose
 e21 | traction sup | Chin-Up
 sw-rameur-a-prise-serree-avec-barre-au-sol | rowing landmine serre | Close Grip Landmine Row
@@ -373,7 +373,7 @@ e42 | elevation lat hal | Dumbbell Lateral Raise
 sw-elevation-laterale-poliquin-avec-halteres | elevation lat hal poliquin | Dumbbell Poliquin Lateral Raise
 sw-developpe-pousse-avec-halteres | developpe epaules hal pousse | Dumbbell Push Press
 sw-rowing-arriere-avec-halteres-pour-deltoides-posterieurs | rowing hal haut | Dumbbell Rear Delt Row
-sw-tirage-haut-assis-penche-avec-halteres | rowing hal haut | Dumbbell Seated Bent Over High Row
+sw-tirage-haut-assis-penche-avec-halteres | rowing hal haut tabouret | Dumbbell Seated Bent Over High Row
 sw-developpe-alterne-debout-avec-halteres | developpe epaules hal alt | Dumbbell Standing Alternate Press
 sw-driver-debout-avec-halteres | elevation front volant hal | Dumbbell Standing Driver
 e394 | elevation menton hal | Dumbbell Upright Row
@@ -427,7 +427,7 @@ sw-tirage-visage-assis | elevation facepull poulie tabouret | Seated Face Pull
 sw-rotation-externe-de-l-x27-epaule-en-position-assise | elevation rotext hal tabouret uni | Seated Shoulder External Rotation
 sw-developpe-epaules-assis-prise-neutre | developpe epaules hal assis neutre | Seated Shoulder Press Neutral Grip
 sw-rotation-externe-en-decubitus-lateral | elevation rotext hal cote uni | Side Lying External Rotation
-e391 | elevation menton barre | Smith Machine Upright Row
+e391 | elevation menton smith | Smith Machine Upright Row
 sw-developpe-derriere-la-nuque-a-la-machine-smith-en-position-assise | developpe epaules smith nuque assis | Smith Seated Behind Neck Press
 sw-developpe-epaules-assis-a-la-smith-machine | developpe epaules smith assis | Smith Shoulder Press
 sw-presse-cubaine-debout | elevation cubain hal | Standing Cuban Press
@@ -563,7 +563,7 @@ e1 | developpe barre | Barbell Bench Press
 e270 | developpe barre | Barbell Bench Press with Chains
 e1073 | developpe barre sol | Barbell Floor Press
 sw-developpe-couche-larsen-avec-barre | developpe barre larsen | Barbell Larsen Press
-sw-developpe-couche-avec-bande-de-resistance | developpe barre | Bench Press With Resistance Band
+sw-developpe-couche-avec-bande-de-resistance | developpe barre elas | Bench Press With Resistance Band
 sw-etirement-de-la-poitrine-avec-bras-flechis | etire pectoraux coude | Bent Arm Chest Stretch
 sw-pompe-avec-extension-bras-jambe-opposes | pompe birddog | Bird Dog Push-Up
 sw-developpe-couche-a-la-cable | developpe poulie plat | Cable Bench Press
@@ -577,7 +577,7 @@ sw-pompe-cobra | pompe cobra | Cobra Push-Up
 sw-developpe-unilateral-en-travers-du-corps | developpe machine assis uni | Cross Body One-Arm Strength Press
 e3 | developpe barre decline | Decline Barbell Bench Press
 sw-developpe-couche-decline-a-la-poulie | developpe poulie decline | Decline Cable Chest Press
-sw-developpe-couche-decline | developpe machine assis | Decline Chest Press
+sw-developpe-couche-decline | developpe machine assis decline | Decline Chest Press
 e6 | developpe hal decline | Decline Dumbbell Bench Press
 e332 | ecarte hal decline | Decline Dumbbell Fly
 e15 | pompe decline | Decline Push-Up
@@ -600,7 +600,7 @@ e2 | developpe barre banc=30 | Incline Barbell Bench Press
 sw-ecarte-couche-incline-a-la-poulie | ecarte poulie banc=30 | Incline Bench Cable Fly
 e5 | developpe hal banc=30 | Incline Dumbbell Bench Press
 sw-ecarte-couche-incline-avec-halteres | ecarte hal banc=30 | Incline Dumbbell Chest Fly
-sw-developpe-incline-marteau | developpe machine assis | Incline Hammer Chest Press
+sw-developpe-incline-marteau | developpe machine assis incline | Incline Hammer Chest Press
 sw-developpe-incline-avec-halteres-en-prise-neutre | developpe hal banc=30 neutre | Incline Neutral Grip Dumbbell Press
 e14 | pompe incline | Incline Push-Up
 sw-pompes-jack | pompe jack | Jack Push-Up
@@ -772,8 +772,8 @@ sw-flexion-du-cou | etire cou curl | Neck Curl
 e1239 | etire cou | Neck Side Stretch
 sw-rowing-unilateral-avec-haltere-en-appui-sur-scapula-en-flexion-du-tronc | rowing hal appui uni amp=0.25 | One-Arm Dumbbell Bent Over Scapula Row
 sw-haussements-d-x27-epaules-avec-halteres-en-position-assise | elevation shrug hal tabouret | Seated Dumbbell Shrugs
-sw-haussement-d-x27-epaules-a-la-smith-machine | elevation shrug barre | Smith Shoulder Shrug
-sw-haussements-d-x27-epaules-avec-barre-hexagonale | elevation shrug hal | Trap Bar Shrugs
+sw-haussement-d-x27-epaules-a-la-smith-machine | elevation shrug smith | Smith Shoulder Shrug
+sw-haussements-d-x27-epaules-avec-barre-hexagonale | elevation shrug trapbar | Trap Bar Shrugs
 sw-elevation-en-y-pour-trapezes | elevation y hal ventre=30 | Trap Y Raise
 # trice
 e1003 | dips machine | Assisted Machine Dips
@@ -802,7 +802,7 @@ sw-extension-des-triceps-a-la-poulie-haute | triceps nuque poulie haute | High P
 sw-extension-des-triceps-a-la-barre-sur-banc-incline | triceps front barre banc=30 | Incline Barbell Triceps Extension
 sw-pompe-inclinee-prise-serree | pompe incline serre | Incline Close Grip Push-Up
 sw-extension-des-triceps-avec-halteres-sur-banc-incline | triceps front hal banc=30 | Incline Dumbbell Triceps Extension
-sw-developpe-couche-prise-serree-a-la-machine-smith | triceps jm barre | JM Press on Smith
+sw-developpe-couche-prise-serree-a-la-machine-smith | triceps jm smith | JM Press on Smith
 sw-extension-triceps-katana | triceps nuque poulie katana uni | Katana Triceps Extension
 sw-pompes-serrees-sur-les-genoux | pompe genoux serre | Knee Close Grip Push-Up
 sw-pompes-diamant-sur-les-genoux | pompe genoux diamant | Knee Diamond Push-Up
@@ -812,7 +812,7 @@ sw-extension-des-triceps-allonge-a-la-barre-ez | triceps front ez | Lying EZ-Bar
 e76 | triceps machine | Machine Triceps Extension
 sw-extension-horizontale-du-triceps-debout-a-un-bras-avec-cable | triceps travers poulie uni | One-Arm Cable Cross Body Triceps Extension
 sw-extension-unilaterale-a-la-poulie | triceps poulie uni | One-Arm Cable Pushdown
-sw-kickback-assis-avec-haltere-a-un-bras | triceps kickback hal uni | One-Arm Dumbbell Seated Kickback
+sw-kickback-assis-avec-haltere-a-un-bras | triceps kickback hal uni tabouret | One-Arm Dumbbell Seated Kickback
 sw-extension-triceps-au-dessus-de-la-tete-a-un-bras | triceps nuque poulie katana uni | One-Arm Katana Triceps Overhead Extension
 sw-extension-triceps-unilaterale-au-dessus-de-la-tete | triceps nuque hal uni | One-Arm Overhead Triceps Extension
 sw-extension-triceps-unilaterale-en-prise-inversee-a-la-poulie | triceps poulie sup uni | One-Arm Reverse Grip Triceps Cable Pushdown

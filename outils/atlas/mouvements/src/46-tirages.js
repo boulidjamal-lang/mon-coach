@@ -30,6 +30,10 @@
     let p, fixe = [], vue = { az: 128, el: 10 }, ancre = null, pendante = false;
     if (o.seal) { p = aPlatVentre(c, { h: 0.82, angle: 0, d: 0.1, jambes: 'tendues' }); fixe = poseFixe(MAT.banc(C, 0, 0.82, 1.0, 0.75), V(0, 0, -0.35), qY(180)); pendante = true; vue = { az: 60, el: 8 }; }
     else if (o.ventre != null) { const a = o.ventre === true ? 40 : o.ventre; p = aPlatVentre(c, { h: 0.44, angle: a, d: 0.3 }); fixe = poseFixe(MAT.banc(C, a), V(), qY(180)); pendante = true; vue = { az: 56, el: 10 }; }
+    else if (o.tabouret) {
+      // Assis au bout d'un banc, le buste penché sur les cuisses : les haltères pendent le long des jambes.
+      p = assis(c, { h: 0.45, penche: 58 }); p.cou = -24; fixe = poseFixe(MAT.banc(C, 0), V(0, 0, 0.28)); pendante = true; vue = { az: 58, el: 10 };
+    }
     else if (o.appui) {
       // Une main et un genou sur le banc, l'autre pied par terre : le dos à plat.
       const s = m === 'D' ? -1 : 1, kA = s > 0 ? 'D' : 'G', kT = s > 0 ? 'G' : 'D';
