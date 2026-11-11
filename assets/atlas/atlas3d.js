@@ -533,7 +533,15 @@ void main() {
     ecrirePose(null);
 
     let prog, progRep, progSol, progObj, progPeau = null, vaoPeau = null, vaoObj = {}, vao, vaoSol, tex, texOs, tamponSommets, tamponIndices, tamponSol, cadreRep = null, texRep, profRep;
+    let premierSommet = false;
     function installer() {
+      // Sur les puces Apple (WebGL par Metal), une valeur « flat » coûte très cher avec la convention par défaut, où le
+      // dernier sommet du triangle fait foi : Metal ne connaît que le premier, et le navigateur doit réécrire les
+      // indices à la volée. Ici les trois sommets d'un triangle portent toujours la même structure (et la même zone
+      // de peau) : la convention ne change rien à l'image, on prend donc celle qui ne coûte rien, là où elle existe.
+      const pv = gl.getExtension('WEBGL_provoking_vertex');
+      premierSommet = false;
+      if (pv) { try { pv.provokingVertexWEBGL(pv.FIRST_VERTEX_CONVENTION_WEBGL); premierSommet = true; } catch (e) { premierSommet = false; } }
       prog = programme(gl, SOMMETS, PIXELS); progRep = programme(gl, SOMMETS, PIXELS_REPERAGE); progSol = programme(gl, SOL_S, SOL_P); progObj = programme(gl, OBJ_S, OBJ_P);
       if (PE) {
         progPeau = programme(gl, SOMMETS_PEAU, PIXELS_PEAU);
@@ -1082,7 +1090,7 @@ void main() {
       },
       redessiner: demander,
       tailler,
-      mesures: () => ({ enCours: !!demande || !!transition, images: nbImages, dernierTempsMs: dernierTemps, largeur: larg, hauteur: haut, pixels: pp, echelleMouvement, triangles: E.triangles, sommets: E.sommets, appelsDeDessin: 1 + 2 * (transparents && niveauPeau < 2 ? 2 : 1) + 3 * niveauPeau, peau: niveauPeau }),
+      mesures: () => ({ enCours: !!demande || !!transition, images: nbImages, dernierTempsMs: dernierTemps, largeur: larg, hauteur: haut, pixels: pp, echelleMouvement, triangles: E.triangles, sommets: E.sommets, appelsDeDessin: 1 + 2 * (transparents && niveauPeau < 2 ? 2 : 1) + 3 * niveauPeau, peau: niveauPeau, premierSommet }),
       detruire() {
         vivant = false; if (demande) cancelAnimationFrame(demande);
         clearTimeout(minuterieNet); document.removeEventListener('visibilitychange', visible);
