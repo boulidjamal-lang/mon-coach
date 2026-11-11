@@ -437,7 +437,7 @@ void main() {
     ppMax: 2,                // densité de pixels maximale (au-delà, le gain ne se voit plus sur un corps entier)
     champ: 24,               // angle de champ vertical, en degrés (longue focale : peu de déformation)
     peau: null,              // le fichier de la peau (atlas-peau.bin), s'il est là
-    niveauPeau: 0,           // 0 : écorché ; 1 : peau sur la tête, les mains, les pieds, et short ; 2 : peau entière
+    niveauPeau: 0,           // 0 : écorché ; 1 : peau sur la tête, les mains et les pieds ; 2 : peau entière, avec un short
     teint: '#c89b80', tissu: '#1d1e23', poil: '#1b1512'
   };
 
@@ -955,7 +955,7 @@ void main() {
     }
     const api = {
       toile, structures: S, entete: E, regions: E.regions,
-      // La peau : 0, écorché ; 1, peau sur la tête, les mains et les pieds, et short ; 2, peau entière (les muscles
+      // La peau : 0, écorché ; 1, peau sur la tête, les mains et les pieds ; 2, peau entière, avec un short (les muscles
       // colorés ou choisis se voient au travers). Sans fichier de peau, reste à 0.
       aPeau: !!PE,
       niveauPeau(n) { if (n != null && PE) { const v = Math.max(0, Math.min(2, n | 0)); if (v !== niveauPeau) { niveauPeau = v; demander(); } } return niveauPeau; },
@@ -1350,7 +1350,7 @@ void main() {
     }
     const bVoile = el('button', 'atlas-rond atlas-verre atlas-fantomes', IC.voile); bVoile.type = 'button';
     bVoile.setAttribute('aria-label', 'Garder en transparence les muscles retirés');
-    // La peau : un bouton à trois positions (entière ; tête, mains, pieds et short ; sans), absent si le fichier manque.
+    // La peau : un bouton à trois positions (entière, avec un short ; tête, mains et pieds ; sans), absent si le fichier manque.
     const bPeau = el('button', 'atlas-rond atlas-verre atlas-peau', IC.peau2); bPeau.type = 'button';
     if (a.aPeau) { couches.appendChild(el('span', 'atlas-couches-titre', 'Peau')); couches.appendChild(bPeau); }
     couches.appendChild(el('span', 'atlas-couches-titre', 'Couches')); couches.appendChild(pile); couches.appendChild(bVoile);
@@ -1398,7 +1398,7 @@ void main() {
     }
     const etat = () => ({ mode, choisi: choisi && choisi.id, couche: a.couche(), fantomes: a.fantomes(), isoles: a.isoles(), masques: a.masques(), peau: a.niveauPeau() });
     /* La peau. Par défaut : entière pendant un exercice (les muscles qui travaillent se voient au travers) ; sur la tête,
-       les mains et les pieds, avec un short, pour les cartes et l'anatomie. Le choix fait au bouton est retenu, par sorte
+       les mains et les pieds pour les cartes et l'anatomie. Le choix fait au bouton est retenu, par sorte
        de vue. Dès qu'on retire des couches ou qu'on isole un muscle, la peau s'efface : on regarde en profondeur. */
     const PEAU_DEFAUT = Object.assign({ exercice: 2, cartes: 1, anatomie: 1 }, o.peauDefaut || {}), CLE_PEAU = 'anqa-atlas-peau';
     const sortePeau = () => (mode === 'exercice' ? 'exercice' : mode === 'anatomie' ? 'anatomie' : 'cartes');
