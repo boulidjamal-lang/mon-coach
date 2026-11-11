@@ -6542,13 +6542,13 @@ test('atlas 3D : le registre du modèle parle la langue de l\'appli (groupes, fa
     REDIRECTIONS_EXERCICES['exercice-commun'] = 'e1';
     const fusionne = mouvementExercice('exercice-commun');
     delete REDIRECTIONS_EXERCICES['exercice-commun'];
-    return { ids, visibles: EXERCICES_BASE.map(e => e.id), doublons: EXERCICES_RETIRES.filter(e => e.estFusionBibliotheque).map(e => e.id), anime: ids.every(id => mouvementExercice(id) === id),
+    return { ids, visibles: EXERCICES_BASE.map(e => e.id), doublons: EXERCICES_RETIRES.filter(e => e.estFusionBibliotheque).map(e => e.id), anime: ids.every(id => mouvementExercice(id) === cibleFusion(id) && IDS_EXERCICES_LIVRES.has(cibleFusion(id))),
       perso: mouvementExercice('exercice-maison'), fusionne, ancien: mouvementExercice(EXERCICES_RETIRES.find(e => !e.estFusionBibliotheque && !REDIRECTIONS_EXERCICES[e.id]).id) };
   });
   assert.ok(bibli.ids.length > 800 && bibli.visibles.length > 750 && bibli.doublons.length > 20, 'la bibliothèque');
   assert.deepEqual(bibli.visibles.concat(bibli.doublons).filter(id => !bibli.ids.includes(id)), [], 'tout exercice de la bibliothèque, visible ou fusionné comme doublon, fait partie de la liste livrée');
   assert.deepEqual(bibli.ids.filter(id => !M.specDe(id)), [], 'exercices de la bibliothèque sans mouvement');
-  assert.deepEqual([bibli.anime, bibli.fusionne], [true, 'e1'], "l'appli annonce un mouvement pour toute la bibliothèque ; un exercice fusionné dans la bibliothèque joue celui de sa cible");
+  assert.deepEqual([bibli.anime, bibli.fusionne], [true, 'e1'], "l'appli annonce un mouvement pour toute la bibliothèque ; un exercice fusionné dans un autre joue celui de sa cible");
   assert.deepEqual([bibli.perso, bibli.ancien], [null, null], "pas de mouvement annoncé pour un exercice maison, ni pour un ancien exercice sorti de la bibliothèque (gardé pour l'historique)");
   const connus = new Set(bibli.ids);
   for (const spec in M.EXERCICES) {

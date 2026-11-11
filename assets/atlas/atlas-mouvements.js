@@ -1069,6 +1069,21 @@
     }
     return { a: A, b: Z };
   }
+  /* Barre hexagonale (trap bar) : un cadre autour du corps, une poignée de chaque côté, les disques au bout.
+     Elle suit les mains : les poignées passent par elles, quel que soit leur écart. */
+  function barreHexagonale(C) {
+    return (info, u, sortie) => {
+      const m = info.prises.G.clone().add(info.prises.D).multiplyScalar(0.5), e = Math.abs(info.prises.G.x - info.prises.D.x) / 2, y = m.y - 0.06;
+      for (const s of [1, -1]) {
+        sortie.push(pret(cyl(0.014, 0.4, m.x + s * e, m.y, m.z, C.metal, 1, LONG_Z)));                                      // la poignée
+        for (const z of [0.2, -0.2]) sortie.push(pret(seg(V(m.x + s * e, m.y, m.z + z), V(m.x + s * 0.12, y, m.z + z * 1.7), 0.014, C.metal, 1)));   // les pans du cadre
+        sortie.push(pret(seg(V(m.x + s * e, y, m.z), V(m.x + s * (e + 0.04), y, m.z), 0.014, C.metal, 1)));
+        sortie.push(pret(cyl(0.025, 0.4, m.x + s * (e + 0.23), y, m.z, C.metal, 1)));                                        // le manchon
+        sortie.push(pret(cyl(0.225, 0.05, m.x + s * (e + 0.3), y, m.z, C.fonte, 0)));                                        // le disque
+        for (const z of [0.34, -0.34]) sortie.push(pret(seg(V(m.x + s * 0.12, y, m.z + z), V(m.x - s * 0.12, y, m.z + z), 0.014, C.metal, 1)));      // devant, derrière
+      }
+    };
+  }
   /* Le matériel tenu, d'après les options : hal, barre, ez, kb, disque, balle, poulie, elas, machine, sangles.
      r : réglages de la famille { ancre (poulie : point ou fonction du côté), bout, pivot (machine), deElas, lBarre }. */
   function tenuDe(o, m, r) {
@@ -1240,10 +1255,14 @@
       if (!o.elas && !o.poulie) o.poulie = true;
     }
     r.ancre = ancre;
+    if (o.smith) o.barre = true;
     if (!(o.barre || o.ez || o.hal || o.kb || o.poulie || o.elas || o.machine || o.hal1)) o.hal = true;
     if (o.elas && ancre) r.deElas = ancre;
     const ancres = !ancre ? null : typeof ancre === 'function' ? [ancre(1), ancre(-1)].slice(0, m === 'GD' ? 2 : 1) : ancre;
-    return Object.assign(parLesBras(p, a, b, m, autre), { fixe: colonneSi(o, C, ancres, fixe || []), vue, tenu: tenu || tenuDe(o, m, r) }, rythmeDe(o));
+    const d = Object.assign(parLesBras(p, a, b, m, autre), { fixe: colonneSi(o, C, ancres, fixe || []), vue, tenu: tenu || tenuDe(o, m, r) }, rythmeDe(o));
+    // Smith machine (développé JM) : la barre coulisse entre deux rails.
+    if (o.smith) { const info = c.poser(d.a); d.tenu = [{ t: 'barre', l: 1.6, d: 0.18 }]; d.fixe = d.fixe.concat(poseFixe(MAT.smith(C, (info.prises.G.z + info.prises.D.z) / 2))); }
+    return d;
   };
 
   /* Élévations et tirages des épaules et des trapèzes.
@@ -1251,11 +1270,13 @@
      rotext (rotation externe), cubain (rotation cubaine), lu, cercles, ange (ange mural), passage (bande passée
      par-dessus la tête), tete (kettlebell autour de la tête), volant (disque tourné comme un volant), tenue (maintien
      bras tendus devant). Options : hal, barre, disque, poulie, elas, machine, kb ; uni, alt ; postures de postureDe ;
-     marteau ; serre, large (rowing menton) ; dos (barre derrière le dos) ; kelso (haussement, buste sur banc incliné). */
+     marteau ; serre, large (rowing menton) ; dos (barre derrière le dos) ; kelso (haussement, buste sur banc incliné) ;
+     smith (la barre coulisse entre deux rails) ; trapbar (haussement à la barre hexagonale). */
   FAM.elevation = (c, o, C) => {
     // Sorte par défaut, admise dans l'écriture : o.lat (élévation latérale).
     const m = coteDe(o);
-    if (!(o.barre || o.ez || o.kb || o.poulie || o.elas || o.machine || o.disque || o.pc || o.balle)) o.hal = true;
+    if (o.smith) o.barre = true;
+    if (!(o.barre || o.ez || o.kb || o.poulie || o.elas || o.machine || o.disque || o.pc || o.balle || o.trapbar)) o.hal = true;
     let P, p, fixe, vue, a, b, ancre = null, autre = null, r = { disques: 0.13, lCable: 0.5 }, plus = {};
     const pose = def => { P = postureDe(c, o, C, def); p = P.p; fixe = P.fixe; vue = P.vue; };
     if (o.front) {
@@ -1294,7 +1315,7 @@
       // Haussement d'épaules : bras tendus, seules les épaules montent.
       if (o.kelso) o.ventre = 40;
       pose();
-      const base = o.kelso ? B(4, 40, 0, 5, 90) : o.dos ? B(0, -12, 0, 6, 0) : o.barre ? B(0, 8, -25, 6, 180) : B(90, 5, 0, 6, 90);
+      const base = o.kelso ? B(4, 40, 0, 5, 90) : o.dos ? B(0, -12, 0, 6, 0) : o.barre ? B(0, 8, -25, 6, 180) : o.trapbar ? B(90, 11, 0, 6, 90) : B(90, 5, 0, 6, 90);
       a = Object.assign({}, base, o.kelso ? { avance: 10 } : {}); b = Object.assign({}, base, o.kelso ? { avance: -14, hausse: 8 } : { hausse: 26 });
       ancre = s => V(s * 0.28, 0.05, 0.02); if (o.machine) r.pivot = s => V(s * 0.3, 0.3, -0.5);
     } else if (o.facepull) {
@@ -1350,6 +1371,8 @@
     const ancres = !ancre ? null : typeof ancre === 'function' ? [ancre(1), ancre(-1)].slice(0, m === 'GD' ? 2 : 1) : ancre;
     const d = Object.assign(parLesBras(p, a, b, m, autre), { fixe: colonneSi(o, C, ancres, fixe || []), vue, tenu: tenuDe(o, m, r) }, rythmeDe(o));
     if (plus.rythme) d.rythme = plus.rythme;
+    if (o.smith) { const info = c.poser(d.a); d.tenu = [{ t: 'barre', l: 1.6, d: 0.18 }]; d.fixe = d.fixe.concat(poseFixe(MAT.smith(C, (info.prises.G.z + info.prises.D.z) / 2))); }
+    if (o.trapbar) { d.tenu = []; d.objets = barreHexagonale(C); }
     if (o.landmine) {
       // La barre tenue par un bout, l'autre bout posé au sol devant soi : elle suit la main.
       const piv = V(0, 0.05, 1.5); d.tenu = [];
@@ -1364,7 +1387,8 @@
   };
 
   /* Développés : la main part de près de l'épaule et pousse jusqu'au bout du bras.
-     (défaut) développé pour la poitrine, couché (plat, banc=<angle>, decline, sol), assis (machine, poulie) ou debout
+     (défaut) développé pour la poitrine, couché (plat, banc=<angle>, decline, sol), assis (machine, poulie ; avec
+     incline ou decline, la poussée monte ou descend) ou debout
      (poulie) ; epaules : au-dessus de la tête, debout, assis, genoux ou demigenou.
      Matériel : barre, hal, kb, smith, machine, poulie, elas. Prise : serre, large, neutre. Côtés : uni, alt.
      Variantes : larsen (jambes en l'air), partiel (arrêt au-dessus de la poitrine), nuque, arnold, pousse (élan des
@@ -1372,6 +1396,9 @@
   FAM.developpe = (c, o, C) => {
     const L = c.L, m = coteDe(o), haut = !!o.epaules;
     const libre = !(o.barre || o.smith || o.landmine || o.svend);       // mains indépendantes
+    // Assis à la machine, incline et decline disent le sens de la poussée, pas l'inclinaison d'un banc.
+    const montee = o.assis && o.machine ? (o.incline ? 28 : o.decline ? -22 : 0) : 0;
+    if (montee) o.decline = false;
     if (!(o.barre || o.smith || o.kb || o.machine || o.poulie || o.elas || o.landmine || o.svend || o.pc)) o.hal = true;
     if (!haut && !o.assis && !o.debout && !o.sol && o.banc == null && !o.decline && !o.svend && !o.autour && !o.genoux && !o.demigenou) o.plat = true;
     if (o.debout) { o.plat = false; }
@@ -1401,6 +1428,8 @@
       hautP = s => V(s * eHaut, o.banc > 20 ? 0.0 : -0.02, portee);
       pole = s => (o.serre ? V(s * 0.3, -0.6, -1) : V(s * 0.75, -0.35, -1));
       dirMain = V(0, 0, 1); paumeA = paumeB = s => (o.neutre || o.marteau ? V(-s, 0, 0) : V(0, -1, 0));
+      // Assis à la machine, la poussée peut monter (incline) ou descendre (decline).
+      if (montee) { const an = rad(montee); bas = s => V(s * eBas, montee > 0 ? -0.06 : -0.17, zBas + 0.02); hautP = s => V(s * eHaut, (montee > 0 ? -0.02 : -0.06) + portee * Math.sin(an) * 0.96, portee * Math.cos(an)); }
       if (o.autour) { bas = s => V(s * 0.3, -0.12, 0.12); hautP = s => V(-s * 0.1, -0.16, portee - 0.06); pole = s => V(s * 0.6, -0.8, -0.4); paumeA = paumeB = s => V(-s, 0, 0); vue = { az: 25, el: 8 }; }
     }
     const bras = (f, pa, doigts) => {
@@ -1434,6 +1463,8 @@
       const zB = t.duThorax(hautP(1)).z;
       fixe = fixe.concat(poseFixe(MAT.smith(C, zB)));
     }
+    // Barre retenue par des élastiques (développé couché avec bandes) : une bande de chaque main jusqu'au sol.
+    if (o.barre && o.elas && !haut) { const zB = t.duThorax(hautP(1)).z; for (const k of ['G', 'D']) tenu.push({ t: 'elastique', de: V((k === 'G' ? 1 : -1) * 0.5, 0.03, zB), m: k, bout: 'rien' }); }
     Object.assign(d, { fixe, vue, tenu }, rythmeDe(o));
     if (o.pousse) {
       // Développé poussé : les genoux plient un peu puis les jambes lancent la barre. Départ en bas.
@@ -1523,6 +1554,10 @@
     let p, fixe = [], vue = { az: 128, el: 10 }, ancre = null, pendante = false;
     if (o.seal) { p = aPlatVentre(c, { h: 0.82, angle: 0, d: 0.1, jambes: 'tendues' }); fixe = poseFixe(MAT.banc(C, 0, 0.82, 1.0, 0.75), V(0, 0, -0.35), qY(180)); pendante = true; vue = { az: 60, el: 8 }; }
     else if (o.ventre != null) { const a = o.ventre === true ? 40 : o.ventre; p = aPlatVentre(c, { h: 0.44, angle: a, d: 0.3 }); fixe = poseFixe(MAT.banc(C, a), V(), qY(180)); pendante = true; vue = { az: 56, el: 10 }; }
+    else if (o.tabouret) {
+      // Assis au bout d'un banc, le buste penché sur les cuisses : les haltères pendent le long des jambes.
+      p = assis(c, { h: 0.45, penche: 58 }); p.cou = -24; fixe = poseFixe(MAT.banc(C, 0), V(0, 0, 0.28)); pendante = true; vue = { az: 58, el: 10 };
+    }
     else if (o.appui) {
       // Une main et un genou sur le banc, l'autre pied par terre : le dos à plat.
       const s = m === 'D' ? -1 : 1, kA = s > 0 ? 'D' : 'G', kT = s > 0 ? 'G' : 'D';
@@ -1928,7 +1963,7 @@
       d.pose = roumain ? (u => cle(u)) : (u => cle(1 - u));
       if (o.hal) d.tenu = [{ t: 'haltere', m: 'GD' }];
       else if (o.kb) { d.tenu = []; d.objets = (info, u, sortie) => poserObjet(MAT.kettlebell(C), info.prises.G.clone().add(info.prises.D).multiplyScalar(0.5), qTenu(AX, AY), sortie); }
-      else if (o.trapbar) { d.tenu = []; d.objets = (info, u, sortie) => { const m = info.prises.G.clone().add(info.prises.D).multiplyScalar(0.5); for (const s of [1, -1]) { sortie.push(pret(cyl(0.014, 0.4, m.x + s * 0.32, m.y, m.z, C.metal, 1, LONG_Z))); sortie.push(pret(seg(V(m.x + s * 0.32, m.y, m.z + 0.2), V(m.x + s * 0.12, m.y - 0.06, m.z + 0.34), 0.014, C.metal, 1))); sortie.push(pret(seg(V(m.x + s * 0.32, m.y, m.z - 0.2), V(m.x + s * 0.12, m.y - 0.06, m.z - 0.34), 0.014, C.metal, 1))); sortie.push(pret(cyl(0.025, 0.4, m.x + s * 0.55, m.y - 0.06, m.z, C.metal, 1))); sortie.push(pret(cyl(0.225, 0.05, m.x + s * 0.62, m.y - 0.06, m.z, C.fonte, 0))); sortie.push(pret(seg(V(m.x + s * 0.12, m.y - 0.06, m.z + 0.34), V(m.x - s * 0.12, m.y - 0.06, m.z + 0.34), 0.014, C.metal, 1))); sortie.push(pret(seg(V(m.x + s * 0.12, m.y - 0.06, m.z - 0.34), V(m.x - s * 0.12, m.y - 0.06, m.z - 0.34), 0.014, C.metal, 1))); sortie.push(pret(seg(V(m.x + s * 0.32, m.y - 0.06, m.z), V(m.x + s * 0.36, m.y - 0.06, m.z), 0.014, C.metal, 1))); } }; }
+      else if (o.trapbar) { d.tenu = []; d.objets = barreHexagonale(C); }
       else if (o.poulie) { const anc = V(0, 0.15, o.roumain ? 1.15 : -1.1);   // tirage entre les jambes : poulie derrière ; soulevé roumain : poulie devant
         d.tenu = [{ t: 'cable', de: anc, bout: 'corde' }]; fixe.push(...poseFixe(MAT.colonne(C, anc))); }
       else if (o.ceinture) d.objets = (info, u, sortie) => { const b = info.bassin; sortie.push(pret(seg(V(0, b.y - 0.1, b.z + 0.05), V(0, 0.15, 0.05), 0.008, C.cadre, 0.6))); };
@@ -3660,7 +3695,8 @@
     "curl barre pupitre":["e61"],
     "curl barre araignee":["sw-curl-incline-avec-barre-en-pronation"],
     "curl barre mur":["sw-curl-mural-avec-barre"],
-    "curl poulie bayesien uni":["sw-curl-bayesien-a-la-poulie","sw-curl-a-la-poulie-en-position-inversee","sw-curl-biceps-assis-avec-cable"],
+    "curl poulie bayesien uni":["sw-curl-bayesien-a-la-poulie","sw-curl-a-la-poulie-en-position-inversee"],
+    "curl poulie bayesien uni tabouret":["sw-curl-biceps-assis-avec-cable"],
     "curl poulie pupitre barreP":["e303"],
     "curl poulie accroupi barreP":["sw-curl-a-genoux-avec-cable"],
     "curl barre serre":["sw-curl-biceps-prise-serree"],
@@ -3739,7 +3775,7 @@
     "tirage large neutre":["e22"],
     "etire chatvache":["e1213"],
     "rowing machine":["e159","sw-tirage-bas-avec-levier"],
-    "rowing barre ventre=40 neutre":["sw-rowing-t-bar-avec-appui-poitrine"],
+    "rowing tbar ventre":["sw-rowing-t-bar-avec-appui-poitrine"],
     "etire enfant":["e1215"],
     "traction sup":["e21"],
     "rowing landmine serre":["sw-rameur-a-prise-serree-avec-barre-au-sol"],
@@ -3819,7 +3855,7 @@
     "developpe epaules barre pousse":["e1129"],
     "elevation arriere barre penche":["sw-elevation-arriere-des-deltoides-avec-barre"],
     "rowing barre haut large":["e258"],
-    "elevation menton barre":["sw-rowing-menton-a-la-barre-prise-largeur-d-epaules","e391"],
+    "elevation menton barre":["sw-rowing-menton-a-la-barre-prise-largeur-d-epaules"],
     "elevation menton barre large":["sw-tirage-vertical-a-la-barre-avec-prise-large"],
     "elevation arriere hal penche":["e163"],
     "elevation facepull poulie":["e33"],
@@ -3842,7 +3878,8 @@
     "elevation lat hal":["e42"],
     "elevation lat hal poliquin":["sw-elevation-laterale-poliquin-avec-halteres"],
     "developpe epaules hal pousse":["sw-developpe-pousse-avec-halteres"],
-    "rowing hal haut":["sw-rowing-arriere-avec-halteres-pour-deltoides-posterieurs","sw-tirage-haut-assis-penche-avec-halteres"],
+    "rowing hal haut":["sw-rowing-arriere-avec-halteres-pour-deltoides-posterieurs"],
+    "rowing hal haut tabouret":["sw-tirage-haut-assis-penche-avec-halteres"],
     "developpe epaules hal alt":["sw-developpe-alterne-debout-avec-halteres"],
     "elevation front volant hal":["sw-driver-debout-avec-halteres"],
     "elevation menton hal":["e394"],
@@ -3893,6 +3930,7 @@
     "elevation rotext hal tabouret uni":["sw-rotation-externe-de-l-x27-epaule-en-position-assise"],
     "developpe epaules hal assis neutre":["sw-developpe-epaules-assis-prise-neutre"],
     "elevation rotext hal cote uni":["sw-rotation-externe-en-decubitus-lateral"],
+    "elevation menton smith":["e391"],
     "developpe epaules smith nuque assis":["sw-developpe-derriere-la-nuque-a-la-machine-smith-en-position-assise"],
     "developpe epaules smith assis":["sw-developpe-epaules-assis-a-la-smith-machine"],
     "developpe epaules hal":["sw-developpe-epaules-debout-avec-halteres"],
@@ -4011,9 +4049,10 @@
     "pompe archer":["sw-pompes-archer"],
     "developpe elas":["sw-developpe-couche-avec-bande"],
     "ecarte elas":["sw-ecarte-avec-bande-elastique"],
-    "developpe barre":["e1","e270","sw-developpe-couche-avec-bande-de-resistance"],
+    "developpe barre":["e1","e270"],
     "developpe barre sol":["e1073"],
     "developpe barre larsen":["sw-developpe-couche-larsen-avec-barre"],
+    "developpe barre elas":["sw-developpe-couche-avec-bande-de-resistance"],
     "etire pectoraux coude":["sw-etirement-de-la-poitrine-avec-bras-flechis"],
     "pompe birddog":["sw-pompe-avec-extension-bras-jambe-opposes"],
     "developpe poulie plat":["sw-developpe-couche-a-la-cable"],
@@ -4027,7 +4066,7 @@
     "developpe machine assis uni":["sw-developpe-unilateral-en-travers-du-corps"],
     "developpe barre decline":["e3"],
     "developpe poulie decline":["sw-developpe-couche-decline-a-la-poulie"],
-    "developpe machine assis":["sw-developpe-couche-decline","sw-developpe-incline-marteau","e10","sw-presse-pectorale-a-la-machine"],
+    "developpe machine assis decline":["sw-developpe-couche-decline"],
     "developpe hal decline":["e6"],
     "ecarte hal decline":["e332"],
     "pompe decline":["e15"],
@@ -4049,6 +4088,7 @@
     "ecarte poulie banc=30":["sw-ecarte-couche-incline-a-la-poulie"],
     "developpe hal banc=30":["e5"],
     "ecarte hal banc=30":["sw-ecarte-couche-incline-avec-halteres"],
+    "developpe machine assis incline":["sw-developpe-incline-marteau"],
     "developpe hal banc=30 neutre":["sw-developpe-incline-avec-halteres-en-prise-neutre"],
     "pompe incline":["e14"],
     "pompe jack":["sw-pompes-jack"],
@@ -4064,6 +4104,7 @@
     "ecarte poulie plat":["sw-ecarte-couche-a-la-poulie"],
     "developpe machine":["sw-developpe-couche-prise-marteau"],
     "ecarte machine":["sw-ecarte-a-la-machine-pour-pectoraux"],
+    "developpe machine assis":["e10","sw-presse-pectorale-a-la-machine"],
     "developpe machine assis neutre":["sw-presse-a-pectoraux-a-prise-marteau-sur-machine"],
     "pompe negatif":["sw-pompe-negative"],
     "ecarte poulie uni":["sw-ecarte-a-un-bras-a-la-poulie"],
@@ -4191,18 +4232,20 @@
     "squat pistolet kb":["sw-squat-pistole-avec-poids"],
     "jambes nordiqueInverse disque":["sw-squat-sissy-pondere-en-position-agenouillee"],
     "squat barre zercher":["e180"],
-    "elevation shrug barre":["sw-haussement-d-x27-epaules-avec-barre","sw-haussement-d-x27-epaules-a-la-smith-machine"],
+    "elevation shrug barre":["sw-haussement-d-x27-epaules-avec-barre"],
     "elevation shrug barre dos":["e262"],
     "elevation shrug poulie":["e311"],
     "dips shrug":["sw-haussements-d-x27-epaules-en-dips"],
     "elevation shrug hal kelso":["sw-haussements-d-x27-epaules-kelso-avec-halteres"],
-    "elevation shrug hal":["sw-haussements-d-x27-epaules-avec-halteres","sw-haussements-d-x27-epaules-avec-barre-hexagonale"],
+    "elevation shrug hal":["sw-haussements-d-x27-epaules-avec-halteres"],
     "gym equilibre mur shrug":["sw-haussement-d-x27-epaules-inverse"],
     "elevation shrug machine":["e130"],
     "etire cou curl":["sw-flexion-du-cou"],
     "etire cou":["e1239"],
     "rowing hal appui uni amp=0.25":["sw-rowing-unilateral-avec-haltere-en-appui-sur-scapula-en-flexion-du-tronc"],
     "elevation shrug hal tabouret":["sw-haussements-d-x27-epaules-avec-halteres-en-position-assise"],
+    "elevation shrug smith":["sw-haussement-d-x27-epaules-a-la-smith-machine"],
+    "elevation shrug trapbar":["sw-haussements-d-x27-epaules-avec-barre-hexagonale"],
     "elevation y hal ventre=30":["sw-elevation-en-y-pour-trapezes"],
     "dips machine":["e1003"],
     "triceps elas":["sw-extension-des-triceps-avec-bande-elastique"],
@@ -4212,7 +4255,7 @@
     "triceps front poulie banc=30":["sw-extension-des-triceps-a-la-poulie-inclinee"],
     "triceps nuque poulie corde":["e306"],
     "triceps poulie barreP":["sw-extensions-a-la-poulie","sw-extension-des-triceps-a-la-barre-ez","e1178"],
-    "triceps jm barre":["sw-developpe-californien","sw-developpe-couche-prise-serree-a-la-machine-smith"],
+    "triceps jm barre":["sw-developpe-californien"],
     "developpe barre serre":["e17"],
     "developpe hal banc=30 serre neutre":["sw-developpe-couche-incline-avec-halteres-prise-serree"],
     "pompe serre":["sw-pompes-prise-serree","sw-pompes-bras-croises"],
@@ -4228,6 +4271,7 @@
     "triceps front barre banc=30":["sw-extension-des-triceps-a-la-barre-sur-banc-incline"],
     "pompe incline serre":["sw-pompe-inclinee-prise-serree"],
     "triceps front hal banc=30":["sw-extension-des-triceps-avec-halteres-sur-banc-incline"],
+    "triceps jm smith":["sw-developpe-couche-prise-serree-a-la-machine-smith"],
     "triceps nuque poulie katana uni":["sw-extension-triceps-katana","sw-extension-triceps-au-dessus-de-la-tete-a-un-bras"],
     "pompe genoux serre":["sw-pompes-serrees-sur-les-genoux"],
     "pompe genoux diamant":["sw-pompes-diamant-sur-les-genoux"],
@@ -4237,7 +4281,7 @@
     "triceps machine":["e76"],
     "triceps travers poulie uni":["sw-extension-horizontale-du-triceps-debout-a-un-bras-avec-cable"],
     "triceps poulie uni":["sw-extension-unilaterale-a-la-poulie","sw-extension-des-triceps-a-un-bras-a-la-poulie"],
-    "triceps kickback hal uni":["sw-kickback-assis-avec-haltere-a-un-bras"],
+    "triceps kickback hal uni tabouret":["sw-kickback-assis-avec-haltere-a-un-bras"],
     "triceps nuque hal uni":["sw-extension-triceps-unilaterale-au-dessus-de-la-tete"],
     "triceps poulie sup uni":["sw-extension-triceps-unilaterale-en-prise-inversee-a-la-poulie"],
     "triceps nuque elas":["sw-extension-des-triceps-au-dessus-de-la-tete-avec-bande-elastique"],

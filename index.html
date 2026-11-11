@@ -23574,14 +23574,12 @@ function couleursSemaine() {
    ===================================================================== */
 const ATLAS_FICHIERS = { moteur: 'assets/atlas/atlas3d.js', mouvements: 'assets/atlas/atlas-mouvements.js', modele: 'assets/atlas/atlas.bin' };
 /* Tous les exercices de la bibliothèque ont leur mouvement (la table est dans atlas-mouvements.js, chargé à la
-   demande), y compris ceux qu'une fusion de doublons a retirés depuis : chacun joue le sien. Un exercice créé par
-   l'utilisateur ou venu de la communauté montre ses muscles, corps immobile, sauf s'il a été fusionné dans un
-   exercice de la bibliothèque : il joue alors celui de sa cible. Renvoie l'identifiant dont jouer le mouvement,
-   ou null. */
+   demande). Un exercice fusionné dans un autre joue le mouvement de celui qui l'a remplacé, comme partout ailleurs
+   dans l'appli. Un exercice créé par l'utilisateur ou venu de la communauté, ou un ancien exercice sorti de la
+   bibliothèque, montre ses muscles, corps immobile. Renvoie l'identifiant dont jouer le mouvement, ou null. */
 function mouvementExercice(id) {
-  if (IDS_EXERCICES_LIVRES.has(id)) return id;
   const cible = cibleFusion(id);
-  return IDS_EXERCICES_LIVRES.has(cible) ? cible : null;
+  return IDS_EXERCICES_LIVRES.has(cible) ? cible : IDS_EXERCICES_LIVRES.has(id) ? id : null;
 }
 const MODES_ATLAS = [['exercice', 'Exercice'], ['semaine', 'Semaine'], ['seance', 'Dernière séance'], ['frequence', 'Fréquence'], ['progression', 'Progression'], ['equilibre', 'Équilibre'], ['anatomie', 'Anatomie']];
 /* Part de la couleur du groupe que prend un muscle selon son rôle dans ce groupe. */

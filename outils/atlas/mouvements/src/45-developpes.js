@@ -1,6 +1,7 @@
 
   /* Développés : la main part de près de l'épaule et pousse jusqu'au bout du bras.
-     (défaut) développé pour la poitrine, couché (plat, banc=<angle>, decline, sol), assis (machine, poulie) ou debout
+     (défaut) développé pour la poitrine, couché (plat, banc=<angle>, decline, sol), assis (machine, poulie ; avec
+     incline ou decline, la poussée monte ou descend) ou debout
      (poulie) ; epaules : au-dessus de la tête, debout, assis, genoux ou demigenou.
      Matériel : barre, hal, kb, smith, machine, poulie, elas. Prise : serre, large, neutre. Côtés : uni, alt.
      Variantes : larsen (jambes en l'air), partiel (arrêt au-dessus de la poitrine), nuque, arnold, pousse (élan des
@@ -8,6 +9,9 @@
   FAM.developpe = (c, o, C) => {
     const L = c.L, m = coteDe(o), haut = !!o.epaules;
     const libre = !(o.barre || o.smith || o.landmine || o.svend);       // mains indépendantes
+    // Assis à la machine, incline et decline disent le sens de la poussée, pas l'inclinaison d'un banc.
+    const montee = o.assis && o.machine ? (o.incline ? 28 : o.decline ? -22 : 0) : 0;
+    if (montee) o.decline = false;
     if (!(o.barre || o.smith || o.kb || o.machine || o.poulie || o.elas || o.landmine || o.svend || o.pc)) o.hal = true;
     if (!haut && !o.assis && !o.debout && !o.sol && o.banc == null && !o.decline && !o.svend && !o.autour && !o.genoux && !o.demigenou) o.plat = true;
     if (o.debout) { o.plat = false; }
@@ -37,6 +41,8 @@
       hautP = s => V(s * eHaut, o.banc > 20 ? 0.0 : -0.02, portee);
       pole = s => (o.serre ? V(s * 0.3, -0.6, -1) : V(s * 0.75, -0.35, -1));
       dirMain = V(0, 0, 1); paumeA = paumeB = s => (o.neutre || o.marteau ? V(-s, 0, 0) : V(0, -1, 0));
+      // Assis à la machine, la poussée peut monter (incline) ou descendre (decline).
+      if (montee) { const an = rad(montee); bas = s => V(s * eBas, montee > 0 ? -0.06 : -0.17, zBas + 0.02); hautP = s => V(s * eHaut, (montee > 0 ? -0.02 : -0.06) + portee * Math.sin(an) * 0.96, portee * Math.cos(an)); }
       if (o.autour) { bas = s => V(s * 0.3, -0.12, 0.12); hautP = s => V(-s * 0.1, -0.16, portee - 0.06); pole = s => V(s * 0.6, -0.8, -0.4); paumeA = paumeB = s => V(-s, 0, 0); vue = { az: 25, el: 8 }; }
     }
     const bras = (f, pa, doigts) => {
@@ -70,6 +76,8 @@
       const zB = t.duThorax(hautP(1)).z;
       fixe = fixe.concat(poseFixe(MAT.smith(C, zB)));
     }
+    // Barre retenue par des élastiques (développé couché avec bandes) : une bande de chaque main jusqu'au sol.
+    if (o.barre && o.elas && !haut) { const zB = t.duThorax(hautP(1)).z; for (const k of ['G', 'D']) tenu.push({ t: 'elastique', de: V((k === 'G' ? 1 : -1) * 0.5, 0.03, zB), m: k, bout: 'rien' }); }
     Object.assign(d, { fixe, vue, tenu }, rythmeDe(o));
     if (o.pousse) {
       // Développé poussé : les genoux plient un peu puis les jambes lancent la barre. Départ en bas.

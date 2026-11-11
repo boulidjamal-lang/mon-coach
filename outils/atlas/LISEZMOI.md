@@ -51,6 +51,9 @@ Chaque exercice de la bibliothèque (`EXERCICES_BASE` dans `index.html`) a son m
   la même chose en vidéo. `appli/essai-mouvement.html?spec=…` ou `?ex=<identifiant>` montre un mouvement seul.
 - `node mouvements/sonde.mjs "<mouvement>" [instant]` : hauteur du point le plus bas de chaque région du corps,
   pour régler une pose au sol.
+- `node outils/catalogue-mouvements.cjs <dossier>` : le catalogue de toute la bibliothèque, groupe par groupe —
+  pour chaque exercice, le départ et l'arrivée de son mouvement dans le vrai rendu (planches `cat-<groupe>-<n>.jpg`
+  et `catalogue.json`, qui dit où trouver chaque exercice). Long : plusieurs dizaines de minutes en rendu logiciel.
 
 Ajouter ou corriger le mouvement d'un exercice : modifier sa ligne dans `table.txt` (ou la famille dans `src/`),
 relancer `construire.mjs`, puis `controle.mjs --table`, et regarder le résultat sur une planche. Un exercice ajouté
