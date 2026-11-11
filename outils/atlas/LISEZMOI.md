@@ -68,7 +68,13 @@ la peau en un point : utile pour comprendre pourquoi elle suit tel os).
 
 Dans le moteur (`atlas3d.js`) : la peau a son propre programme de dessin. L'envers de la peau (vu par une ouverture :
 narine, poignet de la peau partielle) est assombri ; il se reconnaît au triangle qui tourne le dos ET à la normale
-de la surface, car un triangle vu par la tranche, au bord d'un pli, est parfois pris à tort pour un envers. Peau partielle : la tête, les mains et
+de la surface, car un triangle vu par la tranche, au bord d'un pli, est parfois pris à tort pour un envers.
+
+Sur iPhone : les valeurs « flat » des programmes de dessin (la structure d'un sommet, sa zone de peau) coûtent très
+cher avec la convention par défaut de WebGL, où le dernier sommet du triangle fait foi — Metal ne connaît que le
+premier. Le moteur demande donc la convention du premier sommet (`WEBGL_provoking_vertex`) là où elle existe.
+L'image n'en dépend pas : aucun triangle n'est à cheval sur deux structures ni sur deux zones de peau (un test le
+vérifie sur les deux fichiers). `mesures().premierSommet` dit si elle est en place. Peau partielle : la tête, les mains et
 les pieds, dessinés un rien en avant. Peau entière : seuls les muscles colorés (ou choisi) sont dessinés, ils
 marquent le pochoir, et la peau du corps recule derrière eux à cet endroit — une fenêtre, qui ne s'ouvre pas si un
 autre membre passe devant.

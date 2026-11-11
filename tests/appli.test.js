@@ -6910,6 +6910,25 @@ test('atlas 3D : la peau va avec le modèle (zones, attaches au squelette, artic
   assert.ok(H.short.bas > 0.5 && H.short.haut > H.short.bas && H.short.haut < 1.1 && H.oeil.centre[1] > 1.5 && H.oeil.rayon > 0.008 && H.oeil.rayon < 0.02);
 });
 
+test('atlas 3D : aucun triangle à cheval sur deux structures ni sur deux zones de peau (le moteur compte dessus)', () => {
+  // Pour ses valeurs « flat », le moteur demande la convention du premier sommet là où elle existe (sans elle, le rendu
+  // est très lent sur les puces Apple). L'image n'en dépend pas tant que les trois sommets d'un triangle portent la
+  // même structure, et la même zone pour la peau : c'est ce qui est vérifié ici.
+  const b = fs.readFileSync(path.join(RACINE, 'assets', 'atlas', 'atlas.bin')), lg = b.readUInt32LE(8), E = JSON.parse(b.subarray(12, 12 + lg).toString('utf8'));
+  const debut = 12 + lg, pas = E.octetsParSommet, ind = debut + E.sommets * pas, structure = v => b[debut + v * pas + 10];
+  let k = 0, mixtes = 0;
+  for (let i = 0; i < E.pieces.length; i += 2) {
+    const v0 = E.pieces[i], n = E.pieces[i + 1];
+    for (let j = 0; j < n; j += 3, k += 3) { const s = structure(v0 + b.readUInt16LE(ind + k * 2)); if (structure(v0 + b.readUInt16LE(ind + k * 2 + 2)) !== s || structure(v0 + b.readUInt16LE(ind + k * 2 + 4)) !== s) mixtes++; }
+  }
+  assert.equal(k, E.triangles * 3, 'tous les triangles du modèle sont parcourus');
+  assert.equal(mixtes, 0, 'triangles du modèle à cheval sur deux structures');
+  const { H, sommets, indices } = peauAtlas(), lire = H.indicesSur === 32 ? q => indices.readUInt32LE(q * 4) : q => indices.readUInt16LE(q * 2), zone = v => sommets[v * H.octetsParSommet + 10];
+  let mixtesPeau = 0;
+  for (let t = 0; t < H.trianglesPairs + H.trianglesImpairs; t++) { const z = zone(lire(t * 3)); if (zone(lire(t * 3 + 1)) !== z || zone(lire(t * 3 + 2)) !== z) mixtesPeau++; }
+  assert.equal(mixtesPeau, 0, 'triangles de la peau à cheval sur deux zones');
+});
+
 test('atlas 3D : les cartes viennent de l\'historique réel, et restent neutres sans donnée', () => avecAppli({}, async ({ page }) => {
   const S = enteteAtlas().structures;
   // Un mardi : la semaine (du lundi) ne compte que la séance du jour ; le dos (il y a 2 jours) et les jambes (il y a 4 jours) sont de la semaine d'avant.
