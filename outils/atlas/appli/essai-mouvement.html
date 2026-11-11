@@ -1,15 +1,24 @@
 <!doctype html><html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<style>html,body{margin:0;height:100%}body{background:radial-gradient(ellipse 75% 60% at 50% 42%,#1b1e27 0%,#0d0f15 55%,#07080b 100%)}body.clair{background:radial-gradient(ellipse 75% 60% at 50% 42%,#ffffff 0%,#eef1f6 60%,#e2e6ee 100%)}#scene{position:absolute;inset:0}.atlas-toile{width:100%;height:100%;display:block}</style></head>
-<body><div id="scene"></div><script src="atlas3d.js"></script><script src="atlas-mouvements.js"></script><script>
-// Page d'essai des mouvements : ?m=squat&u=0.5 (pose figée) ou ?m=squat&anime=1 ; az, el pour changer de vue.
+<style>html,body{margin:0;height:100%}body{background:radial-gradient(ellipse 75% 60% at 50% 42%,#1b1e27 0%,#0d0f15 55%,#07080b 100%);font:600 15px/1.25 -apple-system,"Helvetica Neue",Arial,sans-serif}body.clair{background:radial-gradient(ellipse 75% 60% at 50% 42%,#ffffff 0%,#eef1f6 60%,#e2e6ee 100%)}#scene{position:absolute;inset:0}.atlas-toile{width:100%;height:100%;display:block}
+#titre{position:absolute;left:0;right:0;top:0;padding:12px 14px;color:#f4f5f8;text-align:center;text-shadow:0 1px 6px rgba(0,0,0,.6);pointer-events:none}body.clair #titre{color:#1b1d24;text-shadow:none}</style></head>
+<body><div id="scene"></div><div id="titre"></div><script src="atlas3d.js"></script><script src="atlas-mouvements.js"></script><script>
+// Page d'essai des mouvements. ?spec=curl hal incline (ou ?ex=<identifiant d'exercice>, ou ?m=<ancien nom>) ; &u=0.5 (pose figée)
+// ou &anime=1 ; az, el pour changer de vue ; titre=… pour l'afficher. window.changer(exo, titre) passe à un autre exercice.
 const q = new URLSearchParams(location.search);
 if (q.get('clair')) document.body.classList.add('clair');
+const exoDe = () => q.get('spec') ? { spec: q.get('spec') } : q.get('ex') ? { exercice: q.get('ex') } : { mouvement: q.get('m') || 'squat' };
 fetch('../donnees/atlas.bin').then(r => r.arrayBuffer()).then(t => {
   const a = window.atlas = AnqaAtlas.creer(document.getElementById('scene'), t, { clair: !!q.get('clair'), ppMax: +(q.get('pp') || 2) });
-  const anim = window.anim = AnqaMouvements.creerAnimation(a, { mouvement: q.get('m') || 'squat' }, { clair: !!q.get('clair'), vue: q.get('az') != null ? { az: +q.get('az'), el: +(q.get('el') || 8) } : null });
+  window.changer = (exo, titre, vue) => {
+    if (window.anim) window.anim.quitter();
+    document.getElementById('titre').textContent = titre || '';
+    const anim = window.anim = AnqaMouvements.creerAnimation(a, typeof exo === 'string' ? { spec: exo } : exo, { clair: !!q.get('clair'), vue: vue || (q.get('az') != null ? { az: +q.get('az'), el: +(q.get('el') || 8) } : null) });
+    anim.cadrer(0);
+    return anim;
+  };
+  const anim = window.changer(exoDe(), q.get('titre') || '');
   if (q.get('choisi')) a.choisir(q.get('choisi'));
   if (q.get('couleurs')) a.colorer(Object.fromEntries(q.get('couleurs').split(',').map(x => x.split(':'))), { tendons: 0.3 });
-  anim.cadrer(0);
   if (q.get('cadre')) { const [y0, y1] = q.get('cadre').split(':').map(Number); a.placer({ cible: [+(q.get('x') || 0), (y0 + y1) / 2, +(q.get('z') || 0)], dist: (y1 - y0) * 1.08 / 2 / Math.tan(12 * Math.PI / 180) }); }
   window.info = anim.rendre(0, +(q.get('u') || 0));
   if (q.get('anime')) anim.demarrer();

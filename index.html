@@ -18776,6 +18776,10 @@ const EXERCICES_BASE = [
   {"id": "sw-pompe-inversee", "nom": "Pompe inversée", "nomEn": "Reverse Hand Push-Up", "groupe": "triceps", "secondaires": ["abdos", "biceps", "avant_bras", "pectoraux", "epaules"], "materiel": "poids_corps"},
   {"id": "e69", "nom": "Extension des triceps à la corde", "nomEn": "Rope Triceps Pushdown", "groupe": "triceps", "secondaires": [], "materiel": "poulie"}
 ];
+/* Les identifiants de la bibliothèque telle qu'elle est livrée, relevés ici, avant toute fusion de doublons et
+   toute correction venue de l'administration : ce sont exactement les exercices qui ont leur mouvement en 3D
+   (voir mouvementExercice). */
+const IDS_EXERCICES_LIVRES = new Set(EXERCICES_BASE.map(e => e.id));
 /* Bibliothèque alignée sur celle de SmartWorkout : noms, muscle principal
    et muscles secondaires repris de sa fiche d'exercice (déduits du nom
    pour les rares fiches sans détail). les
@@ -22022,7 +22026,7 @@ function afficherFicheExerciceBiblio(id, options) {
     <div class="fiche-bloc-titre">Muscles sollicités</div>
     <div class="fiche-muscles"><span class="principal">${escapeHtml(GROUPES_MUSCULAIRES[e.groupe] || '')}</span>${(e.secondaires || []).filter(g => g !== e.groupe && GROUPES_MUSCULAIRES[g]).map(g => `<span>${escapeHtml(GROUPES_MUSCULAIRES[g])}</span>`).join('')}</div>
     ${faisceauxFicheHTML(e)}
-    ${boutonAtlasHTML('exercice', e.id, MOUVEMENTS_3D[e.id] ? 'Voir le mouvement en 3D' : 'Voir les muscles en 3D')}
+    ${boutonAtlasHTML('exercice', e.id, mouvementExercice(e.id) ? 'Voir le mouvement en 3D' : 'Voir les muscles en 3D')}
     <div class="fiche-record" style="margin-top:6px;"><span>Matériel</span><b>${MATERIELS[e.materiel].ic} ${escapeHtml(MATERIELS[e.materiel].label)}</b></div>
   </div>`;
 
@@ -23569,13 +23573,16 @@ function couleursSemaine() {
    pas : le mannequin dessiné reste seul.
    ===================================================================== */
 const ATLAS_FICHIERS = { moteur: 'assets/atlas/atlas3d.js', mouvements: 'assets/atlas/atlas-mouvements.js', modele: 'assets/atlas/atlas.bin' };
-/* Exercices dont le corps sait exécuter le mouvement (les autres montrent leurs muscles, corps immobile). */
-const MOUVEMENTS_3D = {
-  e265: 'squat', 'sw-squat-avec-barre-haute': 'squat', 'sw-squat-avec-barre-basse': 'squat',
-  e1: 'developpeCouche', 'sw-developpe-couche-avec-arret': 'developpeCouche',
-  e29: 'souleveDeTerre', e20: 'traction', 'sw-tractions-prise-large': 'traction', e13: 'pompe',
-  e338: 'curl', 'sw-curl-avec-halteres-en-supination': 'curl', e42: 'elevationsLaterales', e24: 'rowing'
-};
+/* Tous les exercices de la bibliothèque ont leur mouvement (la table est dans atlas-mouvements.js, chargé à la
+   demande), y compris ceux qu'une fusion de doublons a retirés depuis : chacun joue le sien. Un exercice créé par
+   l'utilisateur ou venu de la communauté montre ses muscles, corps immobile, sauf s'il a été fusionné dans un
+   exercice de la bibliothèque : il joue alors celui de sa cible. Renvoie l'identifiant dont jouer le mouvement,
+   ou null. */
+function mouvementExercice(id) {
+  if (IDS_EXERCICES_LIVRES.has(id)) return id;
+  const cible = cibleFusion(id);
+  return IDS_EXERCICES_LIVRES.has(cible) ? cible : null;
+}
 const MODES_ATLAS = [['exercice', 'Exercice'], ['semaine', 'Semaine'], ['seance', 'Dernière séance'], ['frequence', 'Fréquence'], ['progression', 'Progression'], ['equilibre', 'Équilibre'], ['anatomie', 'Anatomie']];
 /* Part de la couleur du groupe que prend un muscle selon son rôle dans ce groupe. */
 const POIDS_ROLE_ATLAS = { principal: 1, synergiste: 0.6, stabilisateur: 0.35 };
@@ -23748,7 +23755,7 @@ function carteAtlas(mode, structures) {
     carte.note = !D.entraine ? `Aucune séance sur les ${JOURS_ATLAS} derniers jours.` : Object.keys(couleurs).length ? `Sur ${JOURS_ATLAS} jours` : `Rien à signaler sur ${JOURS_ATLAS} jours.`;
   } else if (mode === 'exercice' && atlasExercice) {
     carte.legende = [{ c: rose, t: 'Muscle principal' }, { c: melangerCouleurs(N.muscle, rose, 0.45), t: 'Travaille aussi' }];
-    carte.note = atlasExercice.mouvement ? '' : 'Mouvement pas encore animé pour cet exercice : ses muscles, corps au repos.';
+    carte.note = atlasExercice.mouvement ? '' : 'Pas de mouvement animé pour cet exercice : ses muscles, corps au repos.';
   }
   return carte;
 }
@@ -23799,7 +23806,7 @@ async function ouvrirAtlas(mode, options) {
   const opts = options || {};
   if (!atlasDisponible()) { informer("L'atlas en 3D demande un appareil plus récent. Le corps dessiné reste là."); return; }
   const exo = opts.exercice ? trouverExercice(opts.exercice) : null;
-  atlasExercice = exo ? { exo, mouvement: MOUVEMENTS_3D[exo.id] || null } : null;
+  atlasExercice = exo ? { exo, mouvement: mouvementExercice(exo.id) } : null;
   const scene = document.getElementById('atlas-scene');
   fermerSceneAtlas();
   document.getElementById('titre-atlas').textContent = exo ? libelleExercice(exo) : 'Atlas musculaire';
@@ -23812,6 +23819,8 @@ async function ouvrirAtlas(mode, options) {
       atlasExercice && atlasExercice.mouvement ? chargerScriptAtlas(ATLAS_FICHIERS.mouvements) : null
     ]);
     if (!document.getElementById('atlas-modal').classList.contains('show')) return;   // refermé pendant le chargement
+    // La table des mouvements fait foi : un exercice qu'elle ne connaît pas reste au repos, et la fenêtre le dit.
+    if (atlasExercice && atlasExercice.mouvement && !(window.AnqaMouvements && AnqaMouvements.specDe(atlasExercice.mouvement))) atlasExercice.mouvement = null;
     atlasDonnees = donneesAtlas();
     scene.innerHTML = '';
     const modes = MODES_ATLAS.filter(([id]) => id !== 'exercice' || atlasExercice).map(([id, nom]) => ({ id, nom }));
@@ -23819,7 +23828,7 @@ async function ouvrirAtlas(mode, options) {
       clair: themeClairActif(), accent: couleurCssAtlas('--corps-cible', '#f472b6'), modes,
       mode: atlasExercice ? 'exercice' : (modes.some(m => m.id === mode) ? mode : 'semaine'),
       carte: carteAtlas, fiche: ficheAtlas, groupe: groupeAtlas,
-      exercice: atlasExercice && atlasExercice.mouvement ? { mouvement: atlasExercice.mouvement } : null
+      exercice: atlasExercice && atlasExercice.mouvement ? { exercice: atlasExercice.mouvement } : null
     });
   } catch (e) {
     console.warn('[Atlas]', e && e.message);

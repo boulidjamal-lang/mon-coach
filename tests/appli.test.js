@@ -6476,6 +6476,13 @@ test('Gemini : trois réponses demandées en une requête ; si le modèle refuse
 
 
 /* ---------- Atlas musculaire 3D ---------- */
+/* Les mouvements de l'atlas (assets/atlas/atlas-mouvements.js), chargés hors navigateur : la table et les familles. */
+function mouvementsAtlas() {
+  const vm = require('vm'), ctx = { console, Math, Float32Array, Uint8Array, JSON, isNaN, isFinite, Object, Array, String, Number, Error };
+  vm.createContext(ctx);
+  vm.runInContext(fs.readFileSync(path.join(RACINE, 'assets', 'atlas', 'atlas-mouvements.js'), 'utf8'), ctx);
+  return ctx.AnqaMouvements;
+}
 /* L'en-tête du modèle (assets/atlas/atlas.bin) : le registre des structures et le squelette de mouvement. */
 function enteteAtlas() {
   const b = fs.readFileSync(path.join(RACINE, 'assets', 'atlas', 'atlas.bin'));
@@ -6527,14 +6534,50 @@ test('atlas 3D : le registre du modèle parle la langue de l\'appli (groupes, fa
   for (const g of appli.groupes) assert.ok(S.some(s => s.app.some(a => a.groupe === g && a.role === 'principal')), 'un muscle moteur pour le groupe ' + g);
   // Le squelette de mouvement : parents avant enfants, jumeaux gauche-droite réciproques.
   E.squelette.forEach((a, i) => { assert.ok(a.parent < i); assert.equal(E.squelette[a.jumeau].jumeau, i); });
-  // Les exercices animés existent, et leur mouvement aussi.
-  const mouvements = fs.readFileSync(path.join(RACINE, 'assets', 'atlas', 'atlas-mouvements.js'), 'utf8');
-  const lies = await page.evaluate(() => Object.entries(MOUVEMENTS_3D).map(([id, m]) => [id, m, !!trouverExercice(id)]));
-  for (const [id, m, existe] of lies) { assert.ok(existe, 'exercice ' + id); assert.ok(new RegExp('\\n    ' + m + '\\(u, c\\) \\{').test(mouvements), 'mouvement ' + m); }
+  // Chaque exercice de la bibliothèque a son mouvement, et la table des mouvements ne nomme que des exercices connus.
+  const M = mouvementsAtlas();
+  // La bibliothèque livrée (avant les fusions de doublons, qui en retirent quelques-uns de la liste visible).
+  const bibli = await page.evaluate(() => {
+    const ids = [...IDS_EXERCICES_LIVRES];
+    REDIRECTIONS_EXERCICES['exercice-commun'] = 'e1';
+    const fusionne = mouvementExercice('exercice-commun');
+    delete REDIRECTIONS_EXERCICES['exercice-commun'];
+    return { ids, visibles: EXERCICES_BASE.map(e => e.id), doublons: EXERCICES_RETIRES.filter(e => e.estFusionBibliotheque).map(e => e.id), anime: ids.every(id => mouvementExercice(id) === id),
+      perso: mouvementExercice('exercice-maison'), fusionne, ancien: mouvementExercice(EXERCICES_RETIRES.find(e => !e.estFusionBibliotheque && !REDIRECTIONS_EXERCICES[e.id]).id) };
+  });
+  assert.ok(bibli.ids.length > 800 && bibli.visibles.length > 750 && bibli.doublons.length > 20, 'la bibliothèque');
+  assert.deepEqual(bibli.visibles.concat(bibli.doublons).filter(id => !bibli.ids.includes(id)), [], 'tout exercice de la bibliothèque, visible ou fusionné comme doublon, fait partie de la liste livrée');
+  assert.deepEqual(bibli.ids.filter(id => !M.specDe(id)), [], 'exercices de la bibliothèque sans mouvement');
+  assert.deepEqual([bibli.anime, bibli.fusionne], [true, 'e1'], "l'appli annonce un mouvement pour toute la bibliothèque ; un exercice fusionné dans la bibliothèque joue celui de sa cible");
+  assert.deepEqual([bibli.perso, bibli.ancien], [null, null], "pas de mouvement annoncé pour un exercice maison, ni pour un ancien exercice sorti de la bibliothèque (gardé pour l'historique)");
+  const connus = new Set(bibli.ids);
+  for (const spec in M.EXERCICES) {
+    assert.ok(M.FAM[M.lireSpec(spec).f], 'famille du mouvement « ' + spec + ' »');
+    for (const id of M.EXERCICES[spec]) assert.ok(connus.has(id), 'la table nomme un exercice inconnu : ' + id);
+  }
 }));
+
+/* Chaque mouvement de la table, posé sur le squelette du modèle à plusieurs instants (sans navigateur) : il se définit
+   sans erreur, ne donne que des valeurs finies, ne passe pas sous le sol, et ses mains et ses pieds atteignent leurs
+   appuis. Le contrôle est celui de la chaîne de fabrication (outils/atlas/mouvements/controle.mjs). */
+test('atlas 3D : les mouvements des 823 exercices se posent sans défaut', async () => {
+  const { pathToFileURL } = require('url'), dossier = path.join(RACINE, 'outils', 'atlas', 'mouvements');
+  const { controlerSpec } = await import(pathToFileURL(path.join(dossier, 'controle.mjs')).href);
+  const { chargerAtlas, chargerMouvements, FICHIER_ATLAS, FICHIER_MOUVEMENTS } = await import(pathToFileURL(path.join(dossier, 'silhouettes.mjs')).href);
+  assert.equal(path.resolve(FICHIER_MOUVEMENTS), path.join(RACINE, 'assets', 'atlas', 'atlas-mouvements.js'), "c'est bien le fichier servi par l'appli qui est contrôlé");
+  const atlas = chargerAtlas(FICHIER_ATLAS), M = chargerMouvements(FICHIER_MOUVEMENTS);
+  const corps = new M.Corps(atlas.E.squelette, atlas.peau), specs = Object.keys(M.EXERCICES);
+  assert.ok(specs.length > 700, 'la table des mouvements');
+  assert.equal(specs.reduce((n, s) => n + M.EXERCICES[s].length, 0), 823, 'un mouvement par exercice');
+  const defauts = [];
+  for (const spec of specs) { const pb = controlerSpec(M, corps, M.TEINTES.clair, spec); if (pb.length) defauts.push(spec + ' : ' + pb.join(' ; ')); }
+  assert.deepEqual(defauts, [], 'mouvements à revoir');
+});
 
 test('atlas 3D : les cartes viennent de l\'historique réel, et restent neutres sans donnée', () => avecAppli({}, async ({ page }) => {
   const S = enteteAtlas().structures;
+  // Un mardi : la semaine (du lundi) ne compte que la séance du jour ; le dos (il y a 2 jours) et les jambes (il y a 4 jours) sont de la semaine d'avant.
+  await page.clock.setFixedTime(new Date('2026-11-10T10:00:00'));
   const r = await page.evaluate(([S, historique]) => {
     const res = {};
     // Sans aucune séance : rien n'est coloré, et chaque carte le dit.
@@ -6564,7 +6607,7 @@ test('atlas 3D : les cartes viennent de l\'historique réel, et restent neutres 
     res.ficheProgression = ficheAtlas(de('grand_dorsal'), 'progression').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
     res.ficheSansSuivi = ficheAtlas(de('sartorius'), 'semaine').replace(/<[^>]+>/g, ' ').trim();
     // Un exercice : ses muscles, pondérés (principal, secondaire, faisceaux de sa fiche).
-    atlasExercice = { exo: trouverExercice('e1'), mouvement: MOUVEMENTS_3D.e1 };
+    atlasExercice = { exo: trouverExercice('e1'), mouvement: mouvementExercice('e1') };
     const ex = carteAtlas('exercice', S);
     res.exercice = [ex.couleurs.pectoral_sternal === couleurCssAtlas('--corps-cible', '#f472b6'), !!ex.couleurs.triceps_lateral && ex.couleurs.triceps_lateral !== ex.couleurs.pectoral_sternal, ex.couleurs.grand_dorsal || null, ex.legende.map(l => l.t)];
     // Les alertes de faisceaux : mêmes phrases qu'avant, avec le faisceau en retard en plus.
@@ -6655,10 +6698,16 @@ test('atlas 3D : sans WebGL 2, aucun accès ; avec, la fenêtre s\'ouvre, anime 
     assert.deepEqual([e.titre, e.mode, e.anim, e.scripts], ['Squat avec barre', 'exercice', true, 2]);
     assert.ok(e.pose, 'le bassin est descendu : le corps est en plein squat');
     assert.ok(e.colores > 10);
-    // Un exercice sans mouvement animé : ses muscles, corps au repos, et c'est dit.
+    // Un autre exercice de la bibliothèque, d'une autre famille de mouvements : animé lui aussi, rien à signaler.
     await page.evaluate(() => { fermerAtlas(); ouvrirAtlas('exercice', { exercice: 'e39' }); });
     await pret();
-    assert.deepEqual(await page.evaluate(() => [!!atlasMonte.animation(), document.querySelector('.atlas-note').textContent]), [false, 'Mouvement pas encore animé pour cet exercice : ses muscles, corps au repos.']);
+    const autre = await page.evaluate(() => ({ spec: atlasMonte.animation() && atlasMonte.animation().definition.spec, note: document.querySelector('.atlas-note').textContent }));
+    assert.ok(autre.spec && !/^squat/.test(autre.spec), 'un mouvement, et pas celui du squat : ' + autre.spec);
+    assert.equal(autre.note, '');
+    // Un exercice créé par l'utilisateur n'a pas de mouvement : ses muscles, corps au repos, et c'est dit.
+    await page.evaluate(() => { fermerAtlas(); musculationExosPerso.push({ id: 'exercice-maison', nom: 'Exercice maison', groupe: 'biceps', secondaires: [], materiel: 'haltere' }); ouvrirAtlas('exercice', { exercice: 'exercice-maison' }); });
+    await pret();
+    assert.deepEqual(await page.evaluate(() => [!!atlasMonte.animation(), document.querySelector('.atlas-note').textContent]), [false, 'Pas de mouvement animé pour cet exercice : ses muscles, corps au repos.']);
     await page.evaluate(() => fermerAtlas());
     assert.deepEqual(erreurs, [], 'erreurs JavaScript dans la page');
     await ctx.close();

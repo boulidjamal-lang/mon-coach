@@ -1,8 +1,9 @@
 # Atlas musculaire 3D d'Anqā
 
 - `atlas3d.js` : le moteur d'affichage et son interface (WebGL 2, aucune bibliothèque).
-- `atlas-mouvements.js` : le corps exécute les exercices (solveur de pose, mouvements, matériel) ; chargé seulement
-  pour montrer un exercice.
+- `atlas-mouvements.js` : le corps exécute les exercices (solveur de pose, familles de mouvements, matériel, et la
+  table qui relie chaque exercice de la bibliothèque à son mouvement) ; chargé seulement pour montrer un exercice.
+  Fichier assemblé : ses sources sont dans `outils/atlas/mouvements/`.
 - `atlas.bin` : le modèle — 178 structures (175 muscles, tendon calcanéen, ligne blanche, tractus ilio-tibial),
   chacune avec son maillage propre, et le squelette. Seul le côté gauche est stocké : le droit en est le miroir.
 
