@@ -6738,6 +6738,44 @@ test('atlas 3D : au-dessus de la tête, la charge contourne le visage, les bras 
   }
 });
 
+test('atlas 3D : pendu ou bras levés, les bras sont tendus et les mains tiennent la barre', async () => {
+  const { pathToFileURL } = require('url'), dossier = path.join(RACINE, 'outils', 'atlas', 'mouvements');
+  const { chargerAtlas, chargerMouvements, FICHIER_ATLAS, FICHIER_MOUVEMENTS } = await import(pathToFileURL(path.join(dossier, 'silhouettes.mjs')).href);
+  const atlas = chargerAtlas(FICHIER_ATLAS), M = chargerMouvements(FICHIER_MOUVEMENTS), corps = new M.Corps(atlas.E.squelette, atlas.peau);
+  const lire = (spec, u) => { const d = M.definir(spec, corps, M.TEINTES.clair), info = corps.poser(M.poseA(d, 0, u)); return { info, coudes: [info.angles.G.coude, info.angles.D.coude] }; };
+  const tendus = (spec, u, maxi = 16) => { const c = lire(spec, u).coudes; assert.ok(Math.max(...c) < maxi && Math.min(...c) > 3, `${spec} (u=${u}) : coudes à ${c.map(x => x.toFixed(0)).join('° et ')}° — bras tendus, sans dépasser leur portée`); };
+  // L'épaule monte avec le bras : comptée depuis l'épaule au repos, la longueur du bras laissait les coudes pliés de 60
+  // à 77° pendu à une barre, en haut du tirage vertical, à la réception de l'arraché, en appui renversé.
+  const H = 2.42;
+  // Tractions : pendu bras tendus, et les mains restent sur la barre fixe du bas en haut (elles étaient jusqu'à 3 cm à côté).
+  for (const [spec, ecart] of [['traction', 0.33], ['traction large', 0.46], ['traction sup', 0.22], ['traction serre', 0.14], ['traction pendu', 0.33], ['traction scapulaire', 0.33], ['traction leste', 0.33]]) {
+    tendus(spec, 0);
+    for (const u of [0, 0.25, 0.5, 0.75, 1]) {
+      const { info } = lire(spec, u);
+      for (const [k, s] of [['G', 1], ['D', -1]]) { const pr = info.prises[k]; assert.ok(Math.abs(pr.y - H) < 0.006 && Math.abs(pr.z - 0.02) < 0.006 && Math.abs(pr.x - s * ecart) < 0.006, `${spec} (u=${u}) : la main ${k} est sur la barre (${((pr.y - H) * 1000).toFixed(0)} mm, ${((pr.z - 0.02) * 1000).toFixed(0)} mm, ${((pr.x - s * ecart) * 1000).toFixed(0)} mm)`); }
+    }
+  }
+  assert.ok(Math.min(...lire('traction', 1).coudes) > 120, 'en haut de la traction, les coudes sont pliés : le menton passe la barre');
+  // Suspendu pour les abdominaux : bras tendus et mains sur la barre à tous les instants, même bassin basculé ou en vrille.
+  for (const spec of ['suspendu', 'suspendu jambes', 'suspendu barre', 'suspendu coudes', 'suspendu oblique', 'suspendu ciseaux', 'suspendu cercles', 'suspendu moulinet']) {
+    for (const u of [0, 0.2, 0.4, 0.6, 0.8, 1]) {
+      const { info, coudes } = lire(spec, u);
+      assert.ok(Math.min(...coudes) > 3 && Math.min(...coudes) < 16 && Math.max(...coudes) < 28, `${spec} (u=${u}) : coudes à ${coudes.map(x => x.toFixed(0)).join('° et ')}°`);
+      for (const [k, s] of [['G', 1], ['D', -1]]) { const pr = info.prises[k]; assert.ok(Math.abs(pr.y - H) < 0.006 && Math.abs(pr.z) < 0.006 && Math.abs(pr.x - s * 0.3) < 0.006, `${spec} (u=${u}) : la main ${k} est sur la barre`); }
+    }
+  }
+  // En vrille, les épaules restent face à la barre : ce sont le bassin et les jambes qui tournent.
+  { const d = M.definir('suspendu moulinet', corps, M.TEINTES.clair), t = corps.tronc(M.poseA(d, 0, 0.25)), ep = t.epaules.G.clone().sub(t.epaules.D), ha = t.hanches.G.clone().sub(t.hanches.D);
+    assert.ok(Math.abs(Math.atan2(ep.z, ep.x)) < 0.14 && Math.abs(Math.atan2(ha.z, ha.x)) > 0.45, 'essuie-glace suspendu : épaules face à la barre, bassin tourné'); }
+  // Les autres gestes bras tendus au-dessus de la tête, à l'instant où ils le sont.
+  for (const [spec, u, maxi] of [['tirage', 0, 16], ['tirage large', 0, 16], ['tirage sup', 0, 16], ['tirage neutre', 0, 16], ['gym muscleup', 0, 16], ['gym muscleup anneaux', 0, 16],
+    ['pompe equilibre', 0, 16], ['gym equilibre mur', 0, 16], ['gym equilibre mur shrug', 0, 16], ['gym equilibre mur shrug', 1, 16], ['planche rollout', 0, 18], ['planche rollout', 0.5, 18], ['planche rollout', 1, 18], ['planche rollout barre', 1, 18],
+    ['halt arrache', 0.6, 14], ['squat barre avant thruster', 0.7, 14], ['cardio skierg', 0, 30]]) tendus(spec, u, maxi);
+  for (const [spec, u] of [['halt hal arrache', 0.6], ['halt jete kb', 0.7]]) { const c = lire(spec, u).coudes[0]; assert.ok(c > 3 && c < 14, `${spec} : le bras qui porte est tendu (${c.toFixed(0)}°)`); }
+  // Appui renversé, haussement d'épaules : en haussant les épaules on repousse le sol — le corps monte, bras tendus.
+  { const d = M.definir('gym equilibre mur shrug', corps, M.TEINTES.clair); assert.ok(M.poseA(d, 0, 1).bassin.pos.y > M.poseA(d, 0, 0).bassin.pos.y + 0.03, 'épaules haussées, le corps est plus haut'); }
+});
+
 test('atlas 3D : la peau va avec le modèle (zones, attaches au squelette, articulations intermédiaires)', () => {
   const E = enteteAtlas(), { H, octets, sommets, indices } = peauAtlas();
   assert.equal(H.format, 'anqa-peau');

@@ -32,12 +32,15 @@
     if (o.equilibre) {
       // En équilibre sur les mains, les talons contre un mur : les coudes plient, la tête descend vers le sol.
       const haut = Math.sqrt(Math.pow(0.97 * A, 2) - Math.pow(0.26 - epX, 2)) + L.creux, tete0 = c.tronc(debout(c, {}));
+      let hautTendu = null;
       const cle = u => {
         const p = { bassin: { pos: V(0, 1, 0), rot: qX(176) }, lombaires: -3, thorax: -2, cou: lerp(-6, -16, u), bras: {}, jambes: pareil(J(-2, 2, 0, 3, 40)) };
-        const t = c.tronc(p); p.bassin.pos.y += lerp(haut, 0.3, u) - t.epaules.G.y; p.bassin.pos.z += lerp(0, 0.05, u) - t.epaules.G.z;
+        const t = c.tronc(p); p.bassin.pos.y += lerp(hautTendu != null ? hautTendu : haut, 0.3, u) - t.epaules.G.y; p.bassin.pos.z += lerp(0, 0.05, u) - t.epaules.G.z;
         for (const [k, s] of COTES) p.bras[k] = aPlat(s, 0.26, 0, -L.main, V(0, 0, -1), V(s * 0.7, 0.2, lerp(-0.2, -1, u)));
         return p;
       };
+      // En haut, bras tendus : la hauteur des épaules se règle sur le corps posé.
+      { const p0 = cle(0); tendre(c, p0, V(0, 1, 0)); hautTendu = c.tronc(p0).epaules.G.y; }
       d.a = cle(0); d.b = cle(1);
       const info = c.poser(cle(0)); fixe.push(...poseFixe(MAT.mur(C, Math.max(info.chevilles.G.z, info.orteils.G.z) + 0.1, 1.2, 2.3)));
       d.vue = { az: 122, el: 6 }; return d;

@@ -43,7 +43,7 @@
         for (const [k, s] of COTES) p.bras[k] = { prise: V(s * ecart, H, 0), pole: V(s * pole[0], pole[1], pole[2]), paume: V(...paume), doigts: 'barre' };
         return p;
       };
-      const K0 = pose(H - pendu, 0.02, 0, J(8, 2, 0, 12, 35), [1, -0.2, -0.25], [0, 0, 1]);
+      const K0 = tendre(c, pose(H - pendu, 0.02, 0, J(8, 2, 0, 12, 35), [1, -0.2, -0.25], [0, 0, 1]), V(0, -1, 0));   // pendu, bras tendus
       const K1 = pose(H - 0.13, -0.14, -16, J(30, 2, 0, 10, 35), [1, -0.5, -0.4], [0, -0.4, 1]);
       const K2 = pose(H + 0.12, 0.1, 44, J(56, 2, 0, 24, 35), [0.6, 0.5, -1], [0, -1, 0]);
       const K3 = pose(H + 0.975 * Ap, 0.05, 9, J(16, 2, 0, 6, 35), [0.4, 0.3, -1], [0, -0.3, -1]);
@@ -70,7 +70,14 @@
     if (o.equilibre) {
       const dp = FAM.pompe(c, { equilibre: true }, C); respire(dp.a); if (o.mur) fixe.push(...dp.fixe); d.vue = dp.vue;
       // Haussements d'épaules en équilibre : bras tendus, le corps monte et descend de quelques centimètres.
-      if (o.shrug) { const b = cloner(dp.a); b.bassin.pos.y -= 0.055; for (const k of ['G', 'D']) b.bras[k].hausse = 16; d.a = dp.a; d.b = b; d.rythme = 'rep'; d.periode = 2.2; }
+      if (o.shrug) {
+        // Haussement d'épaules en appui renversé : les bras restent tendus ; épaules relâchées, le corps s'enfonce entre
+        // elles ; épaules haussées, il repousse le sol et monte.
+        const a = cloner(dp.a), b = cloner(dp.a);
+        for (const k of ['G', 'D']) { a.bras[k].hausse = -8; b.bras[k].hausse = 16; }
+        tendre(c, a, V(0, 1, 0)); tendre(c, b, V(0, 1, 0));
+        d.a = a; d.b = b; d.rythme = 'rep'; d.periode = 2.2;
+      }
       return d;
     }
     if (o.tete) {
@@ -140,12 +147,17 @@
     };
     // Réception : sur les épaules (épaulé), ou bras tendus au-dessus de la tête (arraché, jeté).
     const auDessus = p => {
-      const t = c.tronc(p), dx = e - epX, hautR = Math.sqrt(Math.max(0.01, Math.pow(0.97 * Ap, 2) - dx * dx));
-      for (const [k, s] of COTES) {
-        if (un && k === 'D') { p.bras.D = B(70, 40, 0, 20, 90, { doigts: 'detendu' }); continue; }
-        p.bras[k] = { prise: V(un ? s * (epX + 0.02) : s * e, t.epaules.G.y + (un ? 0.97 * Ap : hautR), t.epaules.G.z - 0.03), pole: V(s * 1, -0.2, -0.3), paume: un ? V(-s * 0.3, 0, 1) : V(0, 0.2, 1), doigts: 'barre' };
-      }
-      return p;
+      const t = c.tronc(p), dx = e - epX, hautR = Math.sqrt(Math.max(0.01, Math.pow(0.97 * Ap, 2) - dx * dx)), estime = un ? 0.97 * Ap : hautR;
+      const lever = y => {
+        for (const [k, s] of COTES) {
+          if (un && k === 'D') { p.bras.D = B(70, 40, 0, 20, 90, { doigts: 'detendu' }); continue; }
+          p.bras[k] = { prise: V(un ? s * (epX + 0.02) : s * e, t.epaules.G.y + y, t.epaules.G.z - 0.03), pole: V(s * 1, -0.2, -0.3), paume: un ? V(-s * 0.3, 0, 1) : V(0, 0.2, 1), doigts: 'barre' };
+        }
+        return p;
+      };
+      // Bras tendus au-dessus de la tête : la hauteur se règle sur le corps posé (l'épaule monte avec le bras).
+      const y = coudeTendu(c, lever, estime - 0.05, estime + 0.3, 10, un ? ['G'] : null);
+      return lever(y != null ? y : estime);
     };
     const auxEpaules = p => {
       if (un) { const t = c.tronc(p); p.bras.G = { prise: t.duThorax(V(0.15, -0.1, 0.15)), pole: V(0.5, -1, 0.1), paume: V(-1, 0, 0.2).applyQuaternion(t.qThorax), dirMain: V(-0.2, 1, 0).applyQuaternion(t.qThorax), doigts: 'barre' }; p.bras.D = B(70, 34, 0, 26, 90, { doigts: 'detendu' }); return p; }
