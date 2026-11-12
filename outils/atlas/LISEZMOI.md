@@ -124,6 +124,12 @@ autre membre passe devant.
   grand dorsal 8 à 13 fois (au lieu de 22 à 44) — il s'étire vers son attache, voulu. Le grand pectoral garde les
   poids du fichier (essayé avec une attache : il remontait par-dessus la clavicule, bras au-dessus de la tête). Coût :
   0,3 s au chargement (mesuré dans node).
+- **Une préparation par session.** La carrure, les ombres de contact, les poids repris et la part « par la corde »
+  ne dépendent que des fichiers et des options : `creer` les fait à la première ouverture et les garde pour les
+  suivantes (registre `PREPARES`, par fichier chargé ; l'appli garde les fichiers en mémoire). Mesuré dans Chromium :
+  0,4 s la première fois, 20 ms ensuite ; dans le simulateur iPhone, la première ouverture de la session coûte
+  environ 1,3 s de plus qu'au build 63. `mesures()` dit si la préparation a été reprise (`preparationReprise`) et son
+  temps (`preparationMs`). Pour supprimer aussi la première, il faudrait l'écrire d'avance dans `atlas.bin`.
 - **Les ombres de contact (`eclaircirContacts`, option `ombres`).** L'ombrage de relief du fichier (octet 6) a été
   calculé au repos : le flanc sous le bras, l'intérieur du bras, la main contre la cuisse, l'intérieur des cuisses, et
   les surfaces qu'un autre muscle recouvre restaient presque noirs dès qu'ils se découvraient (bras levé, jambes
