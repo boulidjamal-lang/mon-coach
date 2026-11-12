@@ -517,6 +517,28 @@ void main() {
   /* ---------- Lecture du fichier du modèle ---------- */
   /* Les modèles déjà préparés, par fichier chargé (voir creer). */
   const PREPARES = new WeakMap();
+  /* La préparation écrite d'avance dans le fichier (outils/atlas/preparer-modele.mjs) : ce que eclaircirContacts et
+     reponderer feraient au chargement, pour la carrure donnée — les ombres de contact et les poids des sommets qui
+     changent, et les attaches à ajouter au squelette. Le bloc suit les indices, à l'adresse que donne l'en-tête :
+     un bit par sommet (son ombre change), ces ombres ; un bit par sommet (ses poids changent), ces poids (4 articulations,
+     4 poids). Un test vérifie qu'il est exactement ce que le moteur calculerait. Rend vrai s'il a été appliqué. */
+  const PREPARATION_VERSION = 1;
+  function appliquerPreparation(sommets, pas, E, tampon) {
+    const P = E.preparation;
+    if (!P || P.version !== PREPARATION_VERSION || !(P.debut + P.octets <= tampon.byteLength) || !E.squelette || E.squelette.some(a => a.virtuel)) return false;
+    const N = E.sommets, nb = (N + 7) >> 3, d = new Uint8Array(tampon, P.debut, P.octets);
+    const bo = d.subarray(0, nb), vo = d.subarray(nb, nb + P.nOmbre), bp = d.subarray(nb + P.nOmbre, 2 * nb + P.nOmbre), vp = d.subarray(2 * nb + P.nOmbre, 2 * nb + P.nOmbre + 8 * P.nPoids);
+    if (vp.length !== 8 * P.nPoids) return false;
+    let ko = 0, kp = 0;
+    for (let v = 0; v < N; v++) {
+      const o = v * pas, m = 1 << (v & 7);
+      if (bo[v >> 3] & m) sommets[o + 6] = vo[ko++];
+      if (bp[v >> 3] & m) { for (let k = 0; k < 8; k++) sommets[o + 12 + k] = vp[kp * 8 + k]; kp++; }
+    }
+    if (E.articulationsFichier == null) E.articulationsFichier = E.squelette.length;
+    for (const a of P.attaches || []) E.squelette.push(JSON.parse(JSON.stringify(a)));
+    return true;
+  }
   function lireModele(tampon) {
     const vue = new DataView(tampon);
     if (vue.getUint32(0, true) !== 0x41514e41) throw new Error("atlas : ce fichier n'est pas un modèle Anqā");
@@ -1080,8 +1102,12 @@ void main() {
       // sont encore ceux du fichier, que d'autres vues peuvent partager : on en prend une copie avant d'y écrire.)
       if (E.squelette && E.squelette.length) {
         if (M.sommets.buffer === tampon) M.sommets = M.sommets.slice();
-        if (opt.ombres !== false) eclaircirContacts(M.sommets, E.octetsParSommet, E, (v, o) => M.sommets[o + 10] === NUM_OS[0] || M.sommets[o + 10] === NUM_OS[1]);
-        if (opt.poids !== false) reponderer(M.sommets, E.octetsParSommet, E, M.indicesLocaux(), (v, o) => M.sommets[o + 10] === NUM_OS[0] || M.sommets[o + 10] === NUM_OS[1]);
+        // Préparé d'avance dans le fichier (pour cette carrure) : appliqué tel quel ; sinon, calculé ici.
+        const dEjaPret = opt.ombres !== false && opt.poids !== false && E.preparation && +opt.carrure === +E.preparation.carrure && appliquerPreparation(M.sommets, E.octetsParSommet, E, tampon);
+        if (!dEjaPret) {
+          if (opt.ombres !== false) eclaircirContacts(M.sommets, E.octetsParSommet, E, (v, o) => M.sommets[o + 10] === NUM_OS[0] || M.sommets[o + 10] === NUM_OS[1]);
+          if (opt.poids !== false) reponderer(M.sommets, E.octetsParSommet, E, M.indicesLocaux(), (v, o) => M.sommets[o + 10] === NUM_OS[0] || M.sommets[o + 10] === NUM_OS[1]);
+        }
         marquerCorde(M.sommets, E.octetsParSommet, E.boite, E.squelette, opt.corde, (v, o) => M.sommets[o + 10] === NUM_OS[0] || M.sommets[o + 10] === NUM_OS[1]);
       }
       prepares[clePrep] = { sommets: M.sommets, boite: E.boite, squelette: E.squelette, articulationsFichier: E.articulationsFichier };
@@ -2394,5 +2420,5 @@ void main() {
     };
   }
 
-  window.AnqaAtlas = { creer, activerGestes, monter, apercu, VUES, etoffer, reponderer, eclaircirContacts, corde, marquerCorde, themeDeCarte };
+  window.AnqaAtlas = { creer, activerGestes, monter, apercu, VUES, etoffer, reponderer, eclaircirContacts, appliquerPreparation, PREPARATION_VERSION, corde, marquerCorde, themeDeCarte };
 })();
