@@ -24,6 +24,7 @@
   function definir(spec, c, C) {
     const { f, o } = lireSpec(spec);
     if (!FAM[f]) throw new Error('mouvement inconnu : ' + f);
+    c.appuis = null;   // les appuis du mouvement précédent ne comptent pas pendant qu'on règle celui-ci
     const d = FAM[f](c, o, C);
     d.spec = spec; d.famille = f; d.o = o;
     if (d.cles) unifier(c, d.cles.map(x => x[1])); else if (d.a && d.b) unifier(c, [d.a, d.b]);
@@ -39,6 +40,7 @@
     d.rythme = d.rythme || 'rep';
     d.periode = d.periode || { rep: 2.8, alt: 4.6, tenue: 4, etire: 7, continu: 1.2, boucle: 3.4 }[d.rythme];
     d.tenu = d.tenu || []; d.fixe = d.fixe || [];
+    degagerTenu(c, d, C);
     // Une machine à bras de levier arrive ici sans bâti : on lui donne le sien (montants, pile de poids, la traverse
     // qui porte les pivots, une poutre au sol jusqu'au siège). Le bâti se tient derrière le corps, ou devant quand
     // les pivots y sont (rowing) ; la pile monte avec le mouvement.
@@ -47,9 +49,11 @@
       const pivots = d.tenu.filter(e => e.t === 'levier' && e.de).map(e => (typeof e.de === 'function' ? e.de(info, 0) : e.de)).filter(p => p && p.x != null);
       if (pivots.length) {
         const zP = pivots.reduce((t, p) => t + p.z, 0) / pivots.length, yP = Math.max(...pivots.map(p => p.y)), zC = info.bassin.z;
-        const devant = zP - zC > 0.6, zF = devant ? zP + 0.14 : Math.min(zC, zP) - 0.6, H = Math.max(1.5, yP + 0.12), f = deplacer(bati(C, H, 0), V(0, 0, zF), devant ? qY(180) : null);
-        for (const p of pivots) { f.push(tube(V(Math.sign(p.x || 1) * 0.2, H, zF), p, 0.045, C.cadre), cyl(0.042, 0.05, p.x, p.y, p.z, C.cadre, 0.5, null, 0.01)); }
-        if (pivots.length > 1) f.push(tube(pivots[0], pivots[1], 0.045, C.cadre));
+        // (bati 'devant' : le levier tourne autour du coude, sur un pupitre ; le bâti se tient au-delà des mains.)
+        const coude = d.tenu.some(e => e.t === 'levier' && e.bati === 'devant'), devant = coude || zP - zC > 0.6;
+        const zF = devant ? zP + (coude ? 0.45 : 0.14) : Math.min(zC, zP) - 0.6, H = Math.max(1.5, yP + 0.12), f = deplacer(bati(C, H, 0), V(0, 0, zF), devant ? qY(180) : null);
+        for (const p of pivots) { f.push(tube(V(Math.sign(p.x || 1) * Math.max(0.2, Math.abs(p.x)), H, zF), p, 0.045, C.cadre), cyl(0.042, 0.05, p.x, p.y, p.z, C.cadre, 0.5, null, 0.01)); }
+        if (pivots.length > 1 && !coude) f.push(tube(pivots[0], pivots[1], 0.045, C.cadre));   // (aux coudes, la traverse passerait dans les bras)
         f.push(tube(V(0, 0.03, zF), V(0, 0.03, zC), 0.05, C.cadre));
         poserObjet(horsCadre(f), V(), null, d.fixe);
         if (!d.levee) d.levee = (i2, u) => 0.26 * Math.max(0, Math.min(1, u));
@@ -61,7 +65,51 @@
       for (let i = 0; i <= 8; i++) { const l = materielDe(d, c.poser(poseA(d, 0, i / 8)), i / 8, C, {}).cable; if (l != null && l < mini) mini = l; }
       if (isFinite(mini)) d.cable0 = mini;
     }
+    d.appuis = appuisDe(c, d);
     return d;
+  }
+  /* Les appuis du mouvement : chaque coussin du matériel posé (assise, dossier, banc, pupitre) devient une surface
+     contre laquelle la chair s'écrase (voir le programme des sommets du moteur, et Corps.peauPosee pour les mesures).
+     La face qui porte est celle contre laquelle il y a de la chair (voir plus bas) ; la profondeur d'effet est
+     l'épaisseur du coussin, guère plus : ce qui passe de l'autre côté n'est pas de la chair écrasée, c'est une faute
+     de posture, et les contrôles la signalent — et ce qui se trouve légitimement de l'autre côté (les cuisses sous un
+     pupitre) n'est pas aspiré dans le coussin. Rend, par appui, les seize nombres que lit le moteur ; six appuis au
+     plus, ceux que le corps touche le plus. */
+  function appuisDe(c, d) {
+    const coussins = d.fixe.filter(f => f.appui && f.forme === 'boite');
+    if (!coussins.length) return [];
+    const P = coussins.map(f => {
+      const q = new Quat(f.q[0], f.q[1], f.q[2], f.q[3]), ctr = V(f.p[0], f.p[1], f.p[2]), axes = [AX, AY, AZ].map(a => a.clone().applyQuaternion(q));
+      const iT = f.s[0] <= f.s[1] && f.s[0] <= f.s[2] ? 0 : f.s[1] <= f.s[2] ? 1 : 2, iU = (iT + 1) % 3, iV = (iT + 2) % 3;
+      return { f, ctr, T: axes[iT], U: axes[iU], W: axes[iV], ep: f.s[iT], hu: f.s[iU] / 2, hw: f.s[iV] / 2, n: [0, 0] };
+    });
+    // De quel côté de chaque coussin le corps s'appuie : là où il y a de la chair contre la face (à moins de 4 cm
+    // devant elle), à trois moments du mouvement. Ce qui est plus loin ne compte pas : les cuisses sous un pupitre ne
+    // s'y appuient pas ; ce qui est dedans non plus : cela ne dit pas par où c'est entré.
+    const cycle = d.rythme === 'continu' || d.rythme === 'boucle';
+    for (const u of cycle ? [0, 1 / 3, 2 / 3] : [0, 0.5, 1]) {
+      c.poser(poseA(d, 0, u));
+      if (!c.peauPosee(null, (x, y, z) => {
+        for (const p of P) {
+          const dx = x - p.ctr.x, dy = y - p.ctr.y, dz = z - p.ctr.z;
+          if (Math.abs(dx * p.U.x + dy * p.U.y + dz * p.U.z) > p.hu || Math.abs(dx * p.W.x + dy * p.W.y + dz * p.W.z) > p.hw) continue;
+          const h = Math.abs(dx * p.T.x + dy * p.T.y + dz * p.T.z) - p.ep / 2;
+          if (h > 0 && h < 0.04) p.n[dx * p.T.x + dy * p.T.y + dz * p.T.z > 0 ? 0 : 1]++;
+        }
+      })) return [];
+    }
+    // Un appui par face où le corps porte. Une seule face : l'écrasement prend tout le coussin et 2 cm de plus (le
+    // dessous d'une cuisse plonge au bord d'une assise) — il n'y a rien de l'autre côté. Les deux (un coussin pris
+    // entre deux chairs) : chacune s'écrase sur sa moitié, sans attirer l'autre.
+    const A = [];
+    for (const p of P) {
+      const faces = [0, 1].filter(k => p.n[k] >= Math.max(12, 0.08 * (p.n[0] + p.n[1])));   // quelques points égarés ne font pas un appui
+      for (const k of faces) A.push({ p, sens: k ? -1 : 1, n: p.n[k], prof: faces.length > 1 ? p.ep / 2 : p.ep + 0.02 });
+    }
+    return A.sort((a, b) => b.n - a.n).slice(0, 6).map(({ p, sens, prof }) => {
+      const T = p.T.clone().multiplyScalar(sens), S = p.ctr.clone().add(T.clone().multiplyScalar(p.ep / 2));
+      return [p.U.x, p.U.y, p.U.z, -p.U.dot(p.ctr), T.x, T.y, T.z, -T.dot(S), p.W.x, p.W.y, p.W.z, -p.W.dot(p.ctr), p.hu, p.hw, prof, 0.01];
+    });
   }
   /* Deux poses clés ne se mélangent que si elles décrivent chaque membre de la même façon. Quand l'une donne des angles
      et l'autre une cible (main posée, pied au sol), celle qui est en angles est convertie : on pose le corps, et on
@@ -142,7 +190,27 @@
     }
     return d.pose ? d.pose(av.u) : entre(d, av.u);
   }
-  const poseA = (d, t, uFixe) => poseDe(d, avancee(d, t, uFixe));
+  const poseA = (d, t, uFixe) => { const av = avancee(d, t, uFixe), p = poseDe(d, av); return d.degage ? avecDegagement(p, degagementA(d, av)) : p; };
+  /* Où va le dessus d'un kettlebell tenu par sa poignée, dans la main k. La boule (10 cm de rayon, son centre à 17 cm
+     sous la poignée) tourne librement autour de la poignée : elle pend au plus bas sans entrer dans l'avant-bras qui
+     la tient — en haut d'un curl, elle vient s'appuyer contre lui. `dos` : la main est passée dans la poignée (épaulé,
+     développé, relevé turc) : dès que la main est plus haute que le coude, la boule repose sur le dos de l'avant-bras. */
+  function hautKb(info, k, dos) {
+    const axe = unite(info.axes[k].clone()), prise = info.prises[k], coude = info.coudes[k], poignet = info.poignets[k], paume = info.paumes[k];
+    let h0 = perp(AY, axe); if (h0.lengthSq() < 0.04) h0 = perp(info.dirMains[k].clone().multiplyScalar(-1), axe);
+    h0.normalize();
+    const cote = axe.clone().cross(h0), lAvant = coude.distanceTo(poignet) || 1;
+    // Le sens h0 tourné de a autour de la poignée ; ce que la boule fait alors : libre de l'avant-bras ? de son côté dos ?
+    const essai = a => {
+      const h = h0.clone().multiplyScalar(Math.cos(a)).addScaledVector(cote, Math.sin(a)), ctr = prise.clone().addScaledVector(h, -0.172);
+      const q = surSegment(coude, poignet, ctr.x, ctr.y, ctr.z), dx = ctr.x - q[0], dy = ctr.y - q[1], dz = ctr.z - q[2];
+      const ep = lerp(0.027, 0.046, Math.hypot(q[0] - poignet.x, q[1] - poignet.y, q[2] - poignet.z) / lAvant);
+      return { h, libre: Math.hypot(dx, dy, dz) >= 0.1 + ep - 0.003, dos: dx * paume.x + dy * paume.y + dz * paume.z < 0 };
+    };
+    const surLeDos = dos && poignet.y - coude.y > 0.25 * lAvant;
+    for (let i = 0; i <= 90; i++) for (const s of i ? [1, -1] : [1]) { const e = essai(s * i * Math.PI / 90); if (e.libre && (!surLeDos || e.dos)) return e.h; }
+    return h0;
+  }
   /* Le matériel de l'image : posé, tenu dans les mains, tendu (câbles, élastiques, sangles). */
   function materielDe(d, info, u, C, modeles) {
     const sortie = d.fixe.slice();
@@ -150,7 +218,20 @@
     const prise = m => (m === 'GD' || !m ? info.prises.G.clone().add(info.prises.D).multiplyScalar(0.5) : info.prises[m]);
     const cotes = m => (m === 'GD' || !m ? ['G', 'D'] : [m]);
     const point = (v, m) => (v === 'pieds' ? info.orteils.G.clone().add(info.orteils.D).multiplyScalar(0.5).setY(Math.min(info.orteils.G.y, info.orteils.D.y) - 0.02) : v === 'pied' ? info.orteils[m === 'D' ? 'D' : 'G'].clone().add(V(0, -0.02, 0)) : typeof v === 'function' ? v(info, u) : v);
+    // Chaque forme du matériel tenu dit ce qu'elle est (tenu : 'haltere', 'barre'…) et quelle main la tient (main : 'G',
+    // 'D', ou 'GD' pour un objet à deux mains) : le dégagement (degagerTenu) et les contrôles s'en servent.
+    let n0 = sortie.length, eAvant = null;
+    const marquer = () => {
+      for (let i = n0; i < sortie.length; i++) {
+        const f = sortie[i]; f.tenu = eAvant.t;
+        const deux = eAvant.entre || eAvant.t === 'barre' || !eAvant.m || eAvant.m === 'GD';
+        f.main = !deux ? eAvant.m : (eAvant.t === 'haltere' || eAvant.t === 'kb' || eAvant.t === 'poignee') && !eAvant.entre ? (Math.hypot(f.p[0] - info.prises.G.x, f.p[1] - info.prises.G.y, f.p[2] - info.prises.G.z) <= Math.hypot(f.p[0] - info.prises.D.x, f.p[1] - info.prises.D.y, f.p[2] - info.prises.D.z) ? 'G' : 'D') : 'GD';
+      }
+      n0 = sortie.length;
+    };
     for (const e of d.tenu) {
+      if (eAvant) marquer();
+      eAvant = e;
       const mod = cle => modeles[cle] || (modeles[cle] = null);
       if (e.t === 'barre') {
         const axe = info.prises.G.clone().sub(info.prises.D);
@@ -161,18 +242,24 @@
       } else if (e.t === 'haltere' || e.t === 'poignee' || e.t === 'kb') {
         const f = modeles[e.t + (e.k || '')] || (modeles[e.t + (e.k || '')] = e.t === 'haltere' ? MAT.haltere(C, e.k || 1) : e.t === 'kb' ? MAT.kettlebell(C) : MAT.poignee(C));
         // Un seul objet tenu à deux mains (entre) : au milieu, dans l'axe des deux mains.
-        if (e.entre) { poserObjet(f, prise('GD'), qTenu(info.prises.G.clone().sub(info.prises.D), AY), sortie); continue; }
-        for (const k of cotes(e.m)) {
-          // La poignée en travers de la paume ; la boule d'un kettlebell pend, ou repose sur l'avant-bras.
-          let haut = AY;
-          if (e.t === 'kb') haut = e.sens === 'avantbras' ? info.dirMains[k].clone().multiplyScalar(0.8).add(info.paumes[k].clone().multiplyScalar(0.6)) : AY;
-          poserObjet(f, info.prises[k], qTenu(info.axes[k], haut), sortie);
-        }
+        if (e.entre) { poserObjet(f, prise('GD'), qTenu(info.prises.G.clone().sub(info.prises.D), e.sens === 'renverse' ? info.dirMains.G.clone().add(info.dirMains.D).multiplyScalar(-1) : AY), sortie); continue; }
+        // La poignée en travers de la paume ; la boule d'un kettlebell pend, ou repose sur l'avant-bras (hautKb).
+        for (const k of cotes(e.m)) poserObjet(f, info.prises[k], qTenu(info.axes[k], e.t === 'kb' ? hautKb(info, k, e.sens === 'avantbras') : AY), sortie);
       } else if (e.t === 'disque' || e.t === 'balle') {
         const f = modeles[e.t + (e.r || '')] || (modeles[e.t + (e.r || '')] = e.t === 'disque' ? MAT.disque(C, e.r || 0.2) : MAT.balle(C, e.r || 0.11));
         const pos = e.pos ? point(e.pos) : prise(e.m);
-        const axe = e.m && e.m !== 'GD' ? info.paumes[e.m] : info.prises.G.clone().sub(info.prises.D);
-        poserObjet(f, pos, e.t === 'disque' ? qTenu(e.axe || (axe.lengthSq() > 1e-6 ? axe : AX), AY) : null, sortie);
+        // L'axe d'un disque : donné (un vecteur ; 'buste' : plaqué contre la poitrine) ; à une main, la paume ; à deux
+        // mains, la ligne des mains (serré entre les paumes) — ou, tenu par le bord (e.bord), le sens des avant-bras :
+        // le disque fait face au corps, les mains à 3 h et 9 h ; bras pendants, il se redresse devant les cuisses.
+        let axe = e.m && e.m !== 'GD' ? info.paumes[e.m] : info.prises.G.clone().sub(info.prises.D);
+        if (e.axe === 'buste') axe = AZ.clone().applyQuaternion(info.qThorax);
+        else if (e.axe) axe = e.axe;
+        else if (e.bord && axe.lengthSq() > 1e-6) {
+          const gd = unite(axe.clone()), dm = unite(info.dirMains.G.clone().add(info.dirMains.D));
+          dm.addScaledVector(AZ.clone().applyQuaternion(info.qThorax), Math.max(0, -1.6 * dm.y));
+          dm.addScaledVector(gd, -dm.dot(gd)); if (dm.lengthSq() > 1e-6) axe = dm;
+        }
+        poserObjet(f, pos, e.t === 'disque' ? qTenu(axe.lengthSq() > 1e-6 ? axe : AX, AY) : null, sortie);
       } else if (e.t === 'cable' || e.t === 'elastique' || e.t === 'sangle' || e.t === 'levier') {
         const r = e.t === 'cable' ? 0.0045 : e.t === 'elastique' ? 0.007 : e.t === 'sangle' ? 0.009 : 0.017;
         const teinte = e.t === 'cable' ? C.cable : e.t === 'elastique' ? C.elastique : e.t === 'sangle' ? C.sangle : C.cadre;
@@ -216,6 +303,7 @@
         }
       }
     }
+    if (eAvant) marquer();
     if (d.objets) d.objets(info, u, sortie);
     // Les plaques levées de la pile suivent le câble (d.cable0 : sa longueur la plus courte pendant le mouvement).
     sortie.cable = cable;
@@ -226,6 +314,6 @@
     }
     return sortie;
   }
-  const pret = f => { const o = { forme: f.forme, s: f.s, q: [f.q.x, f.q.y, f.q.z, f.q.w], p: [f.p.x, f.p.y, f.p.z], couleur: f.couleur, metal: f.metal }; if (f.r) o.r = f.r; if (f.leve) o.leve = f.leve; if (f.hors) o.hors = 1; return o; };
+  const pret = f => { const o = { forme: f.forme, s: f.s, q: [f.q.x, f.q.y, f.q.z, f.q.w], p: [f.p.x, f.p.y, f.p.z], couleur: f.couleur, metal: f.metal }; if (f.r) o.r = f.r; if (f.leve) o.leve = f.leve; if (f.hors) o.hors = 1; if (f.appui) o.appui = 1; return o; };
   /* Matériel posé : des formes dans leur repère, placées une fois pour toutes. */
   const poseFixe = (formes, pos, rot) => poserObjet(formes, pos || V(), rot || null, []);

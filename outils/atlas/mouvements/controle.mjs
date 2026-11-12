@@ -45,7 +45,7 @@ export function controlerSpec(M, corps, C, spec) {
     if (yMin < -0.045) noter('sol', `sous le sol de ${Math.round(-yMin * 100)} cm (u=${u})`);
     for (const k of ['G', 'D']) {
       const b = pose.bras && pose.bras[k], j = pose.jambes && pose.jambes[k];
-      if (b && b.prise && info.prises && info.prises[k]) { const e = info.prises[k].distanceTo(b.prise); if (e > 0.09) noter('main' + k, `main ${k} à ${Math.round(e * 100)} cm de sa prise (u=${u})`); }
+      if (b && b.prise && info.prises && info.prises[k]) { const e = info.prises[k].distanceTo(b.dg ? b.prise.clone().add(b.dg) : b.prise); if (e > (b.hausse ? 0.12 : 0.09)) noter('main' + k, `main ${k} à ${Math.round(e * 100)} cm de sa prise (u=${u})`); }
       if (j && j.cheville && info.chevilles && info.chevilles[k]) { const e = info.chevilles[k].distanceTo(j.cheville); if (e > 0.035) noter('pied' + k, `cheville ${k} à ${Math.round(e * 100)} cm de sa cible (u=${u})`); }
     }
   }

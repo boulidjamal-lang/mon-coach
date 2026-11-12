@@ -7379,7 +7379,7 @@ test('atlas 3D : carrure (os et extrémités intacts), mélange des articulation
   assert.ok(part([iH, iC, 0, 0], [0.97, 0.03, 0, 0], 0) < 0.2, 'la part monte en douceur avec le partage (pas de marche dans le maillage)');
   assert.equal(moteurCorde(sq, 0)([iH, iC, 0, 0], [0.5, 0.5, 0, 0], 0), 0, 'force nulle : le mélange d\'avant');
   const sourceMoteur = fs.readFileSync(path.join(RACINE, 'assets', 'atlas', 'atlas3d.js'), 'utf8');
-  assert.ok(/uniform ivec2 u_bras;/.test(sourceMoteur) && /p = mix\(p, pc \/ wTout, corde\);/.test(sourceMoteur), 'le programme des sommets applique la même part');
+  assert.ok(/in float a_corde;/.test(sourceMoteur) && /float corde = u_corde \* a_corde;/.test(sourceMoteur) && /p = mix\(p, pc \/ wTout, corde\);/.test(sourceMoteur) && /marquerCorde\(/.test(sourceMoteur), 'le programme des sommets applique la même part (écrite au chargement dans chaque sommet)');
   const sansCorde = new M.Corps(sq, regions => { const r = atlas.peau(regions); return r && Object.assign({}, r, { C: null }); });
   const debord = (c, spec, u) => {
     const def = M.definir(spec, corps, C), info = c.poser(M.poseA(def, 0, u)), e = c.monde('humerus.G'), e0 = c.tete[c.i['humerus.G']], regions = ['epaule', 'dos', 'thorax', 'bras'], src = c.peau(regions);
@@ -7394,9 +7394,12 @@ test('atlas 3D : carrure (os et extrémités intacts), mélange des articulation
     });
     return pire;
   };
-  for (const [spec, u, maxi] of [['developpe epaules barre', 1, 0.11], ['developpe epaules barre', 0.6, 0.14], ['traction', 0, 0.14]]) {
+  // (Depuis que les poids de l'épaule sont repris au chargement — voir reponderer : le grand dorsal suit son attache —,
+  // la poche est déjà moindre sans la corde ; bras au-dessus de la tête, la corde en retire encore plusieurs centimètres,
+  // et elle n'en ajoute jamais.)
+  for (const [spec, u, maxi, gain] of [['developpe epaules barre', 1, 0.11, 0.015], ['traction', 0, 0.14, 0.03], ['developpe epaules barre', 0.6, 0.14, 0]]) {
     const avec = debord(corps, spec, u), sans = debord(sansCorde, spec, u);
-    assert.ok(avec < maxi && sans > avec + 0.035, `${spec} (u=${u}) : la chair déborde du bras de ${(avec * 100).toFixed(1)} cm (${(sans * 100).toFixed(1)} cm sans la corde)`);
+    assert.ok(avec < maxi && sans >= avec + gain - 0.002, `${spec} (u=${u}) : la chair déborde du bras de ${(avec * 100).toFixed(1)} cm (${(sans * 100).toFixed(1)} cm sans la corde)`);
   }
   // Bras le long du corps ou à l'horizontale, rien ne change (ou presque) : l'épaule reste ronde.
   for (const [spec, u] of [['developpe epaules barre', 0], ['elevation lat hal', 1], ['curl hal', 0]]) {
@@ -7418,6 +7421,104 @@ test('atlas 3D : carrure (os et extrémités intacts), mélange des articulation
   assert.ok(dy.every(x => Math.abs(x - dy[0]) < 1e-6) && dy[0] > 0.25, 'barre tirée, la pile est montée de ' + dy[0].toFixed(2) + ' m');
   // Une machine à leviers reçoit son bâti et sa pile.
   assert.ok(formesDe('developpe machine assis', 0.5).formes.some(x => x.leve), 'la machine à développer a sa pile de poids');
+});
+
+/* Bras levés : le grand dorsal suit une attache ajoutée au squelette (il glisse autour du flanc vers son insertion au
+   lieu de tourner avec l'humérus), la ceinture scapulaire monte et s'avance sans basculer dans les côtes, les ombres
+   de contact du repos s'éclaircissent quand la surface se découvre. Mesuré hors navigateur, avec le moteur lui-même :
+   l'étirement des triangles du dos et du flanc (au-delà de 2 fois, la surface se déchire), comparé aux poids du
+   fichier (ce que dessinait le build 63). */
+test('atlas 3D : bras levés, le dos et le flanc ne se déchirent plus (grand dorsal, dentelé, trapèze)', async () => {
+  const { pathToFileURL } = require('url'), dossier = path.join(RACINE, 'outils', 'atlas', 'mouvements');
+  const { chargerAtlas, chargerMouvements, FICHIER_ATLAS, FICHIER_MOUVEMENTS } = await import(pathToFileURL(path.join(dossier, 'silhouettes.mjs')).href);
+  const M = chargerMouvements(FICHIER_MOUVEMENTS), C = M.TEINTES.clair;
+  const avant = process.env.POIDS; process.env.POIDS = '0';
+  const fichier = chargerAtlas(FICHIER_ATLAS);
+  if (avant == null) delete process.env.POIDS; else process.env.POIDS = avant;
+  const atlas = chargerAtlas(FICHIER_ATLAS), E = atlas.E, SQ = E.squelette, n0 = fichier.E.squelette.length;
+  // Les attaches : une de chaque côté, après les articulations du fichier, de l'os du thorax vers l'humérus.
+  const att = SQ.filter(a => a.virtuel), num = nom => SQ.findIndex(a => a.nom === nom);
+  assert.deepEqual(att.map(a => a.nom), ['attache.dorsal.G', 'attache.dorsal.D']);
+  assert.equal(E.articulationsFichier, n0, 'les articulations du fichier restent les premières');
+  assert.equal(SQ.length, n0 + 2);
+  assert.ok(att[0].virtuel.de === num('thorax') && att[0].virtuel.vers === num('humerus.G') && att[1].virtuel.vers === num('humerus.D'));
+  assert.ok(att[0].virtuel.axe.length === 2 && att[0].virtuel.evase > 0 && att[0].virtuel.evase < 0.36 && att[1].virtuel.axe[0] === -att[0].virtuel.axe[0], 'un axe de glissement mesuré sur le muscle, en miroir à droite');
+  assert.equal(SQ[att[0].jumeau], att[1]);
+  // Au repos, rien ne bouge : chaque point est à sa place.
+  const corps = new M.Corps(SQ, atlas.peau), tout = atlas.points(1); corps.peaux.tout = tout;
+  { let i = 0, pire = 0; corps.peauPosee(['tout'], (x, y, z) => { if (i < tout.n) pire = Math.max(pire, Math.hypot(x - tout.P[i * 3], y - tout.P[i * 3 + 1], z - tout.P[i * 3 + 2])); i++; }); assert.ok(pire < 1e-5, 'au repos, la peau des muscles ne bouge pas : ' + pire); }
+  // L'étirement le plus fort des triangles de quelques muscles, pour une pose.
+  const b = fs.readFileSync(FICHIER_ATLAS), lg = b.readUInt32LE(8), o0 = b.byteOffset + 12 + Math.ceil(lg / 4) * 4 + E.sommets * E.octetsParSommet;
+  const I = new Uint16Array(b.buffer.slice(o0, o0 + E.triangles * 6)), NOMS = ['grand_dorsal', 'dentele_anterieur', 'trapeze_inferieur'];
+  const etirement = (a, spec, u) => {
+    const c = new M.Corps(a.E.squelette, a.peau), t = a.points(1); c.peaux.tout = t;
+    const d = M.definir(spec, c, C); c.poser(M.poseA(d, 0, u)); c.appuis = null;
+    const P = new Float32Array(t.n * 3); let i = 0;
+    c.peauPosee(['tout'], (x, y, z) => { if (i < t.n) { P[i * 3] = x; P[i * 3 + 1] = y; P[i * 3 + 2] = z; } i++; });
+    const lon = (A, p, q) => Math.hypot(A[p * 3] - A[q * 3], A[p * 3 + 1] - A[q * 3 + 1], A[p * 3 + 2] - A[q * 3 + 2]), r = {};
+    for (const st of a.E.structures) if (NOMS.includes(st.id)) {
+      let m = 0;
+      for (let k = 0; k < st.nbIndices; k += 3) {
+        const v0 = st.sommets + I[st.indices + k], v1 = st.sommets + I[st.indices + k + 1], v2 = st.sommets + I[st.indices + k + 2];
+        for (const [p, q] of [[v0, v1], [v1, v2], [v2, v0]]) { const l0 = lon(t.P, p, q); if (l0 > 1e-5) m = Math.max(m, lon(P, p, q) / l0); }
+      }
+      r[st.id] = m;
+    }
+    return r;
+  };
+  for (const [spec, u] of [['developpe epaules barre', 1], ['traction', 0], ['elevation front hal', 1]]) {
+    const nv = etirement(atlas, spec, u), an = etirement(fichier, spec, u), dire = r => NOMS.map(k => k + ' ×' + r[k].toFixed(1)).join(', ');
+    assert.ok(nv.dentele_anterieur < 6 && nv.trapeze_inferieur < 6 && nv.grand_dorsal < 14 && nv.grand_dorsal < 0.6 * an.grand_dorsal, `${spec} (u=${u}) : ${dire(nv)} (poids du fichier : ${dire(an)})`);
+  }
+  // La ceinture scapulaire : elle monte et s'avance avec le bras, sans tourner autour de l'axe gauche-droite du thorax
+  // (ce roulis faisait rentrer l'omoplate et ses muscles dans les côtes) ; l'épaule reste là où le geste la met.
+  for (const [spec, u] of [['tirage serre', 0], ['traction', 0], ['developpe epaules barre', 1], ['elevation front hal', 1], ['elevation shrug barre', 1]]) {
+    const d = M.definir(spec, corps, C), info = corps.poser(M.poseA(d, 0, u));
+    for (const x of ['.G', '.D']) {
+      const r = corps.qw[corps.i.thorax].clone().invert().multiply(corps.qw[corps.i['clavicule' + x]]);
+      const roulis = 2 * Math.atan2(Math.abs(r.x), Math.abs(r.w)) * 180 / Math.PI;
+      assert.ok(roulis < 5, `${spec} (u=${u}) : la ceinture ${x} roule de ${roulis.toFixed(1)}°`);
+    }
+    for (const k of ['G', 'D']) { const b0 = d.a && d.a.bras ? null : null; void b0; assert.ok(info.epaules[k] && Number.isFinite(info.epaules[k].y)); }
+  }
+  // Les ombres de contact du repos : là où le bras couvrait le flanc, la surface s'éclaircit ; rien ne fonce, les os ne changent pas.
+  const vm = require('vm'), ctx = { window: {}, Math, Float32Array, Uint8Array, Uint16Array, Uint32Array, Int32Array, DataView, JSON, Object, Array, Infinity, console, Map };
+  vm.createContext(ctx); vm.runInContext(fs.readFileSync(path.join(RACINE, 'assets', 'atlas', 'atlas3d.js'), 'utf8'), ctx);
+  const A = ctx.window.AnqaAtlas;
+  assert.equal(typeof A.reponderer, 'function'); assert.equal(typeof A.eclaircirContacts, 'function');
+  const E2 = JSON.parse(b.subarray(12, 12 + lg).toString('utf8')), pas = E2.octetsParSommet, deb = 12 + Math.ceil(lg / 4) * 4;
+  const u8 = new Uint8Array(b.subarray(deb, deb + E2.sommets * pas)), avantO = new Uint8Array(E2.sommets);
+  for (let v = 0; v < E2.sommets; v++) avantO[v] = u8[v * pas + 6];
+  const os = (v, o) => u8[o + 10] === E2.os.pair || u8[o + 10] === E2.os.impair;
+  A.eclaircirContacts(u8, pas, E2, os);
+  let fonce = 0, osTouche = 0, flanc = 0, flanc0 = 0, nf = 0;
+  const dentele = E2.structures.find(st => st.id === 'dentele_anterieur');
+  for (let v = 0; v < E2.sommets; v++) { const o = v * pas; if (u8[o + 6] < avantO[v]) fonce++; if (os(v, o) && u8[o + 6] !== avantO[v]) osTouche++; }
+  for (let v = dentele.sommets; v < dentele.sommets + dentele.nbSommets; v++) { flanc += u8[v * pas + 6]; flanc0 += avantO[v]; nf++; }
+  assert.ok(fonce === 0 && osTouche === 0, `rien ne fonce (${fonce}), les os ne changent pas (${osTouche})`);
+  assert.ok(flanc / nf > flanc0 / nf + 8, `le flanc sous le bras s'éclaircit : ${(flanc0 / nf).toFixed(0)} → ${(flanc / nf).toFixed(0)}`);
+});
+
+/* Le pupitre (curl, extension des triceps à la machine) : le coussin sous le haut des bras, sans entrer dans la
+   poitrine ; la machine tourne autour du coude, son bâti devant le pupitre. Le crible des traversées n'y trouve rien. */
+test('atlas 3D : pupitre et machines à bras — ni coussin dans la poitrine, ni bâti dans les bras', async () => {
+  const { pathToFileURL } = require('url'), dossier = path.join(RACINE, 'outils', 'atlas', 'mouvements');
+  const { chargerAtlas, chargerMouvements, FICHIER_ATLAS, FICHIER_MOUVEMENTS } = await import(pathToFileURL(path.join(dossier, 'silhouettes.mjs')).href);
+  const { preparerCrible, releverSpec, bilanSpec } = await import(pathToFileURL(path.join(dossier, 'traversees.mjs')).href);
+  const atlas = chargerAtlas(FICHIER_ATLAS), M = chargerMouvements(FICHIER_MOUVEMENTS), C = M.TEINTES.clair;
+  const corps = new M.Corps(atlas.E.squelette, atlas.peau), K = preparerCrible(atlas, corps);
+  for (const spec of ['curl barre pupitre', 'curl hal pupitre uni', 'curl machine pupitre', 'triceps machine']) {
+    const r = releverSpec(M, corps, C, K, spec);
+    assert.ok(!r.erreur, spec + ' : ' + r.erreur);
+    const fautes = bilanSpec(r.releve);
+    assert.equal(fautes.length, 0, spec + ' : ' + fautes.map(f => f.e.forme + ' ' + f.e.classe + ' ' + (f.j.exces * 100).toFixed(1) + ' cm').join(' ; '));
+    // Le levier de la machine tourne autour du coude.
+    if (/machine/.test(spec)) {
+      const d = M.definir(spec, corps, C), info = corps.poser(M.poseA(d, 0, 0)), lev = d.tenu.filter(e => e.t === 'levier');
+      assert.ok(lev.length >= 1 && lev.every(e => e.bati === 'devant'));
+      for (const e of lev) { const de = typeof e.de === 'function' ? e.de(info, 0) : e.de, k = info.coudes[e.m]; assert.ok(Math.hypot(de.y - k.y, de.z - k.z) < 0.01 && Math.abs(Math.abs(de.x) - Math.abs(k.x) - 0.09) < 0.01, spec + ' : le pivot est dans l\'axe du coude'); }
+    }
+  }
 });
 
 test('atlas 3D : sans WebGL 2, aucun accès ; avec, la fenêtre s\'ouvre, anime un exercice et libère tout à la fermeture', async () => {

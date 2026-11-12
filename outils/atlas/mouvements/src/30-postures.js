@@ -76,13 +76,28 @@
     }
     return p;
   }
+  /* Le corps sur un coussin : sa chair s'y enfonce un peu (ENFONCE ; le moteur l'y écrase : voir appuisDe). Sur une
+     assise relevée vers l'avant, c'est le dessous de la cuisse qui porte le premier, au bord de l'assise : il s'y enfonce
+     davantage (ENFONCE_ASSISE), sans quoi les fesses resteraient en l'air à l'arrière.
+     Les coussins des bancs font 30 cm de large et 6,5 cm d'épaisseur (MAT.banc) : seul ce qui est au-dessus porte. */
+  const ENFONCE = 0.012, ENFONCE_ASSISE = 0.035, DEMI_COUSSIN = 0.15, EP_COUSSIN = 0.065, PROF_ASSISE = 0.14;
+  /* Un banc à plat (dessus à 44 cm) dont on se sert comme d'un siège : on s'assoit au bout, face à +Z. Le banc, long de
+     1,22 m, va de -0,9 à +0,32 dans son repère : il est reculé pour que son bord avant soit PROF_ASSISE devant les hanches. */
+  /* Le siège d'une machine se règle à la personne : 45 cm pour ce corps (plus haut, la cuisse plonge vers le genou et
+     traverse le bord de l'assise de plus que la chair ne peut s'écraser). */
+  const H_SIEGE = 0.45;
+  const H_BANC = 0.44, bancAssis = (C, z) => poseFixe(MAT.banc(C, 0), V(0, 0, (z || 0) + PROF_ASSISE - 0.32));
   /* Assis sur un siège de hauteur h, pieds à plat devant (zPieds : avancée des chevilles depuis le bassin). */
   function assis(c, o) {
     o = o || {};
     const h = o.h == null ? 0.45 : o.h, z = o.z || 0;
     const p = { bassin: { pos: V(0, h + 0.12, z), rot: qX(o.penche || 0) }, lombaires: o.lomb || 0, thorax: o.thor || 0, cou: o.cou || 0, bras: pareil(brasRepos()), jambes: {} };
     for (const [k, s] of COTES) p.jambes[k] = o.jambes ? cloner(o.jambes) : pied(c, s, { ecart: o.ecart == null ? 0.14 : o.ecart, ouv: o.ouv == null ? 6 : o.ouv, z: z + (o.zPieds == null ? 0.4 : o.zPieds), y0: o.yPieds || 0, pointe: o.pointe });
-    c.poserSur(p, V(0, h, 0), AY, ['bassin']);
+    // Ce sont les fessiers qui se posent sur le coussin (le bassin se trouve alors dix centimètres au-dessus de
+    // l'assise, comme sur un vrai siège) ; le dessous des cuisses, plus bas d'origine, s'y écrase : c'est un appui (voir
+    // appuisDe). Les pieds restant au sol, la cuisse tourne quand le bassin monte : on s'y reprend à trois fois.
+    const surAssise = (x, y, zz) => Math.abs(x) <= DEMI_COUSSIN && zz >= z - 0.22 && zz <= z + (o.prof == null ? PROF_ASSISE : o.prof);
+    for (let n = 0; n < 3; n++) c.poserSur(p, V(0, h - ENFONCE, 0), AY, ['bassin'], surAssise);
     return p;
   }
   /* Couché sur le dos, la tête vers -Z, sur un plan à la hauteur h dont le dossier est relevé de `angle` degrés
@@ -112,7 +127,28 @@
       else if (jb === 'levees') p.jambes[k] = J(90, 3, 0, 90, 20);
       else p.jambes[k] = cloner(jb.G ? jb[k] : jb);
     }
-    c.poserSur(p, V(0, h, 0), n, ['dos', 'bassin']);
+    if (h <= 0.2) { c.poserSur(p, V(0, h, 0), n, ['dos', 'bassin']); return p; }
+    // Sur un banc. Le dessus du dossier : un plan qui passe ep/2·(1 − cos a) au-dessus de la charnière (le coussin tourne
+    // autour de son milieu). Banc relevé : l'assise, relevée de 8° vers l'avant, porte les fesses ; le corps glisse le
+    // long du dossier jusqu'à elle (deux appuis à la fois), sauf si l'on a dit où il se tient (o.d).
+    const Qd = V(0, h, 0).add(n.clone().multiplyScalar(angle ? EP_COUSSIN / 2 * (1 - Math.cos(a)) : 0));
+    const dos = ['dos', 'bassin', 'epaule', 'thorax'], surCoussin = x => Math.abs(x) <= DEMI_COUSSIN;
+    if (!(angle > 0) || o.d != null) { c.poserSur(p, Qd.clone().sub(n.clone().multiplyScalar(ENFONCE)), n, dos, surCoussin); return p; }
+    const lS = o.lSiege || 0.32, th = rad(-8), ns = V(0, Math.cos(th), Math.sin(th)), ts = V(0, -Math.sin(th), Math.cos(th));
+    const Cs = V(0, h - EP_COUSSIN / 2 + 0.02, lS / 2 + 0.012), Qs = Cs.clone().add(ns.clone().multiplyScalar(EP_COUSSIN / 2));
+    for (let n2 = 0; n2 < 3; n2++) {
+      c.poser(p);
+      let aD = Infinity, aS = Infinity;
+      c.peauPosee(dos, (x, y, z) => { if (!surCoussin(x)) return; const e = (y - Qd.y) * n.y + (z - Qd.z) * n.z; if (e < aD) aD = e; });
+      c.peauPosee(['bassin', 'cuisse'], (x, y, z) => { if (!surCoussin(x) || Math.abs((y - Cs.y) * ts.y + (z - Cs.z) * ts.z) > lS / 2) return; const e = (y - Qs.y) * ns.y + (z - Qs.z) * ns.z; if (e < aS) aS = e; });
+      if (aD === Infinity) break;
+      const r1 = -ENFONCE - aD;
+      if (aS === Infinity) { p.bassin.pos.add(n.clone().multiplyScalar(r1)); break; }
+      // Le déplacement T (dans le plan vertical) tel que T·n = r1 et T·ns = r2.
+      const r2 = -ENFONCE_ASSISE - aS, det = n.y * ns.z - n.z * ns.y;
+      if (Math.abs(det) < 0.2) { p.bassin.pos.add(n.clone().multiplyScalar(r1)); break; }
+      p.bassin.pos.add(V(0, (r1 * ns.z - r2 * n.z) / det, (n.y * r2 - ns.y * r1) / det));
+    }
     return p;
   }
   /* À plat ventre, la tête vers +Z, sur un plan à la hauteur h relevé de `angle` degrés (banc incliné, buste
@@ -129,7 +165,9 @@
       else if (jb === 'tendues') p.jambes[k] = J(-angle * 0.2, 4, 0, 2, 55);
       else p.jambes[k] = cloner(jb.G ? jb[k] : jb);
     }
-    c.poserSur(p, V(0, h, 0), n, o.regions || ['thorax', 'abdomen', 'bassin']);
+    // Sur un banc : le dessus du coussin (voir allonge), et seul ce qui est au-dessus de lui porte.
+    if (h > 0.2) c.poserSur(p, V(0, h, 0).add(n.clone().multiplyScalar((angle ? EP_COUSSIN / 2 * (1 - Math.cos(a)) : 0) - ENFONCE)), n, o.regions || ['thorax', 'abdomen', 'bassin'], x => Math.abs(x) <= DEMI_COUSSIN);
+    else c.poserSur(p, V(0, h, 0), n, o.regions || ['thorax', 'abdomen', 'bassin']);
     return p;
   }
   /* Suspendu à une barre à la hauteur H : épaules à `k` × longueur de bras sous la barre ; renvoie la pose (mains
@@ -234,10 +272,14 @@
   function mains(c, t, ou) {
     const r = {};
     for (const [k, s] of COTES) {
-      const dT = (x, y, z) => V(s * x, y, z).applyQuaternion(t.qThorax);
+      const dT = (x, y, z) => V(s * x, y, z).applyQuaternion(t.qThorax), dC = (x, y, z) => V(s * x, y, z).applyQuaternion(t.qTete || t.qThorax);
       if (ou === 'hanches') r[k] = { prise: t.hanches[k].clone().add(V(s * 0.085, 0.1, 0.03).applyQuaternion(t.qBassin)), pole: dT(0.8, 0, -0.6), paume: dT(-1, -0.2, 0), dirMain: dT(-0.2, -0.3, 1), doigts: 'detendu' };
-      else if (ou === 'nuque') r[k] = { prise: t.tete.clone().add(dT(0.075, 0.03, -0.085)), pole: dT(1, -0.1, -0.1), paume: dT(-0.3, 0, 1), dirMain: dT(-1, 0.2, -0.2), doigts: 'detendu' };
-      else if (ou === 'oreilles') r[k] = { prise: t.tete.clone().add(dT(0.105, 0.05, 0.0)), pole: dT(1, -0.05, 0.35), paume: dT(-1, 0, 0.2), dirMain: dT(-0.3, 1, 0), doigts: 'detendu' };   // couché : mains aux tempes, coudes ouverts
+      // Mains derrière la tête : les paumes à plat sur l'arrière du crâne (au-dessus de la nuque), les doigts vers le
+      // milieu, les coudes ouverts. Mains aux oreilles (couché) : le bout des doigts derrière l'oreille, la paume vers
+      // la tempe. Les deux se placent dans le repère de la tête : elles la suivent quand le cou plie, et le coude reste
+      // autour de 135° (plus près de l'épaule, il se replierait à fond).
+      else if (ou === 'nuque') { const pm = unite(dC(-0.35, 0, 1)); r[k] = { prise: t.tete.clone().add(dC(0.05, 0.075, -0.107)).add(pm.clone().multiplyScalar(c.L.creux)), pole: dT(1, -0.15, 0.25), paume: pm, dirMain: dC(-0.9, 0.35, -0.1), doigts: 'detendu', ceinture: 0.1 }; }
+      else if (ou === 'oreilles') { const pm = unite(dC(-1, 0, 0.25)); r[k] = { prise: t.tete.clone().add(dC(0.088, 0.115, -0.03)).add(pm.clone().multiplyScalar(c.L.creux)), pole: dT(1, -0.1, 0.4), paume: pm, dirMain: dC(-0.2, 0.9, -0.4), doigts: 'detendu', ceinture: 0.1 }; }
       else if (ou === 'poitrine') r[k] = { prise: t.duThorax(V(-s * 0.1, -0.1, 0.17)), pole: dT(0.6, -1, 0.2), paume: dT(0, 0, -1), dirMain: dT(-1, 0.5, 0), doigts: 'detendu' };
       else if (ou === 'devant') r[k] = B(8, 88, 0, 4, 180, { doigts: 'detendu' });
       else if (ou === 'haut') r[k] = B(20, 172, 0, 4, 90, { doigts: 'detendu' });

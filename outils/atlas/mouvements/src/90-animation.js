@@ -15,6 +15,8 @@
     const spec = exo.spec || (exo.exercice && specDe(exo.exercice)) || ANCIENS[exo.mouvement] || exo.mouvement;
     if (!spec) throw new Error('exercice sans mouvement : ' + (exo.exercice || ''));
     const d = definir(spec, corps, C), modeles = {};
+    corps.appuis = d.appuis;
+    if (atlas.appuis) atlas.appuis(d.appuis);
     function placer(t, uFixe) {
       const av = avancee(d, t, uFixe), pose = poseDe(d, av);
       let info = corps.poser(pose);
@@ -57,7 +59,7 @@
       demarrer() { if (!actif) { actif = true; t0 = 0; atlas.animer(pas); } },
       arreter() { actif = false; atlas.animer(null); },
       // Retour à la position anatomique, sans matériel.
-      quitter() { actif = false; atlas.animer(null); atlas.poser(null); atlas.objets([]); atlas.ombre(null); }
+      quitter() { actif = false; atlas.animer(null); atlas.poser(null); atlas.objets([]); atlas.ombre(null); if (atlas.appuis) atlas.appuis(null); }
     };
   }
 

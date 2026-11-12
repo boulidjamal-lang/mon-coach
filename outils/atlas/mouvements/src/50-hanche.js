@@ -57,7 +57,7 @@
     if (o.assis) {
       // À la machine (ou avec une bande aux genoux) : assis, les cuisses s'ouvrent ou se referment.
       const ouvert = 36, ferme = 5;
-      const base = allonge(c, { h: 0.5, angle: 76, jambes: J(74, ferme, 0, 88, 0), lomb: 0, thor: 0, cou: 0, d: 0.1 });
+      const base = allonge(c, { h: 0.5, angle: 76, jambes: J(74, ferme, 0, 88, 0), lomb: 0, thor: 0, cou: 0 });
       fixe.push(...poseFixe(MAT.banc(C, 76, 0.5)));
       const cle = k => { const p = cloner(base); p.jambes = pareil(J(74, k, 0, 88, 0)); p.bras = pareil(B(80, 14, 0, 35, 90)); return p; };
       d.a = cle(o.adduction ? ouvert : ferme); d.b = cle(o.adduction ? ferme : ouvert); d.vue = { az: 20, el: 14 };

@@ -44,13 +44,16 @@ layout(location=2) in vec2 a_nor;
 layout(location=3) in float a_num;
 layout(location=4) in uvec4 a_os;
 layout(location=5) in vec4 a_poids;
+layout(location=6) in float a_corde;   // la part « par la corde » du sommet, calculée au chargement (voir corde)
 uniform vec3 u_min, u_etendue;
 uniform mat4 u_vp;
 uniform vec3 u_cam;
 uniform float u_cote, u_passe, u_seuls, u_tire, u_corde;
-uniform ivec2 u_bras;             // les articulations du bras (de l'humérus au bout des doigts), côté gauche
+uniform int u_nbAppuis;
+uniform int u_attaches;           // le numéro de la première attache (0 : le modèle n'en a pas)
+uniform vec4 u_appuis[24];        // les appuis (6 au plus), quatre lignes chacun : voir appuis()
 uniform sampler2D u_etats;
-uniform highp sampler2D u_os;      // la pose : lignes 2 et 3, un déplacement rigide par articulation (côté gauche, côté droit)
+uniform highp sampler2D u_os;      // la pose : lignes 2 et 3, un déplacement rigide par articulation (côté gauche, côté droit) ; pour une attache, un troisième texel : l'axe de son glissement et son évasement
 out vec3 v_pos, v_nor;
 out float v_ombre, v_tendon;
 flat out vec4 v_teinte, v_etat;
@@ -78,25 +81,26 @@ void main() {
   // rotation et un glissement), pas en matrices : entre deux os qui tournent beaucoup l'un par rapport à l'autre
   // (coude, genou, hanche), le muscle tourne alors d'une part de l'angle autour de l'articulation, à distance
   // constante, au lieu de couper par la corde et de s'écraser. Le côté droit est le miroir du gauche, posé par ses
-  // propres os. (L'épaule fait exception : voir plus bas.)
+  // propres os. (L'épaule et la hanche font exception : voir plus bas.)
   vec4 qr = vec4(0.0), qd = vec4(0.0);
-  float wBras = 0.0, wTout = 0.0;
+  float wTout = 0.0;
   for (int k = 0; k < 4; k++) {
     float w = a_poids[k];
     if (w > 0.0) {
-      int a = int(a_os[k]), j = a * 3;
+      int j = int(a_os[k]) * 3;
       qr += w * texelFetch(u_os, ivec2(j, 2 + cote), 0); qd += w * texelFetch(u_os, ivec2(j + 1, 2 + cote), 0);
-      wTout += w; if (a >= u_bras.x && a <= u_bras.y) wBras += w;
+      wTout += w;
     }
   }
   float l = 1.0 / max(length(qr), 1e-6); qr *= l; qd *= l;
   vec3 p0 = u_min + a_pos * u_etendue, n0 = octa(a_nor);
   if (cote == 1) { p0.x = -p0.x; n0.x = -n0.x; }
   vec3 p = p0 + 2.0 * cross(qr.xyz, cross(qr.xyz, p0) + qr.w * p0) + 2.0 * (qr.w * qd.xyz - qd.w * qr.xyz + cross(qr.xyz, qd.xyz));
-  // À l'épaule, exception : un muscle tendu entre le tronc et le bras (deltoïde, grand pectoral, grand dorsal) ne tourne
-  // pas à distance constante autour de l'articulation — bras levé, il ferait une poche à côté du bras. Il va au plus
-  // court entre ses attaches : les sommets partagés entre le tronc et le bras se rapprochent de la corde.
-  float part = wBras / max(wTout, 1e-6), corde = u_corde * smoothstep(0.0, 0.12, min(part, 1.0 - part));
+  // À l'épaule et à la hanche, exception : un muscle tendu entre le tronc et le membre (deltoïde, grand pectoral, grand
+  // dorsal ; fessiers, ischio-jambiers) ne tourne pas à distance constante autour de l'articulation — bras levé, il
+  // ferait une poche à côté du bras ; assis, il pendrait sous la fesse. Il va au plus court entre ses attaches : les
+  // sommets partagés entre le tronc et le membre se rapprochent de la corde, chacun pour sa part (a_corde).
+  float corde = u_corde * a_corde;
   if (corde > 0.0) {
     vec3 pc = vec3(0.0);
     for (int k = 0; k < 4; k++) {
@@ -108,6 +112,33 @@ void main() {
       }
     }
     p = mix(p, pc / wTout, corde);
+  }
+  // Les attaches (grand dorsal) : le muscle glisse autour du tronc vers son insertion. Quand elle monte avec le bras, il
+  // monte sur un tronc qui s'élargit vers l'aisselle : il s'écarte donc de l'axe de son glissement, d'autant que le
+  // sommet monte lui-même (sa part d'attache) — et plus du tout au bout du tendon, qui reste sur l'os.
+  if (u_attaches > 0) for (int k = 0; k < 4; k++) {
+    if (a_poids[k] > 0.0 && int(a_os[k]) >= u_attaches) {
+      vec4 e = texelFetch(u_os, ivec2(int(a_os[k]) * 3 + 2, 2 + cote), 0);
+      if (e.z > 0.0) {
+        float wa = a_poids[k] / wTout;
+        vec2 rv = p0.xz - e.xy;
+        vec3 dv = vec3(rv.x, 0.0, rv.y) * (e.z * wa * min(1.0, 2.0 * (1.0 - wa)) / max(length(rv), 1e-4));
+        p += dv + 2.0 * cross(qr.xyz, cross(qr.xyz, dv) + qr.w * dv);
+      }
+    }
+  }
+  // Les appuis : là où le corps repose sur un coussin (assise, dossier, banc), la chair s'écrase contre lui au lieu de le
+  // traverser. Ce qui a passé la surface, au-dessus du coussin, est ramené presque à elle ; au bord du coussin et au
+  // bas de la profondeur d'effet, l'écrasement s'éteint en douceur.
+  for (int i = 0; i < u_nbAppuis; i++) {
+    vec4 au = u_appuis[i * 4], at = u_appuis[i * 4 + 1], av = u_appuis[i * 4 + 2], ad = u_appuis[i * 4 + 3];
+    float h = dot(at.xyz, p) + at.w;
+    if (h < 0.0 && h > -ad.z) {
+      float bord = (1.0 - smoothstep(ad.x, ad.x + 0.03, abs(dot(au.xyz, p) + au.w))) * (1.0 - smoothstep(ad.y, ad.y + 0.03, abs(dot(av.xyz, p) + av.w)));
+      // Enfoncée de -h, la chair ne reste enfoncée que de ad.w · (1 - exp(h / ad.w)) : presque autant pour un
+      // effleurement, jamais plus que ad.w (un centimètre) quand elle pousse fort.
+      p += at.xyz * ((-h - ad.w * (1.0 - exp(h / ad.w))) * bord * smoothstep(-ad.z, -0.75 * ad.z, h));
+    }
   }
   vec3 n = normalize(n0 + 2.0 * cross(qr.xyz, cross(qr.xyz, n0) + qr.w * n0));
   v_pos = p; v_nor = n;
@@ -499,7 +530,7 @@ void main() {
       for (let i = 0; i < entete.pieces.length; i += 2) { const v0 = entete.pieces[i], n = entete.pieces[i + 1]; for (let j = 0; j < n; j++, k++) out[k] = v0 + src[k]; }
       return out;
     };
-    return { entete, sommets, indices, nbIndices: entete.triangles * 3 };
+    return { entete, sommets, indices, indicesLocaux: () => new Uint16Array(tampon, debut + octets, entete.triangles * 3), nbIndices: entete.triangles * 3 };
   }
 
   /* La peau (atlas-peau.bin) : en-tête, sommets (même rangement que le modèle), puis les triangles — d'abord ceux du
@@ -544,25 +575,413 @@ void main() {
     for (let i = 1; i < profil.length; i++) if (t <= profil[i][0]) { const x = (t - profil[i - 1][0]) / (profil[i][0] - profil[i - 1][0]); return profil[i - 1][1] + (profil[i][1] - profil[i - 1][1]) * x; }
     return profil[profil.length - 1][1];
   };
-  /* À l'épaule, les muscles partagés entre le tronc et le bras vont pour partie « par la corde » (voir le programme des
-     sommets) : CORDE_EPAULE est cette part, au plus ; chaineDuBras rend les articulations du bras gauche (elles se
-     suivent dans le squelette), ou null ; corde(SQ) rend la fonction qui donne la part d'un sommet d'après ses quatre
-     attaches — la même formule que le programme, pour mesurer le corps posé là où il se dessine. */
-  const CORDE_EPAULE = 0.85;
-  function chaineDuBras(SQ) {
-    let a = -1, b = -1, n = 0;
-    for (let i = 0; i < (SQ || []).length; i++) if (/^(humerus|ulna|radius|main|doigt).*\.G$/.test(SQ[i].nom || '')) { if (a < 0) a = i; b = i; n++; }
-    return a >= 0 && n === b - a + 1 ? [a, b] : null;
+  /* « Par la corde ». Les sommets suivent leurs articulations en quaternions duaux (voir le programme des sommets) ;
+     ceux qui sont partagés entre le tronc et un membre vont en plus, pour une part, droit entre les places que chaque
+     articulation leur donnerait (la corde) — c'est ce qui empêche la poche à côté du bras levé et la chair qui pend
+     sous la fesse quand la cuisse se plie. CORDE : cette part, au plus, par endroit.
+       epaule         — entre le tronc et le bras ;
+       hancheArriere  — entre le bassin et la jambe, derrière le centre de la hanche (fesse, ischio-jambiers) ;
+       hancheAvant    — devant (le pli de l'aine, qui s'écraserait s'il allait tout droit).
+     corde(SQ, reglage) rend la fonction qui donne la part d'un sommet d'après ses quatre attaches et sa place au repos ;
+     marquerCorde l'écrit dans l'octet libre de chaque sommet (le 11e), que le programme et les mesures lisent tel quel.
+     reglage : rien (CORDE), un nombre (tout est réduit dans la proportion nombre / CORDE.epaule ; 0 : rien ne va par
+     la corde) ou un objet { epaule, hancheArriere, hancheAvant }. */
+  const CORDE = { epaule: 0.85, hancheArriere: 0.8, hancheAvant: 0.3 };
+  function reglageCorde(r) {
+    if (r == null) return CORDE;
+    if (typeof r === 'number') { const k = Math.max(0, r) / CORDE.epaule, o = {}; for (const c in CORDE) o[c] = Math.min(1, CORDE[c] * k); return o; }
+    return Object.assign({}, CORDE, r);
   }
-  function corde(SQ, force) {
-    const ch = chaineDuBras(SQ), k = force == null ? CORDE_EPAULE : force;
-    if (!ch || !(k > 0)) return () => 0;
-    return (J, W, o) => {
-      let wb = 0, wt = 0;
-      for (let i = 0; i < 4; i++) { const w = W[o + i]; wt += w; if (J[o + i] >= ch[0] && J[o + i] <= ch[1]) wb += w; }
-      const part = wb / (wt || 1), t = Math.min(1, Math.min(part, 1 - part) / 0.12);
-      return k * t * t * (3 - 2 * t);
+  function corde(SQ, reglage) {
+    const R = reglageCorde(reglage), noms = (SQ || []).map(a => a.nom || '');
+    const bras = noms.map(n => /^(humerus|ulna|radius|main|doigt).*\.G$/.test(n)), jambe = noms.map(n => /^(femur|tibia|pied|orteils)\.G$/.test(n));
+    const iH = noms.indexOf('femur.G'), zH = iH >= 0 ? SQ[iH].centre[2] : 0;
+    const lisse = t => { t = Math.max(0, Math.min(1, t)); return t * t * (3 - 2 * t); };
+    return (J, W, o, x, y, z) => {
+      let wb = 0, wj = 0, wt = 0;
+      for (let i = 0; i < 4; i++) { const w = W[o + i], a = J[o + i]; wt += w; if (bras[a]) wb += w; else if (jambe[a]) wj += w; }
+      if (!(wt > 0)) return 0;
+      const pb = wb / wt, pj = wj / wt;
+      let c = R.epaule * lisse(Math.min(pb, 1 - pb) / 0.12);
+      if (pj > 0 && pj < 1) { const arriere = lisse((zH + 0.02 - z) / 0.05); c = Math.max(c, (R.hancheAvant + (R.hancheArriere - R.hancheAvant) * arriere) * lisse(Math.min(pj, 1 - pj) / 0.12)); }
+      return c;
     };
+  }
+  function marquerCorde(sommets, pas, boite, SQ, reglage, garder) {
+    const part = corde(SQ, reglage), vue = new DataView(sommets.buffer, sommets.byteOffset, sommets.byteLength), nb = Math.floor(sommets.byteLength / pas), J = [0, 0, 0, 0], W = [0, 0, 0, 0];
+    for (let v = 0; v < nb; v++) {
+      const o = v * pas;
+      if (garder && garder(v, o)) { sommets[o + 11] = 0; continue; }
+      for (let k = 0; k < 4; k++) { J[k] = sommets[o + 12 + k]; W[k] = sommets[o + 16 + k] / 255; }
+      const c = part(J, W, 0, boite.min[0] + vue.getUint16(o, true) / 65535 * boite.etendue[0], boite.min[1] + vue.getUint16(o + 2, true) / 65535 * boite.etendue[1], boite.min[2] + vue.getUint16(o + 4, true) / 65535 * boite.etendue[2]);
+      sommets[o + 11] = Math.round(255 * Math.max(0, Math.min(1, c)));
+    }
+    return sommets;
+  }
+  /* Répondère les muscles autour de l'épaule et de l'avant-bras, une fois au chargement. Les poids du fichier viennent
+     de la proximité des os au repos, bras le long du corps : le grand dorsal, le dentelé, le grand pectoral sont alors
+     tout près de l'humérus et de l'omoplate, et en héritent des poids loin de leurs attaches. Bras levé, ces sommets
+     tournaient sur de grands arcs autour de l'épaule et le muscle se déchirait en éclats sous l'aisselle. Règles :
+     – avant-bras : la torsion (pronation) se répartit le long de l'avant-bras — tout suit l'ulna au coude, le radius
+       au poignet — au lieu de dépendre de l'os le plus proche (deux sommets voisins tournaient de 180° l'un sans l'autre) ;
+     – grand dorsal : il va du dos à l'humérus en épousant le flanc. Sa part « bras » ne tourne plus avec l'humérus
+       autour de l'épaule : elle suit une attache — une articulation ajoutée au squelette (attache.dorsal.G…), qui
+       emmène le muscle là où va le point d'insertion du tendon, en glissant autour du tronc : une rotation autour
+       d'un axe vertical (l'insertion passe vers l'avant ou vers l'arrière), une montée (elle s'élève avec le bras),
+       un écart (elle s'éloigne de l'axe), et l'évasement du flanc (en montant, le muscle s'écarte d'autant que le
+       tronc s'élargit vers l'aisselle). L'axe est celui de l'arrondi du flanc que le muscle épouse, mesuré sur lui
+       (le tronc est large et plat : autour de son axe central, le dos rentrerait dans les côtes en tournant vers le
+       flanc). Cette part se règle d'après la longueur de chaque fibre, mesurée le long du muscle : entière au bout
+       du tendon, nulle à son origine le long de la colonne ; là où le trapèze le recouvre, il ne glisse pas. Bras
+       levé, le muscle s'étire vers son attache sans partir en aile ni sortir à travers le trapèze ; seul le bout du
+       tendon reste collé à l'os. (Le grand pectoral garde les poids du fichier : une attache le faisait remonter
+       par-dessus la clavicule, bras au-dessus de la tête.) ;
+     – autres muscles du tronc (dos, thorax, abdomen) : le poids du bras est borné d'après la distance à l'épaule —
+       entier à 8,5 cm, puis décroissant comme le carré ; le poids de l'omoplate ne reste entier que pour les muscles
+       qui s'y attachent (trapèzes, rhomboïdes, dentelé antérieur…), réduit pour le grand dorsal qui glisse dessous
+       (sauf là où le trapèze le tient), nul pour les autres ;
+     – muscles du bras (long triceps, biceps) : au-delà de 5 cm de l'épaule ils suivent l'humérus, pas l'omoplate ;
+     – puis les poids sont lissés de proche en proche sur le maillage de chaque muscle concerné (les sommets confondus
+       restent identiques : pas de fente), pour que la transition soit progressive.
+     sommets : rangement de atlas.bin ; indices : ceux du fichier (locaux, 16 bits) ; garder(v, o) : vrai pour un os. */
+  function reponderer(sommets, pas, E, indices, garder) {
+    const SQ = E.squelette || [], S = E.structures || [], noms = SQ.map(a => a.nom || ''), bo = E.boite;
+    const num = n => noms.indexOf(n), jTh = num('thorax'), jCl = num('clavicule.G'), jHu = num('humerus.G'), jUl = num('ulna.G'), jRa = num('radius.G'), jMa = num('main.G');
+    if (jTh < 0 || jCl < 0 || jHu < 0 || jUl < 0 || jRa < 0 || jMa < 0 || !indices || SQ.some(a => a.virtuel)) return sommets;
+    if (E.articulationsFichier == null) E.articulationsFichier = SQ.length;
+    const vue = new DataView(sommets.buffer, sommets.byteOffset, sommets.byteLength);
+    const X = v => bo.min[0] + vue.getUint16(v * pas, true) / 65535 * bo.etendue[0], Y = v => bo.min[1] + vue.getUint16(v * pas + 2, true) / 65535 * bo.etendue[1], Z = v => bo.min[2] + vue.getUint16(v * pas + 4, true) / 65535 * bo.etendue[2];
+    const estBras = noms.map(n => /^(humerus|ulna|radius|main|doigt).*\.G$/.test(n));
+    const cH = SQ[jHu].centre, cU = SQ[jUl].centre, cR = SQ[jRa].centre, cM = SQ[jMa].centre;
+    const coude = [(cU[0] + cR[0]) / 2, (cU[1] + cR[1]) / 2, (cU[2] + cR[2]) / 2], axe = [cM[0] - coude[0], cM[1] - coude[1], cM[2] - coude[2]], L2 = axe[0] * axe[0] + axe[1] * axe[1] + axe[2] * axe[2];
+    const TRONC = { dos: 1, thorax: 1, abdomen: 1 }, OMOPLATE = /^(trapeze|grand_rhomboide|petit_rhomboide|elevateur_scapula|petit_pectoral|subclavier|pectoral_claviculaire|dentele_anterieur)/, GLISSE = /^grand_dorsal$/;
+    const J = [0, 0, 0, 0], W = [0, 0, 0, 0];
+    const lire = o => { for (let k = 0; k < 4; k++) { J[k] = sommets[o + 12 + k]; W[k] = sommets[o + 16 + k]; } };
+    // Écrit des poids (articulation → poids) : les quatre plus forts, ramenés à une somme de 255.
+    const ecrire = (o, js, ws, n) => {
+      for (let k = 0; k < 4; k++) { let m = -1; for (let i = 0; i < n; i++) if (ws[i] > 1e-4 && (m < 0 || ws[i] > ws[m])) m = i; if (m < 0) { J[k] = k ? J[0] : jTh; W[k] = 0; } else { J[k] = js[m]; W[k] = ws[m]; ws[m] = 0; } }
+      const t = W[0] + W[1] + W[2] + W[3]; if (!(t > 0)) { W[0] = 1; W[1] = W[2] = W[3] = 0; }
+      let reste = 255; for (let k = 3; k > 0; k--) { const b = Math.round(255 * W[k] / (t || 1)); sommets[o + 16 + k] = b; reste -= b; sommets[o + 12 + k] = J[k]; }
+      sommets[o + 16] = Math.max(0, reste); sommets[o + 12] = J[0];
+    };
+    const js = new Int32Array(8), ws = new Float32Array(8);
+    // Ajoute w à l'articulation j dans la liste de travail (js, ws, n) ; rend le nouveau n.
+    const plus = (j, w, n) => { for (let i = 0; i < n; i++) if (js[i] === j) { ws[i] += w; return n; } js[n] = j; ws[n] = w; return n + 1; };
+    const lisse = t => { t = Math.max(0, Math.min(1, t)); return t * t * (3 - 2 * t); };
+    // Les attaches : par groupe de muscles, le point d'insertion sur l'humérus (le barycentre des sommets presque
+    // entièrement au bras : le bout du tendon), et les deux articulations ajoutées (gauche, droite en miroir).
+    // (portee : jusqu'où, depuis l'insertion, le muscle suit son attache quand on ne connaît pas la longueur de ses fibres.)
+    const ATTACHES = [{ cle: 'dorsal', motif: /^grand_dorsal$/, de: jTh, portee: 0.26, axe: 'muscle', tenuPar: /^trapeze_(inferieur|moyen)$/ }];
+    const planT = planCarrure(SQ)[jTh], zTronc = planT && planT.z0 != null ? planT.z0 : SQ[jTh].centre[2];
+    // Le maillage d'un muscle, sommets confondus soudés : uid (numéro soudé de chaque sommet), et les voisins de chacun
+    // — ceux du maillage (une arête partagée par deux triangles compte deux fois : sans importance pour une moyenne),
+    // et tous les sommets à moins de 12 mm : un muscle est fait de faisceaux séparés, posés côte à côte ; sans ce
+    // voisinage de proximité, chaque faisceau serait traité seul et bougerait sans ses voisins (c'est ce qui les
+    // faisait partir en éclats).
+    const PROCHE = 0.012;
+    const maillage = st => {
+      const nV = st.nbSommets, v0 = st.sommets, uid = new Int32Array(nV), cles = new Map();
+      let nU = 0;
+      for (let i = 0; i < nV; i++) { const o = (v0 + i) * pas, cle = vue.getUint16(o, true) + 65536 * (vue.getUint16(o + 2, true) + 65536 * vue.getUint16(o + 4, true)); let u = cles.get(cle); if (u === undefined) { u = nU++; cles.set(cle, u); } uid[i] = u; }
+      const px = new Float32Array(nU), py = new Float32Array(nU), pz = new Float32Array(nU);
+      for (let i = 0; i < nV; i++) { const u = uid[i]; px[u] = X(v0 + i); py[u] = Y(v0 + i); pz[u] = Z(v0 + i); }
+      const cases = new Map(), caseDe = u => Math.floor(px[u] / PROCHE + 512) + 1024 * (Math.floor(py[u] / PROCHE) + 1024 * Math.floor(pz[u] / PROCHE + 512));
+      for (let u = 0; u < nU; u++) { const c = caseDe(u); let l = cases.get(c); if (!l) cases.set(c, l = []); l.push(u); }
+      const listes = new Array(nU); for (let u = 0; u < nU; u++) listes[u] = [];
+      const nT = st.nbIndices / 3;
+      for (let t = 0; t < nT; t++) { const a = uid[indices[st.indices + t * 3]], b = uid[indices[st.indices + t * 3 + 1]], c = uid[indices[st.indices + t * 3 + 2]]; listes[a].push(b, c); listes[b].push(a, c); listes[c].push(a, b); }
+      for (let u = 0; u < nU; u++) {
+        const cx = Math.floor(px[u] / PROCHE + 512), cy = Math.floor(py[u] / PROCHE), cz = Math.floor(pz[u] / PROCHE + 512);
+        for (let a = -1; a <= 1; a++) for (let b = -1; b <= 1; b++) for (let c = -1; c <= 1; c++) {
+          const l = cases.get(cx + a + 1024 * (cy + b + 1024 * (cz + c))); if (!l) continue;
+          for (const w of l) if (w > u) { const dx = px[u] - px[w], dy = py[u] - py[w], dz = pz[u] - pz[w]; if (dx * dx + dy * dy + dz * dz < PROCHE * PROCHE) { listes[u].push(w); listes[w].push(u); } }
+        }
+      }
+      const debut = new Int32Array(nU + 1); for (let u = 0; u < nU; u++) debut[u + 1] = debut[u] + listes[u].length;
+      const vois = new Int32Array(debut[nU]); for (let u = 0; u < nU; u++) vois.set(listes[u], debut[u]);
+      return { uid, nU, debut, vois, px, py, pz };
+    };
+    // La distance le long d'un muscle depuis des sommets de départ (graine[u] vrai), de proche en proche sur le
+    // maillage. Un point du muscle peut être tout près de l'insertion à vol d'oiseau (le grand dorsal passe sous
+    // l'aisselle) et loin d'elle le long des fibres.
+    const distances = (m, graine) => {
+      const { nU, debut, vois, px, py, pz } = m, d = new Float32Array(nU).fill(Infinity), fait = new Uint8Array(nU);
+      // Au plus court d'abord (Dijkstra) : un tas des sommets à voir, rangés par distance ; un sommet peut y être
+      // plusieurs fois, seule sa première sortie compte.
+      let tas = new Int32Array(Math.max(16, nU)), cle = new Float32Array(tas.length), n = 0;
+      const pousser = (u, l) => {
+        if (n === tas.length) { const t = new Int32Array(2 * n), c = new Float32Array(2 * n); t.set(tas); c.set(cle); tas = t; cle = c; }
+        let i = n++; while (i > 0) { const p = (i - 1) >> 1; if (cle[p] <= l) break; tas[i] = tas[p]; cle[i] = cle[p]; i = p; }
+        tas[i] = u; cle[i] = l;
+      };
+      const tirer = () => {
+        const u = tas[0], der = tas[--n], l = cle[n]; let i = 0;
+        for (;;) { let f = 2 * i + 1; if (f >= n) break; if (f + 1 < n && cle[f + 1] < cle[f]) f++; if (cle[f] >= l) break; tas[i] = tas[f]; cle[i] = cle[f]; i = f; }
+        tas[i] = der; cle[i] = l; return u;
+      };
+      for (let u = 0; u < nU; u++) if (graine[u]) { d[u] = 0; pousser(u, 0); }
+      while (n) {
+        const u = tirer(); if (fait[u]) continue; fait[u] = 1;
+        const du = d[u];
+        for (let k = debut[u]; k < debut[u + 1]; k++) { const w = vois[k]; if (fait[w]) continue; const l = du + Math.hypot(px[u] - px[w], py[u] - py[w], pz[u] - pz[w]); if (l < d[w]) { d[w] = l; pousser(w, l); } }
+      }
+      return d;
+    };
+    /* La part de chaque sommet (soudé) d'un muscle qui suit son attache : 1 au bout du tendon, 0 à l'origine du muscle.
+       – Le bout du tendon : les sommets presque entièrement au bras d'après les poids du fichier, à moins de 3 cm du
+         point d'insertion I (ces poids donnent parfois presque tout au bras bien plus loin sur le muscle).
+       – L'origine : la partie tendineuse du muscle loin de l'insertion (l'aponévrose du grand dorsal le long de la
+         colonne). Avec elle, chaque fibre a sa longueur — de la distance au tendon plus la distance à l'origine — et
+         la part s'éteint aux 85 % de cette longueur : les fibres hautes du grand dorsal, courtes, restent ancrées
+         près de la colonne (sous le trapèze) pendant que les longues s'étirent sur tout le flanc. Sans origine
+         tendineuse, la part s'éteint à la portée donnée. Elle est entière jusqu'à 2 cm du bout du tendon. */
+    const partsDe = (st, m, I, portee) => {
+      const { uid, nU, px, py, pz } = m, v0 = st.sommets, bout = new Uint8Array(nU), origine = new Uint8Array(nU);
+      let meilleur = -1, pMax = Infinity, nBout = 0, nOrigine = 0;
+      for (let i = 0; i < st.nbSommets; i++) {
+        const u = uid[i], o = (v0 + i) * pas;
+        let wb = 0, wt = 0; for (let k = 0; k < 4; k++) { const w = sommets[o + 16 + k]; wt += w; if (estBras[sommets[o + 12 + k]]) wb += w; }
+        const dI = Math.hypot(px[u] - I[0], py[u] - I[1], pz[u] - I[2]);
+        if (meilleur < 0 || dI < pMax) { pMax = dI; meilleur = u; }
+        if (wt > 0 && wb / wt >= 0.85 && dI < 0.03 && !bout[u]) { bout[u] = 1; nBout++; }
+        if (sommets[o + 7] >= 128 && dI > 0.1 && !origine[u]) { origine[u] = 1; nOrigine++; }
+      }
+      if (!nBout && meilleur >= 0) bout[meilleur] = 1;
+      const d1 = distances(m, bout), d2 = nOrigine >= 8 ? distances(m, origine) : null, part = new Float32Array(nU);
+      for (let u = 0; u < nU; u++) {
+        if (d1[u] === Infinity) continue;
+        const fin = d2 ? (d2[u] === Infinity ? portee : Math.max(0.12, Math.min(0.3, 0.85 * (d1[u] + d2[u])))) : portee;
+        part[u] = 1 - lisse((d1[u] - 0.02) / (fin - 0.02));
+      }
+      return part;
+    };
+    /* Le cercle (vu de dessus) qui épouse au mieux des points pondérés [x, z, poids] : moindres carrés sur
+       x² + z² + a·x + b·z + c = 0. Rend [cx, cz, rayon, écart moyen], ou null. */
+    const cercle = pts => {
+      let Sxx = 0, Sxz = 0, Szz = 0, Sx = 0, Sz = 0, S1 = 0, Sxr = 0, Szr = 0, Sr = 0;
+      for (const [x, z, w] of pts) { const r = x * x + z * z; Sxx += w * x * x; Sxz += w * x * z; Szz += w * z * z; Sx += w * x; Sz += w * z; S1 += w; Sxr += w * x * r; Szr += w * z * r; Sr += w * r; }
+      const A = [[Sxx, Sxz, Sx, -Sxr], [Sxz, Szz, Sz, -Szr], [Sx, Sz, S1, -Sr]];
+      for (let i = 0; i < 3; i++) {
+        let p = i; for (let k = i + 1; k < 3; k++) if (Math.abs(A[k][i]) > Math.abs(A[p][i])) p = k;
+        if (!(Math.abs(A[p][i]) > 1e-12)) return null;
+        const t = A[i]; A[i] = A[p]; A[p] = t;
+        for (let k = i + 1; k < 3; k++) { const f = A[k][i] / A[i][i]; for (let j = i; j < 4; j++) A[k][j] -= f * A[i][j]; }
+      }
+      const s = [0, 0, 0]; for (let i = 2; i >= 0; i--) { let v = A[i][3]; for (let j = i + 1; j < 3; j++) v -= A[i][j] * s[j]; s[i] = v / A[i][i]; }
+      const cx = -s[0] / 2, cz = -s[1] / 2, r = Math.sqrt(Math.max(0, cx * cx + cz * cz - s[2]));
+      let e = 0; for (const [x, z, w] of pts) e += w * Math.abs(Math.hypot(x - cx, z - cz) - r);
+      return [cx, cz, r, e / S1];
+    };
+    const attacheDe = new Map();
+    for (const at of ATTACHES) {
+      const L = [], muscles = S.filter(st => at.motif.test(st.id));
+      for (const st of muscles) for (let v = st.sommets; v < st.sommets + st.nbSommets; v++) {
+        const o = v * pas; let wb = 0, wt = 0; for (let k = 0; k < 4; k++) { const w = sommets[o + 16 + k]; wt += w; if (estBras[sommets[o + 12 + k]]) wb += w; }
+        if (wt > 0 && wb > 0) L.push([wb / wt, v]);
+      }
+      if (L.length < 8) continue;
+      L.sort((a, b) => b[0] - a[0]);
+      let n = 0; while (n < L.length && L[n][0] >= 0.85) n++;
+      n = Math.max(n, Math.min(24, L.length));
+      const I = [0, 0, 0]; let tot = 0; for (let i = 0; i < n; i++) { const w = L[i][0], v = L[i][1]; I[0] += w * X(v); I[1] += w * Y(v); I[2] += w * Z(v); tot += w; }
+      I[0] /= tot; I[1] /= tot; I[2] /= tot;
+      // L'axe (vertical) autour duquel le muscle glisse. Le tronc est large et plat : autour de son axe central, un
+      // point du dos qui tourne vers le flanc rentre dans les côtes. Le grand dorsal tourne donc autour de l'arrondi
+      // qu'il épouse lui-même — le cercle qui suit au mieux, vu de dessus, sa partie qui glisse (sous l'aisselle).
+      let axe = [0, zTronc], evase = 0;
+      const champs = muscles.map(st => { const m = maillage(st); return { st, m, part: partsDe(st, m, I, at.portee), tenu: new Float32Array(m.nU) }; });
+      // Tenu par un muscle qui le recouvre (le haut du grand dorsal passe sous le trapèze) : là, il ne glisse pas —
+      // il sortirait à travers lui — et suit ce qui le tient (il garde ses poids d'omoplate, les mêmes que ceux du
+      // trapèze au-dessus de lui). La part s'éteint de 4 cm à 1 cm du muscle qui le tient.
+      if (at.tenuPar) {
+        const T = []; for (const st of S) if (at.tenuPar.test(st.id)) for (let v = st.sommets; v < st.sommets + st.nbSommets; v++) T.push(X(v), Y(v), Z(v));
+        if (T.length) for (const { m, part, tenu } of champs) for (let u = 0; u < m.nU; u++) {
+          const x = m.px[u], y = m.py[u], z = m.pz[u]; let d2 = Infinity;
+          for (let k = 0; k < T.length; k += 3) { const dx = T[k] - x, dy = T[k + 1] - y, dz = T[k + 2] - z, q = dx * dx + dy * dy + dz * dz; if (q < d2) d2 = q; }
+          const libre = lisse((Math.sqrt(d2) - 0.01) / 0.03);
+          part[u] *= libre; tenu[u] = 1 - libre;
+        }
+      }
+      if (at.axe === 'muscle') {
+        const pts = [];
+        // (Entre 6 et 17 cm sous l'insertion : plus haut, le muscle quitte le tronc pour le bras ; plus bas, il ne glisse plus.)
+        for (const { m, part } of champs) for (let u = 0; u < m.nU; u++) { const h = I[1] - m.py[u]; if (part[u] > 0.02 && part[u] < 0.95 && h > 0.06 && h < 0.17) pts.push([m.px[u], m.pz[u], 1]); }
+        const c = pts.length >= 60 ? cercle(pts) : null;
+        if (c && c[2] > 0.04 && c[2] < 0.2 && c[3] < 0.2 * c[2]) {
+          axe = [c[0], c[1]];
+          // L'évasement : le tronc s'élargit vers l'aisselle. De combien la partie qui glisse s'écarte de l'axe par
+          // mètre de hauteur (la pente de sa distance à l'axe) : un point qui monte avec le bras s'écartera d'autant,
+          // au lieu de rentrer dans le dentelé et les côtes, plus larges à sa nouvelle hauteur.
+          let Sw = 0, Sy = 0, Sr = 0, Syy = 0, Syr = 0;
+          for (const { m, part } of champs) for (let u = 0; u < m.nU; u++) { const h = I[1] - m.py[u]; if (part[u] > 0.05 && part[u] < 0.95 && h > 0.03 && h < 0.25) { const r = Math.hypot(m.px[u] - axe[0], m.pz[u] - axe[1]); Sw++; Sy += m.py[u]; Sr += r; Syy += m.py[u] * m.py[u]; Syr += m.py[u] * r; } }
+          const v = Syy - Sy * Sy / Sw; if (Sw > 30 && v > 1e-6) evase = Math.max(0, Math.min(0.35, (Syr - Sy * Sr / Sw) / v));
+        }
+      }
+      const g = SQ.length, d = g + 1, deD = SQ[at.de].jumeau, huD = SQ[jHu].jumeau;
+      SQ.push({ nom: 'attache.' + at.cle + '.G', parent: at.de, centre: I, jumeau: d, virtuel: { de: at.de, vers: jHu, axe, evase } });
+      SQ.push({ nom: 'attache.' + at.cle + '.D', parent: deD, centre: [-I[0], I[1], I[2]], jumeau: g, virtuel: { de: deD, vers: huD, axe: [-axe[0], axe[1]], evase } });
+      for (const ch of champs) attacheDe.set(ch.st, { j: g, de: at.de, m: ch.m, part: ch.part, tenu: ch.tenu });
+    }
+    const aLisser = [];
+    for (const st of S) {
+      const tronc = TRONC[st.region] === 1, avant = st.region === 'avant_bras', bras = st.region === 'bras', epaule = st.region === 'epaule';
+      if (!(tronc || avant || bras || epaule)) continue;
+      const att = attacheDe.get(st) || null, jAt = att ? att.j : -1;
+      const fCl = tronc ? (OMOPLATE.test(st.id) ? 1 : GLISSE.test(st.id) ? 0.3 : 0) : 1;
+      let touche = false;
+      for (let v = st.sommets; v < st.sommets + st.nbSommets; v++) {
+        const o = v * pas; if (garder && garder(v, o)) continue;
+        lire(o);
+        let n = 0, change = false; for (let k = 0; k < 4; k++) if (W[k] > 0) n = plus(J[k], W[k], n);
+        const x = X(v), y = Y(v), z = Z(v), rH = Math.hypot(x - cH[0], y - cH[1], z - cH[2]);
+        if (avant) {
+          // La part de l'avant-bras (ulna + radius) se partage d'après la place le long de l'avant-bras.
+          let wu = 0, wr = 0; for (let i = 0; i < n; i++) { if (js[i] === jUl) { wu = ws[i]; ws[i] = 0; } else if (js[i] === jRa) { wr = ws[i]; ws[i] = 0; } }
+          if (wu + wr > 0) { const t = Math.max(0, Math.min(1, (((x - coude[0]) * axe[0] + (y - coude[1]) * axe[1] + (z - coude[2]) * axe[2]) / L2 - 0.08) / 0.84)); n = plus(jUl, (wu + wr) * (1 - t), n); n = plus(jRa, (wu + wr) * t, n); change = true; }
+        }
+        if (att) {
+          // Grand dorsal : la part qui suit le bras ne vient plus des poids du fichier (irréguliers d'un sommet à
+          // l'autre : le muscle se plissait) mais de sa place le long de ses fibres (voir partsDe). Elle va à
+          // l'attache ; seul le bout du tendon (part presque entière) reste collé à l'humérus.
+          const part = att.part[att.m.uid[v - st.sommets]], colle = part * lisse((part - 0.94) / 0.06);
+          let wt = 0, wa = 0; for (let i = 0; i < n; i++) { wt += ws[i]; if (!estBras[js[i]]) wa += ws[i]; }
+          for (let i = 0; i < n; i++) ws[i] = estBras[js[i]] ? 0 : (wa > 0 ? ws[i] / wa : 0) * wt * (1 - part);
+          if (!(wa > 0)) n = plus(att.de, wt * (1 - part), n);
+          n = plus(jAt, wt * (part - colle), n); n = plus(jHu, wt * colle, n); change = true;
+        }
+        if (tronc && jAt < 0) {
+          // Le bras : borné d'après la distance à l'épaule ; ce qui est retiré revient aux autres os du sommet (au thorax s'il n'y en a pas).
+          let wb = 0, wa = 0; for (let i = 0; i < n; i++) if (estBras[js[i]]) wb += ws[i]; else wa += ws[i];
+          const tout = wb + wa, borne = tout * Math.min(1, Math.pow(0.085 / Math.max(rH, 1e-3), 2));
+          if (wb > borne + 0.5) { const k = borne / wb, rendu = wb - borne; for (let i = 0; i < n; i++) if (estBras[js[i]]) ws[i] *= k; else if (wa > 0) ws[i] += rendu * ws[i] / wa; if (!(wa > 0)) n = plus(jTh, rendu, n); change = true; }
+        }
+        if (tronc && fCl < 1) {
+          // (Là où un muscle de l'omoplate le tient, le muscle garde son poids d'omoplate.)
+          const f = att ? fCl + (1 - fCl) * att.tenu[att.m.uid[v - st.sommets]] : fCl;
+          if (f < 1) for (let i = 0; i < n; i++) if (js[i] === jCl && ws[i] > 0) { const rendu = ws[i] * (1 - f); ws[i] -= rendu; n = plus(jTh, rendu, n); change = true; break; }
+        }
+        if (bras) {
+          // Long triceps, biceps : au-delà de 5 cm de l'épaule, ils suivent l'humérus.
+          for (let i = 0; i < n; i++) if (js[i] === jCl && ws[i] > 0) { const garde = ws[i] * Math.min(1, Math.pow(0.05 / Math.max(rH, 1e-3), 2)), rendu = ws[i] - garde; if (rendu > 0.5) { ws[i] = garde; n = plus(jHu, rendu, n); change = true; } break; }
+        }
+        for (let i = 0; i < n; i++) if (js[i] === jCl || js[i] === jHu || js[i] === jAt) touche = true;
+        if (change) ecrire(o, js, ws, n);
+      }
+      if (touche || avant) aLisser.push(st);
+    }
+    // Lissage : sur chaque muscle concerné, les poids se moyennent de proche en proche (sommets confondus soudés).
+    const TOURS = 6, PART = 0.6;
+    for (const st of aLisser) {
+      const nV = st.nbSommets, v0 = st.sommets, { uid, nU, debut, vois } = attacheDe.has(st) ? attacheDe.get(st).m : maillage(st);
+      // Les poids, un tableau par articulation présente.
+      const champs = new Map(), vu = new Uint8Array(nU);
+      for (let i = 0; i < nV; i++) { const u = uid[i]; if (vu[u]) continue; vu[u] = 1; const o = (v0 + i) * pas; for (let k = 0; k < 4; k++) { const w = sommets[o + 16 + k]; if (!w) continue; const j = sommets[o + 12 + k]; let f = champs.get(j); if (!f) champs.set(j, f = new Float32Array(nU)); f[u] += w; } }
+      const tmp = new Float32Array(nU);
+      for (const f of champs.values()) for (let tour = 0; tour < TOURS; tour++) {
+        for (let u = 0; u < nU; u++) { const d0 = debut[u], d1 = debut[u + 1]; if (d1 === d0) { tmp[u] = f[u]; continue; } let m = 0; for (let k = d0; k < d1; k++) m += f[vois[k]]; tmp[u] = (1 - PART) * f[u] + PART * m / (d1 - d0); }
+        f.set(tmp);
+      }
+      const liste = [...champs.entries()];
+      for (let i = 0; i < nV; i++) { const o = (v0 + i) * pas; if (garder && garder(v0 + i, o)) continue; const u = uid[i]; let n = 0; for (const [j, f] of liste) if (f[u] > 0.5 && n < 8) { js[n] = j; ws[n] = f[u]; n++; } if (n) ecrire(o, js, ws, n); }
+    }
+    return sommets;
+  }
+  /* Éclaircit les ombres de contact du repos, une fois au chargement. L'ombrage de relief du fichier (octet 6) a été
+     calculé au repos, bras le long du corps et jambes serrées : le flanc sous le bras, l'intérieur du bras, la main
+     contre la cuisse, l'intérieur des cuisses y sont dans l'ombre de l'autre membre. Dès que le bras se lève ou que
+     les jambes s'écartent, ces surfaces restaient noires. Ce qui regarde un autre membre tout proche (à moins de
+     12 cm, face à lui) est ramené vers l'éclairement d'une surface dégagée ; de même les surfaces qu'un autre muscle
+     recouvre au repos (voir plus bas). Le reste — creux entre les muscles, dessous des reliefs — ne change pas.
+     garder(v, o) : vrai pour un os. */
+  function eclaircirContacts(sommets, pas, E, garder) {
+    const S = E.structures || [], bo = E.boite, vue = new DataView(sommets.buffer, sommets.byteOffset, sommets.byteLength);
+    const BRAS = { bras: 1, avant_bras: 1, main: 1 }, TRONC = { thorax: 1, dos: 1, abdomen: 1, bassin: 1, cuisse: 1 }, JAMBE = { cuisse: 1, jambe: 1, pied: 1 };
+    const X = v => bo.min[0] + vue.getUint16(v * pas, true) / 65535 * bo.etendue[0], Y = v => bo.min[1] + vue.getUint16(v * pas + 2, true) / 65535 * bo.etendue[1], Z = v => bo.min[2] + vue.getUint16(v * pas + 4, true) / 65535 * bo.etendue[2];
+    const lisse = t => { t = Math.max(0, Math.min(1, t)); return t * t * (3 - 2 * t); };
+    const CIBLE = 0.74, LOIN = 0.12, PRES = 0.05, MAILLE = 0.12;
+    // La normale (rangée en octaèdre sur deux octets signés), comme le programme des sommets la relit.
+    const nor = [0, 0, 0];
+    const normale = o => { const ex = Math.max(-1, vue.getInt8(o + 8) / 127), ey = Math.max(-1, vue.getInt8(o + 9) / 127); let x = ex, y = ey; const z = 1 - Math.abs(ex) - Math.abs(ey), t = Math.max(-z, 0); x += x >= 0 ? -t : t; y += y >= 0 ? -t : t; const l = Math.hypot(x, y, z) || 1; nor[0] = x / l; nor[1] = y / l; nor[2] = z / l; };
+    // Deux semis de points (un sommet sur quatre du bras, un sur huit du tronc et des cuisses), rangés par mailles.
+    const semis = (groupe, tous) => {
+      const m = new Map();
+      for (const st of S) if (groupe[st.region]) for (let v = st.sommets; v < st.sommets + st.nbSommets; v += tous) {
+        const o = v * pas; if (garder && garder(v, o)) continue;
+        const x = X(v), y = Y(v), z = Z(v), cle = Math.floor(x / MAILLE) + 64 * (Math.floor(y / MAILLE) + 64 * (Math.floor(z / MAILLE) + 32));
+        let l = m.get(cle); if (!l) m.set(cle, l = []); l.push(x, y, z);
+      }
+      return m;
+    };
+    const semisBras = semis(BRAS, 4), semisTronc = semis(TRONC, 8);
+    // Le point du semis le plus proche de (x, y, z), s'il est à moins de LOIN : sa distance, et le sens vers lui (dans vers).
+    const vers = [0, 0, 0];
+    const proche = (m, x, y, z) => {
+      const cx = Math.floor(x / MAILLE), cy = Math.floor(y / MAILLE), cz = Math.floor(z / MAILLE); let d2 = LOIN * LOIN, trouve = false;
+      for (let a = -1; a <= 1; a++) for (let b = -1; b <= 1; b++) for (let c = -1; c <= 1; c++) {
+        const l = m.get(cx + a + 64 * (cy + b + 64 * (cz + c + 32))); if (!l) continue;
+        for (let i = 0; i < l.length; i += 3) { const dx = l[i] - x, dy = l[i + 1] - y, dz = l[i + 2] - z, q = dx * dx + dy * dy + dz * dz; if (q < d2) { d2 = q; vers[0] = dx; vers[1] = dy; vers[2] = dz; trouve = true; } }
+      }
+      return trouve ? Math.sqrt(d2) : -1;
+    };
+    for (const st of S) {
+      // (Seules les structures de surface : ce qui est dessous est dans l'ombre de ce qui le recouvre, pas du bras.)
+      const bras = BRAS[st.region] === 1, tronc = TRONC[st.region] === 1 && st.couche === 1, jambe = JAMBE[st.region] === 1 && st.couche === 1;
+      if (!(bras || tronc || jambe)) continue;
+      for (let v = st.sommets; v < st.sommets + st.nbSommets; v++) {
+        const o = v * pas; if (garder && garder(v, o)) continue;
+        const ombre = sommets[o + 6] / 255; if (ombre >= CIBLE) continue;
+        const x = X(v), y = Y(v), z = Z(v);
+        let part = 0;
+        if (bras || (tronc && x > 0.04)) {
+          // Face à l'autre groupe (le bras pour le tronc et la cuisse ; le tronc et la cuisse pour le bras), tout près.
+          const d = proche(bras ? semisTronc : semisBras, x, y, z);
+          if (d > 0.004) { normale(o); part = (1 - lisse((d - PRES) / (LOIN - PRES))) * lisse(((nor[0] * vers[0] + nor[1] * vers[1] + nor[2] * vers[2]) / d + 0.75) / 0.6); }   // tout ce qui ne lui tourne pas le dos : l'autre membre bouche une bonne part du ciel
+        }
+        if (jambe && x < 0.09) {
+          // L'intérieur des jambes, face à l'autre jambe (le miroir) : d'autant plus qu'on est près du milieu.
+          normale(o); part = Math.max(part, (1 - lisse((x - 0.035) / 0.055)) * lisse((-nor[0] - 0.05) / 0.45));
+        }
+        if (part > 0.01) sommets[o + 6] = Math.round(255 * (ombre + (CIBLE - ombre) * part));
+      }
+    }
+    // Les surfaces couvertes au repos par un autre muscle (le grand dorsal sous le trapèze, le dentelé sous le grand
+    // dorsal, les muscles profonds sous ceux de surface) : elles sont dans le noir parce que rien ne les éclaire tant
+    // qu'elles sont couvertes — et on ne les voit pas. Quand l'omoplate ou le bras bouge, le muscle du dessus glisse et
+    // les découvre : on leur donne d'avance l'ombre d'une surface à demi dégagée (FOND). Ne sont concernées que les
+    // faces tournées vers le dehors du corps avec, juste devant elles (moins de 3 cm), la surface d'un autre muscle ;
+    // les flancs des sillons entre deux muscles voisins, eux, regardent de côté : leur ombre reste.
+    const SQ = E.squelette || [], plan = SQ.length ? planCarrure(SQ) : [], FOND = 0.55, M2 = 0.03;
+    const tronc = plan.find((x, i) => x && x.z0 != null && SQ[i].nom === 'thorax') || plan.find(x => x && x.z0 != null) || null;
+    const grille = new Map();
+    S.forEach((st, k) => { for (let v = st.sommets; v < st.sommets + st.nbSommets; v += 2) { const o = v * pas; if (garder && garder(v, o)) continue; const x = X(v), y = Y(v), z = Z(v), cle = Math.floor(x / M2 + 64) + 256 * (Math.floor(y / M2) + 256 * Math.floor(z / M2 + 64)); let l = grille.get(cle); if (!l) grille.set(cle, l = []); l.push(x, y, z, k); } });
+    S.forEach((st, k) => {
+      for (let v = st.sommets; v < st.sommets + st.nbSommets; v++) {
+        const o = v * pas; if (garder && garder(v, o)) continue;
+        const ombre = sommets[o + 6] / 255; if (ombre >= FOND) continue;
+        const x = X(v), y = Y(v), z = Z(v);
+        // Le dehors : en s'éloignant de l'os que le sommet suit le plus (ou de l'axe du tronc).
+        let jm = 0; for (let i = 1; i < 4; i++) if (sommets[o + 16 + i] > sommets[o + 16 + jm]) jm = i;
+        const pl = plan[sommets[o + 12 + jm]] || tronc; if (!pl) continue;
+        let rx, ry, rz;
+        if (pl.u) { const t = Math.max(0, Math.min(pl.l, (x - pl.a[0]) * pl.u[0] + (y - pl.a[1]) * pl.u[1] + (z - pl.a[2]) * pl.u[2])); rx = x - pl.a[0] - t * pl.u[0]; ry = y - pl.a[1] - t * pl.u[1]; rz = z - pl.a[2] - t * pl.u[2]; }
+        else { rx = x; ry = 0; rz = z - pl.z0; }
+        const lr = Math.hypot(rx, ry, rz); if (lr < 1e-4) continue;
+        normale(o);
+        if ((nor[0] * rx + nor[1] * ry + nor[2] * rz) / lr < 0.35) continue;
+        const cx = Math.floor(x / M2 + 64), cy = Math.floor(y / M2), cz = Math.floor(z / M2 + 64); let devant = Infinity;
+        for (let a = -1; a <= 1; a++) for (let b = -1; b <= 1; b++) for (let c = -1; c <= 1; c++) {
+          const l = grille.get(cx + a + 256 * (cy + b + 256 * (cz + c))); if (!l) continue;
+          for (let i = 0; i < l.length; i += 4) {
+            if (l[i + 3] === k) continue;
+            const dx = l[i] - x, dy = l[i + 1] - y, dz = l[i + 2] - z, al = dx * nor[0] + dy * nor[1] + dz * nor[2];
+            if (al < 0.003 || al > 0.03 || al >= devant) continue;
+            if (dx * dx + dy * dy + dz * dz - al * al < 0.00015 + 0.25 * al * al) devant = al;
+          }
+        }
+        if (devant < Infinity) { const part = 1 - lisse((devant - 0.02) / 0.01); if (part > 0.01) sommets[o + 6] = Math.round(255 * (ombre + (FOND - ombre) * part)); }
+      }
+    });
+    return sommets;
   }
   /* Étoffe un tableau de sommets (rangement de atlas.bin et de atlas-peau.bin : position sur 3 × 16 bits dans la boîte,
      articulations aux octets 12 à 15, poids aux octets 16 à 19). Renvoie une copie des sommets et leur nouvelle boîte.
@@ -650,6 +1069,14 @@ void main() {
         PE.sommets = rp.sommets; PE.entete.boite = rp.boite;
       }
     }
+    // « Par la corde » : la part de chaque sommet (hors os), écrite dans son octet libre. (Sans carrure, les sommets
+    // sont encore ceux du fichier, que d'autres vues peuvent partager : on en prend une copie avant d'y écrire.)
+    if (E.squelette && E.squelette.length) {
+      if (M.sommets.buffer === tampon) M.sommets = M.sommets.slice();
+      if (opt.ombres !== false) eclaircirContacts(M.sommets, E.octetsParSommet, E, (v, o) => M.sommets[o + 10] === NUM_OS[0] || M.sommets[o + 10] === NUM_OS[1]);
+      if (opt.poids !== false) reponderer(M.sommets, E.octetsParSommet, E, M.indicesLocaux(), (v, o) => M.sommets[o + 10] === NUM_OS[0] || M.sommets[o + 10] === NUM_OS[1]);
+      marquerCorde(M.sommets, E.octetsParSommet, E.boite, E.squelette, opt.corde, (v, o) => M.sommets[o + 10] === NUM_OS[0] || M.sommets[o + 10] === NUM_OS[1]);
+    }
     // La peau partielle : les triangles de la tête, des mains et des pieds (ongles, poils, cheveux, yeux compris), mis
     // à part une fois pour toutes — d'abord ceux des deux côtés, puis ceux du milieu, comme dans le fichier. Chaque
     // triangle est d'une seule zone (un test le vérifie) : la zone de son premier sommet suffit.
@@ -684,15 +1111,16 @@ void main() {
     let texSale = true;
     // La pose : pour chaque articulation, une matrice 3×4 (rotation et déplacement), rangée par lignes. La seconde
     // rangée sert au côté dessiné en miroir : la matrice de l'articulation jumelle, précédée du miroir.
-    const SQ = E.squelette || [], NJ = Math.max(1, SQ.length);
-    const BRAS = chaineDuBras(SQ), partCorde = opt.corde == null ? CORDE_EPAULE : opt.corde;
+    // NJ : les articulations du fichier (celles dont on reçoit les matrices, et que la peau connaît) ; NQ : avec les
+    // attaches ajoutées par reponderer, dont le moteur calcule lui-même le déplacement (voir ecrireQuaternions).
+    const SQ = E.squelette || [], NQ = Math.max(1, SQ.length), NJ = Math.max(1, Math.min(NQ, E.articulationsFichier || NQ));
     // La peau ajoute des articulations intermédiaires (une fraction de la rotation entre deux os, voir peau.mjs) : elles
     // prennent place à la suite, côté gauche puis côté droit, et le moteur calcule leur pose à chaque changement.
-    const INTER = PE && PE.entete.articulations === SQ.length && PE.entete.intermediaires ? PE.entete.intermediaires : [];
-    const NX = INTER.length, NT = NJ + 2 * NX;
+    const INTER = PE && PE.entete.articulations === NJ && PE.entete.intermediaires ? PE.entete.intermediaires : [];
+    const NX = INTER.length, NT = Math.max(NJ + 2 * NX, NQ);
     // Rangées 2 et 3 : pour les muscles et les os, le même déplacement écrit en quaternion dual (deux texels par
     // articulation : la rotation, puis le glissement), côté gauche puis côté droit (celui de l'articulation jumelle).
-    const pose = new Float32Array(NT * 3 * 4 * 4), quats = new Float32Array(NJ * 8);
+    const pose = new Float32Array(NT * 3 * 4 * 4), quats = new Float32Array(NQ * 8), matsQ = new Float32Array(NQ * 12), evases = new Float32Array(NQ);
     let poseSale = true;
     const ID12 = [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0], tmp12 = new Float32Array(12);
     function intermediaire(mats, de, vers, part, c, retrait) {
@@ -728,7 +1156,30 @@ void main() {
        par rapport à un os éloigné (le bras levé, vu du thorax). */
     function ecrireQuaternions(mats) {
       const q = quats;
-      for (let i = 0; i < NJ; i++) {
+      evases.fill(0);
+      if (mats) {
+        // Les attaches : l'orientation de l'articulation d'origine, déplacée comme le point d'insertion sur l'os visé.
+        const m = matsQ; for (let k = 0; k < NJ * 12; k++) m[k] = mats[k];
+        for (let i = NJ; i < NQ; i++) {
+          const a = SQ[i], A = a.virtuel.de * 12, B = a.virtuel.vers * 12, c = a.centre, o = i * 12, xA = a.virtuel.axe[0], zA = a.virtuel.axe[1];
+          // Où va le point d'insertion (emmené par l'os visé), dans le monde puis dans le repère de l'articulation d'origine.
+          const w = [0, 0, 0], l = [0, 0, 0];
+          for (let r = 0; r < 3; r++) w[r] = m[B + r * 4] * c[0] + m[B + r * 4 + 1] * c[1] + m[B + r * 4 + 2] * c[2] + m[B + r * 4 + 3];
+          for (let r = 0; r < 3; r++) l[r] = m[A + r] * (w[0] - m[A + 3]) + m[A + 4 + r] * (w[1] - m[A + 7]) + m[A + 8 + r] * (w[2] - m[A + 11]);
+          // Autour de l'axe du glissement (vertical, par x = xA et z = zA) : de combien l'insertion a tourné.
+          const da = Math.atan2(l[0] - xA, l[2] - zA) - Math.atan2(c[0] - xA, c[2] - zA), an = da > Math.PI ? da - 2 * Math.PI : da < -Math.PI ? da + 2 * Math.PI : da, co = Math.cos(an), si = Math.sin(an);
+          // L'évasement : l'écart à l'axe que prend le muscle quand l'insertion monte (voir reponderer et le programme des sommets).
+          evases[i] = (a.virtuel.evase || 0) * Math.max(0, l[1] - c[1]);
+          // La rotation de l'attache : celle de l'origine, puis ce tour autour de l'axe vertical ; elle emmène c sur w.
+          for (let r = 0; r < 3; r++) {
+            const r0 = m[A + r * 4], r1 = m[A + r * 4 + 1], r2 = m[A + r * 4 + 2];
+            m[o + r * 4] = r0 * co - r2 * si; m[o + r * 4 + 1] = r1; m[o + r * 4 + 2] = r0 * si + r2 * co;
+            m[o + r * 4 + 3] = w[r] - (m[o + r * 4] * c[0] + m[o + r * 4 + 1] * c[1] + m[o + r * 4 + 2] * c[2]);
+          }
+        }
+        mats = m;
+      }
+      for (let i = 0; i < NQ; i++) {
         const o = i * 12, b = i * 8;
         let x = 0, y = 0, z = 0, w = 1;
         if (mats) {
@@ -746,9 +1197,11 @@ void main() {
         q[b + 4] = 0.5 * (tx * w + ty * z - tz * y); q[b + 5] = 0.5 * (ty * w + tz * x - tx * z); q[b + 6] = 0.5 * (tz * w + tx * y - ty * x); q[b + 7] = -0.5 * (tx * x + ty * y + tz * z);
       }
       const G = NT * 24, D = NT * 36;
-      for (let i = 0; i < NJ; i++) {
+      for (let i = 0; i < NQ; i++) {
         const j = SQ.length ? SQ[i].jumeau : i;
         for (let k = 0; k < 8; k++) { pose[G + i * 12 + k] = q[i * 8 + k]; pose[D + i * 12 + k] = q[j * 8 + k]; }
+        // Troisième texel, pour une attache : l'axe de son glissement (x, z) et son évasement du moment.
+        if (i >= NJ) { const a = SQ[i].virtuel.axe, b = SQ[j].virtuel.axe; pose[G + i * 12 + 8] = a[0]; pose[G + i * 12 + 9] = a[1]; pose[G + i * 12 + 10] = evases[i]; pose[D + i * 12 + 8] = b[0]; pose[D + i * 12 + 9] = b[1]; pose[D + i * 12 + 10] = evases[j]; }
       }
     }
     function ecrirePose(mats) {
@@ -825,6 +1278,7 @@ void main() {
       gl.enableVertexAttribArray(3); gl.vertexAttribPointer(3, 1, gl.UNSIGNED_BYTE, false, pas, 10);
       gl.enableVertexAttribArray(4); gl.vertexAttribIPointer(4, 4, gl.UNSIGNED_BYTE, pas, 12);
       gl.enableVertexAttribArray(5); gl.vertexAttribPointer(5, 4, gl.UNSIGNED_BYTE, true, pas, 16);
+      gl.enableVertexAttribArray(6); gl.vertexAttribPointer(6, 1, gl.UNSIGNED_BYTE, true, pas, 11);
       // Les indices, rangés dans l'ordre de dessin (voir debutDessin) ; le squelette garde sa place, à la fin.
       let indices = M.indices();
       if (triParCouche) { const tri = new Uint32Array(indices.length); tri.set(indices.subarray(nbIndicesStructures), nbIndicesStructures); for (let i = 0; i < S.length; i++) tri.set(indices.subarray(S[i].indices, S[i].indices + S[i].nbIndices), debutDessin[i]); indices = tri; }
@@ -980,7 +1434,9 @@ void main() {
       gl.uniformMatrix4fv(pr.u.u_vp, false, m.vp);
       gl.uniform3fv(pr.u.u_min, E.boite.min); gl.uniform3fv(pr.u.u_etendue, E.boite.etendue);
       gl.uniform3fv(pr.u.u_cam, m.oeil); gl.uniform1f(pr.u.u_seuls, 0); gl.uniform1f(pr.u.u_tire, 0);
-      gl.uniform2i(pr.u.u_bras, BRAS ? BRAS[0] : -1, BRAS ? BRAS[1] : -2); gl.uniform1f(pr.u.u_corde, BRAS ? partCorde : 0);
+      gl.uniform1f(pr.u.u_corde, 1);
+      gl.uniform1i(pr.u.u_attaches, NQ > NJ ? NJ : 0);
+      gl.uniform1i(pr.u.u_nbAppuis, nbAppuis); if (nbAppuis) gl.uniform4fv(pr.u.u_appuis, appuisU);
       if (reperage) return;
       const c = Math.cos(m.az), s = Math.sin(m.az);
       gl.uniformMatrix3fv(prog.u.u_lum, false, [c, 0, -s, 0, 1, 0, s, 0, c]);
@@ -1031,6 +1487,7 @@ void main() {
     }
     let nbImages = 0, dernierTemps = 0;
     let objets = [], ombreSol = null, animation = null, scene = null;
+    const appuisU = new Float32Array(24 * 4); let nbAppuis = 0;   // les appuis, tels que le programme les lit
     function dessiner() {
       if (gl.isContextLost()) return;
       const t0 = performance.now();
@@ -1313,6 +1770,15 @@ void main() {
       objets(liste) { objets = liste || []; demander(); },
       // Ombre au sol : par défaut sous les pieds ; pendant un exercice, sous toute la scène ({ centre, taille, force }).
       ombre(o) { ombreSol = o || null; demander(); },
+      // Les appuis : les coussins contre lesquels la chair s'écrase (six au plus ; null : aucun). Chacun tient en seize
+      // nombres — trois directions (deux dans le plan du coussin, U et V, et T qui en sort vers le corps), chacune avec
+      // son décalage (-U·centre, -T·surface, -V·centre), puis demi-longueur selon U, demi-longueur selon V, profondeur
+      // d'effet sous la surface, et enfoncement qui reste au plus (0,01 : un centimètre dans le coussin).
+      appuis(liste) {
+        nbAppuis = Math.min(6, liste ? liste.length : 0);
+        for (let i = 0; i < nbAppuis; i++) appuisU.set(liste[i].slice(0, 16), i * 16);
+        demander();
+      },
       // Fonction appelée à chaque image (temps en secondes) tant qu'elle renvoie vrai : l'animation d'un exercice.
       animer(fn) { animation = fn || null; if (animation) demander(); },
       // Cadre une boîte de la scène (min, max) depuis une vue ({ az, el }) : tout tient dans la zone libre de l'écran.
@@ -1335,14 +1801,14 @@ void main() {
       // Points de la surface du corps au repos (un sommet sur six des structures des régions demandées), avec leurs
       // articulations et leurs poids : pour mesurer le corps posé (où passe une barre devant les jambes, etc.).
       peau(regions) {
-        const vue = new DataView(M.sommets.buffer, M.sommets.byteOffset, M.sommets.byteLength), pas = E.octetsParSommet, P = [], J = [], W = [], C = [], part = corde(SQ, partCorde);
+        const vue = new DataView(M.sommets.buffer, M.sommets.byteOffset, M.sommets.byteLength), pas = E.octetsParSommet, P = [], J = [], W = [], C = [];
         for (const s of S) {
           if (regions && !regions.includes(s.region)) continue;
           for (let v = s.sommets; v < s.sommets + s.nbSommets; v += 6) {
             const o = v * pas;
             for (let k = 0; k < 3; k++) P.push(E.boite.min[k] + vue.getUint16(o + k * 2, true) / 65535 * E.boite.etendue[k]);
             for (let k = 0; k < 4; k++) { J.push(vue.getUint8(o + 12 + k)); W.push(vue.getUint8(o + 16 + k) / 255); }
-            C.push(part(J, W, J.length - 4));
+            C.push(vue.getUint8(o + 11) / 255);
           }
         }
         const bassin = SQ.length ? SQ[0].centre : centreCorps; let zDos = Infinity;
@@ -1903,5 +2369,5 @@ void main() {
     };
   }
 
-  window.AnqaAtlas = { creer, activerGestes, monter, apercu, VUES, etoffer, corde, themeDeCarte };
+  window.AnqaAtlas = { creer, activerGestes, monter, apercu, VUES, etoffer, reponderer, eclaircirContacts, corde, marquerCorde, themeDeCarte };
 })();

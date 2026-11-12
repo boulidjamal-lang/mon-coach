@@ -10,25 +10,25 @@
     const L = c.L, fixe = [], d = { vue: { az: 68, el: 16 }, tenu: [], fixe };
     const mainsDe = (p, ou) => { const t = c.tronc(p); if (ou === 'tendus') return pareil(B(0, 96, -6, 6, 90)); if (ou === 'long') return pareil(B(90, 18, 0, 6, 180, { doigts: 'plat' })); if (ou === 'haut') return pareil(B(10, 168, 0, 6, 180, { doigts: 'detendu' })); return mains(c, t, ou); };
     const ou = o.tendus ? 'tendus' : o.leste || o.poitrine ? 'poitrine' : 'oreilles';
-    const poids = () => { if (o.leste || o.tendus) d.tenu = [{ t: 'disque', m: 'GD', r: 0.13, axe: o.tendus ? AX : AZ }]; };
+    const poids = () => { if (o.leste || o.tendus) d.tenu = [{ t: 'disque', m: 'GD', r: 0.13, axe: o.tendus ? AX : 'buste' }]; };
     if (o.vacuum) {
       const cle = u => { const p = debout(c, { penche: 6, ecart: 0.1 }); p.lombaires = 4 + 6 * u; p.thorax = 3 * u; p.bras = mains(c, c.tronc(p), 'hanches'); return p; };
       d.a = cle(0); d.b = cle(1); d.rythme = 'tenue'; d.vue = { az: 60, el: 8 }; return d;
     }
     if (o.machine) {
       // Assis à la machine : les mains tiennent les poignées près de la tête, le buste s'enroule vers les genoux.
-      const base = assis(c, { h: 0.5, zPieds: 0.36 });
+      const base = assis(c, { h: H_SIEGE, zPieds: 0.36 });
       const cle = u => { const p = cloner(base); p.lombaires = 34 * u; p.thorax = 22 * u; p.cou = 10 * u; p.bras = pareil(B(20, 120, 20, 120, 90)); return p; };
-      d.a = cle(0); d.b = cle(1); fixe.push(...poseFixe(MAT.siege(C, 0.5, 0.55, 4))); d.vue = { az: 66, el: 10 };
+      d.a = cle(0); d.b = cle(1); fixe.push(...poseFixe(MAT.siege(C, H_SIEGE, 0.55, 4))); d.vue = { az: 66, el: 10 };
       d.tenu = [{ t: 'levier', de: () => V(0.2, 1.75, -0.15), m: 'G' }, { t: 'levier', de: () => V(-0.2, 1.75, -0.15), m: 'D' }]; return d;
     }
     if (o.poulie || o.elas) {
       // La corde tenue de part et d'autre de la tête : le buste s'enroule, les hanches ne bougent presque pas.
       const sorte = o.debout ? 'debout' : o.assis ? 'assis' : 'genoux';
-      const base = sorte === 'debout' ? debout(c, { ecart: 0.12 }) : sorte === 'assis' ? assis(c, { h: 0.45 }) : aGenoux(c, { penche: 8 });
-      if (sorte === 'assis') fixe.push(...poseFixe(MAT.banc(C, 0), V(0, 0, 0.28)));
+      const base = sorte === 'debout' ? debout(c, { ecart: 0.12 }) : sorte === 'assis' ? assis(c, { h: H_BANC }) : aGenoux(c, { penche: 8 });
+      if (sorte === 'assis') fixe.push(...bancAssis(C));
       const dos = o.debout || o.assis;                          // dos à la poulie (debout, assis) ou face à elle (à genoux)
-      const cle = u => { const p = cloner(base); p.lombaires = (sorte === 'genoux' ? 44 : 34) * u; p.thorax = 24 * u; p.cou = 8 * u; if (o.lateral) { p.lombaires = 6 * u; p.thorax = 0; p.inclinaison = 30 * u; } if (o.torsion) p.torsion = 34 * u; if (sorte === 'genoux' && !o.lateral) { p.bassin.rot = qX(8 + 16 * u); p.jambes = pareil(J(8 + 16 * u + 14 * u, 6, 0, 90 + 14 * u, 62)); } const t = c.tronc(p), dT = (x, y, z) => V(x, y, z).applyQuaternion(t.qThorax); for (const [k, s] of COTES) p.bras[k] = { prise: t.tete.clone().add(dT(s * 0.11, 0.04, dos ? -0.02 : 0.1)), pole: dT(s * 1, -0.6, 0.3), paume: dT(-s, 0, 0), dirMain: dT(0, 1, dos ? -0.3 : 0.3), doigts: 'barre' }; return p; };
+      const cle = u => { const p = cloner(base); p.lombaires = (sorte === 'genoux' ? 44 : 34) * u; p.thorax = 24 * u; p.cou = 8 * u; if (o.lateral) { p.lombaires = 6 * u; p.thorax = 0; p.inclinaison = 30 * u; } if (o.torsion) p.torsion = 34 * u; if (sorte === 'genoux' && !o.lateral) { p.bassin.rot = qX(8 + 16 * u); p.jambes = pareil(J(8 + 16 * u + 14 * u, 6, 0, 90 + 14 * u, 62)); } const t = c.tronc(p), dT = (x, y, z) => V(x, y, z).applyQuaternion(t.qThorax), dC = (x, y, z) => V(x, y, z).applyQuaternion(t.qTete); /* les poings de part et d'autre du front, à hauteur des tempes : ils suivent la tête, les épaules restent basses */ for (const [k, s] of COTES) p.bras[k] = { prise: t.tete.clone().add(dC(s * 0.12, 0.105, dos ? 0.0 : 0.075)), pole: dT(s * 1, -0.6, 0.3), paume: dC(-s, 0, 0), dirMain: dC(0, 1, dos ? -0.2 : 0.25), doigts: 'barre', ceinture: 0.1 }; return p; };
       d.cles = [[0, cle(0)], [0.5, cle(0.5)], [1, cle(1)]]; if (sorte === 'genoux') for (const [, p] of d.cles) c.poserSur(p, V(), AY, ['jambe', 'pied']);
       const anc = dos ? V(0, sorte === 'assis' ? 1.75 : 2.05, -0.55) : V(0, 2.0, 0.55);
       d.tenu = [{ t: o.elas ? 'elastique' : 'cable', de: anc, bout: 'corde' }]; fixe.push(...poseFixe(MAT.colonne(C, anc))); d.vue = { az: 68, el: 8 }; return d;
@@ -51,7 +51,7 @@
     // Couché sur le dos : par terre, sur banc décliné ou incliné, ou sur un ballon.
     const ang = o.decline ? -24 : o.incline ? 26 : 0, h = ang ? 0.44 : 0;
     if (ang) fixe.push(...poseFixe(MAT.banc(C, ang)));
-    const coucher = jb => { const p = allonge(c, { h, angle: ang, jambes: jb || 'plies', lomb: 0, thor: 0, cou: 6, d: ang < 0 ? -0.35 : ang > 0 ? 0.25 : -0.2 }); if (ang < 0 && !jb) for (const [k, s] of COTES) p.jambes[k] = pied(c, s, { x: s * 0.12, ouv: 4, z: p.bassin.pos.z + 0.5, y0: 0.56, pole: V(0, 1, 0.2) }); return p; };
+    const coucher = jb => allonge(c, { h, angle: ang, jambes: jb || (ang < 0 ? 'sol' : 'plies'), lomb: 0, thor: 0, cou: 6, d: ang < 0 ? -0.2 : ang > 0 ? 0.25 : -0.2 });   // décliné : genoux et chevilles dans les boudins
     if (o.ballon) {
       // Sur un ballon, le bas du dos appuyé : le buste part en extension puis s'enroule.
       const base = { bassin: { pos: V(0, 0.62, 0), rot: qX(-74) }, lombaires: -14, thorax: -8, cou: 6, bras: pareil(brasRepos()), jambes: { G: pied(c, 1, { x: 0.2, ouv: 14, z: 0.52, pole: V(0.2, 1, 0.3) }), D: pied(c, -1, { x: -0.2, ouv: 14, z: 0.52, pole: V(-0.2, 1, 0.3) }) } };
@@ -88,10 +88,14 @@
         if (o.velo) { p.lombaires = 20; p.thorax = 22; p.cou = 10; p.torsion = 34 * sn; p.jambes.G = J(lerp(34, 104, dr), 3, 0, lerp(10, 104, dr), 20); p.jambes.D = J(lerp(34, 104, g), 3, 0, lerp(10, 104, g), 20); p.bras = mainsDe(p, 'oreilles'); }
         else if (o.battements) { p.lombaires = 8; p.jambes.G = J(22 + 14 * sn, 3, 0, 4, 30); p.jambes.D = J(22 - 14 * sn, 3, 0, 4, 30); p.bras = mainsDe(p, 'long'); }
         else if (o.ciseaux) { p.lombaires = 8; p.jambes.G = J(30, 6 + 16 * sn, 0, 4, 30); p.jambes.D = J(30, 6 + 16 * sn, 0, 4, 30); p.jambes.G.flex = 30 + 5 * sn; p.jambes.D.flex = 30 - 5 * sn; p.bras = mainsDe(p, 'long'); }
-        else { p.jambes.G = J(lerp(90, 14, g), 3, 0, lerp(90, 6, g), 20); p.jambes.D = J(lerp(90, 14, dr), 3, 0, lerp(90, 6, dr), 20); p.bras.D = B(0, lerp(92, 172, g), 0, 6, 90, { doigts: 'detendu' }); p.bras.G = B(0, lerp(92, 172, dr), 0, 6, 90, { doigts: 'detendu' }); }
+        else {
+          p.jambes.G = J(lerp(90, 14, g), 3, 0, lerp(90, 6, g), 20); p.jambes.D = J(lerp(90, 14, dr), 3, 0, lerp(90, 6, dr), 20);
+          if (o.balle) { const t = c.tronc(p), e = t.epaules.G; for (const [k, s] of COTES) p.bras[k] = { prise: V(s * 0.108, e.y + 0.54, e.z + 0.02), pole: V(s, 0, 0.35), paume: V(-s, 0, 0), dirMain: V(0, 1, 0), doigts: 'plat' }; }
+          else { p.bras.D = B(0, lerp(92, 172, g), 0, 6, 90, { doigts: 'detendu' }); p.bras.G = B(0, lerp(92, 172, dr), 0, 6, 90, { doigts: 'detendu' }); }
+        }
         return p;
       };
-      if (o.balle) d.objets = (info, u, sortie) => sortie.push(pret(sphere(0.12, 0, info.bassin.y + 0.4, info.bassin.z + 0.1, C.ballon, 0)));
+      if (o.balle) d.tenu = [{ t: 'balle', m: 'GD', r: 0.11 }];   // le ballon tenu au-dessus de la poitrine, bras tendus
       return d;
     }
     if (o.hollow) {

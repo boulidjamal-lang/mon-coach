@@ -26,8 +26,16 @@ export function chargerAtlas(fichier) {
     const r = ctx.window.AnqaAtlas.etoffer(new Uint8Array(b.buffer, b.byteOffset, b.length), pas, E.boite, E.squelette, force, (v, o) => b[o + 10] === E.os.pair || b[o + 10] === E.os.impair);
     b = Buffer.from(r.sommets.buffer, r.sommets.byteOffset, r.sommets.length); E.boite = r.boite;
   }
-  // À l'épaule, les muscles vont pour partie « par la corde » : la part de chaque point, comme le moteur la calcule.
-  const part = ctx.window.AnqaAtlas.corde ? ctx.window.AnqaAtlas.corde(E.squelette, process.env.CORDE == null ? undefined : +process.env.CORDE) : () => 0;
+  // Les poids autour de l'épaule et de l'avant-bras, répondérés par le moteur lui-même (POIDS=0 : poids du fichier).
+  if (ctx.window.AnqaAtlas.reponderer && process.env.POIDS !== '0') {
+    if (!(force > 0)) b = Buffer.from(b);
+    const o0 = brut.byteOffset + debut + E.sommets * pas;
+    ctx.window.AnqaAtlas.reponderer(new Uint8Array(b.buffer, b.byteOffset, b.length), pas, E, new Uint16Array(brut.buffer.slice(o0, o0 + E.triangles * 6)), (v, o) => b[o + 10] === E.os.pair || b[o + 10] === E.os.impair);
+  }
+  // « Par la corde » (épaule, hanche) : la part de chaque sommet, écrite par le moteur lui-même dans son octet libre.
+  // CORDE : un nombre, ou un objet en JSON ({"epaule":0.85,"hancheArriere":0.9,"hancheAvant":0.3}), pour essayer un réglage.
+  const reglage = process.env.CORDE == null ? undefined : (/^[\[{]/.test(process.env.CORDE) ? JSON.parse(process.env.CORDE) : +process.env.CORDE);
+  if (ctx.window.AnqaAtlas.marquerCorde) ctx.window.AnqaAtlas.marquerCorde(new Uint8Array(b.buffer, b.byteOffset, b.length), pas, E.boite, E.squelette, reglage, (v, o) => b[o + 10] === E.os.pair || b[o + 10] === E.os.impair);
   const peau = regions => {
     const P = [], J = [], W = [], C = [];
     for (const s of E.structures) {
@@ -36,12 +44,24 @@ export function chargerAtlas(fichier) {
         const o = v * pas;
         for (let k = 0; k < 3; k++) P.push(E.boite.min[k] + b.readUInt16LE(o + k * 2) / 65535 * E.boite.etendue[k]);
         for (let k = 0; k < 4; k++) { J.push(b.readUInt8(o + 12 + k)); W.push(b.readUInt8(o + 16 + k) / 255); }
-        C.push(part(J, W, J.length - 4));
+        C.push(b.readUInt8(o + 11) / 255);
       }
     }
     return { n: P.length / 3, P: Float32Array.from(P), J: Uint8Array.from(J), W: Float32Array.from(W), C: Float32Array.from(C) };
   };
-  return { E, peau };
+  /* Tous les sommets du modèle, un sur `tous`, os compris : comme `peau`, avec en plus le numéro de la structure de
+     chaque point (E.os.pair et E.os.impair : un os). Pour les cribles (traversées du matériel, déformations). */
+  const points = (tous = 3) => {
+    const n = Math.ceil(E.sommets / tous), P = new Float32Array(n * 3), J = new Uint8Array(n * 4), W = new Float32Array(n * 4), C = new Float32Array(n), structure = new Uint8Array(n);
+    for (let i = 0, v = 0; v < E.sommets; v += tous, i++) {
+      const o = v * pas;
+      for (let k = 0; k < 3; k++) P[i * 3 + k] = E.boite.min[k] + b.readUInt16LE(o + k * 2) / 65535 * E.boite.etendue[k];
+      for (let k = 0; k < 4; k++) { J[i * 4 + k] = b.readUInt8(o + 12 + k); W[i * 4 + k] = b.readUInt8(o + 16 + k) / 255; }
+      C[i] = b.readUInt8(o + 11) / 255; structure[i] = b.readUInt8(o + 10);
+    }
+    return { n, P, J, W, C, structure };
+  };
+  return { E, peau, points };
 }
 export function chargerMouvements(fichier) {
   const ctx = { console, Math, Float32Array, Uint8Array, JSON, isNaN, isFinite, Object, Array, String, Number, Error };

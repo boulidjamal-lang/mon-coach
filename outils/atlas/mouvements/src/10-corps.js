@@ -21,6 +21,10 @@
       this.nb = nb; this.S = squelette;
       this.i = Object.fromEntries(squelette.map((a, k) => [a.nom, k]));
       this.parent = squelette.map(a => a.parent);
+      // Les attaches (ajoutées par le moteur : voir reponderer) : orientation de l'articulation d'origine (de), placées
+      // comme le point d'insertion (leur centre) emmené par l'os visé (vers). Elles suivent, elles ne se posent pas.
+      this.virtuel = squelette.map(a => a.virtuel || null);
+      this.evase = new Float32Array(nb); this.aEvase = false;
       this.tete = squelette.map(a => V(a.centre[0], a.centre[1], a.centre[2]));
       this.decal = squelette.map((a, k) => (a.parent >= 0 ? this.tete[k].clone().sub(this.tete[a.parent]) : this.tete[k].clone()));
       this.ql = Array.from({ length: nb }, () => new Quat());   // rotation par rapport au parent
@@ -49,6 +53,11 @@
         orteilsH: T('orteils.G').y,
         dos: 0.11, poitrine: 0.12, ventre: 0.1, fesses: 0.1, genou: 0.05, flanc: 0.16
       };
+      // Le coude ne plie pas au-delà de 152° : plus loin, l'avant-bras traverse le biceps (le modèle a la carrure d'un
+      // athlète, sa chair ne s'écrase pas) — c'est déjà la barre aux clavicules d'un développé ou d'un squat avant.
+      // coudeMin : la distance de l'épaule au poignet à cette flexion.
+      const plie = rad(152);
+      L.coudeMin = Math.sqrt(L.bras * L.bras + L.avantBras * L.avantBras + 2 * L.bras * L.avantBras * Math.cos(plie));
       L.prise = L.avantBras + L.main;
       L.taille = T('tete').y + 0.16;
       /* Repères au repos des membres : directions des deux segments, sens où
@@ -108,13 +117,42 @@
     /* Positions et rotations dans le monde, du bassin vers les extrémités. */
     majMonde() {
       const { nb, parent, ql, qw, pw, pFixe, decal } = this;
+      this.aEvase = false;
       for (let b = 0; b < nb; b++) {
-        const p = parent[b];
+        const p = parent[b], vi = this.virtuel[b];
+        if (vi) {
+          // Où va le point d'insertion (emmené par l'os visé) ; vu de l'articulation d'origine, de combien il a tourné
+          // autour de l'axe du tronc : l'attache prend l'orientation de l'origine, tournée d'autant (voir le moteur).
+          const c = this.tete[b], w = pw[b].copy(c).sub(this.tete[vi.vers]).applyQuaternion(qw[vi.vers]).add(pw[vi.vers]);
+          const l = w.clone().sub(pw[vi.de]).applyQuaternion(qw[vi.de].clone().invert()).add(this.tete[vi.de]), xA = vi.axe[0], zA = vi.axe[1];
+          let an = Math.atan2(l.x - xA, l.z - zA) - Math.atan2(c.x - xA, c.z - zA); if (an > Math.PI) an -= 2 * Math.PI; else if (an < -Math.PI) an += 2 * Math.PI;
+          qw[b].copy(qw[vi.de]).multiply(qAxe(AY, an));
+          // L'évasement : l'écart à l'axe que prend le muscle quand l'insertion monte (voir le moteur).
+          this.evase[b] = (vi.evase || 0) * Math.max(0, l.y - c.y); if (this.evase[b] > 1e-5) this.aEvase = true;
+          continue;
+        }
         if (p < 0) { qw[b].copy(ql[b]); pw[b].copy(this.posRacine); continue; }
         qw[b].multiplyQuaternions(qw[p], ql[b]);
         if (pFixe[b]) pw[b].copy(pFixe[b]);
         else pw[b].copy(decal[b]).applyQuaternion(qw[p]).add(pw[p]);
       }
+    }
+    /* La ceinture scapulaire sans roulis. La rotation qc met l'épaule (le centre de l'humérus) où il faut, mais, bras
+       levé par l'avant, c'est un roulis autour de la clavicule : l'omoplate et ses muscles basculaient alors de
+       plusieurs centimètres dans les côtes. On garde l'endroit de l'épaule — donc tout le geste du bras — et on y mène
+       la ceinture par une montée (autour de l'axe avant-arrière du thorax) puis une avancée (autour de son axe
+       vertical) : l'omoplate glisse sur le dos, vers le haut et vers le flanc, comme elle le fait. */
+    sansRoulis(x, qc, QT) {
+      const i = this.i, c = this.tete[i['humerus' + x]].clone().sub(this.tete[i['clavicule' + x]]);
+      const t = c.clone().applyQuaternion(QT.clone().invert().multiply(qc));
+      // La montée e : c.x·sin e + c.y·cos e = t.y ; des deux solutions, la plus petite.
+      const A = Math.hypot(c.x, c.y); if (!(A > 1e-6)) return qc;
+      const d = Math.atan2(c.y, c.x), a = Math.asin(borne(t.y / A, -1, 1)), tour = v => v - 2 * Math.PI * Math.round(v / (2 * Math.PI));
+      const e1 = tour(a - d), e2 = tour(Math.PI - a - d), e = Math.abs(e1) <= Math.abs(e2) ? e1 : e2;
+      const x1 = c.x * Math.cos(e) - c.y * Math.sin(e);
+      // L'avancée p, autour de la verticale : elle amène (x1, c.z) sur (t.x, t.z).
+      const p = tour(Math.atan2(t.x, t.z) - Math.atan2(x1, c.z));
+      return QT.clone().multiply(qAxe(AY, p)).multiply(qAxe(AZ, e));
     }
     /* Donne à une articulation sa rotation dans le monde (et, au besoin, sa place). */
     poserMonde(nom, q, pos) {
@@ -158,7 +196,7 @@
        (pe.C) — ce qu'on mesure ici est ce qui se dessine. */
     peauPosee(regions, f, unCote) {
       const pe = this.peau(regions); if (!pe) return false;
-      const q = this.quaternionsDuaux(), S = this.S;
+      const q = this.quaternionsDuaux(), S = this.S, A = this.appuis && this.appuis.length ? this.appuis : null;
       // unCote : le côté gauche seul (une pose symétrique se lit sur un côté, pour moitié prix).
       for (let cote = 0; cote < (unCote ? 1 : 2); cote++) for (let v = 0; v < pe.n; v++) {
         const X = cote ? -pe.P[v * 3] : pe.P[v * 3], Y = pe.P[v * 3 + 1], Z = pe.P[v * 3 + 2];
@@ -188,22 +226,44 @@
           }
           px += (cx / wt - px) * c; py += (cy / wt - py) * c; pz += (cz / wt - pz) * c;
         }
+        // Les attaches : l'évasement du muscle qui monte avec le bras (voir le programme des sommets du moteur).
+        if (this.aEvase) for (let k = 0; k < 4; k++) {
+          const w = pe.W[v * 4 + k]; if (!w) continue;
+          const j = cote ? S[pe.J[v * 4 + k]].jumeau : pe.J[v * 4 + k], e = this.evase[j]; if (!(e > 0)) continue;
+          const a = this.virtuel[j].axe, ex = X - a[0], ez = Z - a[1], g = e * w * Math.min(1, 2 * (1 - w)) / Math.max(Math.hypot(ex, ez), 1e-4), vx = ex * g, vz = ez * g;
+          // (vx, 0, vz) tourné par la rotation mélangée du sommet.
+          const tx = -rz * 0 + rw * vx + ry * vz, ty = rz * vx - rx * vz, tz = rx * 0 - ry * vx + rw * vz;
+          px += vx + 2 * (ry * tz - rz * ty); py += 2 * (rz * tx - rx * tz); pz += vz + 2 * (rx * ty - ry * tx);
+        }
+        // Les appuis du mouvement (this.appuis, voir appuisDe) : la chair écrasée contre les coussins, comme le moteur la dessine.
+        if (A) for (let i = 0; i < A.length; i++) {
+          const a = A[i], h = a[4] * px + a[5] * py + a[6] * pz + a[7];
+          if (h < 0 && h > -a[14]) {
+            const bord = (1 - lisse((Math.abs(a[0] * px + a[1] * py + a[2] * pz + a[3]) - a[12]) / 0.03)) * (1 - lisse((Math.abs(a[8] * px + a[9] * py + a[10] * pz + a[11]) - a[13]) / 0.03));
+            const e = (-h - a[15] * (1 - Math.exp(h / a[15]))) * bord * lisse((h + a[14]) / (0.25 * a[14]));
+            px += a[4] * e; py += a[5] * e; pz += a[6] * e;
+          }
+        }
         f(px, py, pz);
       }
       return true;
     }
-    /* Jusqu'où va le corps dans la direction n (unitaire), pour la pose p : le plus grand (point · n). */
-    extreme(p, n, regions) {
+    /* Jusqu'où va le corps dans la direction n (unitaire), pour la pose p : le plus grand (point · n).
+       zone(x, y, z) : ne compter que les points pour lesquels elle dit vrai (ce qui est au-dessus d'un coussin). */
+    extreme(p, n, regions, zone) {
       this.poser(p);
       let m = -Infinity;
-      if (!this.peauPosee(regions, (x, y, z) => { const d = x * n.x + y * n.y + z * n.z; if (d > m) m = d; })) {
+      if (!this.peauPosee(regions, (x, y, z) => { if (zone && !zone(x, y, z)) return; const d = x * n.x + y * n.y + z * n.z; if (d > m) m = d; })) {
         for (const q of this.pw) m = Math.max(m, q.dot(n) + 0.06);   // sans la peau : les articulations, plus une marge
       }
       return m;
     }
-    /* Déplace le bassin de la pose p pour que le corps repose sur un plan (point Q, normale n vers le dehors). */
-    poserSur(p, Q, n, regions) {
-      const d = -this.extreme(p, n.clone().multiplyScalar(-1), regions) - Q.dot(n);
+    /* Déplace le bassin de la pose p pour que le corps repose sur un plan (point Q, normale n vers le dehors).
+       zone : la partie du plan qui porte (voir extreme) ; si rien du corps n'est au-dessus, la pose ne bouge pas. */
+    poserSur(p, Q, n, regions, zone) {
+      const e = this.extreme(p, n.clone().multiplyScalar(-1), regions, zone);
+      if (e === -Infinity) return p;
+      const d = -e - Q.dot(n);
       p.bassin.pos.add(n.clone().multiplyScalar(-d));
       return p;
     }
@@ -226,7 +286,7 @@
       return {
         epaules: { G: this.monde('humerus.G'), D: this.monde('humerus.D') },
         hanches: { G: this.monde('femur.G'), D: this.monde('femur.D') },
-        cou: this.monde('cou1'), tete: this.monde('tete'), qThorax: this.qMonde('thorax'), qBassin: this.qMonde('bassin'),
+        cou: this.monde('cou1'), tete: this.monde('tete'), qThorax: this.qMonde('thorax'), qBassin: this.qMonde('bassin'), qTete: this.qMonde('tete'),
         // Un point donné dans le repère du thorax (depuis le milieu des épaules) ou du bassin, placé dans le monde.
         duThorax: v => this.monde('humerus.G').add(this.monde('humerus.D')).multiplyScalar(0.5).add(v.clone().applyQuaternion(this.qMonde('thorax'))),
         duBassin: v => this.monde('bassin').add(v.clone().applyQuaternion(this.qMonde('bassin')))
@@ -277,6 +337,8 @@
       const QT = this.qw[i.thorax].clone();
       const angles = b.elev != null;
       let d1, d2, coude, fFixe = null, paume, dirMain = b.dirMain ? unite(b.dirMain) : null;
+      // Dégagement (voir degagerTenu) : le poignet est déplacé de b.dg (un vecteur, dans le monde) pour que ce que la
+      // main tient s'écarte de la cuisse ou du buste ; la main garde son orientation, le coude suit.
       if (angles) {
         const plan = rad(b.plan || 0), k = rad(b.coude || 0);
         const Rq = qAxe(V(Math.cos(plan), 0, -s * Math.sin(plan)), -rad(b.elev));
@@ -299,16 +361,24 @@
         d1 = a1.applyQuaternion(QT); d2 = a2.applyQuaternion(QT); fFixe = f.applyQuaternion(QT);
         paume = pm.applyQuaternion(QT).normalize(); dirMain = dm.applyQuaternion(QT).normalize();
       } else paume = unite(b.paume || AZ);
+      const dg = b.dg && b.dg.lengthSq() > 1e-10 ? b.dg : null, d1o = d1, d2o = d2;
+      if (dg) fFixe = null;   // le coude plie où le déplacement le mène
       const resoudre = () => {
         const ep = this.pw[i['humerus' + x]];
         if (angles || b.dirBras) {
           if (!angles) { d1 = unite(b.dirBras); d2 = unite(b.dirAvantBras || b.dirBras); }
+          else { d1 = d1o; d2 = d2o; }
           coude = ep.clone().add(d1.clone().multiplyScalar(L.bras));
+          if (dg) {
+            // Par angles : le poignet où les angles le mettent, déplacé ; le coude garde son côté.
+            const r = ik2(ep, coude.clone().add(d2.clone().multiplyScalar(L.avantBras)).add(dg), L.bras, L.avantBras, d1, L.coudeMin);
+            coude = r.milieu; d1 = unite(coude.clone().sub(ep)); d2 = unite(r.fin.clone().sub(coude));
+          }
           return;
         }
         // La barre est dans le creux de la main ; le poignet est en retrait, dans l'axe des doigts.
-        const creux = b.prise.clone().sub(paume.clone().multiplyScalar(L.creux));
-        const r = dirMain ? ik2(ep, creux.sub(dirMain.clone().multiplyScalar(L.main)), L.bras, L.avantBras, b.pole) : ik2(ep, creux, L.bras, L.prise, b.pole);
+        const creux = (dg ? b.prise.clone().add(dg) : b.prise.clone()).sub(paume.clone().multiplyScalar(L.creux));
+        const r = dirMain ? ik2(ep, creux.sub(dirMain.clone().multiplyScalar(L.main)), L.bras, L.avantBras, b.pole, L.coudeMin) : ik2(ep, creux, L.bras, L.prise, b.pole, L.coudeMin);
         coude = r.milieu; d1 = unite(coude.clone().sub(ep)); d2 = unite(r.fin.clone().sub(coude));
       };
       // 1. La ceinture scapulaire (clavicule et omoplate) accompagne le bras, mesuré depuis le thorax ;
@@ -317,6 +387,7 @@
       const libre0 = arc(R.bras.d1.clone().applyQuaternion(QT), d1).multiply(QT);
       let qc = QT.clone().slerp(libre0, b.ceinture != null ? b.ceinture : K_CEINTURE);
       if (b.hausse || b.avance) qc = qAxe(AZ.clone().applyQuaternion(QT), s * rad(b.hausse || 0)).multiply(qAxe(AY.clone().applyQuaternion(QT), -s * rad(b.avance || 0))).multiply(qc);
+      qc = this.sansRoulis(x, qc, QT);
       this.poserMonde('clavicule' + x, qc);
       // 2. Le bras, depuis l'épaule ainsi déplacée.
       resoudre();

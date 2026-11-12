@@ -99,10 +99,37 @@ autre membre passe devant.
   par un seul os. Bras le long du corps ou à l'horizontale, les deux places se confondent presque : l'épaule reste
   ronde. Bras tendus au-dessus de la tête, la chair qui débordait de l'axe du bras passe de 15 à 9 cm (17 à 12 cm
   pendu à la barre), et l'épaule garde son volume (2 % des points proches de l'articulation s'en rapprochent de plus
-  de moitié : les attaches du grand dorsal et du grand pectoral). Dans le programme des sommets : `u_bras` (les
-  articulations du bras) et `u_corde` ; pour la mesure, `peau()` rend la part de chaque point (`C`) et
-  `Corps.peauPosee` l'applique ; `AnqaAtlas.corde(squelette)` donne la même formule aux outils. Option `corde` du
-  moteur : 0 pour revenir au mélange d'avant.
+  de moitié : les attaches du grand dorsal et du grand pectoral). La hanche a la même règle, derrière le centre de
+  l'articulation surtout (fesse, ischio-jambiers : 80 %), peu devant (le pli de l'aine : 30 %). La part de chaque
+  sommet est calculée une fois au chargement (`corde`, `marquerCorde`) et rangée dans son octet libre : le programme
+  des sommets la lit (`a_corde`, multipliée par `u_corde`) ; pour la mesure, `peau()` rend la même part (`C`) et
+  `Corps.peauPosee` l'applique ; `AnqaAtlas.corde(squelette)` donne la formule aux outils. Option `corde` du moteur :
+  0 pour revenir au mélange d'avant.
+- **Les poids repris au chargement (`reponderer`, option `poids`).** Les poids du fichier viennent de la proximité des
+  os au repos, bras le long du corps : bras levé, le grand dorsal, le dentelé et le bas du trapèze tournaient sur de
+  grands arcs autour de l'épaule et se déchiraient en éclats sous l'aisselle et dans le dos (au build 63, des
+  triangles étirés 40 fois). Le moteur les reprend une fois au chargement : (1) l'avant-bras se tord en douceur du
+  coude (tout suit l'ulna) au poignet (tout suit le radius) au lieu de dépendre de l'os le plus proche ; (2) le grand
+  dorsal suit une **attache** — deux articulations ajoutées au squelette (`attache.dorsal.G`, `.D`, après celles du
+  fichier ; `E.articulationsFichier` dit combien il y en a) dont le moteur calcule lui-même la pose : l'orientation du
+  thorax, tournée autour d'un axe vertical — celui de l'arrondi du flanc, mesuré sur le muscle — jusqu'à suivre le
+  point d'insertion du tendon sur l'humérus ; le muscle monte et tourne avec lui, et s'écarte de l'axe d'autant que le
+  tronc s'élargit vers l'aisselle (l'évasement, aussi mesuré sur le muscle, rangé dans un troisième texel de la pose).
+  La part de chaque sommet qui suit l'attache dépend de sa place le long de ses fibres (distances de proche en proche
+  sur le muscle, dont les faisceaux séparés sont reliés à moins de 12 mm) : entière au bout du tendon, nulle à son
+  origine le long de la colonne ; là où le trapèze le recouvre, il reste tenu (sinon il sortait à travers) ; (3) les
+  autres muscles du tronc ne gardent le poids du bras qu'à moins de 8,5 cm de l'épaule, et celui de l'omoplate s'ils
+  s'y attachent (trapèzes, rhomboïdes, dentelé antérieur…) ; (4) les poids sont lissés sur chaque muscle concerné.
+  Résultat bras levés : le dentelé et le bas du trapèze ne s'étirent plus que 3 à 5 fois au pire (15 à 22 avant), le
+  grand dorsal 8 à 13 fois (au lieu de 22 à 44) — il s'étire vers son attache, voulu. Le grand pectoral garde les
+  poids du fichier (essayé avec une attache : il remontait par-dessus la clavicule, bras au-dessus de la tête). Coût :
+  0,3 s au chargement (mesuré dans node).
+- **Les ombres de contact (`eclaircirContacts`, option `ombres`).** L'ombrage de relief du fichier (octet 6) a été
+  calculé au repos : le flanc sous le bras, l'intérieur du bras, la main contre la cuisse, l'intérieur des cuisses, et
+  les surfaces qu'un autre muscle recouvre restaient presque noirs dès qu'ils se découvraient (bras levé, jambes
+  écartées). Au chargement, ce qui regarde un autre membre tout proche (à moins de 12 cm, face à lui) et ce qu'un
+  muscle recouvre de près est ramené vers l'éclairement d'une surface dégagée ; les creux entre les muscles et les os
+  ne changent pas.
 - **La carrure.** Le corps de Z-Anatomy est celui d'un homme mince. Au chargement, le moteur étoffe les chairs autour
   des os (`etoffer`, option `carrure` : 1 par défaut, 0 pour le corps d'origine) : chaque sommet s'écarte de l'axe des
   os qu'il suit — l'axe du membre, ou la verticale du milieu du corps pour le tronc — d'un pourcentage qui dépend de
@@ -154,6 +181,17 @@ de 28 mm, disque de 45 cm, banc à 44 cm.
   rowing : `definir` leur donne leur bâti d'après leurs pivots), tractions assistées, mollets, lombaires.
 - La pile de poids monte avec le mouvement : les plaques marquées `leve` suivent la longueur du câble (son minimum
   est relevé à la définition du mouvement), ou ce que dit `d.levee(info, u)` pour une machine sans câble apparent.
+- Pupitre (curl, extension des triceps à la machine) : `pupitreSous` le pose sous le haut des bras (leur dessous
+  mesuré de 3 à 14 cm au-dessus du coude), son bord bas à 5 cm au-delà du coude, son bord haut aussi près de
+  l'aisselle que possible sans que son coin arrière entre dans la poitrine. À la machine, le levier tourne autour
+  du coude (pivot dans son axe, 9 cm en dehors) et le bâti se tient devant le pupitre, au-delà des mains.
+- Les appuis : là où le corps repose sur un coussin (assise, dossier, banc, pupitre), `appuisDe` relève de quel côté
+  la chair porte (des points juste devant la face, à trois instants) et le programme des sommets l'y écrase au lieu de
+  la laisser traverser (au plus 1 cm d'enfoncement visible) ; `Corps.peauPosee` fait le même calcul.
+- Le matériel tenu ne traverse pas le corps (`src/36-degager.js`) : haltères, kettlebells, disques, barres et ballons
+  sont écartés, instant par instant, des os et des coussins qu'ils touchent (le long de la direction qui va de l'os à
+  la main), 16 cm au plus ; la main suit. Une kettlebell pend sous sa poignée sans entrer dans l'avant-bras ; un disque
+  se tient par le bord.
 - Le haut d'un grand bâti est marqué `hors` : il ne compte pas pour le cadrage, qui se règle sur le corps et sur ce
   qu'il touche.
 
@@ -237,6 +275,13 @@ Le geste est maintenant réglé une fois, en poses clés du bas vers le haut, su
   passe au-dessus de la tête (option de bras `ceinture` : la part reprise, 0,24 d'ordinaire, 0,15 en haut) : l'épaule
   monte de 7 cm, pas de 11.
 
+La ceinture scapulaire ne bascule plus (`Corps.sansRoulis`). Elle prenait une part de la rotation du bras autour de
+la clavicule : bras levé par l'avant, c'était un roulis autour de l'axe gauche-droite du thorax, et l'omoplate, le
+trapèze et les muscles du dos rentraient de 4 à 6 cm dans les côtes (les fentes sombres du haut du dos, au tirage
+vertical). L'épaule reste exactement là où ce calcul la met — tout le geste du bras est inchangé — mais la ceinture
+y arrive par une montée (autour de l'axe avant-arrière) puis une avancée (autour de la verticale) : l'omoplate glisse
+sur le dos vers le haut et vers le flanc, comme elle le fait. Un test vérifie que ce roulis reste sous 5°.
+
 Une main posée par cible n'arrive pas exactement sur sa prise : le radius tourne autour de l'ulna et le poignet se
 décale de 2 à 3 cm selon la pronation. C'est sans importance pour un haltère ; pour une barre qui frôle le cou et le
 visage, non. `viser` (`src/30-postures.js`) corrige la cible de l'écart constaté jusqu'à ce que la prise tombe juste.
@@ -289,6 +334,14 @@ Chaque exercice de la bibliothèque (`EXERCICES_BASE` dans `index.html`) a son m
   pieds (hors d'appui seulement s'il l'est quelle que soit la charge tenue, de rien à une fois le poids du corps), et
   les jambes verrouillées qui basculent en arrière sont relevées. `--tout` affiche aussi ce qui va bien ; un motif
   après `--table` limite à une famille. 262 mouvements jugés ; le même contrôle tourne dans les tests de l'appli.
+- `node mouvements/traversees.mjs --table [--json f]` : le corps traverse-t-il le matériel ? Chaque mouvement posé à
+  sept instants, les points du corps cherchés dans chaque forme ; les contacts voulus ne sont pas des fautes (main
+  sur sa poignée, pied sur son appui, chair enfoncée dans un coussin de moins de 2,2 cm, ou tirée dedans par
+  l'écrasement : elle y est cachée). Sur les 762 mouvements : 274 fautifs au départ, 90 aujourd'hui, de moins de 2 cm
+  pour la plupart (contacts de barre contre le buste, coussins de machines).
+- `node mouvements/deformations.mjs --table [--json f]` : l'épaisseur de chair au-dessus de l'os, comparée au repos
+  (gonflements, creux), par partie du corps. À lire avec les images : le grand dorsal s'étire voulu vers son attache,
+  l'avant-bras se tord voulu en pronation.
 - `node mouvements/bras-leves.mjs [motif]` : relevé des mouvements où un bras passe au-dessus de la tête — flexion du
   coude et montée de l'épaule à l'instant où le bras est le plus levé, du plus plié au plus tendu. Il ne juge pas (un
   triceps derrière la nuque a le coude plié) : il se lit après toute retouche des postures bras levés.

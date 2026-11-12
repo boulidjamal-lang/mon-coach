@@ -9,6 +9,7 @@
     setZ(z) { this.z = z; return this; }
     add(v) { this.x += v.x; this.y += v.y; this.z += v.z; return this; }
     sub(v) { this.x -= v.x; this.y -= v.y; this.z -= v.z; return this; }
+    addScaledVector(v, s) { this.x += v.x * s; this.y += v.y * s; this.z += v.z * s; return this; }
     multiplyScalar(s) { this.x *= s; this.y *= s; this.z *= s; return this; }
     dot(v) { return this.x * v.x + this.y * v.y + this.z * v.z; }
     cross(v) { const x = this.y * v.z - this.z * v.y, y = this.z * v.x - this.x * v.z, z = this.x * v.y - this.y * v.x; this.x = x; this.y = y; this.z = z; return this; }
@@ -92,11 +93,13 @@
   function perpendiculaire(d) { const r = Math.abs(d.y) < 0.9 ? AY : AZ; return perp(r, d).normalize(); }
   /* Cinématique inverse à deux segments : racine A, cible C, longueurs l1 l2,
      « pôle » : la direction vers laquelle part l'articulation du milieu. */
-  function ik2(A, C, l1, l2, pole) {
+  function ik2(A, C, l1, l2, pole, distMin) {
     const d = C.clone().sub(A);
     let dist = d.length();
     const dir = d.normalize();
-    dist = Math.min(Math.max(dist, Math.abs(l1 - l2) + 1e-4), l1 + l2 - 1e-4);
+    // distMin : l'articulation du milieu ne plie pas au-delà de ce que la chair permet (voir Corps.L.coudeMin) ; une
+    // cible plus proche est atteinte « de loin », dans la même direction.
+    dist = Math.min(Math.max(dist, Math.abs(l1 - l2) + 1e-4, distMin || 0), l1 + l2 - 1e-4);
     const cosA = (l1 * l1 + dist * dist - l2 * l2) / (2 * l1 * dist);
     const sinA = Math.sqrt(Math.max(0, 1 - cosA * cosA));
     const p = perp(pole, dir);

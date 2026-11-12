@@ -52,11 +52,12 @@
       a = B(0, 108, 0, 128, 90); b = B(0, 100, 0, 8, 90); ancre = V(0, 1.55, -0.95);
     } else if (o.machine) {
       // Assis, le haut des bras posé sur un coussin : les mains poussent les poignées vers le bas.
-      p = assis(c, { h: 0.52, penche: 10, zPieds: 0.3 }); p.thorax = 4;
-      a = B(4, 56, 0, 122, 90); b = B(4, 56, 0, 10, 90);
-      const t = c.tronc(p), ep = t.epaules.G;
-      fixe = poseFixe(MAT.siege(C, 0.52, 0.5, 4)).concat(poseFixe(MAT.pupitre(C, ep.y - 0.22, ep.z + 0.25, 35)));
-      r.pivot = s => V(s * 0.2, ep.y - 0.3, ep.z + 0.32); vue = { az: 55, el: 10 };
+      // (Le haut des bras à 45° environ, comme au pupitre ; le levier tourne autour du coude, son bâti est devant.)
+      p = assis(c, { h: H_SIEGE, penche: 10, zPieds: 0.3 }); p.thorax = 4;
+      a = B(4, 60, 0, 122, 90, { avance: 12 }); b = B(4, 60, 0, 10, 90, { avance: 12 });
+      const pup = pupitreSous(c, p, a, C), k0 = pup.coude;
+      fixe = poseFixe(MAT.siege(C, H_SIEGE, 0.5, 4)).concat(poseFixe(pup));
+      r.pivot = s => V(s * (Math.abs(k0.x) + 0.09), k0.y, k0.z); r.bati = 'devant'; vue = { az: 55, el: 10 };
     } else {
       // Pushdown : face à la poulie haute, coudes au corps ; les avant-bras descendent.
       P = postureDe(c, o, C, { penche: 8 }); p = P.p; fixe = P.fixe; vue = { az: 55, el: 8 };

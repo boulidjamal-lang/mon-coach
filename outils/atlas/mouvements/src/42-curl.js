@@ -14,13 +14,15 @@
     const P = postureDe(c, o, C, { penche: o.bayesien ? 8 : 0 });
     let p = P.p, fixe = P.fixe, vue = P.vue, a, b, ancre = V(0, 0.1, 0.8), autre = null, bout = o.barreP ? 'barre' : o.corde ? 'corde' : null, r = { disques: 0.13, lCable: 0.7 };
     if (o.pupitre) {
-      // Assis derrière le pupitre, le haut des bras posé sur le coussin incliné.
-      p = assis(c, { h: 0.52, penche: 14, zPieds: 0.3 }); p.thorax = 6; p.cou = -8;
-      a = B(8, 52, 0, 22, pron); b = B(8, 52, 0, 128, pron);
-      const t = c.tronc(p), ep = t.epaules.G;
-      fixe = poseFixe(MAT.siege(C, 0.52)).concat(poseFixe(MAT.pupitre(C, ep.y - 0.2, ep.z + 0.24, 50)));
+      // Assis derrière le pupitre, le haut des bras posé sur le coussin incliné (à 45° environ : le buste penche de
+      // 20°, les bras sont levés de 68° par rapport à lui, les épaules avancées au-dessus du coussin). Machine : le
+      // levier tourne autour du coude, son bâti est devant le pupitre.
+      p = assis(c, { h: H_SIEGE, penche: 14, zPieds: 0.3 }); p.thorax = 6; p.cou = -8;
+      a = B(8, 68, 0, 22, pron, { avance: 12 }); b = B(8, 68, 0, 128, pron, { avance: 12 });
+      const t = c.tronc(p), ep = t.epaules.G, pup = pupitreSous(c, p, a, C), k0 = pup.coude;
+      fixe = poseFixe(MAT.siege(C, H_SIEGE)).concat(poseFixe(pup));
       ancre = V(0, 0.15, ep.z + 0.75); vue = { az: 52, el: 12 };
-      r.pivot = s => V(s * 0.2, ep.y - 0.3, ep.z + 0.3);
+      r.pivot = s => V(s * (Math.abs(k0.x) + 0.09), k0.y, k0.z); r.bati = 'devant';
     } else if (P.sorte === 'ventre') {
       // À plat ventre sur le banc incliné : les bras pendent à la verticale devant le banc.
       const pen = o.ventre === true ? 50 : o.ventre;
