@@ -159,6 +159,39 @@ du développé couché descend au bas des pectoraux (en haut de la poitrine sur 
 les pieds sont posés sur les repose-pieds. `outils/gros-plans.cjs` montre une articulation
 pendant un mouvement ; `mouvements/controle.mjs --table` reste le garde-fou.
 
+### Debout : la posture part des jambes et tient en équilibre
+
+Une charnière de hanche ne se règle pas en reculant le bassin « à l'œil ». C'était le cas des soulevés de terre : le
+bassin reculait d'une valeur fixe pendant que sa hauteur suivait la barre ; à mi-course les jambes se verrouillaient
+et basculaient de 24° en arrière alors que le buste restait couché, la barre était tenue 5 cm devant les tibias, et les
+variantes aux haltères, au kettlebell et à la barre hexagonale ne pliaient pas les genoux. Vu de trois quarts à deux
+instants (le catalogue), le défaut ne se voyait pas ; de profil, à cinq instants, il saute aux yeux.
+
+Dans `src/48-hanches.js`, la posture part maintenant des jambes — l'inclinaison du tibia et la flexion du genou sont
+voulues, le reste en découle — de deux façons selon ce qui fait le geste :
+
+- **depuis le sol** (classique, sumo, sur blocs, pieds surélevés, haltères, kettlebell, barre hexagonale) : les épaules
+  restent à l'aplomb de la charge, bras tendus (un peu en avant au départ, au-dessus quand elle passe les genoux, en
+  arrière seulement debout) ; le tibia est avancé au départ et droit au passage des genoux ; le penché du buste qui
+  satisfait les deux se trouve par dichotomie, et les genoux plient d'autant. Les jambes poussent et le buste se
+  redresse ensemble ; la barre part du milieu du pied et longe les jambes ;
+- **en charnière** (roumain, jambes tendues, à la poulie, sur une jambe, au poids du corps, good morning,
+  balancement du kettlebell) : genoux souples, les hanches reculent, le buste bascule jusqu'à ce que les mains soient
+  à la hauteur voulue. La charge reste contre les jambes tant que les bras ne partent pas trop en arrière ; au-delà
+  (jambes tendues, sur une jambe) elle s'en écarte et pend sous les épaules.
+
+Les postures sont réglées une fois, à onze hauteurs de la charge (poses clés), et le geste passe de l'une à l'autre :
+le soulevé de terre ne recalcule plus rien à chaque image (3,8 ms par image auparavant, 0,08 ms maintenant, mesurés
+hors navigateur ; 19 ms une fois, à l'ouverture de l'exercice).
+
+`src/30-postures.js` donne deux outils aux autres familles : `equilibrer` avance ou recule le bassin, pieds posés,
+jusqu'à ce que le centre de gravité (masses des segments d'après les tables de Dempster et Winter, charge tenue
+comprise si on la donne) tombe où on veut ; `tenirDebout` règle en plus la flexion des genoux. Le squat s'en sert : en
+descendant, le centre de gravité vient au milieu du pied, les genoux avancent au-dessus des orteils (tibia limité à
+36°) au lieu que le bassin s'asseye derrière les talons. Le rowing penché aussi (genoux souples, la barre pend sous
+les épaules), et les flexions avant des étirements. Avec un haltère dans chaque main (`porter`), les bras pendent à
+la verticale et passent en dehors des genoux, au lieu de pencher avec le buste.
+
 ## Les mouvements des exercices
 
 Chaque exercice de la bibliothèque (`EXERCICES_BASE` dans `index.html`) a son mouvement. Tout est dans `mouvements/` :
@@ -177,6 +210,13 @@ Chaque exercice de la bibliothèque (`EXERCICES_BASE` dans `index.html`) a son m
   finies, rien sous le sol, mains et pieds à portée de leurs cibles, options et matériel connus) et n'affiche que
   les problèmes ; `node mouvements/controle.mjs "curl hal assis"` pour un seul mouvement. Le même contrôle tourne
   dans la suite de tests de l'appli.
+- `node mouvements/equilibre.mjs --table` : contrôle d'équilibre des gestes debout. À neuf instants de chaque mouvement
+  où les deux pieds sont à plat et où rien d'autre ne porte le corps, le centre de gravité est comparé à l'appui des
+  pieds (hors d'appui seulement s'il l'est quelle que soit la charge tenue, de rien à une fois le poids du corps), et
+  les jambes verrouillées qui basculent en arrière sont relevées. `--tout` affiche aussi ce qui va bien ; un motif
+  après `--table` limite à une famille. 262 mouvements jugés ; le même contrôle tourne dans les tests de l'appli.
+- `node outils/bande-exercice.cjs <dossier> 90,5 e29 e30` : un exercice à cinq instants côte à côte, de profil (ou
+  `appli` pour la vue de l'appli) — c'est là que se juge un geste.
 - `node outils/planche-mouvements.cjs sortie.png "pompe diamant" "dips anneaux | Dips aux anneaux"` : planche de
   contrôle dans le vrai rendu (début, milieu, fin de la répétition). `appli/essai-mouvement.html?spec=…` ou
   `?ex=<identifiant>` montre un mouvement seul (`&peau=1` pour la peau de l'appli, `&carrure=0` pour le corps

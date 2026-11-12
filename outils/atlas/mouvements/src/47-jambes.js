@@ -19,7 +19,18 @@
     } else if (o.gobelet || (o.kb && !o.kb2)) {
       for (const [k, s] of COTES) p.bras[k] = { prise: t.duThorax(V(s * 0.06, -0.16, 0.2)), pole: dT(s * 0.5, -1, 0.1), paume: dT(-s, 0.1, 0), dirMain: dT(0, 0.9, 0.3), doigts: 'barre' };
       r.objets = (info, uu, sortie) => { const m = info.prises.G.clone().add(info.prises.D).multiplyScalar(0.5), haut = AY.clone().applyQuaternion(info.qThorax); if (o.kb) poserObjet(MAT.kettlebell(C), m.clone().add(haut.clone().multiplyScalar(0.02)), qTenu(AX.clone().applyQuaternion(info.qThorax), haut), sortie); else poserObjet(MAT.haltere(C, 1.25), m.clone().add(haut.clone().multiplyScalar(-0.08)), qTenu(haut, AZ), sortie); };
-    } else if (o.hal || o.kb2) { p.bras = pareil(B(90, 4, 0, 6, 90)); r.tenu = [{ t: o.kb2 ? 'kb' : 'haltere', m: 'GD' }]; }
+    } else if (o.hal || o.kb2) {
+      // Un haltère dans chaque main : les bras pendent à la verticale, quel que soit le buste (ils ne penchent pas avec
+      // lui), et s'écartent ce qu'il faut pour passer en dehors de la cuisse et du genou quand on descend.
+      const L = c.L, portee = (L.bras + L.prise) * 0.985;
+      for (const [k, s] of COTES) {
+        const e = t.epaules[k], j = p.jambes[k], g = j && j.cheville ? ik2(t.hanches[k], j.cheville, L.cuisse, L.jambe, j.pole || AZ).milieu : null;
+        // De combien la main s'écarte de l'aplomb de l'épaule, vers le dehors (s) : 8 cm, ou jusqu'en dehors du genou.
+        const bas = g && e.y - portee < g.y + 0.2, dx = Math.min(0.3, Math.max(0.085, bas ? s * (g.x - e.x) + 0.11 : 0));
+        p.bras[k] = { prise: V(e.x + s * dx, e.y - Math.sqrt(Math.max(0.01, portee * portee - dx * dx - 0.0009)), e.z + 0.03), pole: V(s * 0.3, 0, -1), paume: V(-s, 0, 0), dirMain: V(0, -1, 0), doigts: 'barre' };
+      }
+      r.tenu = [{ t: o.kb2 ? 'kb' : 'haltere', m: 'GD' }];
+    }
     else if (o.landmine) {
       for (const [k, s] of COTES) p.bras[k] = { prise: t.duThorax(V(s * 0.05, -0.12, 0.2)), pole: dT(s * 0.6, -1, 0.1), paume: dT(-s, 0, 0), dirMain: dT(0, 0.6, 0.8), doigts: 'barre' };
       const piv = V(0, 0.05, 1.5);
@@ -82,6 +93,8 @@
       };
       return d;
     }
+    const libre = !(o.smith || o.ceinture || o.landmine || o.boite || o.elas);
+    const debout0 = debout(c, { penche: 2, ecart, ouv }), zDebout = aplomb(c, debout0, c.tronc(debout0)), zMilieu = debout0.jambes.G.cheville.z + 0.05;
     const cle = u => {
       const k = u * prof;
       let p;
@@ -97,6 +110,14 @@
         // En bas : les hanches passent sous les genoux, le buste penche d'autant que la barre est sur le dos.
         p = debout(c, { dy: -0.44 * k, dz: (droit ? -0.15 : -0.22) * k, penche: 2 + (droit ? 18 : 32) * k, ecart, ouv, lomb: 3 * k, thor: 5 * k, cou: -(droit ? 12 : 24) * k, y0: o.cycliste ? 0 : 0 });
         if (o.cycliste) for (const [kk, s] of COTES) p.jambes[kk] = pied(c, s, { ecart: 0.1, ouv: 8, pointe: 14 });
+        // Le squat tient en équilibre : en descendant, le centre de gravité vient au milieu du pied — les genoux avancent
+        // au-dessus des orteils au lieu que le bassin s'asseye en arrière des talons. (Pas quand quelque chose retient
+        // le corps : barre guidée, ceinture, landmine, boîte où l'on s'assied.)
+        if (libre) {
+          equilibrer(c, p, lerp(zDebout, zMilieu, Math.min(1, k * 1.6)));
+          // La cheville a sa limite : le tibia ne s'incline pas de plus de 36° (buste très droit : il recule un peu).
+          for (let n = 0; n < 3; n++) { const j = p.jambes.G, g = ik2(c.tronc(p).hanches.G, j.cheville, L.cuisse, L.jambe, j.pole).milieu, tibia = Math.atan2(g.z - j.cheville.z, g.y - j.cheville.y) * 180 / Math.PI; if (tibia <= 36) break; p.bassin.pos.z -= (tibia - 36) * 0.0067; }
+        }
       }
       return p;
     };

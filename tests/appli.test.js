@@ -6870,6 +6870,85 @@ test('atlas 3D : les mouvements des 823 exercices se posent sans défaut', async
   assert.deepEqual(defauts, [], 'mouvements à revoir');
 });
 
+/* Debout, un geste tient sur ses pieds. Le contrôle (outils/atlas/mouvements/equilibre.mjs) place le centre de gravité du
+   corps d'après les masses de ses segments et le compare à l'appui des pieds, à neuf instants de chaque mouvement où les
+   deux pieds sont à plat et où rien d'autre ne porte le corps ; il relève aussi les jambes verrouillées qui basculent en
+   arrière (le défaut des soulevés de terre du build 53 : jambes tendues penchées de 24° pendant que le buste restait couché). */
+test('atlas 3D : debout, les gestes tiennent en équilibre sur leurs pieds', async () => {
+  const { pathToFileURL } = require('url'), dossier = path.join(RACINE, 'outils', 'atlas', 'mouvements');
+  const { jugerSpec, APPUYES } = await import(pathToFileURL(path.join(dossier, 'equilibre.mjs')).href);
+  const { chargerAtlas, chargerMouvements, FICHIER_ATLAS, FICHIER_MOUVEMENTS } = await import(pathToFileURL(path.join(dossier, 'silhouettes.mjs')).href);
+  const atlas = chargerAtlas(FICHIER_ATLAS), M = chargerMouvements(FICHIER_MOUVEMENTS), corps = new M.Corps(atlas.E.squelette, atlas.peau);
+  const defauts = []; let juges = 0;
+  for (const spec of Object.keys(M.EXERCICES)) {
+    if (APPUYES.some(r => r.test(spec))) continue;
+    const r = jugerSpec(M, corps, M.TEINTES.clair, spec);
+    if (r.juge) juges++;
+    if (r.notes.length) defauts.push(spec + ' : ' + r.notes[0]);
+  }
+  assert.ok(juges > 240, 'les mouvements debout sont bien jugés : ' + juges);
+  assert.deepEqual(defauts, [], 'gestes debout hors d\'équilibre');
+  // Le contrôle voit bien un geste mal posé : le même soulevé, le bassin assis 30 cm en arrière à mi-course.
+  const faux = Object.assign({}, M, { definir: (spec, c, C) => { const d = M.definir(spec, c, C), cles = d.cles.map(([u, p]) => [u, Object.assign({}, p, { bassin: { pos: p.bassin.pos.clone().add(new M.V3(0, -0.05 * (1 - u) * u * 4, -0.3 * (1 - u) * u * 4)), rot: p.bassin.rot } })]); return Object.assign({}, d, { cles }); } });
+  const releve = jugerSpec(faux, corps, M.TEINTES.clair, 'souleve').notes;
+  assert.ok(releve.length > 0 && /derrière les talons/.test(releve.join(' ')), 'un soulevé au bassin assis 30 cm en arrière est relevé : ' + releve.length + ' instant(s)');
+});
+
+/* Le déroulé des soulevés de terre et du squat, lu sur le squelette (sans navigateur) : angles des genoux, du buste et
+   des tibias, place de la barre. Ce sont les repères d'un geste juste, vérifiés à onze instants. */
+test('atlas 3D : soulevés de terre et squat se déroulent comme le geste réel', async () => {
+  const { pathToFileURL } = require('url'), dossier = path.join(RACINE, 'outils', 'atlas', 'mouvements');
+  const { chargerAtlas, chargerMouvements, FICHIER_ATLAS, FICHIER_MOUVEMENTS } = await import(pathToFileURL(path.join(dossier, 'silhouettes.mjs')).href);
+  const atlas = chargerAtlas(FICHIER_ATLAS), M = chargerMouvements(FICHIER_MOUVEMENTS), corps = new M.Corps(atlas.E.squelette, atlas.peau);
+  const DEG = 180 / Math.PI;
+  const lire = (spec, n = 10) => {
+    const d = M.definir(spec, corps, M.TEINTES.clair), lu = [];
+    for (let i = 0; i <= n; i++) {
+      const info = corps.poser(M.poseA(d, 0, i / n)), h = info.hanches.G, g = info.genoux.G, ch = info.chevilles.G, e = info.epaules.G, pr = info.prises.G;
+      const a = h.clone().sub(g), b = ch.clone().sub(g);
+      lu.push({ genou: Math.acos(a.dot(b) / a.length() / b.length()) * DEG, buste: Math.atan2(e.y - h.y, Math.abs(e.z - h.z)) * DEG, tibia: Math.atan2(g.z - ch.z, g.y - ch.y) * DEG,
+        hancheSurGenou: h.y - g.y, barreDevantCheville: pr.z - ch.z, epauleDevantBarre: e.z - pr.z, yBarre: pr.y });
+    }
+    return { d, lu };
+  };
+  const croissant = (l, k, marge = 0) => l.every((x, i) => !i || x[k] >= l[i - 1][k] - marge);
+  const mini = (l, k) => Math.min(...l.map(x => x[k])), maxi = (l, k) => Math.max(...l.map(x => x[k]));
+
+  // Soulevé de terre classique : du sol à la position debout.
+  const { d, lu } = lire('souleve'), bas = lu[0], hautS = lu[lu.length - 1];
+  assert.ok(Array.isArray(d.cles) && d.cles.length >= 9, 'les postures sont réglées une fois (poses clés), pas recalculées à chaque image');
+  assert.ok(bas.genou > 95 && bas.genou < 115 && bas.buste > 20 && bas.buste < 32, `au sol : genoux pliés, dos à plat incliné (${bas.genou.toFixed(0)}°, ${bas.buste.toFixed(0)}°)`);
+  assert.ok(bas.hancheSurGenou > 0.08, 'au sol, les hanches sont plus hautes que les genoux (ce n\'est pas un squat)');
+  assert.ok(bas.barreDevantCheville > 0.04 && bas.barreDevantCheville < 0.10, 'la barre part du milieu du pied, contre les tibias : ' + bas.barreDevantCheville.toFixed(3));
+  assert.ok(bas.epauleDevantBarre > 0.02 && bas.epauleDevantBarre < 0.09, 'au départ, les épaules sont un peu en avant de la barre, bras tendus');
+  assert.ok(croissant(lu, 'genou') && croissant(lu, 'buste'), 'les genoux se tendent et le buste se redresse ensemble, sans retour en arrière');
+  assert.ok(hautS.genou > 170 && hautS.buste > 85, 'debout : jambes tendues, buste droit');
+  assert.ok(mini(lu, 'tibia') > -6 && maxi(lu, 'tibia') < 8, `les tibias restent presque droits (de ${mini(lu, 'tibia').toFixed(0)}° à ${maxi(lu, 'tibia').toFixed(0)}°) : les jambes ne basculent pas en arrière`);
+  // À mi-course (barre au-dessus des genoux), les genoux sont encore pliés : les hanches ne sont pas montées seules.
+  assert.ok(lu[5].genou < 150 && lu[5].buste > 35, `à mi-course : genoux ${lu[5].genou.toFixed(0)}°, buste ${lu[5].buste.toFixed(0)}°`);
+  assert.ok(mini(lu, 'barreDevantCheville') > 0.04 && maxi(lu, 'barreDevantCheville') < 0.125, 'la barre monte droit, le long des jambes');
+
+  // Les variantes depuis le sol plient les genoux elles aussi (elles restaient jambes tendues).
+  for (const spec of ['souleve hal', 'souleve kb', 'souleve trapbar', 'souleve sumo', 'souleve deficit']) {
+    const v = lire(spec).lu;
+    assert.ok(v[0].genou < 125 && v[v.length - 1].genou > 170 && croissant(v, 'genou') && croissant(v, 'buste', 0.5), spec + ' : genoux pliés au départ, tendus debout, sans à-coup');
+    assert.ok(mini(v, 'tibia') > -6, spec + ' : pas de jambes basculées en arrière');
+  }
+  // Soulevé roumain : départ debout, genoux souples, les hanches reculent, la barre descend contre les jambes.
+  const roumain = lire('souleve roumain').lu, basR = roumain[roumain.length - 1];
+  assert.ok(roumain[0].genou > 170 && basR.genou > 140 && basR.genou < 162, 'roumain : genoux souples en bas (' + basR.genou.toFixed(0) + '°), jamais verrouillés ni accroupis');
+  assert.ok(basR.buste < 36 && basR.tibia > -13 && basR.tibia < 0, `roumain en bas : buste couché (${basR.buste.toFixed(0)}°), tibias à peine en arrière (${basR.tibia.toFixed(0)}°)`);
+  assert.ok(maxi(roumain, 'barreDevantCheville') < 0.125 && croissant(roumain.slice().reverse(), 'buste'), 'roumain : la barre reste contre les jambes, le buste bascule régulièrement');
+  // Jambes tendues : elles le restent, sans partir loin en arrière ; la barre pend sous les épaules.
+  const tendues = lire('souleve tendues').lu, basT = tendues[tendues.length - 1];
+  assert.ok(mini(tendues, 'genou') > 168 && mini(tendues, 'tibia') > -13 && basT.buste < 12, 'jambes tendues : genoux droits, buste à l\'horizontale en bas');
+  // Squat : en bas, les genoux passent au-dessus des orteils et les cuisses arrivent à l'horizontale ; l'haltère pend à la verticale.
+  const squat = lire('squat barre').lu, basQ = squat[squat.length - 1];
+  assert.ok(basQ.tibia > 25 && basQ.tibia <= 37 && basQ.hancheSurGenou < 0.06 && basQ.genou < 70, `squat en bas : tibia ${basQ.tibia.toFixed(0)}°, hanche ${(100 * basQ.hancheSurGenou).toFixed(0)} cm au-dessus du genou`);
+  const haltere = corps.poser(M.poseA(M.definir('squat hal', corps, M.TEINTES.clair), 0, 1));
+  assert.ok(Math.abs(haltere.prises.G.z - haltere.epaules.G.z) < 0.06 && haltere.prises.G.x > haltere.genoux.G.x + 0.08, 'squat avec haltères : les bras pendent sous les épaules, en dehors des genoux');
+});
+
 test('atlas 3D : la peau va avec le modèle (zones, attaches au squelette, articulations intermédiaires)', () => {
   const E = enteteAtlas(), { H, octets, sommets, indices } = peauAtlas();
   assert.equal(H.format, 'anqa-peau');

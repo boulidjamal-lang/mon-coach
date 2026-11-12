@@ -64,6 +64,9 @@
     else {
       const a = o.pendlay ? 82 : o.yates ? 40 : o.penche && o.penche !== true ? o.penche : 66;
       p = debout(c, { dy: -0.07 - a * 0.0016, dz: -0.08 - a * 0.0028, penche: a, lomb: 2, thor: 2, cou: -a * 0.42, ecart: o.gorille ? 0.3 : 0.17, ouv: 12 });
+      // Buste penché, on tient sur ses pieds : genoux souples, et les hanches reculent juste ce qu'il faut pour que le
+      // centre de gravité reste au milieu du pied.
+      tenirDebout(c, p, o.pendlay ? 24 : 30, p.jambes.G.cheville.z + 0.065, o.poulie || o.elas ? 0 : 0.4, 0.02);   // la charge pend sous les épaules
       pendante = true; ancre = () => V(0, 0.15, 1.2);
     }
     const t = c.tronc(p), dT = (x, y, z) => V(x, y, z).applyQuaternion(t.qThorax);

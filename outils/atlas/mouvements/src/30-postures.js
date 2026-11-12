@@ -41,6 +41,41 @@
     for (const [k, s] of COTES) p.jambes[k] = pied(c, s, { ecart: o.ecart, ouv: o.ouv, pointe: o.pointe, y0: o.y0, z: (o.zPieds || 0) + L.racine.z + L.hanche.z });
     return p;
   }
+  /* Où tombe le centre de gravité d'une posture debout, dans l'axe avant-arrière : masses des segments d'après les tables
+     de Dempster et Winter (tronc 50 %, tête 8 %, bras 10 % comptés à l'épaule, cuisses 20 %, jambes 9 %, pieds 3 %).
+     t : le tronc posé (c.tronc(p)) ; les jambes sont résolues depuis leurs appuis. */
+  function aplomb(c, p, t) {
+    const L = c.L, h = t.hanches, e = t.epaules;
+    let z = 0.497 * (h.G.z + h.D.z + e.G.z + e.D.z) / 4 + 0.081 * (t.cou.z + 1.45 * (t.tete.z - t.cou.z)) + 0.1 * (e.G.z + e.D.z) / 2;
+    for (const k of ['G', 'D']) {
+      const j = p.jambes[k];
+      if (!j.cheville) { z += 0.161 * h[k].z; continue; }
+      const g = ik2(h[k], j.cheville, L.cuisse, L.jambe, j.pole || AZ).milieu;
+      z += 0.1 * (h[k].z + 0.433 * (g.z - h[k].z)) + 0.0465 * (g.z + 0.433 * (j.cheville.z - g.z)) + 0.0145 * (j.cheville.z + 0.06);
+    }
+    return z;
+  }
+  /* Avance ou recule le bassin, pieds posés, jusqu'à ce que le centre de gravité tombe en z : une posture debout tient
+     en équilibre sur ses pieds (au milieu du pied sous une charge), elle ne s'assied pas dans le vide.
+     charge : une charge tenue, en part de la masse du corps, à l'aplomb des épaules décalé de `dzCharge`. */
+  function equilibrer(c, p, z, charge, dzCharge) {
+    for (let n = 0; n < 3; n++) {
+      const t = c.tronc(p), zc = charge ? (aplomb(c, p, t) + charge * ((t.epaules.G.z + t.epaules.D.z) / 2 + (dzCharge || 0))) / (1 + charge) : aplomb(c, p, t);
+      p.bassin.pos.z += (z - zc) / 0.85;
+    }
+    return p;
+  }
+  /* Règle une posture debout sur deux choses à la fois : la flexion des genoux (degrés) et l'aplomb du centre de gravité
+     (z). Le bassin recule ou avance pour l'équilibre, monte ou descend pour les genoux. */
+  function tenirDebout(c, p, genou, z, charge, dzCharge) {
+    const L = c.L, D = Math.sqrt(L.cuisse * L.cuisse + L.jambe * L.jambe + 2 * L.cuisse * L.jambe * Math.cos(rad(genou)));
+    for (let n = 0; n < 3; n++) {
+      equilibrer(c, p, z, charge, dzCharge);
+      const h = c.tronc(p).hanches.G, ch = p.jambes.G.cheville;
+      p.bassin.pos.y += ch.y + Math.sqrt(Math.max(0.01, D * D - Math.pow(h.z - ch.z, 2) - Math.pow(h.x - ch.x, 2))) - h.y;
+    }
+    return p;
+  }
   /* Assis sur un siège de hauteur h, pieds à plat devant (zPieds : avancée des chevilles depuis le bassin). */
   function assis(c, o) {
     o = o || {};

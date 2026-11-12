@@ -35,19 +35,48 @@
       if (o.hal) d.tenu = [{ t: 'disque', m: 'GD', r: 0.13, axe: AZ }];
       d.vue = { az: 70, el: 10 }; return d;
     }
+    /* ---- Régler une posture debout sur ses jambes, pieds posés ----
+       Une charnière de hanche ne se règle pas en reculant le bassin « à l'œil » : si le buste se couche pendant que le
+       bassin monte, les jambes se verrouillent et basculent en arrière. Ici la posture part des jambes : le tibia
+       (son inclinaison vers l'avant) et le genou (sa flexion) sont voulus, et le reste en découle. */
+    const sumo = !!o.sumo, y0 = o.deficit ? 0.1 : 0;
+    const ecart = sumo ? 0.44 : o.kb || o.swing ? 0.2 : 0.14, ouv = sumo ? 42 : o.kb || o.swing ? 16 : 12;   // sumo : pieds très écartés, pointes ouvertes
+    const portee = (L.bras + L.avantBras) * 0.985, DEG = 180 / Math.PI;
+    const base = (pen, k) => debout(c, { dy: y0, penche: pen, lomb: 4 * k, thor: 5 * k, cou: -0.5 * pen, ecart, ouv, y0 });
+    // Tibia et genou lus dans le plan avant-arrière, d'après la hanche et la cheville ; `calage` en est l'inverse exact.
+    const planDe = (h, ch) => {
+      const dy = h.y - ch.y, dz = h.z - ch.z, D = Math.min(Math.hypot(dy, dz), L.cuisse + L.jambe - 1e-4);
+      const dedans = Math.acos(borne((L.cuisse * L.cuisse + L.jambe * L.jambe - D * D) / (2 * L.cuisse * L.jambe), -1, 1));
+      const aCheville = Math.acos(borne((L.jambe * L.jambe + D * D - L.cuisse * L.cuisse) / (2 * L.jambe * D), -1, 1));
+      return { tibia: (Math.atan2(dz, dy) + aCheville) * DEG, genou: 180 - dedans * DEG };
+    };
+    // De combien déplacer le bassin (t : son tronc posé) pour que la jambe d'appui ait ce tibia et ce genou.
+    const calage = (p, t, tibia, genou) => {
+      const h = t.hanches.G, ch = p.jambes.G.cheville, a = rad(tibia), g = rad(genou - tibia);
+      return { y: ch.y + L.jambe * Math.cos(a) + L.cuisse * Math.cos(g) - h.y, z: ch.z + L.jambe * Math.sin(a) - L.cuisse * Math.sin(g) - h.z };
+    };
+    const caler = (p, tibia, genou) => { const dp = calage(p, c.tronc(p), tibia, genou); p.bassin.pos.y += dp.y; p.bassin.pos.z += dp.z; return p; };
+    // Debout, en haut du geste : buste droit, genoux presque tendus — le bassin descend droit jusqu'à ce que les jambes,
+    // même très écartées, atteignent leurs appuis. Ses jambes donnent le point de départ des réglages.
+    const haut = base(2, 0); haut.bassin.pos.z -= 0.01;
+    { const h = c.tronc(haut).hanches.G, ch = haut.jambes.G.cheville, l = (L.cuisse + L.jambe) * 0.9985; haut.bassin.pos.y += ch.y + Math.sqrt(Math.max(0.01, l * l - Math.pow(h.x - ch.x, 2) - Math.pow(h.z - ch.z, 2))) - h.y; }
+    const hHaut = c.tronc(haut).hanches.G, jHaut = planDe(hHaut, haut.jambes.G.cheville);
+    // Le vrai tibia debout (jambes écartées, le genou part vers le dehors : le plan avant-arrière ne suffit plus).
+    const gHaut = ik2(hHaut, haut.jambes.G.cheville, L.cuisse, L.jambe, haut.jambes.G.pole).milieu, tibiaHaut = Math.atan2(gHaut.z - haut.jambes.G.cheville.z, gHaut.y - haut.jambes.G.cheville.y) * DEG;
     if (o.swing) {
       // Balancement du kettlebell : il passe entre les jambes puis monte devant, bras tendus, par un coup de hanches.
+      // En bas : hanches reculées, genoux pliés d'un tiers, tibias presque droits, buste couché à mi-chemin.
       const m = coteDe(o);
-      const cle = u => { const k = 1 - u, p = debout(c, { dy: -0.1 * k, dz: -0.3 * k, penche: 4 + 58 * k, lomb: 2 * k, cou: -30 * k, ecart: 0.2, ouv: 16 }); const br = B(0, lerp(-8 - 58, 88, u) + (4 + 58 * k) * 0, -10, 6, 180); p.bras = pareil(B(m === 'GD' ? -4 : 0, lerp(-70 + 62, 90, u), m === 'GD' ? -16 : 0, 6, 180)); if (m !== 'GD') p.bras.D = B(70, 30, 0, 20, 90, { doigts: 'detendu' }); return p; };
-      d.pose = cle; d.tenu = [{ t: 'kb', m: 'G', sens: 'bas' }];
-      d.objets = null; d.rythme = 'rep'; d.periode = 2.2;
+      const cle = u => { const k = 1 - u, p = caler(debout(c, { penche: 3 + 55 * k, lomb: 2 * k, cou: -28 * k, ecart, ouv }), lerp(jHaut.tibia, -4, k), lerp(jHaut.genou, 38, k)); p.bras = pareil(B(m === 'GD' ? -4 : 0, lerp(-70 + 62, 90, u), m === 'GD' ? -16 : 0, 6, 180)); if (m !== 'GD') p.bras.D = B(70, 30, 0, 20, 90, { doigts: 'detendu' }); return p; };
+      d.pose = cle; d.rythme = 'rep'; d.periode = 2.2;
       // La boule prolonge les bras (elle ne pend pas à la verticale pendant le balancement).
       d.tenu = []; d.objets = (info, u, sortie) => { const pr = m === 'GD' ? info.prises.G.clone().add(info.prises.D).multiplyScalar(0.5) : info.prises.G, dir = info.dirMains.G; poserObjet(MAT.kettlebell(C), pr, qTenu(AX, dir.clone().multiplyScalar(-1)), sortie); };
       return d;
     }
     if (o.goodmorning) {
-      if (o.assis) { const base = assis(c, { h: 0.45, ecart: 0.26, ouv: 20, zPieds: 0.36 }); fixe.push(...poseFixe(MAT.banc(C, 0), V(0, 0, 0.28))); d.pose = u => { const p = cloner(base); p.bassin.rot = qX(lerp(2, 62, u)); p.lombaires = 3 * u; p.cou = -30 * u; porter(c, p, { barre: true }, C); return p; }; }
-      else d.pose = u => { const p = debout(c, { dy: -0.03 * u, dz: -0.2 * u, penche: 2 + 68 * u, lomb: 3 * u, thor: 3 * u, cou: -36 * u, ecart: 0.14, ouv: 10 }); porter(c, p, o.smith ? { smith: true } : { barre: true }, C); return p; };
+      if (o.assis) { const assise = assis(c, { h: 0.45, ecart: 0.26, ouv: 20, zPieds: 0.36 }); fixe.push(...poseFixe(MAT.banc(C, 0), V(0, 0, 0.28))); d.pose = u => { const p = cloner(assise); p.bassin.rot = qX(lerp(2, 62, u)); p.lombaires = 3 * u; p.cou = -30 * u; porter(c, p, { barre: true }, C); return p; }; }
+      // Debout : genoux à peine pliés, les hanches reculent pendant que le buste se couche, dos droit.
+      else d.pose = u => { const p = caler(debout(c, { penche: 2 + 66 * u, lomb: 3 * u, thor: 3 * u, cou: -35 * u, ecart, ouv }), lerp(jHaut.tibia, -7, u), lerp(jHaut.genou, 20, u)); porter(c, p, o.smith ? { smith: true } : { barre: true }, C); return p; };
       d.tenu = [{ t: 'barre', l: 1.6, d: o.smith ? 0.18 : 0.2 }];
       if (o.smith) { const info = c.poser(d.pose(0)); fixe.push(...poseFixe(MAT.smith(C, info.prises.G.z))); }
       return d;
@@ -58,58 +87,133 @@
       d.pose = u => { const p = debout(c, { dy: 0.3 - 0.02 * u, dz: -0.12 * u, penche: 2 + 50 * u, lomb: 46 * u, thor: 30 * u, cou: 30 * u, ecart: 0.1, ouv: 6, y0: 0.3 }); p.bras = pareil(B(0, 4 + 96 * u * 0 + (2 + 50 * u) * 0, -20, 4, 180)); const t = c.tronc(p); for (const [k, s] of COTES) p.bras[k] = { prise: t.epaules[k].clone().add(V(-s * 0.06, -(L.bras + L.prise) * 0.985, 0.03)), pole: V(s * 0.3, 0, -1), paume: V(0, 0, -1), dirMain: V(0, -1, 0), doigts: 'barre' }; return p; };
       d.tenu = o.barre ? [{ t: 'barre', l: 1.2, d: 0.1 }] : [{ t: 'haltere', m: 'GD' }]; d.periode = 4; return d;
     }
-    // Les soulevés proprement dits. Profil : jusqu'où le buste bascule et les genoux plient en bas.
-    const sumo = !!o.sumo, roumain = o.roumain || o.tendues || o.poulie || o.charniere || o.unejambe || o.bstance || o.ceinture;
-    const penB = o.tendues ? 78 : roumain ? 66 : sumo ? 44 : o.trapbar ? 48 : 58;
-    const recul = o.tendues ? -0.2 : roumain ? -0.26 : sumo ? -0.18 : -0.3;
-    const ecart = sumo ? 0.36 : 0.14, ouv = sumo ? 38 : 12, xMain = sumo ? 0.2 : o.trapbar ? 0.32 : 0.27;
-    const yBas = o.deficit ? 0.225 - 0 : o.blocs ? 0.5 : roumain ? (o.tendues ? 0.3 : 0.42) : 0.225;
-    const y0 = o.deficit ? 0.1 : 0;
-    if (o.deficit) fixe.push(pret(boite(0.7, y0, 0.45, 0, y0 / 2, z0 + 0.04, C.banc, 0)));
+    /* Les soulevés proprement dits. Deux gestes :
+        — depuis le sol (classique, sumo, haltères, kettlebell, barre hexagonale) : les épaules restent à l'aplomb de la
+          charge, bras tendus ; le tibia est avancé au départ, droit quand la charge passe les genoux ; le buste se penche
+          ce qu'il faut pour cela, et les genoux plient d'autant. Les jambes poussent et le buste se redresse ensemble ;
+        — en charnière (roumain, jambes tendues, poulie, sur une jambe, au poids du corps) : genoux à peine pliés, les
+          hanches reculent, le buste bascule jusqu'à ce que les mains soient à la hauteur voulue.
+       Les postures sont réglées une fois, à quelques hauteurs de la charge (poses clés) ; le geste passe de l'une à l'autre. */
+    const tendues = !!o.tendues, charn = !!(o.roumain || tendues || o.poulie || o.charniere || o.unejambe || o.bstance || o.ceinture);
+    const N = 10, cles = [];
+    if (o.deficit) for (const s of sumo ? [1, -1] : [0]) fixe.push(pret(boite(sumo ? 0.34 : 0.7, y0, 0.45, s * ecart, y0 / 2, z0 + 0.04, C.banc, 0)));
     if (o.blocs) for (const s of [1, -1]) fixe.push(pret(boite(0.3, 0.5 - 0.225, 0.4, s * 0.6, (0.5 - 0.225) / 2, 0.2, C.banc, 0)));
-    const libres = o.hal || o.kb || o.trapbar || o.charniere || o.poulie || o.ceinture;
-    const corps = k => {
-      // Du bas vers le haut : les jambes poussent d'abord (buste encore penché), puis le buste se redresse.
-      const penche = lisse(Math.min(1, k / (roumain ? 1 : 0.5)));
-      const p = debout(c, { dy: y0, dz: lerp(-0.01, recul, penche), penche: lerp(2, penB, penche) + (roumain ? 0 : 5 * Math.max(0, (k - 0.5) / 0.5)), lomb: lerp(0, 4, penche), thor: lerp(0, 5, penche), cou: lerp(0, -penB * 0.52, penche), ecart, ouv, y0 });
-      if (o.unejambe) {
-        // Sur une jambe : l'autre part en arrière, dans le prolongement du buste.
-        p.jambes.D = J(-8 * penche, 2, 0, 8 * penche + 84 * Math.sin(Math.PI * penche) * (penche < 0.5 ? 1 : 2 * (1 - penche)), 30 * Math.max(0, penche - 0.4) / 0.6);
-        p.bassin.pos.x += 0.06 * penche;
-      } else if (o.bstance) p.jambes.D = pied(c, -1, { ecart: 0.14, z: z0 - 0.26, pointe: 45, ouv: 6 });
+    // La prise : barre et haltères paumes vers l'arrière ; barre hexagonale et corde paumes face à face.
+    const neutre = !!(o.trapbar || o.poulie), xMain = o.trapbar ? 0.32 : o.kb ? 0.05 : o.poulie ? 0.05 : o.hal ? 0.2 : sumo ? 0.2 : 0.27;
+    const xP = xMain + (neutre ? L.creux : 0), zP = neutre ? 0 : L.creux;   // du centre de la prise au poignet
+    const prises = (p, y, z) => { for (const [kk, s] of COTES) p.bras[kk] = { prise: V(s * xMain, y, z), pole: V(s * 0.3, 0, -1), paume: neutre ? V(-s, 0, 0) : V(0, 0, -1), dirMain: V(0, -1, 0), doigts: 'barre' }; return p; };
+    // La charge contre les jambes : la barre les longe, les haltères passent devant de la largeur d'une tête.
+    const marge = o.hal ? 0.067 : rayon + 0.004;
+    const contre = (p, y) => Math.max(0.045, c.devantJambes(p, y - 0.03, y + 0.03) + marge);
+    // En haut : la charge pend bras tendus — contre les cuisses, sur les côtés (barre hexagonale) ou devant le bassin.
+    const eHaut = c.tronc(haut).epaules.G;
+    const zHaut = o.trapbar ? z0 + 0.035 : o.kb || o.poulie ? z0 + 0.09 : c.devantJambes(haut, 0.6 + y0, 1.0 + y0) + marge;
+    const avHaut = eHaut.z - zHaut - zP;
+    const chuteDe = av => Math.sqrt(Math.max(1e-4, portee * portee - av * av - Math.pow(xP - eHaut.x, 2)));
+    const yHaut = eHaut.y - chuteDe(avHaut) - L.main;
+    if (!charn) {
+      /* Depuis le sol. La pose qui tient les poignets en (y, z), bras tendus, les épaules avancées de `av` sur eux, le
+         tibia incliné de `tibia` degrés : plus le buste se penche, plus les hanches reculent et montent, plus le tibia
+         part en arrière — le penché se trouve par dichotomie. */
+      const tenir = (y, z, av, tibia, k) => {
+        const essai = pen => {
+          const p = base(pen, k), t = c.tronc(p), e = t.epaules.G, dz = z + av - e.z, dy = y + chuteDe(av) - e.y;
+          const j = p.jambes.G, h = t.hanches.G.clone().add(V(0, dy, dz)), g = ik2(h, j.cheville, L.cuisse, L.jambe, j.pole).milieu;
+          p.bassin.pos.y += dy; p.bassin.pos.z += dz;
+          return { p, tibia: Math.atan2(g.z - j.cheville.z, g.y - j.cheville.y) * DEG };
+        };
+        let a = -8, b = 100;
+        for (let n = 0; n < 13; n++) { const m = (a + b) / 2; if (essai(m).tibia > tibia) a = m; else b = m; }
+        return essai((a + b) / 2).p;
+      };
+      // Le déroulé, repéré par la hauteur de la charge : 0 au sol (disques de 45 cm posés), 1 debout.
+      const ySol = o.trapbar ? 0.285 : o.kb ? 0.273 : 0.225;                     // hauteur de la prise, charge posée au sol
+      // Où commence le geste : au sol ; sur des blocs ; à mi-tibia pour des haltères ; pieds écartés sur deux marches, le
+      // kettlebell descend entre elles, plus bas que les pieds, sans toucher le sol (c'est un squat sumo).
+      const yBas = o.blocs ? 0.5 : o.hal ? y0 + 0.26 : o.kb && sumo && o.deficit ? y0 + 0.25 : ySol;
+      const hDe = y => (y - y0 - ySol) / (yHaut - y0 - ySol), hGenou = hDe(y0 + L.chevilleH + L.jambe + 0.02);
+      // Le tibia : avancé au départ (plus encore sans barre devant lui), droit au passage des genoux — une courbe par
+      // trois points (au sol, aux genoux, debout). Plus bas que le sol (pieds surélevés), il n'avance pas davantage.
+      const parTrois = (a, b, cc) => h => a * (h - hGenou) * (h - 1) / hGenou + b * h * (h - 1) / (hGenou * (hGenou - 1)) + cc * h * (h - hGenou) / (1 - hGenou);
+      const tibia3 = parTrois(o.trapbar ? 9 : o.kb ? (sumo ? 14 : 10) : sumo ? 3 : 6, o.trapbar ? 5 : o.kb ? (sumo ? 6 : 4) : sumo ? 0 : -2, tibiaHaut);
+      const tibiaA = h => tibia3(Math.max(0, h));
+      // Les épaules : un peu en avant de la charge au départ, au-dessus quand elle passe les genoux, et elles n'en
+      // reculent qu'à la fin, quand les hanches viennent sous elles. Pieds surélevés : plus en avant encore (dos plus couché).
+      const av0 = o.trapbar ? 0 : sumo || o.kb ? 0.03 : 0.05, avG = o.trapbar ? -0.01 : o.kb ? 0 : sumo ? 0.02 : 0.03;
+      const avA = h => (h <= 0 ? av0 - 0.15 * h : h <= hGenou ? lerp(av0, avG, h / hGenou) : avG + (avHaut - avG) * Math.pow((h - hGenou) / (1 - hGenou), 2.2));
+      const zLibre = h => (o.trapbar ? zHaut : lerp(z0 + 0.05, zHaut, borne(h, 0, 1)));   // kettlebell : d'entre les pieds au devant du bassin
+      let z = o.trapbar || o.kb ? zLibre(hDe(yBas)) : 0.08;
+      for (let i = 0; i <= N; i++) {
+        const y = lerp(yBas, yHaut, i / N), h = hDe(y), k = 1 - borne(h, 0, 1);
+        let p;
+        if (i === N) { p = cloner(haut); z = zHaut; }
+        else if (o.trapbar || o.kb) { z = zLibre(h); p = tenir(y + L.main, z + zP, avA(h), borne(tibiaA(h), -6, 20), k); }
+        // La charge vient contre les jambes : deux passes à la première hauteur, une seule ensuite (elle a peu bougé).
+        else for (let passe = 0; passe < (i ? 1 : 2); passe++) { p = tenir(y + L.main, z + zP, avA(h), borne(tibiaA(h), -6, 20), k); z = contre(p, y); }
+        cles.push([i / N, prises(p, y, z)]);
+      }
+      d.cles = cles;
+      if (o.hal) d.tenu = [{ t: 'haltere', m: 'GD' }];
+      else if (o.kb) d.objets = (info, u, sortie) => poserObjet(MAT.kettlebell(C), info.prises.G.clone().add(info.prises.D).multiplyScalar(0.5), qTenu(AX, AY), sortie);
+      else if (o.trapbar) d.objets = barreHexagonale(C);
+      else d.tenu = [{ t: 'barre', l: 1.6, d: 0.225 }];
+      return d;
+    }
+    /* En charnière. Les jambes d'abord (tibia et genou voulus à chaque hauteur), puis le buste bascule jusqu'à ce que les
+       poignets, bras tendus, soient à la hauteur y : contre les jambes (z donné) ou pendus sous les épaules, reculés de
+       `av` (z omis). */
+    const sansCharge = !!(o.charniere || o.ceinture || (o.poulie && !o.roumain));
+    // En bas : jambes presque tendues et à peine reculées (jambes tendues, sur une jambe) ; sinon genoux souples, et les
+    // hanches reculent franchement quand une charge doit rester contre les jambes (les bras ne partent pas en arrière).
+    const tibiaB = tendues ? -8 : o.unejambe ? -4 : sansCharge ? -7 : -10, genouB = tendues ? 9 : o.unejambe ? 14 : o.poulie && !o.roumain ? 28 : sansCharge ? 24 : 32;
+    const jambesA = g => ({ tibia: lerp(jHaut.tibia, tibiaB, g), genou: lerp(jHaut.genou, genouB, g) });
+    const pencher = (y, z, av, g) => {
+      const jb = jambesA(g);
+      const essai = pen => { const p = base(pen, g), t = c.tronc(p), dp = calage(p, t, jb.tibia, jb.genou), e = t.epaules.G; p.bassin.pos.y += dp.y; p.bassin.pos.z += dp.z; return { p, manque: z != null ? Math.hypot(xP - e.x, e.y + dp.y - y, e.z + dp.z - z) - portee : e.y + dp.y - y - chuteDe(av) }; };
+      return essai(premierZero(pen => essai(pen).manque, 0, 112, 8)).p;
+    };
+    // L'autre jambe : en arrière dans le prolongement du buste (sur une jambe), ou posée sur la pointe en retrait.
+    const autreJambe = (p, g) => {
+      if (o.unejambe) { p.jambes.D = J(-8 * g, 2, 0, 8 * g + 84 * Math.sin(Math.PI * g) * (g < 0.5 ? 1 : 2 * (1 - g)), 30 * Math.max(0, g - 0.4) / 0.6); p.bassin.pos.x += 0.06 * g; }
+      else if (o.bstance) p.jambes.D = pied(c, -1, { ecart: 0.14, z: z0 - 0.26, pointe: 45, ouv: 6 });
       return p;
     };
-    const portee = (L.bras + L.avantBras) * 0.985;
-    const epaules = (p, zBarre) => { const e = c.tronc(p).epaules.G, dz = zBarre + L.creux - e.z, dx = xMain - e.x; return { y: e.y, chute: Math.sqrt(Math.max(1e-4, portee * portee - dz * dz - dx * dx)) }; };
-    if (libres) {
-      // Haltères, kettlebell, barre hexagonale, câble : les bras pendent, tendus, sous les épaules.
-      const cle = k => { const p = corps(k), t = c.tronc(p); const profondeur = lisse(Math.min(1, k)); for (const [kk, s] of COTES) { const cible = o.kb ? V(s * 0.06, 0, 0.08) : o.trapbar ? V(s * 0.32, 0, z0 + 0.02 - t.epaules[kk].z) : o.poulie ? V(s * 0.05, 0, o.roumain ? 0.16 : -0.1) : V(s * (xMain - 0.165) + 0, 0, 0.1 + 0.08 * profondeur); const large = o.trapbar ? Math.sqrt(Math.max(0.01, Math.pow((L.bras + L.prise) * 0.985, 2) - Math.pow(0.32 - t.epaules.G.x, 2))) : (L.bras + L.prise) * 0.985; const pr = V(o.kb || o.poulie || o.trapbar ? cible.x : t.epaules[kk].x + cible.x, t.epaules[kk].y - large, t.epaules[kk].z + cible.z); if (o.kb) pr.y = Math.max(pr.y, 0.2); p.bras[kk] = o.charniere ? mains(c, t, 'hanches')[kk] : { prise: pr, pole: V(s * 0.3, 0, -1), paume: o.trapbar || o.poulie ? V(-s, 0, 0) : V(0, 0, -1), dirMain: V(0, -1, 0), doigts: 'barre' }; } return p; };
-      d.pose = u => cle(o.depuisHaut || roumain ? u : 1 - u);
-      if (!roumain && !o.depuisHaut) d.pose = u => cle(1 - u);
-      d.pose = roumain ? (u => cle(u)) : (u => cle(1 - u));
-      if (o.hal) d.tenu = [{ t: 'haltere', m: 'GD' }];
-      else if (o.kb) { d.tenu = []; d.objets = (info, u, sortie) => poserObjet(MAT.kettlebell(C), info.prises.G.clone().add(info.prises.D).multiplyScalar(0.5), qTenu(AX, AY), sortie); }
-      else if (o.trapbar) { d.tenu = []; d.objets = barreHexagonale(C); }
-      else if (o.poulie) { const anc = V(0, 0.15, o.roumain ? 1.15 : -1.1);   // tirage entre les jambes : poulie derrière ; soulevé roumain : poulie devant
-        d.tenu = [{ t: 'cable', de: anc, bout: 'corde' }]; fixe.push(...poseFixe(MAT.colonne(C, anc))); }
+    if (sansCharge) {
+      // Au poids du corps, à la ceinture, ou la corde tirée entre les jambes : le buste bascule d'un angle voulu.
+      const penB = o.poulie ? 62 : 66;
+      for (let i = 0; i <= N; i++) {
+        const g = i / N, jb = jambesA(g), p = autreJambe(i ? caler(base(lerp(2, penB, g), g), jb.tibia, jb.genou) : cloner(haut), g), t = c.tronc(p);
+        if (o.poulie) {
+          // La corde passe entre les cuisses : les mains la tiennent sous le bassin, bras tendus, et reculent avec lui.
+          for (const [kk, s] of COTES) { const e = t.epaules[kk], cible = t.duBassin(V(s * xMain, -0.2, 0.04)), v = cible.clone().sub(e), l = v.length(), lMax = (L.bras + L.prise) * 0.975; if (l > lMax) cible.copy(e).add(v.multiplyScalar(lMax / l)); p.bras[kk] = { prise: cible, pole: V(s * 0.3, 0, -1), paume: V(-s, 0, 0), dirMain: V(0, -1, 0).applyQuaternion(t.qThorax), doigts: 'barre' }; }
+        } else p.bras = mains(c, t, 'hanches');
+        cles.push([g, p]);
+      }
+      d.cles = cles;
+      if (o.poulie) { const anc = V(0, 0.15, -1.1); d.tenu = [{ t: 'cable', de: anc, bout: 'corde' }]; fixe.push(...poseFixe(MAT.colonne(C, anc))); }
       else if (o.ceinture) d.objets = (info, u, sortie) => { const b = info.bassin; sortie.push(pret(seg(V(0, b.y - 0.1, b.z + 0.05), V(0, 0.15, 0.05), 0.008, C.cadre, 0.6))); };
       return d;
     }
-    // À la barre : elle longe les jambes, juste devant les cuisses, les genoux puis les tibias.
-    const debout0 = debout(c, { dz: -0.01, penche: 2, ecart, ouv, dy: y0, y0 });
-    const zHaut = c.devantJambes(debout0, 0.6 + y0, 1.0 + y0) + rayon + 0.004;
-    const hautE = epaules(debout0, zHaut);
-    const cle = k => {
-      const p = corps(k), yBarre = lerp(hautE.y - hautE.chute - L.main, yBas + y0 * 0, k);
-      let zBarre = zHaut;
-      for (let passe = 0; passe < 3; passe++) { const e = epaules(p, zBarre); p.bassin.pos.y += yBarre + L.main + e.chute - e.y; zBarre = Math.max(0.1, c.devantJambes(p, yBarre - 0.03, yBarre + 0.03) + rayon + 0.004); }
-      const barreP = V(0, yBarre, zBarre);
-      for (const [kk, s] of COTES) p.bras[kk] = { prise: barreP.clone().setX(s * xMain), pole: V(s * 0.3, 0, -1), paume: V(0, 0, -1), dirMain: V(0, -1, 0), doigts: 'barre' };
-      return p;
-    };
-    // Soulevé classique : départ barre au sol, on monte ; roumain : départ debout, on descend.
-    d.pose = roumain ? (u => cle(u)) : (u => cle(1 - u));
-    d.tenu = [{ t: 'barre', l: 1.6, d: o.smith ? 0.18 : 0.225 }];
-    if (o.smith) fixe.push(...poseFixe(MAT.smith(C, zHaut)));
+    // Avec une charge : elle descend contre les jambes tant que les bras ne partent pas trop en arrière ; au-delà elle
+    // s'en écarte et pend sous les épaules (jambes tendues, sur une jambe). Le kettlebell part de devant le bassin ; la
+    // corde d'une poulie basse, devant soi, tire les mains vers l'avant ; la barre guidée monte et descend droit.
+    const yBas = (tendues ? 0.3 : 0.42) + y0, avMax = o.smith ? Infinity : tendues ? 0.12 : o.poulie ? -0.02 : o.unejambe ? 0.08 : o.kb ? 0.06 : 0.11;
+    const zFixe = o.smith || o.kb || o.poulie;
+    let z = zHaut;
+    for (let i = 0; i <= N; i++) {
+      const g = i / N, y = lerp(yHaut, yBas, g);
+      let p = cloner(haut);
+      if (i) {
+        for (let passe = 0; passe < (zFixe || i > 1 ? 1 : 2); passe++) { p = pencher(y + L.main, (zFixe ? zHaut : z) + zP, 0, g); if (!zFixe) z = contre(p, y); }
+        const zc = zFixe ? zHaut : z, e = c.tronc(p).epaules.G;
+        if (e.z - zc - zP > avMax) { p = pencher(y + L.main, null, avMax, g); z = Math.max(zc, c.tronc(p).epaules.G.z - avMax - zP); } else z = zc;
+      }
+      cles.push([g, prises(autreJambe(p, g), y, z)]);
+    }
+    d.cles = cles;
+    if (o.hal) d.tenu = [{ t: 'haltere', m: 'GD' }];
+    else if (o.kb) d.objets = (info, u, sortie) => poserObjet(MAT.kettlebell(C), info.prises.G.clone().add(info.prises.D).multiplyScalar(0.5), qTenu(AX, AY), sortie);
+    else if (o.poulie) { const anc = V(0, 0.15, 1.15); d.tenu = [{ t: 'cable', de: anc, bout: 'corde' }]; fixe.push(...poseFixe(MAT.colonne(C, anc))); }   // soulevé roumain à la poulie : elle est devant
+    else { d.tenu = [{ t: 'barre', l: 1.6, d: o.smith ? 0.18 : 0.225 }]; if (o.smith) fixe.push(...poseFixe(MAT.smith(C, zHaut))); }
     return d;
   };
