@@ -144,7 +144,11 @@
       // Squat barre devant, puis la barre est poussée au-dessus de la tête en se relevant.
       d.rythme = 'continu'; d.periode = 3.2;
       const bas = cle(1), hautP = cle(0); o.avant = true; porter(c, bas, o, C, 1); porter(c, hautP, o, C, 0);
-      const dessus = cloner(hautP); const t = c.tronc(dessus); for (const [kk, s] of COTES) dessus.bras[kk] = { prise: t.duThorax(V(s * 0.3, L.bras + L.prise - 0.03, 0.02)), pole: V(s * 0.7, -1, 0.5).applyQuaternion(t.qThorax), paume: V(0, 0, 1).applyQuaternion(t.qThorax), dirMain: V(0, 1, 0).applyQuaternion(t.qThorax), doigts: 'barre' };
+      const dessus = cloner(hautP); const t = c.tronc(dessus);
+      // Au-dessus de la tête, bras tendus : la hauteur se règle sur le corps posé (l'épaule monte avec le bras).
+      const lever = y => { for (const [kk, s] of COTES) dessus.bras[kk] = { prise: t.duThorax(V(s * 0.3, y, 0.02)), pole: V(s * 0.7, -1, 0.5).applyQuaternion(t.qThorax), paume: V(0, 0, 1).applyQuaternion(t.qThorax), dirMain: V(0, 1, 0).applyQuaternion(t.qThorax), doigts: 'barre', ceinture: 0.15 }; return dessus; };
+      const yDessus = coudeTendu(c, lever, L.bras + L.prise - 0.08, L.bras + L.prise + 0.3);
+      lever(yDessus != null ? yDessus : L.bras + L.prise - 0.03);
       for (const q of [bas, hautP]) for (const [kk, s] of COTES) { q.bras[kk].paume = V(0, 0.3, 1).applyQuaternion(c.tronc(q).qThorax); }
       d.tenu = [{ t: o.hal ? 'haltere' : 'barre', m: 'GD', l: 1.6, d: 0.2 }];
       d.pose = ph => (ph < 0.3 ? mel(hautP, bas, lisse(ph / 0.3)) : ph < 0.5 ? mel(bas, hautP, lisse((ph - 0.3) / 0.2)) : ph < 0.68 ? mel(hautP, dessus, lisse((ph - 0.5) / 0.18)) : ph < 0.8 ? dessus : mel(dessus, hautP, lisse((ph - 0.8) / 0.2)));

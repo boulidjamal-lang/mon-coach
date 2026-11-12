@@ -15,19 +15,30 @@
       if (o.chaise) fixe.push(pret(boite(0.4, 0.75, 0.06, 0, i2.bassin.y + 0.3, i2.bassin.z - L.dos - 0.05, C.banc, 0)), pret(boite(0.09, 0.05, 0.32, 0.3, 1.24, i2.coudes.G.z + 0.14, C.banc, 0)), pret(boite(0.09, 0.05, 0.32, -0.3, 1.24, i2.coudes.G.z + 0.14, C.banc, 0)), pret(seg(V(0, 0, i2.bassin.z - 0.2), V(0, 1.9, i2.bassin.z - 0.2), 0.035, C.cadre, 0.5)), pret(boite(0.6, 0.03, 0.7, 0, 0.015, 0, C.cadre, 0.5)));
       else fixe.push(...poseFixe(MAT.paralleles(C, i2.prises.G.y - 0.01, Math.abs(i2.prises.G.x)), V(0, 0, i2.prises.G.z)));
     } else { base = suspendu(c, { H, ecart: 0.3 }); fixe.push(...poseFixe(MAT.barreFixe(C, H))); }
-    const curl = k => { const p = cloner(base); if (!o.chaise && !o.paralleles) { p.bassin.rot = qX(-34 * k); p.lombaires = 26 * k; const t0 = c.tronc(base), e0 = t0.epaules.G.clone(); const t = c.tronc(p); p.bassin.pos.add(e0.sub(t.epaules.G)); } else p.lombaires = 14 * k; return p; };
+    // Pendu à la barre, les mains ne bougent pas : quoi que fasse le bassin, les épaules restent sous la barre, bras
+    // tendus, mains dessus. Le bassin bascule et le bas du dos s'enroule ; en vrille, ce sont le bassin et les jambes
+    // qui tournent sous des épaules qui restent face à la barre.
+    const pendu = !o.chaise && !o.paralleles, surBarre = { G: V(0.3, H, 0), D: V(-0.3, H, 0) };
+    const milieu = t => t.epaules.G.clone().add(t.epaules.D).multiplyScalar(0.5), m0 = pendu ? milieu(c.tronc(base)) : null;
+    const sousLaBarre = p => { p.bassin.pos.add(m0.clone().sub(milieu(c.tronc(p)))); return tendre(c, p, V(0, -1, 0), null, null, surBarre); };
+    const vriller = (p, deg) => { p.torsion = deg; if (pendu && deg) { p.bassin.rot = qY(-deg).multiply(p.bassin.rot); sousLaBarre(p); } return p; };
+    const curl = k => { const p = cloner(base); if (pendu) { p.bassin.rot = qX(-34 * k); p.lombaires = 26 * k; if (k) sousLaBarre(p); } else p.lombaires = 14 * k; return p; };
     const cle = u => {
       if (o.barre) { const p = curl(u); p.jambes = pareil(J(lerp(8, 128, u), 2, 0, 5, 20)); return p; }
       if (o.coudes) { const p = curl(u * 0.9); p.jambes = pareil(J(lerp(8, 128, u), 4, 0, lerp(12, 118, u), 20)); return p; }
       if (o.garhammer) { const p = curl(u * 0.7); p.jambes = pareil(J(lerp(88, 132, u), 3, 0, lerp(92, 110, u), 20)); return p; }
       if (o.jambes) { const p = curl(u * 0.25); p.jambes = pareil(J(lerp(8, 94, u), 2, 0, 5, 25)); return p; }
-      if (o.oblique) { const p = curl(u * 0.4); p.torsion = -34 * u; p.jambes = pareil(J(lerp(8, 100, u), 3, 0, lerp(12, 104, u), 25)); return p; }
+      if (o.oblique) { const p = curl(u * 0.4); p.jambes = pareil(J(lerp(8, 100, u), 3, 0, lerp(12, 104, u), 25)); return vriller(p, -34 * u); }
       const p = curl(u * 0.35); p.jambes = pareil(J(lerp(8, o.poitrine ? 122 : 98, u), 3, 0, lerp(12, o.poitrine ? 118 : 100, u), 25)); return p;
     };
     if (o.lsit) { d.a = cle(1); const b = cle(1); b.jambes = pareil(J(96, 2, 0, 5, 25)); d.a.jambes = pareil(J(94, 2, 0, 5, 25)); d.b = b; d.rythme = 'tenue'; }
     else if (o.ciseaux || o.cercles || o.moulinet) {
       d.rythme = 'continu'; d.periode = o.ciseaux ? 1.3 : 2.6; const P0 = curl(0.2);
-      d.pose = ph => { const p = cloner(P0), w = ph * 2 * Math.PI, sn = Math.sin(w), cs = Math.cos(w); if (o.ciseaux) { p.jambes.G = J(40 + 26 * sn, 3, 0, 5, 25); p.jambes.D = J(40 - 26 * sn, 3, 0, 5, 25); } else if (o.cercles) { p.jambes = pareil(J(84 + 16 * cs, 3, 0, 96, 25)); p.torsion = 26 * sn; } else { p.jambes = pareil(J(80, 3, 0, 5, 25)); p.torsion = 40 * sn; p.jambes.G.abd = 3 + 22 * sn; p.jambes.D.abd = 3 - 22 * sn; } return p; };
+      // Le buste qui vrille déplace les épaules sous la barre : les poses sont réglées d'avance pour cinq vrilles (bras
+      // tendus, mains sur la barre), et le mouvement passe de l'une à l'autre.
+      const vrille = o.cercles ? 26 : o.moulinet ? 40 : 0;
+      const vrilles = vrille && pendu ? [-1, -0.5, 0, 0.5, 1].map(x => [x, vriller(cloner(P0), vrille * x)]) : null;
+      d.pose = ph => { const w = ph * 2 * Math.PI, sn = Math.sin(w), cs = Math.cos(w), p = cloner(vrilles ? chemin(vrilles, sn) : P0); if (o.ciseaux) { p.jambes.G = J(40 + 26 * sn, 3, 0, 5, 25); p.jambes.D = J(40 - 26 * sn, 3, 0, 5, 25); } else if (o.cercles) { p.jambes = pareil(J(84 + 16 * cs, 3, 0, 96, 25)); if (!vrilles) p.torsion = 26 * sn; } else { p.jambes = pareil(J(80, 3, 0, 5, 25)); if (!vrilles) p.torsion = 40 * sn; p.jambes.G.abd = 3 + 22 * sn; p.jambes.D.abd = 3 - 22 * sn; } return p; };
     } else d.cles = [[0, cle(0)], [0.5, cle(0.5)], [1, cle(1)]];
     if (o.leste) d.objets = (info, u, sortie) => poserObjet(MAT.haltere(C, 1), info.chevilles.G.clone().add(info.chevilles.D).multiplyScalar(0.5).add(V(0, -0.02, 0.04)), null, sortie);
     return d;
@@ -113,6 +124,11 @@
           const e = info.epaules[k], dy = Math.min(R - 0.01, Math.max(0, e.y - hR));
           p.bras[k] = { prise: V(s * (o.barre ? 0.26 : 0.13), hR, e.z + Math.sqrt(R * R - dy * dy)), pole: V(s * 0.6, 0.5, -1), paume: V(0, -1, -1), doigts: 'barre' };
         }
+        // Bras tendus jusqu'à la roue : sa place se règle sur le corps posé (l'épaule suit le bras ; estimée depuis l'épaule
+        // seule, elle laissait les coudes pliés à 60° corps allongé).
+        const z0 = p.bras.G.prise.z, rouler = z => { for (const k of ['G', 'D']) p.bras[k].prise.z = z; return p; };
+        const zR = coudeTendu(c, rouler, z0 - 0.04, z0 + 0.3, 12);
+        rouler(zR != null ? zR : z0);
         return p;
       };
       d.cles = [0, 0.25, 0.5, 0.75, 1].map(u => [u, cle(u)]);

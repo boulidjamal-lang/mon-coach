@@ -182,12 +182,15 @@
     if (o.skierg) {
       // Debout face à l'appareil : les bras tirent deux poignées du dessus de la tête jusqu'aux hanches, le buste plonge.
       const anc = s => V(s * 0.16, 2.05, 0.62);
+      let kHaut = 1;
       const cle = u => {
         const p = debout(c, { ecart: 0.14, ouv: 8, dy: -0.02 - 0.13 * u, dz: -0.1 * u, penche: lerp(4, 46, u), cou: -lerp(0, 20, u) });
         const t = c.tronc(p);
-        for (const [k, s] of COTES) { const hautP = V(s * 0.17, t.epaules.G.y + 0.5, t.epaules.G.z + 0.26), basP = t.hanches[k].clone().add(V(s * 0.12, -0.06, 0.02)); p.bras[k] = { prise: hautP.lerp(basP, u), pole: V(s * 0.6, 0, -0.8), paume: V(-s, 0, 0), doigts: 'barre' }; }
+        for (const [k, s] of COTES) { const hautP = V(s * 0.17, t.epaules.G.y + 0.5 * kHaut, t.epaules.G.z + 0.26 * kHaut), basP = t.hanches[k].clone().add(V(s * 0.12, -0.06, 0.02)); p.bras[k] = { prise: hautP.lerp(basP, u), pole: V(s * 0.6, 0, -0.8), paume: V(-s, 0, 0), doigts: 'barre' }; }
         return p;
       };
+      // En haut, les bras sont presque tendus vers les poignées (25° au coude) : réglé sur le corps posé.
+      { const k = coudeTendu(c, x => { kHaut = x; return cle(0); }, 0.9, 1.6, 25); kHaut = k != null ? k : 1; }
       d.rythme = 'rep'; d.periode = 2; d.cles = [0, 0.33, 0.66, 1].map(u => [u, cle(u)]);
       d.tenu = [{ t: 'cable', de: anc(1), m: 'G', bout: 'poignee' }, { t: 'cable', de: anc(-1), m: 'D', bout: 'poignee' }];
       // L'appareil : une plate-forme antidérapante sur deux pieds, le mât, la roue à air dans sa cage en haut du mât,

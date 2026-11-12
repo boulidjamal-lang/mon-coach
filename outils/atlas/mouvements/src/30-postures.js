@@ -147,6 +147,10 @@
       p.bras[kk] = { prise: V(s * ecart, H, o.z || 0), pole: V(s * 1, -0.2, o.paume === 'sup' ? 0.5 : -0.25), paume: o.paume === 'neutre' ? V(-s, 0, 0) : paume.clone(), dirMain: V(0, 1, 0), doigts: 'barre' };
       p.jambes[kk] = o.jambes ? cloner(o.jambes) : J(8, 2, 0, 12, 35);
     }
+    // Pendu, bras tendus : le corps descend jusqu'à ce que les coudes le soient (sauf si k dit de combien les plier) ;
+    // et les mains tombent juste sur la barre, qui ne bouge pas.
+    const surBarre = { G: V(ecart, H, o.z || 0), D: V(-ecart, H, o.z || 0) };
+    if (o.k == null) tendre(c, p, V(0, -1, 0), null, null, surBarre); else viser(c, p, surBarre);
     return p;
   }
   /* À genoux, buste droit (ou penché) : cuisses à `flex` degrés de la verticale, tibias au sol. */
@@ -246,6 +250,31 @@
 
   /* Déplace le bassin de la pose p pour qu'une articulation du tronc se trouve à l'endroit voulu. */
   function ancrer(c, p, nom, cible) { c.tronc(p); p.bassin.pos.add(cible.clone().sub(c.monde(nom))); return p; }
+  /* Bras tendus. L'épaule monte avec le bras (ceinture scapulaire) : une « longueur de bras » comptée depuis l'épaule au
+     repos laisse le coude plié de 60 à 75° dès que le bras passe au-dessus de la tête. coudeTendu cherche donc, sur le
+     corps posé, la valeur x (entre a et b) pour laquelle le coude le plus tendu de poseDe(x) est à `cible` degrés — 10 par
+     défaut : le bras est tendu, la main reste sur sa prise (si les deux bras ne tirent pas pareil, l'autre plie un peu
+     plus : aucun ne dépasse sa portée). x doit éloigner la main de l'épaule en grandissant.
+     tendre fait de même en déplaçant le bassin le long de dir (unitaire : vers où le corps s'éloigne des mains — vers
+     le bas pendu à une barre, vers le haut en appui renversé) ; la pose est modifiée sur place et rendue. Avec
+     `cibles` ({ G, D } : où les mains doivent tomber au juste, voir viser), le coude se mesure mains posées sur elles. */
+  function coudeTendu(c, poseDe, a, b, cible, cotes) {
+    cible = cible == null ? 10 : cible; cotes = cotes || ['G', 'D'];
+    const plie = x => { const an = c.poser(poseDe(x)).angles; return Math.min(...cotes.map(k => an[k].coude)); };
+    if (plie(a) <= cible) return null;                    // déjà tendu au plus près : rien à régler
+    for (let n = 0; n < 12; n++) { const m = (a + b) / 2; if (plie(m) > cible) a = m; else b = m; }
+    return a;
+  }
+  function tendre(c, p, dir, cible, cotes, cibles) {
+    const p0 = p.bassin.pos.clone();
+    const place = x => {
+      p.bassin.pos = p0.clone().add(dir.clone().multiplyScalar(x));
+      if (cibles) { for (const k in cibles) p.bras[k].prise = cibles[k].clone(); viser(c, p, cibles); }
+      return p;
+    };
+    const x = coudeTendu(c, place, -0.3, 0.3, cible, cotes);
+    return place(x == null ? 0 : x);
+  }
   /* Une main posée par cible n'arrive pas exactement sur sa prise : le radius tourne autour de l'ulna, et le poignet
      se décale de 2 à 3 cm selon la pronation. Là où la place de la barre compte au centimètre (contre le corps, devant
      le visage), la cible est corrigée de l'écart constaté jusqu'à ce que la prise tombe juste. cibles : { G, D } (ou un

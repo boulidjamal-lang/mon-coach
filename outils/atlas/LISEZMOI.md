@@ -244,6 +244,28 @@ visage, non. `viser` (`src/30-postures.js`) corrige la cible de l'écart constat
 Coût : 17 ms une fois pour la barre (22 ms guidée), 5 ms aux haltères, puis 0,07 ms par image (hors navigateur).
 Le test « au-dessus de la tête… » rejoue le geste instant par instant, y compris entre les poses clés.
 
+### Bras tendus : pendu à une barre, en haut d'un tirage, en appui renversé
+
+Même cause, autres familles. `node mouvements/bras-leves.mjs` relève les 144 mouvements où un bras passe au-dessus de
+la tête et donne, à l'instant où il est le plus levé, la flexion du coude et la montée de l'épaule. Il montrait des
+bras pliés là où ils doivent être tendus : pendu à la barre fixe (tractions, relevés de jambes : 63 à 77°), en haut du
+tirage vertical (69°), à la réception de l'arraché et du jeté, en haut du thruster (64 à 68°), en appui renversé
+(70°), corps allongé à la roulette abdominale (61°), en haut du SkiErg (80°) — partout où la distance était comptée
+depuis l'épaule au repos.
+
+`src/30-postures.js` donne deux outils : `coudeTendu` cherche, sur le corps posé, la valeur (hauteur des mains, place
+de la roue…) pour laquelle le coude le plus tendu est à 10° ; `tendre` fait de même en déplaçant le bassin (vers le bas
+pendu, vers le haut en appui renversé). Avec les cibles des mains, `tendre` les pose en même temps au juste sur la
+barre (`viser`) : sur une barre fixe, une main en pronation tombait de 2 à 3 cm à côté — au-dessus de la barre en haut
+d'une traction. Les tractions ont cinq poses clés : entre deux, les mains restent sur la barre à 3 mm près.
+
+Pendu, les mains ne bougent pas : quand le bassin bascule (relevés de jambes) les épaules restent sous la barre ; en
+vrille (genoux obliques, essuie-glaces), ce sont le bassin et les jambes qui tournent sous des épaules qui restent
+face à la barre — la vrille tournait les épaules et pliait un bras à 50°. En appui renversé, hausser les épaules
+repousse le sol : le corps monte, bras tendus (il descendait, coudes pliés à 40°).
+
+Le test « pendu ou bras levés… » vérifie les coudes et la place des mains sur la barre, instant par instant.
+
 ## Les mouvements des exercices
 
 Chaque exercice de la bibliothèque (`EXERCICES_BASE` dans `index.html`) a son mouvement. Tout est dans `mouvements/` :
@@ -267,6 +289,9 @@ Chaque exercice de la bibliothèque (`EXERCICES_BASE` dans `index.html`) a son m
   pieds (hors d'appui seulement s'il l'est quelle que soit la charge tenue, de rien à une fois le poids du corps), et
   les jambes verrouillées qui basculent en arrière sont relevées. `--tout` affiche aussi ce qui va bien ; un motif
   après `--table` limite à une famille. 262 mouvements jugés ; le même contrôle tourne dans les tests de l'appli.
+- `node mouvements/bras-leves.mjs [motif]` : relevé des mouvements où un bras passe au-dessus de la tête — flexion du
+  coude et montée de l'épaule à l'instant où le bras est le plus levé, du plus plié au plus tendu. Il ne juge pas (un
+  triceps derrière la nuque a le coude plié) : il se lit après toute retouche des postures bras levés.
 - `node outils/bande-exercice.cjs <dossier> 90,5 e29 e30` : un exercice à cinq instants côte à côte, de profil (ou
   `appli` pour la vue de l'appli) — c'est là que se juge un geste.
 - `node outils/planche-mouvements.cjs sortie.png "pompe diamant" "dips anneaux | Dips aux anneaux"` : planche de

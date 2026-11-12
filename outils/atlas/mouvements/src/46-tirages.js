@@ -83,8 +83,14 @@
         if (yBas != null) pt.y = Math.max(pt.y, yBas);
         return pt;
       }
-      const a = ancre(s), ep = t.epaules[k].clone().add(dT(s * (e - 0.165) * 0.6, 0, 0));
-      return ep.add(unite(a.clone().sub(ep)).multiplyScalar(portee));
+      const a = ancre(s), ep = t.epaules[k].clone().add(dT(s * (e - 0.165) * 0.6, 0, 0)), vers = unite(a.clone().sub(ep));
+      const a_ = x => ep.clone().add(vers.clone().multiplyScalar(x));
+      if (o.haut) {
+        // Vers une poulie haute, le bras monte et l'épaule avec lui : la portée se règle sur le corps posé (bras tendu).
+        const essai = cloner(p), x = coudeTendu(c, x => { essai.bras[k] = { prise: a_(x), pole: dT(s, 0.2, -1), paume: dT(...paume(s).xyz()), doigts: 'barre' }; return essai; }, portee - 0.06, portee + 0.25, 12, [k]);
+        if (x != null) return a_(x);
+      }
+      return a_(portee);
     };
     const bras = fn => { const r = {}; for (const [k, s] of COTES) r[k] = { prise: fn(k, s), pole: dT(s * (o.haut ? 1 : 0.5), 0.2, -1), paume: dT(...paume(s).xyz()), doigts: 'barre' }; return r; };
     const autre = m !== 'GD' && !o.appui ? (pendante ? { prise: t.hanches[m === 'G' ? 'D' : 'G'].clone().add(V((m === 'G' ? -1 : 1) * 0.06, -0.12, 0.3)), pole: V(m === 'G' ? -1 : 1, 0.3, -0.4), paume: V(0, -1, 0), dirMain: V(0, -0.2, 1), doigts: 'detendu' } : null) : (o.appui ? p.bras[m === 'D' ? 'G' : 'D'] : null);
@@ -129,9 +135,13 @@
     const e = o.large ? 0.43 : o.serre ? 0.1 : o.sup ? 0.19 : 0.3, portee = (L.bras + L.prise) * 0.97;
     const anc = V(0, t.epaules.G.y + 1.0, t.epaules.G.z + 0.14);
     const paume = s => (o.neutre || o.serre || m !== 'GD' ? V(-s, 0, 0) : o.sup ? V(0, 0, -1) : V(0, 0, 1));
-    const hautP = s => { const dx = s * e - s * 0.165; return V(s * e, Math.sqrt(Math.max(0.01, portee * portee - dx * dx - 0.014)), 0.12); };
     const basP = s => (o.nuque ? V(s * 0.42, 0.03, -0.1) : V(s * Math.max(e, 0.17), -0.03, 0.17));
     const bras = f => { const r = {}; for (const [k, s] of COTES) r[k] = { prise: t.duThorax(f(s)), pole: dT(s * 1, -0.5, o.sup || o.serre ? 0.5 : -0.25), paume: dT(...paume(s).xyz()), dirMain: dT(0, 1, 0), doigts: 'barre' }; return r; };
+    // En haut, les bras sont tendus vers la barre : la hauteur des mains se règle sur le corps posé (l'épaule monte avec le
+    // bras ; comptée depuis l'épaule au repos, elle laissait les coudes pliés à 64°).
+    const estime = (() => { const dx = e - 0.165; return Math.sqrt(Math.max(0.01, portee * portee - dx * dx - 0.014)); })();
+    const yHaut = coudeTendu(c, y => Object.assign(cloner(p), { bras: bras(s => V(s * e, y, 0.12)) }), estime - 0.05, estime + 0.3, 12);
+    const hautP = s => V(s * e, yHaut != null ? yHaut : estime, 0.12);
     const d = parLesBras(p, bras(hautP), bras(basP), m);
     // Le buste part un peu en arrière en tirant.
     if (!o.nuque) { d.b.lombaires = -9; d.b.thorax = -5; }
@@ -148,26 +158,37 @@
      épaules travaillent), pendu (suspension tenue), autour (le menton passe d'un côté puis de l'autre). */
   FAM.traction = (c, o, C) => {
     const L = c.L, H = 2.42, ecart = o.large ? 0.46 : o.serre ? 0.14 : o.sup ? 0.22 : 0.33;
+    let yPendu = null;
     const base = u => {
       const p = { bassin: { pos: L.racine.clone(), rot: qX(lerp(0, o.nuque ? 6 : -10, u)) }, lombaires: lerp(0, o.nuque ? 0 : -6, u), thorax: lerp(0, o.nuque ? 4 : -6, u), cou: lerp(-4, o.nuque ? -24 : 14, u), jambes: {}, bras: {} };
       let t = c.tronc(p);
       // Épaules à une longueur de bras sous la barre, puis menton au-dessus ; le corps recule : la barre passe devant.
       const dx = ecart - t.epaules.G.x, pendu = Math.sqrt(Math.max(0.01, Math.pow((L.bras + L.prise) * 0.96, 2) - dx * dx));
-      const yEp = lerp(H - pendu, H - (o.nuque ? 0.1 : 0.17), u);
+      const yEp = lerp(yPendu != null ? yPendu : H - pendu, H - (o.nuque ? 0.1 : 0.17), u);
       p.bassin.pos.y += yEp - t.epaules.G.y; p.bassin.pos.z += lerp(0.02, o.nuque ? 0.12 : -0.1, u) - t.epaules.G.z;
       for (const [k, s] of COTES) {
         p.jambes[k] = o.machine ? J(8, 3, 0, 96, 30) : J(lerp(6, 14, u), 2, 0, o.leste ? 20 : 62, 30);
         p.bras[k] = { prise: V(s * ecart, H, 0.02), pole: V(s * 1, -0.2, o.sup || o.neutre ? 0.5 : -0.25), paume: o.neutre ? V(-s, 0, 0) : o.sup ? V(0, 0, -1) : V(0, 0, 1), dirMain: V(0, 1, 0), doigts: 'barre' };
         if (o.scapulaire) p.bras[k].hausse = lerp(22, -6, u * 8);
       }
+      // La barre est fixe : les mains tombent juste dessus (une main en pronation arrive sinon 2 à 3 cm à côté).
+      if (!o.anneaux) viser(c, p, { G: V(ecart, H, 0.02), D: V(-ecart, H, 0.02) });
       return p;
     };
+    // Pendu, les bras sont tendus : la hauteur des épaules se règle une fois sur le corps posé (elles montent avec les bras).
+    { const p0 = base(0); tendre(c, p0, V(0, -1, 0), null, null, o.anneaux ? null : { G: V(ecart, H, 0.02), D: V(-ecart, H, 0.02) }); yPendu = c.tronc(p0).epaules.G.y; }
     const amp = o.scapulaire ? 0.1 : 1;
     const d = { vue: { az: o.sup ? 150 : 205, el: 4 }, fixe: o.anneaux ? [] : poseFixe(MAT.barreFixe(C, H, Math.max(1.3, 2 * ecart + 0.4))), tenu: [] };
     if (o.pendu) { d.a = base(0); d.b = base(0.03); d.rythme = 'tenue'; }
-    else if (o.autour) { d.rythme = 'continu'; d.periode = 3.4; d.pose = ph => { const w = ph * 2 * Math.PI, u = 0.55 + 0.4 * Math.sin(w - Math.PI / 2) * 0.5 + 0.2, p = base(Math.min(1, u)); p.bassin.pos.x += 0.16 * Math.cos(w); p.bassin.rot = p.bassin.rot.clone().multiply(qZ(-8 * Math.cos(w))); return p; }; }
-    else { d.a = base(0); d.b = base(amp); d.cles = [[0, d.a], [0.5, base(0.5 * amp)], [1, d.b]]; }
-    if (o.negative) { const A = d.a, Z = d.b; d.rythme = 'continu'; d.periode = 5; d.pose = ph => (ph < 0.12 ? mel(A, Z, lisse(ph / 0.12)) : ph < 0.2 ? Z : mel(Z, A, lisse((ph - 0.2) / 0.7))); }
+    else if (o.autour) {
+      // Le corps passe d'un côté de la barre à l'autre, mains fixes : seize poses réglées d'avance sur le tour (mains
+      // remises sur la barre une fois le corps déporté), et le mouvement passe de l'une à l'autre.
+      const tour = ph => { const w = ph * 2 * Math.PI, u = 0.55 + 0.4 * Math.sin(w - Math.PI / 2) * 0.5 + 0.2, p = base(Math.min(1, u)); p.bassin.pos.x += 0.16 * Math.cos(w); p.bassin.rot = p.bassin.rot.clone().multiply(qZ(-8 * Math.cos(w))); for (const [k, s] of COTES) p.bras[k].prise = V(s * ecart, H, 0.02); if (!o.anneaux) viser(c, p, { G: V(ecart, H, 0.02), D: V(-ecart, H, 0.02) }); return p; };
+      const N = 16, table = []; for (let i = 0; i <= N; i++) table.push([i / N, tour(i / N)]);
+      d.rythme = 'continu'; d.periode = 3.4; d.pose = ph => chemin(table, ph);
+    }
+    else { d.a = base(0); d.b = base(amp); d.cles = [[0, d.a], [0.25, base(0.25 * amp)], [0.5, base(0.5 * amp)], [0.75, base(0.75 * amp)], [1, d.b]]; }   // cinq poses : entre deux, les mains restent sur la barre à moins de 5 mm
+    if (o.negative) { const Z = d.b, monter = v => chemin(d.cles, v); d.rythme = 'continu'; d.periode = 5; d.pose = ph => (ph < 0.12 ? monter(lisse(ph / 0.12)) : ph < 0.2 ? Z : monter(1 - lisse((ph - 0.2) / 0.7))); }
     if (o.anneaux) { d.tenu = [{ t: 'sangle', de: s => V(s * ecart, H + 1.0, 0.02), m: 'G' }]; d.tenu = [{ t: 'sangle', de: V(ecart, H + 1.1, 0.02), m: 'G', bout: 'anneau' }, { t: 'sangle', de: V(-ecart, H + 1.1, 0.02), m: 'D', bout: 'anneau' }]; }
     if (o.leste) d.objets = (info, u, sortie) => { const b = info.bassin; sortie.push(pret(cyl(0.16, 0.04, b.x, b.y - 0.42, b.z + 0.04, C.fonte, 0, DEBOUT_Q))); sortie.push(pret(seg(V(b.x, b.y - 0.08, b.z + 0.08), V(b.x, b.y - 0.42, b.z + 0.04), 0.006, C.cadre, 0.6))); };
     if (o.elastique) d.objets = (info, u, sortie) => { const pi = info.chevilles.G.clone().add(info.chevilles.D).multiplyScalar(0.5); sortie.push(pret(seg(V(0, H, 0.02), pi, 0.008, C.elastique, 0))); };
