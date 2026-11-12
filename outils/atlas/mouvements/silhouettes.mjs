@@ -19,24 +19,27 @@ export function chargerAtlas(fichier) {
   const debut = 12 + Math.ceil(n / 4) * 4, pas = E.octetsParSommet;
   let b = brut.subarray(debut, debut + E.sommets * pas);
   const force = process.env.CARRURE == null ? 1 : +process.env.CARRURE;
+  const ctx = { window: {}, Math, Float32Array, Uint8Array, Uint16Array, Uint32Array, DataView, JSON, Object, Array, Infinity, console };
+  vm.createContext(ctx);
+  vm.runInContext(fs.readFileSync(path.join(path.dirname(fichier), 'atlas3d.js'), 'utf8'), ctx);
   if (force > 0) {
-    const ctx = { window: {}, Math, Float32Array, Uint8Array, Uint16Array, Uint32Array, DataView, JSON, Object, Array, Infinity, console };
-    vm.createContext(ctx);
-    vm.runInContext(fs.readFileSync(path.join(path.dirname(fichier), 'atlas3d.js'), 'utf8'), ctx);
     const r = ctx.window.AnqaAtlas.etoffer(new Uint8Array(b.buffer, b.byteOffset, b.length), pas, E.boite, E.squelette, force, (v, o) => b[o + 10] === E.os.pair || b[o + 10] === E.os.impair);
     b = Buffer.from(r.sommets.buffer, r.sommets.byteOffset, r.sommets.length); E.boite = r.boite;
   }
+  // À l'épaule, les muscles vont pour partie « par la corde » : la part de chaque point, comme le moteur la calcule.
+  const part = ctx.window.AnqaAtlas.corde ? ctx.window.AnqaAtlas.corde(E.squelette, process.env.CORDE == null ? undefined : +process.env.CORDE) : () => 0;
   const peau = regions => {
-    const P = [], J = [], W = [];
+    const P = [], J = [], W = [], C = [];
     for (const s of E.structures) {
       if (regions && !regions.includes(s.region)) continue;
       for (let v = s.sommets; v < s.sommets + s.nbSommets; v += 6) {
         const o = v * pas;
         for (let k = 0; k < 3; k++) P.push(E.boite.min[k] + b.readUInt16LE(o + k * 2) / 65535 * E.boite.etendue[k]);
         for (let k = 0; k < 4; k++) { J.push(b.readUInt8(o + 12 + k)); W.push(b.readUInt8(o + 16 + k) / 255); }
+        C.push(part(J, W, J.length - 4));
       }
     }
-    return { n: P.length / 3, P: Float32Array.from(P), J: Uint8Array.from(J), W: Float32Array.from(W) };
+    return { n: P.length / 3, P: Float32Array.from(P), J: Uint8Array.from(J), W: Float32Array.from(W), C: Float32Array.from(C) };
   };
   return { E, peau };
 }

@@ -47,7 +47,8 @@ layout(location=5) in vec4 a_poids;
 uniform vec3 u_min, u_etendue;
 uniform mat4 u_vp;
 uniform vec3 u_cam;
-uniform float u_cote, u_passe, u_seuls, u_tire;
+uniform float u_cote, u_passe, u_seuls, u_tire, u_corde;
+uniform ivec2 u_bras;             // les articulations du bras (de l'humérus au bout des doigts), côté gauche
 uniform sampler2D u_etats;
 uniform highp sampler2D u_os;      // la pose : lignes 2 et 3, un déplacement rigide par articulation (côté gauche, côté droit)
 out vec3 v_pos, v_nor;
@@ -75,17 +76,39 @@ void main() {
   if (u_seuls > 0.5 && !(v_etat.r > 0.02 || (v_etat.g > 0.06 && v_etat.g < 0.2))) voir = false;
   // Chaque sommet suit jusqu'à quatre articulations. Leurs déplacements se mélangent en quaternions duaux (une
   // rotation et un glissement), pas en matrices : entre deux os qui tournent beaucoup l'un par rapport à l'autre
-  // (épaule, hanche), le muscle tourne alors d'une part de l'angle autour de l'articulation, à distance constante,
-  // au lieu de couper par la corde et de s'écraser. Le côté droit est le miroir du gauche, posé par ses propres os.
+  // (coude, genou, hanche), le muscle tourne alors d'une part de l'angle autour de l'articulation, à distance
+  // constante, au lieu de couper par la corde et de s'écraser. Le côté droit est le miroir du gauche, posé par ses
+  // propres os. (L'épaule fait exception : voir plus bas.)
   vec4 qr = vec4(0.0), qd = vec4(0.0);
+  float wBras = 0.0, wTout = 0.0;
   for (int k = 0; k < 4; k++) {
     float w = a_poids[k];
-    if (w > 0.0) { int j = int(a_os[k]) * 3; qr += w * texelFetch(u_os, ivec2(j, 2 + cote), 0); qd += w * texelFetch(u_os, ivec2(j + 1, 2 + cote), 0); }
+    if (w > 0.0) {
+      int a = int(a_os[k]), j = a * 3;
+      qr += w * texelFetch(u_os, ivec2(j, 2 + cote), 0); qd += w * texelFetch(u_os, ivec2(j + 1, 2 + cote), 0);
+      wTout += w; if (a >= u_bras.x && a <= u_bras.y) wBras += w;
+    }
   }
   float l = 1.0 / max(length(qr), 1e-6); qr *= l; qd *= l;
   vec3 p0 = u_min + a_pos * u_etendue, n0 = octa(a_nor);
   if (cote == 1) { p0.x = -p0.x; n0.x = -n0.x; }
   vec3 p = p0 + 2.0 * cross(qr.xyz, cross(qr.xyz, p0) + qr.w * p0) + 2.0 * (qr.w * qd.xyz - qd.w * qr.xyz + cross(qr.xyz, qd.xyz));
+  // À l'épaule, exception : un muscle tendu entre le tronc et le bras (deltoïde, grand pectoral, grand dorsal) ne tourne
+  // pas à distance constante autour de l'articulation — bras levé, il ferait une poche à côté du bras. Il va au plus
+  // court entre ses attaches : les sommets partagés entre le tronc et le bras se rapprochent de la corde.
+  float part = wBras / max(wTout, 1e-6), corde = u_corde * smoothstep(0.0, 0.12, min(part, 1.0 - part));
+  if (corde > 0.0) {
+    vec3 pc = vec3(0.0);
+    for (int k = 0; k < 4; k++) {
+      float w = a_poids[k];
+      if (w > 0.0) {
+        int j = int(a_os[k]) * 3;
+        vec4 r = texelFetch(u_os, ivec2(j, 2 + cote), 0), d = texelFetch(u_os, ivec2(j + 1, 2 + cote), 0);
+        pc += w * (p0 + 2.0 * cross(r.xyz, cross(r.xyz, p0) + r.w * p0) + 2.0 * (r.w * d.xyz - d.w * r.xyz + cross(r.xyz, d.xyz)));
+      }
+    }
+    p = mix(p, pc / wTout, corde);
+  }
   vec3 n = normalize(n0 + 2.0 * cross(qr.xyz, cross(qr.xyz, n0) + qr.w * n0));
   v_pos = p; v_nor = n;
   v_ombre = a_ombreTendon.x; v_tendon = a_ombreTendon.y;
@@ -521,6 +544,26 @@ void main() {
     for (let i = 1; i < profil.length; i++) if (t <= profil[i][0]) { const x = (t - profil[i - 1][0]) / (profil[i][0] - profil[i - 1][0]); return profil[i - 1][1] + (profil[i][1] - profil[i - 1][1]) * x; }
     return profil[profil.length - 1][1];
   };
+  /* À l'épaule, les muscles partagés entre le tronc et le bras vont pour partie « par la corde » (voir le programme des
+     sommets) : CORDE_EPAULE est cette part, au plus ; chaineDuBras rend les articulations du bras gauche (elles se
+     suivent dans le squelette), ou null ; corde(SQ) rend la fonction qui donne la part d'un sommet d'après ses quatre
+     attaches — la même formule que le programme, pour mesurer le corps posé là où il se dessine. */
+  const CORDE_EPAULE = 0.85;
+  function chaineDuBras(SQ) {
+    let a = -1, b = -1, n = 0;
+    for (let i = 0; i < (SQ || []).length; i++) if (/^(humerus|ulna|radius|main|doigt).*\.G$/.test(SQ[i].nom || '')) { if (a < 0) a = i; b = i; n++; }
+    return a >= 0 && n === b - a + 1 ? [a, b] : null;
+  }
+  function corde(SQ, force) {
+    const ch = chaineDuBras(SQ), k = force == null ? CORDE_EPAULE : force;
+    if (!ch || !(k > 0)) return () => 0;
+    return (J, W, o) => {
+      let wb = 0, wt = 0;
+      for (let i = 0; i < 4; i++) { const w = W[o + i]; wt += w; if (J[o + i] >= ch[0] && J[o + i] <= ch[1]) wb += w; }
+      const part = wb / (wt || 1), t = Math.min(1, Math.min(part, 1 - part) / 0.12);
+      return k * t * t * (3 - 2 * t);
+    };
+  }
   /* Étoffe un tableau de sommets (rangement de atlas.bin et de atlas-peau.bin : position sur 3 × 16 bits dans la boîte,
      articulations aux octets 12 à 15, poids aux octets 16 à 19). Renvoie une copie des sommets et leur nouvelle boîte.
      garder(v) : vrai pour un sommet qui ne bouge pas (les os) ; articulation(j) : pour la peau, ramène une articulation
@@ -642,6 +685,7 @@ void main() {
     // La pose : pour chaque articulation, une matrice 3×4 (rotation et déplacement), rangée par lignes. La seconde
     // rangée sert au côté dessiné en miroir : la matrice de l'articulation jumelle, précédée du miroir.
     const SQ = E.squelette || [], NJ = Math.max(1, SQ.length);
+    const BRAS = chaineDuBras(SQ), partCorde = opt.corde == null ? CORDE_EPAULE : opt.corde;
     // La peau ajoute des articulations intermédiaires (une fraction de la rotation entre deux os, voir peau.mjs) : elles
     // prennent place à la suite, côté gauche puis côté droit, et le moteur calcule leur pose à chaque changement.
     const INTER = PE && PE.entete.articulations === SQ.length && PE.entete.intermediaires ? PE.entete.intermediaires : [];
@@ -936,6 +980,7 @@ void main() {
       gl.uniformMatrix4fv(pr.u.u_vp, false, m.vp);
       gl.uniform3fv(pr.u.u_min, E.boite.min); gl.uniform3fv(pr.u.u_etendue, E.boite.etendue);
       gl.uniform3fv(pr.u.u_cam, m.oeil); gl.uniform1f(pr.u.u_seuls, 0); gl.uniform1f(pr.u.u_tire, 0);
+      gl.uniform2i(pr.u.u_bras, BRAS ? BRAS[0] : -1, BRAS ? BRAS[1] : -2); gl.uniform1f(pr.u.u_corde, BRAS ? partCorde : 0);
       if (reperage) return;
       const c = Math.cos(m.az), s = Math.sin(m.az);
       gl.uniformMatrix3fv(prog.u.u_lum, false, [c, 0, -s, 0, 1, 0, s, 0, c]);
@@ -1290,18 +1335,19 @@ void main() {
       // Points de la surface du corps au repos (un sommet sur six des structures des régions demandées), avec leurs
       // articulations et leurs poids : pour mesurer le corps posé (où passe une barre devant les jambes, etc.).
       peau(regions) {
-        const vue = new DataView(M.sommets.buffer, M.sommets.byteOffset, M.sommets.byteLength), pas = E.octetsParSommet, P = [], J = [], W = [];
+        const vue = new DataView(M.sommets.buffer, M.sommets.byteOffset, M.sommets.byteLength), pas = E.octetsParSommet, P = [], J = [], W = [], C = [], part = corde(SQ, partCorde);
         for (const s of S) {
           if (regions && !regions.includes(s.region)) continue;
           for (let v = s.sommets; v < s.sommets + s.nbSommets; v += 6) {
             const o = v * pas;
             for (let k = 0; k < 3; k++) P.push(E.boite.min[k] + vue.getUint16(o + k * 2, true) / 65535 * E.boite.etendue[k]);
             for (let k = 0; k < 4; k++) { J.push(vue.getUint8(o + 12 + k)); W.push(vue.getUint8(o + 16 + k) / 255); }
+            C.push(part(J, W, J.length - 4));
           }
         }
         const bassin = SQ.length ? SQ[0].centre : centreCorps; let zDos = Infinity;
         for (let i = 0; i < P.length; i += 3) if (P[i + 1] > bassin[1] - 0.05 && P[i + 1] < bassin[1] + 0.45 && P[i + 2] < zDos) zDos = P[i + 2];
-        return { n: P.length / 3, P: Float32Array.from(P), J: Uint8Array.from(J), W: Float32Array.from(W), dos: bassin[2] - zDos };
+        return { n: P.length / 3, P: Float32Array.from(P), J: Uint8Array.from(J), W: Float32Array.from(W), C: Float32Array.from(C), dos: bassin[2] - zDos };
       },
       choisir(id) { choisi = id == null ? -1 : api.indice(id); estompeCible = choisi >= 0 ? 1 : 0; demander(); },
       choisi: () => choisi >= 0 ? S[choisi] : null,
@@ -1857,5 +1903,5 @@ void main() {
     };
   }
 
-  window.AnqaAtlas = { creer, activerGestes, monter, apercu, VUES, etoffer, themeDeCarte };
+  window.AnqaAtlas = { creer, activerGestes, monter, apercu, VUES, etoffer, corde, themeDeCarte };
 })();
