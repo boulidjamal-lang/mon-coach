@@ -137,6 +137,23 @@
         else pw[b].copy(decal[b]).applyQuaternion(qw[p]).add(pw[p]);
       }
     }
+    /* La ceinture scapulaire sans roulis. La rotation qc met l'épaule (le centre de l'humérus) où il faut, mais, bras
+       levé par l'avant, c'est un roulis autour de la clavicule : l'omoplate et ses muscles basculaient alors de
+       plusieurs centimètres dans les côtes. On garde l'endroit de l'épaule — donc tout le geste du bras — et on y mène
+       la ceinture par une montée (autour de l'axe avant-arrière du thorax) puis une avancée (autour de son axe
+       vertical) : l'omoplate glisse sur le dos, vers le haut et vers le flanc, comme elle le fait. */
+    sansRoulis(x, qc, QT) {
+      const i = this.i, c = this.tete[i['humerus' + x]].clone().sub(this.tete[i['clavicule' + x]]);
+      const t = c.clone().applyQuaternion(QT.clone().invert().multiply(qc));
+      // La montée e : c.x·sin e + c.y·cos e = t.y ; des deux solutions, la plus petite.
+      const A = Math.hypot(c.x, c.y); if (!(A > 1e-6)) return qc;
+      const d = Math.atan2(c.y, c.x), a = Math.asin(borne(t.y / A, -1, 1)), tour = v => v - 2 * Math.PI * Math.round(v / (2 * Math.PI));
+      const e1 = tour(a - d), e2 = tour(Math.PI - a - d), e = Math.abs(e1) <= Math.abs(e2) ? e1 : e2;
+      const x1 = c.x * Math.cos(e) - c.y * Math.sin(e);
+      // L'avancée p, autour de la verticale : elle amène (x1, c.z) sur (t.x, t.z).
+      const p = tour(Math.atan2(t.x, t.z) - Math.atan2(x1, c.z));
+      return QT.clone().multiply(qAxe(AY, p)).multiply(qAxe(AZ, e));
+    }
     /* Donne à une articulation sa rotation dans le monde (et, au besoin, sa place). */
     poserMonde(nom, q, pos) {
       const b = this.i[nom];
@@ -370,6 +387,7 @@
       const libre0 = arc(R.bras.d1.clone().applyQuaternion(QT), d1).multiply(QT);
       let qc = QT.clone().slerp(libre0, b.ceinture != null ? b.ceinture : K_CEINTURE);
       if (b.hausse || b.avance) qc = qAxe(AZ.clone().applyQuaternion(QT), s * rad(b.hausse || 0)).multiply(qAxe(AY.clone().applyQuaternion(QT), -s * rad(b.avance || 0))).multiply(qc);
+      qc = this.sansRoulis(x, qc, QT);
       this.poserMonde('clavicule' + x, qc);
       // 2. Le bras, depuis l'épaule ainsi déplacée.
       resoudre();

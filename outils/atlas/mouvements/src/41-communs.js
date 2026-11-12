@@ -67,22 +67,32 @@
       if (r.bout === 'barre' || r.bout === 'corde') t.push({ t: 'cable', de: pt(r.ancre, 'G'), bout: r.bout, l: r.lCable });
       else for (const k of cotes) t.push({ t: 'cable', de: pt(r.ancre, k), m: k, bout: 'poignee' });
     } else if (o.elas) for (const k of cotes) t.push({ t: 'elastique', de: r.deElas ? pt(r.deElas, k) : 'pieds', m: k, bout: 'poignee' });
-    else if (o.machine && r.pivot) for (const k of cotes) t.push({ t: 'levier', de: pt(r.pivot, k), m: k });
+    else if (o.machine && r.pivot) for (const k of cotes) t.push({ t: 'levier', de: pt(r.pivot, k), m: k, bati: r.bati });
     else if (o.sangles && r.ancre) for (const k of cotes) t.push({ t: 'sangle', de: pt(r.ancre, k), m: k, bout: 'poignee' });
     return t;
   }
   /* Le pupitre réglé sous les bras, pour la posture p et les bras donnés : son coussin est parallèle au haut des bras
-     et sa face touche le dessous des bras (les triceps s'y posent, enfoncés d'un centimètre) ; le coude est à 7 cm de
-     son bord bas. (Posé à vue, le coussin se trouvait dans les bras : le coude était au milieu de son épaisseur.) */
+     et sa face touche le dessous des bras (les triceps s'y posent, enfoncés d'un centimètre) ; son bord bas est à
+     5 cm au-delà du coude, là où l'avant-bras le quitte ; son bord haut monte vers l'aisselle (19 cm au-dessus du
+     coude au plus) tant que son coin arrière ne rentre pas dans la poitrine (de plus de 8 mm). Le dessous du bras se
+     mesure de 3 à 14 cm au-dessus du coude : plus haut, le long triceps rejoint l'aisselle et descend bien plus bas
+     que le bras. Rend les formes du pupitre ; .coude : la place du coude gauche (le pivot d'une machine). */
   function pupitreSous(c, p, bras, C) {
     const q = cloner(p); q.bras = pareil(bras);
     const i = c.poser(q), e = i.epaules.G, k = i.coudes.G, al = Math.atan2(e.y - k.y, k.z - e.z);
     const n = V(0, Math.cos(al), Math.sin(al)), td = V(0, -Math.sin(al), Math.cos(al));
     // Le dessous du bras se mesure sur les seize centimètres au-dessus du coude (plus haut, c'est l'aisselle).
     const sK = td.dot(k); let m = Infinity;
-    c.peauPosee(['bras'], (x, y, z) => { const s = y * td.y + z * td.z; if (s < sK - 0.18 || s > sK - 0.02) return; const h = y * n.y + z * n.z; if (h < m) m = h; });
-    const ctr = n.clone().multiplyScalar(m + ENFONCE - 0.035).add(td.clone().multiplyScalar(sK - 0.14));
-    return MAT.pupitre(C, ctr.y, ctr.z, al * 180 / Math.PI);
+    c.peauPosee(['bras'], (x, y, z) => { const s = y * td.y + z * td.z; if (s < sK - 0.14 || s > sK - 0.03) return; const h = y * n.y + z * n.z; if (h < m) m = h; });
+    const ep = 0.06, h0 = m + ENFONCE - ep, bas = sK + 0.05, larg = 0.25;
+    // Le tronc devant le coussin : pour chaque point (dans la largeur du coussin), sa place le long du bras et sous sa face.
+    const T = []; c.peauPosee(['thorax', 'abdomen', 'dos', 'epaule'], (x, y, z) => { if (Math.abs(x) > larg) return; const h = y * n.y + z * n.z; if (h < h0 + ep && h > h0 - 0.02) T.push(y * td.y + z * td.z, h); });
+    let haut = 0.19;
+    for (; haut > 0.1; haut -= 0.01) { let dedans = 0; for (let i = 0; i < T.length; i += 2) if (T[i] > sK - haut && T[i] < bas && T[i + 1] > h0) dedans = Math.max(dedans, Math.min(T[i + 1] - h0, h0 + ep - T[i + 1])); if (dedans <= 0.008) break; }
+    const L = bas - (sK - haut), ctr = n.clone().multiplyScalar(h0 + ep / 2).add(td.clone().multiplyScalar((bas + sK - haut) / 2));
+    const f = MAT.pupitre(C, ctr.y, ctr.z, al * 180 / Math.PI, L, ep);
+    f.coude = k.clone();
+    return f;
   }
   /* Colonne de poulie posée au point d'ancrage (quand l'exercice se fait au câble). */
   const colonneSi = (o, C, ancre, fixe) => { if (o.poulie && ancre) for (const a of Array.isArray(ancre) ? ancre : [ancre]) poserObjet(MAT.colonne(C, a), V(), null, fixe); return fixe; };

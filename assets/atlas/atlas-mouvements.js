@@ -322,6 +322,23 @@
         else pw[b].copy(decal[b]).applyQuaternion(qw[p]).add(pw[p]);
       }
     }
+    /* La ceinture scapulaire sans roulis. La rotation qc met l'épaule (le centre de l'humérus) où il faut, mais, bras
+       levé par l'avant, c'est un roulis autour de la clavicule : l'omoplate et ses muscles basculaient alors de
+       plusieurs centimètres dans les côtes. On garde l'endroit de l'épaule — donc tout le geste du bras — et on y mène
+       la ceinture par une montée (autour de l'axe avant-arrière du thorax) puis une avancée (autour de son axe
+       vertical) : l'omoplate glisse sur le dos, vers le haut et vers le flanc, comme elle le fait. */
+    sansRoulis(x, qc, QT) {
+      const i = this.i, c = this.tete[i['humerus' + x]].clone().sub(this.tete[i['clavicule' + x]]);
+      const t = c.clone().applyQuaternion(QT.clone().invert().multiply(qc));
+      // La montée e : c.x·sin e + c.y·cos e = t.y ; des deux solutions, la plus petite.
+      const A = Math.hypot(c.x, c.y); if (!(A > 1e-6)) return qc;
+      const d = Math.atan2(c.y, c.x), a = Math.asin(borne(t.y / A, -1, 1)), tour = v => v - 2 * Math.PI * Math.round(v / (2 * Math.PI));
+      const e1 = tour(a - d), e2 = tour(Math.PI - a - d), e = Math.abs(e1) <= Math.abs(e2) ? e1 : e2;
+      const x1 = c.x * Math.cos(e) - c.y * Math.sin(e);
+      // L'avancée p, autour de la verticale : elle amène (x1, c.z) sur (t.x, t.z).
+      const p = tour(Math.atan2(t.x, t.z) - Math.atan2(x1, c.z));
+      return QT.clone().multiply(qAxe(AY, p)).multiply(qAxe(AZ, e));
+    }
     /* Donne à une articulation sa rotation dans le monde (et, au besoin, sa place). */
     poserMonde(nom, q, pos) {
       const b = this.i[nom];
@@ -555,6 +572,7 @@
       const libre0 = arc(R.bras.d1.clone().applyQuaternion(QT), d1).multiply(QT);
       let qc = QT.clone().slerp(libre0, b.ceinture != null ? b.ceinture : K_CEINTURE);
       if (b.hausse || b.avance) qc = qAxe(AZ.clone().applyQuaternion(QT), s * rad(b.hausse || 0)).multiply(qAxe(AY.clone().applyQuaternion(QT), -s * rad(b.avance || 0))).multiply(qc);
+      qc = this.sansRoulis(x, qc, QT);
       this.poserMonde('clavicule' + x, qc);
       // 2. Le bras, depuis l'épaule ainsi déplacée.
       resoudre();
@@ -906,9 +924,9 @@
       return horsCadre(f);
     },
     /* Pupitre (curl au pupitre) : un coussin incliné devant le buste, sur un pied. */
-    pupitre(C, y = 1.05, z = 0.2, angle = 45) {
+    pupitre(C, y = 1.05, z = 0.2, angle = 45, long = 0.42, ep = 0.07) {
       const a = rad(angle);
-      const f = [coussin(0.5, 0.07, 0.42, 0, y, z, C, qAxe(AX, a)), tube(V(0, 0.03, z + 0.1), V(0, y - 0.08, z + 0.06), 0.06, C.cadre), tube(V(0, 0.03, z - 0.25), V(0, 0.03, z + 0.3), 0.055, C.cadre)];
+      const f = [coussin(0.5, ep, long, 0, y, z, C, qAxe(AX, a)), tube(V(0, 0.03, z + 0.1), V(0, y - 0.08, z + 0.06), 0.06, C.cadre), tube(V(0, 0.03, z - 0.25), V(0, 0.03, z + 0.3), 0.055, C.cadre)];
       for (const zz of [z - 0.25, z + 0.3]) f.push(...patin(C, V(-0.2, 0.028, zz), V(0.2, 0.028, zz), 0.05));
       return f;
     },
@@ -1326,9 +1344,11 @@
       const pivots = d.tenu.filter(e => e.t === 'levier' && e.de).map(e => (typeof e.de === 'function' ? e.de(info, 0) : e.de)).filter(p => p && p.x != null);
       if (pivots.length) {
         const zP = pivots.reduce((t, p) => t + p.z, 0) / pivots.length, yP = Math.max(...pivots.map(p => p.y)), zC = info.bassin.z;
-        const devant = zP - zC > 0.6, zF = devant ? zP + 0.14 : Math.min(zC, zP) - 0.6, H = Math.max(1.5, yP + 0.12), f = deplacer(bati(C, H, 0), V(0, 0, zF), devant ? qY(180) : null);
-        for (const p of pivots) { f.push(tube(V(Math.sign(p.x || 1) * 0.2, H, zF), p, 0.045, C.cadre), cyl(0.042, 0.05, p.x, p.y, p.z, C.cadre, 0.5, null, 0.01)); }
-        if (pivots.length > 1) f.push(tube(pivots[0], pivots[1], 0.045, C.cadre));
+        // (bati 'devant' : le levier tourne autour du coude, sur un pupitre ; le bâti se tient au-delà des mains.)
+        const coude = d.tenu.some(e => e.t === 'levier' && e.bati === 'devant'), devant = coude || zP - zC > 0.6;
+        const zF = devant ? zP + (coude ? 0.45 : 0.14) : Math.min(zC, zP) - 0.6, H = Math.max(1.5, yP + 0.12), f = deplacer(bati(C, H, 0), V(0, 0, zF), devant ? qY(180) : null);
+        for (const p of pivots) { f.push(tube(V(Math.sign(p.x || 1) * Math.max(0.2, Math.abs(p.x)), H, zF), p, 0.045, C.cadre), cyl(0.042, 0.05, p.x, p.y, p.z, C.cadre, 0.5, null, 0.01)); }
+        if (pivots.length > 1 && !coude) f.push(tube(pivots[0], pivots[1], 0.045, C.cadre));   // (aux coudes, la traverse passerait dans les bras)
         f.push(tube(V(0, 0.03, zF), V(0, 0.03, zC), 0.05, C.cadre));
         poserObjet(horsCadre(f), V(), null, d.fixe);
         if (!d.levee) d.levee = (i2, u) => 0.26 * Math.max(0, Math.min(1, u));
@@ -1863,22 +1883,32 @@
       if (r.bout === 'barre' || r.bout === 'corde') t.push({ t: 'cable', de: pt(r.ancre, 'G'), bout: r.bout, l: r.lCable });
       else for (const k of cotes) t.push({ t: 'cable', de: pt(r.ancre, k), m: k, bout: 'poignee' });
     } else if (o.elas) for (const k of cotes) t.push({ t: 'elastique', de: r.deElas ? pt(r.deElas, k) : 'pieds', m: k, bout: 'poignee' });
-    else if (o.machine && r.pivot) for (const k of cotes) t.push({ t: 'levier', de: pt(r.pivot, k), m: k });
+    else if (o.machine && r.pivot) for (const k of cotes) t.push({ t: 'levier', de: pt(r.pivot, k), m: k, bati: r.bati });
     else if (o.sangles && r.ancre) for (const k of cotes) t.push({ t: 'sangle', de: pt(r.ancre, k), m: k, bout: 'poignee' });
     return t;
   }
   /* Le pupitre réglé sous les bras, pour la posture p et les bras donnés : son coussin est parallèle au haut des bras
-     et sa face touche le dessous des bras (les triceps s'y posent, enfoncés d'un centimètre) ; le coude est à 7 cm de
-     son bord bas. (Posé à vue, le coussin se trouvait dans les bras : le coude était au milieu de son épaisseur.) */
+     et sa face touche le dessous des bras (les triceps s'y posent, enfoncés d'un centimètre) ; son bord bas est à
+     5 cm au-delà du coude, là où l'avant-bras le quitte ; son bord haut monte vers l'aisselle (19 cm au-dessus du
+     coude au plus) tant que son coin arrière ne rentre pas dans la poitrine (de plus de 8 mm). Le dessous du bras se
+     mesure de 3 à 14 cm au-dessus du coude : plus haut, le long triceps rejoint l'aisselle et descend bien plus bas
+     que le bras. Rend les formes du pupitre ; .coude : la place du coude gauche (le pivot d'une machine). */
   function pupitreSous(c, p, bras, C) {
     const q = cloner(p); q.bras = pareil(bras);
     const i = c.poser(q), e = i.epaules.G, k = i.coudes.G, al = Math.atan2(e.y - k.y, k.z - e.z);
     const n = V(0, Math.cos(al), Math.sin(al)), td = V(0, -Math.sin(al), Math.cos(al));
     // Le dessous du bras se mesure sur les seize centimètres au-dessus du coude (plus haut, c'est l'aisselle).
     const sK = td.dot(k); let m = Infinity;
-    c.peauPosee(['bras'], (x, y, z) => { const s = y * td.y + z * td.z; if (s < sK - 0.18 || s > sK - 0.02) return; const h = y * n.y + z * n.z; if (h < m) m = h; });
-    const ctr = n.clone().multiplyScalar(m + ENFONCE - 0.035).add(td.clone().multiplyScalar(sK - 0.14));
-    return MAT.pupitre(C, ctr.y, ctr.z, al * 180 / Math.PI);
+    c.peauPosee(['bras'], (x, y, z) => { const s = y * td.y + z * td.z; if (s < sK - 0.14 || s > sK - 0.03) return; const h = y * n.y + z * n.z; if (h < m) m = h; });
+    const ep = 0.06, h0 = m + ENFONCE - ep, bas = sK + 0.05, larg = 0.25;
+    // Le tronc devant le coussin : pour chaque point (dans la largeur du coussin), sa place le long du bras et sous sa face.
+    const T = []; c.peauPosee(['thorax', 'abdomen', 'dos', 'epaule'], (x, y, z) => { if (Math.abs(x) > larg) return; const h = y * n.y + z * n.z; if (h < h0 + ep && h > h0 - 0.02) T.push(y * td.y + z * td.z, h); });
+    let haut = 0.19;
+    for (; haut > 0.1; haut -= 0.01) { let dedans = 0; for (let i = 0; i < T.length; i += 2) if (T[i] > sK - haut && T[i] < bas && T[i + 1] > h0) dedans = Math.max(dedans, Math.min(T[i + 1] - h0, h0 + ep - T[i + 1])); if (dedans <= 0.008) break; }
+    const L = bas - (sK - haut), ctr = n.clone().multiplyScalar(h0 + ep / 2).add(td.clone().multiplyScalar((bas + sK - haut) / 2));
+    const f = MAT.pupitre(C, ctr.y, ctr.z, al * 180 / Math.PI, L, ep);
+    f.coude = k.clone();
+    return f;
   }
   /* Colonne de poulie posée au point d'ancrage (quand l'exercice se fait au câble). */
   const colonneSi = (o, C, ancre, fixe) => { if (o.poulie && ancre) for (const a of Array.isArray(ancre) ? ancre : [ancre]) poserObjet(MAT.colonne(C, a), V(), null, fixe); return fixe; };
@@ -1902,13 +1932,15 @@
     const P = postureDe(c, o, C, { penche: o.bayesien ? 8 : 0 });
     let p = P.p, fixe = P.fixe, vue = P.vue, a, b, ancre = V(0, 0.1, 0.8), autre = null, bout = o.barreP ? 'barre' : o.corde ? 'corde' : null, r = { disques: 0.13, lCable: 0.7 };
     if (o.pupitre) {
-      // Assis derrière le pupitre, le haut des bras posé sur le coussin incliné.
+      // Assis derrière le pupitre, le haut des bras posé sur le coussin incliné (à 45° environ : le buste penche de
+      // 20°, les bras sont levés de 68° par rapport à lui, les épaules avancées au-dessus du coussin). Machine : le
+      // levier tourne autour du coude, son bâti est devant le pupitre.
       p = assis(c, { h: H_SIEGE, penche: 14, zPieds: 0.3 }); p.thorax = 6; p.cou = -8;
-      a = B(8, 52, 0, 22, pron); b = B(8, 52, 0, 128, pron);
-      const t = c.tronc(p), ep = t.epaules.G;
-      fixe = poseFixe(MAT.siege(C, H_SIEGE)).concat(poseFixe(pupitreSous(c, p, a, C)));
+      a = B(8, 68, 0, 22, pron, { avance: 12 }); b = B(8, 68, 0, 128, pron, { avance: 12 });
+      const t = c.tronc(p), ep = t.epaules.G, pup = pupitreSous(c, p, a, C), k0 = pup.coude;
+      fixe = poseFixe(MAT.siege(C, H_SIEGE)).concat(poseFixe(pup));
       ancre = V(0, 0.15, ep.z + 0.75); vue = { az: 52, el: 12 };
-      r.pivot = s => V(s * 0.2, ep.y - 0.3, ep.z + 0.3);
+      r.pivot = s => V(s * (Math.abs(k0.x) + 0.09), k0.y, k0.z); r.bati = 'devant';
     } else if (P.sorte === 'ventre') {
       // À plat ventre sur le banc incliné : les bras pendent à la verticale devant le banc.
       const pen = o.ventre === true ? 50 : o.ventre;
@@ -2016,11 +2048,12 @@
       a = B(0, 108, 0, 128, 90); b = B(0, 100, 0, 8, 90); ancre = V(0, 1.55, -0.95);
     } else if (o.machine) {
       // Assis, le haut des bras posé sur un coussin : les mains poussent les poignées vers le bas.
+      // (Le haut des bras à 45° environ, comme au pupitre ; le levier tourne autour du coude, son bâti est devant.)
       p = assis(c, { h: H_SIEGE, penche: 10, zPieds: 0.3 }); p.thorax = 4;
-      a = B(4, 56, 0, 122, 90); b = B(4, 56, 0, 10, 90);
-      const t = c.tronc(p), ep = t.epaules.G;
-      fixe = poseFixe(MAT.siege(C, H_SIEGE, 0.5, 4)).concat(poseFixe(pupitreSous(c, p, a, C)));
-      r.pivot = s => V(s * 0.2, ep.y - 0.3, ep.z + 0.32); vue = { az: 55, el: 10 };
+      a = B(4, 60, 0, 122, 90, { avance: 12 }); b = B(4, 60, 0, 10, 90, { avance: 12 });
+      const pup = pupitreSous(c, p, a, C), k0 = pup.coude;
+      fixe = poseFixe(MAT.siege(C, H_SIEGE, 0.5, 4)).concat(poseFixe(pup));
+      r.pivot = s => V(s * (Math.abs(k0.x) + 0.09), k0.y, k0.z); r.bati = 'devant'; vue = { az: 55, el: 10 };
     } else {
       // Pushdown : face à la poulie haute, coudes au corps ; les avant-bras descendent.
       P = postureDe(c, o, C, { penche: 8 }); p = P.p; fixe = P.fixe; vue = { az: 55, el: 8 };

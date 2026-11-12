@@ -273,9 +273,9 @@
       return horsCadre(f);
     },
     /* Pupitre (curl au pupitre) : un coussin incliné devant le buste, sur un pied. */
-    pupitre(C, y = 1.05, z = 0.2, angle = 45) {
+    pupitre(C, y = 1.05, z = 0.2, angle = 45, long = 0.42, ep = 0.07) {
       const a = rad(angle);
-      const f = [coussin(0.5, 0.07, 0.42, 0, y, z, C, qAxe(AX, a)), tube(V(0, 0.03, z + 0.1), V(0, y - 0.08, z + 0.06), 0.06, C.cadre), tube(V(0, 0.03, z - 0.25), V(0, 0.03, z + 0.3), 0.055, C.cadre)];
+      const f = [coussin(0.5, ep, long, 0, y, z, C, qAxe(AX, a)), tube(V(0, 0.03, z + 0.1), V(0, y - 0.08, z + 0.06), 0.06, C.cadre), tube(V(0, 0.03, z - 0.25), V(0, 0.03, z + 0.3), 0.055, C.cadre)];
       for (const zz of [z - 0.25, z + 0.3]) f.push(...patin(C, V(-0.2, 0.028, zz), V(0.2, 0.028, zz), 0.05));
       return f;
     },

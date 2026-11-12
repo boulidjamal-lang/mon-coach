@@ -38,7 +38,7 @@ export function preparerCrible(atlas, corps) {
     couche[i] = st < E.structures.length ? E.structures[st].couche : 9;
   }
   corps.peaux.crible = ech;
-  return { n, part, couche, parties, X: new Float32Array(2 * n * 3) };
+  return { n, part, couche, parties, X: new Float32Array(2 * n * 3), X0: new Float32Array(2 * n * 3) };
 }
 const classeDe = (couleur, C) => { for (const k in C) if (C[k][0] === couleur[0] && C[k][1] === couleur[1] && C[k][2] === couleur[2]) return k; return 'autre'; };
 function preparerForme(f, C) {
@@ -73,14 +73,18 @@ export function releverSpec(M, corps, C, K, spec) {
   try { d = M.definir(spec, corps, C); } catch (e) { return { erreur: String(e.message).slice(0, 160) }; }
   const continu = d.rythme === 'continu' || d.rythme === 'boucle';
   const instants = continu ? [0.02, 0.18, 0.34, 0.5, 0.66, 0.82, 0.96] : [0, 1 / 6, 2 / 6, 0.5, 4 / 6, 5 / 6, 1];
-  const { n, X } = K, releve = [], modeles = {};
-  corps.appuis = d.appuis || null;   // la chair écrasée contre les coussins, comme le moteur la dessine
+  const { n, X, X0 } = K, releve = [], modeles = {}, appuis = d.appuis && d.appuis.length ? d.appuis : null;
   for (const u of instants) {
     let formes;
     try { const info = corps.poser(M.poseA(d, 0, u)); formes = M.materielDe(d, info, u, C, modeles); } catch (e) { return { erreur: 'u=' + u + ' : ' + String(e.message).slice(0, 160) }; }
+    // La chair écrasée contre les coussins, comme le moteur la dessine (X) ; et, s'il y a des appuis, sans écrasement
+    // (X0) : un point de chair qu'un appui a tiré du dehors jusque dans un coussin (le dessous d'une cuisse, sous le
+    // bord avant d'une assise) y est caché, ce n'est pas une traversée.
+    corps.appuis = appuis;
     let i = 0; corps.peauPosee(['crible'], (x, y, z) => { X[i++] = x; X[i++] = y; X[i++] = z; });
+    if (appuis) { corps.appuis = null; i = 0; corps.peauPosee(['crible'], (x, y, z) => { X0[i++] = x; X0[i++] = y; X0[i++] = z; }); corps.appuis = appuis; }
     for (let k = 0; k < formes.length; k++) {
-      const F = preparerForme(formes[k], C), R = F.englobe;
+      const F = preparerForme(formes[k], C), R = F.englobe, mou = appuis && (F.classe === 'banc' || F.classe === 'tapis' || F.classe === 'ballon');
       const x0 = F.px - R, x1 = F.px + R, y0 = F.py - R, y1 = F.py + R, z0 = F.pz - R, z1 = F.pz + R;
       let prof = 0, nb = 0, profonds = 0, parts = null;
       for (let j = 0, o = 0; j < 2 * n; j++, o += 3) {
@@ -88,6 +92,7 @@ export function releverSpec(M, corps, C, K, spec) {
         const y = X[o + 1]; if (y < y0 || y > y1) continue;
         const z = X[o + 2]; if (z < z0 || z > z1) continue;
         const dist = distance(F, x, y, z); if (dist > -0.003) continue;
+        if (mou && distance(F, X0[o], X0[o + 1], X0[o + 2]) > -0.003) continue;
         const v = j < n ? j : j - n, nom = K.parties[K.part[v]] + (j < n ? ' G' : ' D');
         nb++; if (K.couche[v] >= 3) profonds++;
         parts = parts || {}; const e = parts[nom] || (parts[nom] = { n: 0, prof: 0 }); e.n++; if (-dist > e.prof) e.prof = -dist;
