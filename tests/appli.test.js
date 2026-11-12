@@ -6642,6 +6642,11 @@ test('atlas 3D : soulevés de terre et squat se déroulent comme le geste réel'
   // À mi-course (barre au-dessus des genoux), les genoux sont encore pliés : les hanches ne sont pas montées seules.
   assert.ok(lu[5].genou < 150 && lu[5].buste > 35, `à mi-course : genoux ${lu[5].genou.toFixed(0)}°, buste ${lu[5].buste.toFixed(0)}°`);
   assert.ok(mini(lu, 'barreDevantCheville') > 0.04 && maxi(lu, 'barreDevantCheville') < 0.125, 'la barre monte droit, le long des jambes');
+  // Sans à-coup : d'un instant au suivant, la barre n'avance ni ne recule de plus de 1,5 cm (elle sautait de 4 cm à la fin).
+  assert.ok(lu.every((x, i) => !i || Math.abs(x.barreDevantCheville - lu[i - 1].barreDevantCheville) < 0.015), 'la barre monte sans à-coup : ' + lu.map(x => Math.round(x.barreDevantCheville * 1000)).join(', '));
+  // Contre les jambes : jamais dedans, et jamais à plus de 3,5 cm devant elles (peau du modèle relue à la hauteur de la barre).
+  const jours = [0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1].map(u => { const pose = M.poseA(d, 0, u), pr = pose.bras.G.prise; return pr.z - 0.0135 - corps.devantJambes(pose, pr.y - 0.03, pr.y + 0.03); });
+  assert.ok(Math.min(...jours) > -0.001 && Math.max(...jours) < 0.035, 'la barre longe les jambes : jour de ' + jours.map(j => Math.round(j * 1000)).join(', ') + ' mm');
 
   // Les variantes depuis le sol plient les genoux elles aussi (elles restaient jambes tendues).
   for (const spec of ['souleve hal', 'souleve kb', 'souleve trapbar', 'souleve sumo', 'souleve deficit']) {
@@ -6654,6 +6659,7 @@ test('atlas 3D : soulevés de terre et squat se déroulent comme le geste réel'
   assert.ok(roumain[0].genou > 170 && basR.genou > 140 && basR.genou < 162, 'roumain : genoux souples en bas (' + basR.genou.toFixed(0) + '°), jamais verrouillés ni accroupis');
   assert.ok(basR.buste < 36 && basR.tibia > -13 && basR.tibia < 0, `roumain en bas : buste couché (${basR.buste.toFixed(0)}°), tibias à peine en arrière (${basR.tibia.toFixed(0)}°)`);
   assert.ok(maxi(roumain, 'barreDevantCheville') < 0.125 && croissant(roumain.slice().reverse(), 'buste'), 'roumain : la barre reste contre les jambes, le buste bascule régulièrement');
+  assert.ok(roumain.every((x, i) => !i || Math.abs(x.barreDevantCheville - roumain[i - 1].barreDevantCheville) < 0.02), 'roumain : la barre descend sans à-coup : ' + roumain.map(x => Math.round(x.barreDevantCheville * 1000)).join(', '));
   // Jambes tendues : elles le restent, sans partir loin en arrière ; la barre pend sous les épaules.
   const tendues = lire('souleve tendues').lu, basT = tendues[tendues.length - 1];
   assert.ok(mini(tendues, 'genou') > 168 && mini(tendues, 'tibia') > -13 && basT.buste < 12, 'jambes tendues : genoux droits, buste à l\'horizontale en bas');
