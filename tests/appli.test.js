@@ -6955,6 +6955,74 @@ test('atlas 3D : soulevés de terre et squat se déroulent comme le geste réel'
   assert.ok(Math.abs(haltere.prises.G.z - haltere.epaules.G.z) < 0.06 && haltere.prises.G.x > haltere.genoux.G.x + 0.08, 'squat avec haltères : les bras pendent sous les épaules, en dehors des genoux');
 });
 
+test('atlas 3D : au-dessus de la tête, la charge contourne le visage, les bras se tendent, l\'épaule ne monte pas aux oreilles', async () => {
+  const { pathToFileURL } = require('url'), dossier = path.join(RACINE, 'outils', 'atlas', 'mouvements');
+  const { chargerAtlas, chargerMouvements, FICHIER_ATLAS, FICHIER_MOUVEMENTS } = await import(pathToFileURL(path.join(dossier, 'silhouettes.mjs')).href);
+  const atlas = chargerAtlas(FICHIER_ATLAS), M = chargerMouvements(FICHIER_MOUVEMENTS), corps = new M.Corps(atlas.E.squelette, atlas.peau);
+  const DEG = 180 / Math.PI, RAYON = 0.0135;
+  // Le geste lu instant par instant (aussi entre les poses clés) : la barre, la tête, le coude, l'épaule.
+  const lire = (spec, n = 20, k = 'G') => {
+    const d = M.definir(spec, corps, M.TEINTES.clair), lu = [];
+    for (let i = 0; i <= n; i++) {
+      const u = i / n, pose = M.poseA(d, 0, u), t = corps.tronc(pose), repos = t.epaules[k].clone(), info = corps.poser(pose), pr = info.prises[k], e = info.epaules[k], co = info.coudes[k], po = info.poignets[k];
+      const a1 = co.clone().sub(e), a2 = po.clone().sub(co);
+      // Le plus près que la tête, puis le buste (entre les mains), passent de l'axe d'une barre tenue dans cette main.
+      let tete = Infinity, buste = Infinity;
+      corps.peauPosee(['tete'], (x, y, z) => { tete = Math.min(tete, Math.hypot(y - pr.y, z - pr.z)); }, true);
+      corps.peauPosee(['thorax', 'epaule', 'cou', 'dos'], (x, y, z) => { if (x < Math.abs(pr.x) - 0.06) buste = Math.min(buste, Math.hypot(y - pr.y, z - pr.z)); }, true);
+      lu.push({ u, y: pr.y, z: pr.z, x: Math.abs(pr.x), tete: tete - RAYON, buste: buste - RAYON, plie: Math.acos(Math.max(-1, Math.min(1, a1.dot(a2) / a1.length() / a2.length()))) * DEG,
+        leve: Math.acos(Math.max(-1, Math.min(1, -a1.y / a1.length()))) * DEG, sousMain: Math.hypot(co.x - po.x, co.z - po.z), avantBras: po.y - co.y, monte: e.y - repos.y, auDessus: Math.hypot(pr.x - e.x, pr.z - e.z), devantEpaule: pr.z - e.z, surEpaule: pr.y - e.y, ecart: info.prises.G.x + info.prises.D.x });
+    }
+    return { d, lu };
+  };
+  const mini = (l, k) => Math.min(...l.map(x => x[k])), maxi = (l, k) => Math.max(...l.map(x => x[k]));
+  const monteSansRetour = l => l.every((x, i) => !i || x.y > l[i - 1].y);
+
+  // Développé militaire, debout, à la barre.
+  const { d, lu } = lire('developpe epaules barre'), bas = lu[0], haut = lu[lu.length - 1];
+  assert.ok(Array.isArray(d.cles) && d.cles.length >= 9, 'les poses sont réglées une fois (poses clés), pas recalculées à chaque image');
+  assert.ok(bas.surEpaule > 0.03 && bas.surEpaule < 0.09 && bas.devantEpaule > 0.05 && bas.devantEpaule < 0.12, `en bas, la barre est à hauteur des clavicules, devant les épaules (${(bas.surEpaule * 100).toFixed(1)} cm au-dessus, ${(bas.devantEpaule * 100).toFixed(1)} cm devant)`);
+  assert.ok(bas.buste > 0.002 && bas.buste < 0.03, `elle y repose presque : à ${(bas.buste * 1000).toFixed(0)} mm du corps, sans y entrer`);
+  assert.ok(bas.sousMain < 0.07 && bas.avantBras > 0.23, `avant-bras verticaux, coudes sous la barre (${(bas.sousMain * 100).toFixed(1)} cm d'écart)`);
+  assert.ok(bas.plie < 150, 'coude plié à ' + bas.plie.toFixed(0) + '° : pas au-delà de ce qu\'un coude peut faire');
+  assert.ok(monteSansRetour(lu), 'la barre monte sans retour en arrière');
+  // Le visage : la barre passe devant, jamais dedans (en ligne droite du bas au haut, elle le traversait).
+  assert.ok(mini(lu, 'tete') > 0.015, `la barre passe à ${(mini(lu, 'tete') * 100).toFixed(1)} cm de la tête au plus près`);
+  assert.ok(mini(lu, 'buste') > 0.001, 'elle n\'entre jamais dans le buste');
+  const droite = u => bas.z + (haut.z - bas.z) * u, devantVisage = lu.filter(x => x.u > 0.05 && x.tete < 0.035);
+  assert.ok(devantVisage.length >= 3 && devantVisage.every(x => x.z > droite(x.u) + 0.015) && Math.max(...lu.map(x => x.z - droite(x.u))) > 0.03, 'devant le visage, elle s\'écarte de la ligne droite : ' + devantVisage.map(x => Math.round((x.z - droite(x.u)) * 1000)).join(', ') + ' mm');
+  // Les mains ne glissent pas sur la barre.
+  assert.ok(maxi(lu, 'x') - mini(lu, 'x') < 0.003 && lu.every(x => Math.abs(x.ecart) < 0.003), 'la prise garde sa largeur : ' + (mini(lu, 'x') * 100).toFixed(1) + ' à ' + (maxi(lu, 'x') * 100).toFixed(1) + ' cm');
+  // En haut : bras tendus, barre à l'aplomb des épaules, épaule montée de 4 à 8,5 cm (elle montait de 11 cm, bras pliés à 75°).
+  assert.ok(haut.plie < 15 && haut.leve > 158, `en haut, les bras sont tendus (coude à ${haut.plie.toFixed(0)}°, bras levé de ${haut.leve.toFixed(0)}°)`);
+  assert.ok(Math.abs(haut.devantEpaule) < 0.03, 'la barre finit à l\'aplomb des épaules : ' + (haut.devantEpaule * 100).toFixed(1) + ' cm');
+  assert.ok(haut.monte > 0.04 && haut.monte < 0.085 && maxi(lu, 'monte') < 0.085, `l'épaule monte de ${(haut.monte * 100).toFixed(1)} cm`);
+  // Le buste accompagne : en arrière tant que la barre passe le visage, dessous à la fin.
+  const busteDe = u => { const t = corps.tronc(M.poseA(d, 0, u)); return Math.atan2(t.epaules.G.z - t.hanches.G.z, t.epaules.G.y - t.hanches.G.y) * DEG; };
+  assert.ok(busteDe(0.3) < busteDe(1) - 4, `le buste s'efface (${busteDe(0.3).toFixed(1)}°) puis revient sous la barre (${busteDe(1).toFixed(1)}°)`);
+
+  // Les autres développés à la barre : assis, derrière la nuque, guidés, poussé.
+  for (const spec of ['developpe epaules barre assis', 'developpe epaules barre nuque', 'developpe epaules smith assis', 'developpe epaules smith nuque assis', 'developpe epaules barre pousse']) {
+    const v = lire(spec).lu, h = v[v.length - 1];
+    assert.ok(mini(v, 'tete') > 0.015 && mini(v, 'buste') > 0.001, `${spec} : la barre passe à ${(mini(v, 'tete') * 100).toFixed(1)} cm de la tête, sans toucher le buste`);
+    assert.ok(h.plie < 15 && maxi(v, 'monte') < 0.085, `${spec} : bras tendus en haut (${h.plie.toFixed(0)}°), épaule montée de ${(maxi(v, 'monte') * 100).toFixed(1)} cm au plus`);
+    assert.ok(maxi(v, 'x') - mini(v, 'x') < 0.003, spec + ' : la prise garde sa largeur');
+    if (/smith/.test(spec)) assert.ok(maxi(v, 'z') - mini(v, 'z') < 0.002, spec + ' : la barre guidée monte droit sur son rail');
+    if (/nuque/.test(spec)) assert.ok(v.slice(0, 8).every(x => x.devantEpaule < -0.02), spec + ' : la barre part derrière la tête');
+  }
+
+  // Mains libres : haltères, kettlebell, machine, élastique. En bas les mains sont à hauteur d'oreille, coudes dessous
+  // (elles étaient collées aux épaules, avant-bras à l'horizontale) ; en haut les bras sont tendus au-dessus des épaules.
+  for (const spec of ['developpe epaules hal', 'developpe epaules hal assis', 'developpe epaules hal assis neutre', 'developpe epaules hal arnold assis', 'developpe epaules machine assis', 'developpe epaules kb uni', 'developpe epaules elas', 'developpe epaules hal alt', 'developpe epaules hal demigenou uni', 'developpe epaules hal pousse']) {
+    const { d: dl, lu: v } = lire(spec, 10), b = v[0], h = v[v.length - 1];
+    assert.ok(Array.isArray(dl.cles) || typeof dl.pose === 'function', spec + ' : poses clés');
+    assert.ok(b.avantBras > 0.22 && b.sousMain < 0.11, `${spec} : en bas, le coude est sous la main (avant-bras relevé de ${(b.avantBras * 100).toFixed(0)} cm, ${(b.sousMain * 100).toFixed(1)} cm d'écart)`);
+    assert.ok(b.surEpaule > 0.05 && b.plie < 155, `${spec} : la main part au-dessus de l'épaule (${(b.surEpaule * 100).toFixed(0)} cm), coude à ${b.plie.toFixed(0)}°`);
+    assert.ok(h.plie < 15 && h.leve > 160 && h.auDessus < (/machine/.test(spec) ? 0.12 : 0.09), `${spec} : en haut, bras tendu (${h.plie.toFixed(0)}°) au-dessus de l'épaule (${(h.auDessus * 100).toFixed(1)} cm)`);
+    assert.ok(maxi(v, 'monte') < 0.085, `${spec} : l'épaule monte de ${(maxi(v, 'monte') * 100).toFixed(1)} cm au plus`);
+  }
+});
+
 test('atlas 3D : la peau va avec le modèle (zones, attaches au squelette, articulations intermédiaires)', () => {
   const E = enteteAtlas(), { H, octets, sommets, indices } = peauAtlas();
   assert.equal(H.format, 'anqa-peau');
@@ -7243,18 +7311,60 @@ test('atlas 3D : carrure (os et extrémités intacts), mélange des articulation
   const d = M.definir('developpe epaules barre', corps, C);
   corps.poser(M.poseA(d, 0, 1));
   const pe = corps.peau(null), m = corps.matrices(), S = corps.S;
-  let k = 0, pireSeul = 0, nSeul = 0, pireEpaule = Infinity;
-  const ep = corps.monde('humerus.G'), ep0 = corps.tete[corps.i['humerus.G']];
+  let k = 0, pireSeul = 0, nSeul = 0;
+  const ep = corps.monde('humerus.G'), ep0 = corps.tete[corps.i['humerus.G']], rapports = [];
   corps.peauPosee(null, (x, y, z) => {
     const cote = k >= pe.n ? 1 : 0, v = k % pe.n; k++;
     const X = cote ? -pe.P[v * 3] : pe.P[v * 3], Y = pe.P[v * 3 + 1], Z = pe.P[v * 3 + 2];
     let seul = -1; for (let q = 0; q < 4; q++) if (pe.W[v * 4 + q] > 0.999) seul = cote ? S[pe.J[v * 4 + q]].jumeau : pe.J[v * 4 + q];
     if (seul >= 0) { const o = seul * 12; nSeul++; pireSeul = Math.max(pireSeul, Math.hypot(x - (m[o] * X + m[o + 1] * Y + m[o + 2] * Z + m[o + 3]), y - (m[o + 4] * X + m[o + 5] * Y + m[o + 6] * Z + m[o + 7]), z - (m[o + 8] * X + m[o + 9] * Y + m[o + 10] * Z + m[o + 11]))); }
-    // Autour de l'épaule gauche (à 4–7 cm de l'articulation au repos) : bras levé, la chair reste à distance de l'articulation.
-    if (!cote) { const r0 = Math.hypot(X - ep0.x, Y - ep0.y, Z - ep0.z); if (r0 > 0.04 && r0 < 0.07) pireEpaule = Math.min(pireEpaule, Math.hypot(x - ep.x, y - ep.y, z - ep.z) / r0); }
+    // Autour de l'épaule gauche (à 4–7 cm de l'articulation au repos) : bras levé, de combien la chair s'en est rapprochée.
+    if (!cote) { const r0 = Math.hypot(X - ep0.x, Y - ep0.y, Z - ep0.z); if (r0 > 0.04 && r0 < 0.07) rapports.push(Math.hypot(x - ep.x, y - ep.y, z - ep.z) / r0); }
   });
   assert.ok(nSeul > 5000 && pireSeul < 1e-4, 'un sommet tenu par un seul os suit cet os exactement : ' + pireSeul);
-  assert.ok(pireEpaule > 0.55, "bras levé, l'épaule garde son volume (rapport de distance le plus faible : " + pireEpaule.toFixed(2) + ')');
+  // L'épaule garde son volume : quelques attaches (grand dorsal, grand pectoral) viennent se serrer contre l'articulation,
+  // le reste ne s'écrase pas.
+  rapports.sort((a, b) => a - b);
+  const cinq = rapports[Math.floor(0.05 * (rapports.length - 1))], ecrases = rapports.filter(r => r < 0.5).length / rapports.length;
+  assert.ok(rapports.length > 300 && cinq > 0.6 && ecrases < 0.04, `bras levé, l'épaule garde son volume (5 % des points sous ${cinq.toFixed(2)}, ${(ecrases * 100).toFixed(1)} % écrasés)`);
+
+  // À l'épaule, les muscles tendus entre le tronc et le bras vont pour partie « par la corde » : bras levé, plus de poche
+  // à côté du bras. Mesure : jusqu'où la chair de l'épaule, du dos, du thorax et du bras déborde de l'axe du bras, côté
+  // dehors — avec le mélange du moteur, et sans (quaternions duaux seuls : ce qui se dessinait avant).
+  const moteurCorde = ctxMoteur.window.AnqaAtlas.corde;
+  assert.equal(typeof moteurCorde, 'function', 'le moteur donne la part de corde de chaque sommet');
+  const sq = atlas.E.squelette, iH = corps.i['humerus.G'], iC = corps.i['clavicule.G'], iU = corps.i['ulna.G'], part = moteurCorde(sq);
+  assert.ok(part([iH, iC, 0, 0], [0.5, 0.5, 0, 0], 0) > 0.7 && part([iH, 6, 0, 0], [0.4, 0.6, 0, 0], 0) > 0.7, 'un sommet partagé entre le bras et le tronc va par la corde');
+  assert.equal(part([iH, iU, 0, 0], [0.5, 0.5, 0, 0], 0), 0, 'pas au coude');
+  assert.equal(part([iC, 6, 0, 0], [0.5, 0.5, 0, 0], 0), 0, 'ni entre la clavicule et le thorax');
+  assert.equal(part([iH, 0, 0, 0], [1, 0, 0, 0], 0), 0, 'ni pour un sommet tenu par un seul os');
+  assert.ok(part([iH, iC, 0, 0], [0.97, 0.03, 0, 0], 0) < 0.2, 'la part monte en douceur avec le partage (pas de marche dans le maillage)');
+  assert.equal(moteurCorde(sq, 0)([iH, iC, 0, 0], [0.5, 0.5, 0, 0], 0), 0, 'force nulle : le mélange d\'avant');
+  const sourceMoteur = fs.readFileSync(path.join(RACINE, 'assets', 'atlas', 'atlas3d.js'), 'utf8');
+  assert.ok(/uniform ivec2 u_bras;/.test(sourceMoteur) && /p = mix\(p, pc \/ wTout, corde\);/.test(sourceMoteur), 'le programme des sommets applique la même part');
+  const sansCorde = new M.Corps(sq, regions => { const r = atlas.peau(regions); return r && Object.assign({}, r, { C: null }); });
+  const debord = (c, spec, u) => {
+    const def = M.definir(spec, corps, C), info = c.poser(M.poseA(def, 0, u)), e = c.monde('humerus.G'), e0 = c.tete[c.i['humerus.G']], regions = ['epaule', 'dos', 'thorax', 'bras'], src = c.peau(regions);
+    const axe = info.coudes.G.clone().sub(e), L = axe.length(); axe.multiplyScalar(1 / L);
+    const dehors = new M.V3(axe.y, -axe.x, 0); if (dehors.x < 0) dehors.multiplyScalar(-1); dehors.normalize();
+    let n = 0, pire = 0;
+    c.peauPosee(regions, (x, y, z) => {
+      const v = n++; if (v >= src.n) return;
+      if (Math.hypot(src.P[v * 3] - e0.x, src.P[v * 3 + 1] - e0.y, src.P[v * 3 + 2] - e0.z) > 0.25) return;
+      const dx = x - e.x, dy = y - e.y, dz = z - e.z, t = dx * axe.x + dy * axe.y + dz * axe.z;
+      if (t > 0.03 && t < L - 0.02) pire = Math.max(pire, dx * dehors.x + dy * dehors.y + dz * dehors.z);
+    });
+    return pire;
+  };
+  for (const [spec, u, maxi] of [['developpe epaules barre', 1, 0.11], ['developpe epaules barre', 0.6, 0.14], ['traction', 0, 0.14]]) {
+    const avec = debord(corps, spec, u), sans = debord(sansCorde, spec, u);
+    assert.ok(avec < maxi && sans > avec + 0.035, `${spec} (u=${u}) : la chair déborde du bras de ${(avec * 100).toFixed(1)} cm (${(sans * 100).toFixed(1)} cm sans la corde)`);
+  }
+  // Bras le long du corps ou à l'horizontale, rien ne change (ou presque) : l'épaule reste ronde.
+  for (const [spec, u] of [['developpe epaules barre', 0], ['elevation lat hal', 1], ['curl hal', 0]]) {
+    const avec = debord(corps, spec, u), sans = debord(sansCorde, spec, u);
+    assert.ok(Math.abs(avec - sans) < 0.006, `${spec} (u=${u}) : ${(avec * 100).toFixed(1)} cm avec, ${(sans * 100).toFixed(1)} cm sans`);
+  }
 
   // Le matériel : un développé couché a ses supports de barre ; au tirage vertical, la pile de poids suit le câble.
   const formesDe = (spec, u) => { const def = M.definir(spec, corps, C); return { def, formes: M.materielDe(def, corps.poser(M.poseA(def, 0, u)), u, C, {}) }; };

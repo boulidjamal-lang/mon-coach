@@ -192,7 +192,8 @@
        jambe — cible { cheville, pole, pied, hautPied }
              — angles { flex, abd, rot, genou, pointe } dans le repère du bassin : flexion et abduction de la
                hanche, rotation externe, flexion du genou, extension de la cheville (pointe du pied).
-     Options communes aux bras : hausse (épaule haussée) et avance (épaule portée en avant), en degrés ; doigts.
+     Options communes aux bras : hausse (épaule haussée) et avance (épaule portée en avant), en degrés ; ceinture
+     (part du mouvement du bras reprise par la ceinture scapulaire, à la place de la part ordinaire) ; doigts.
      Options des jambes : orteils (flexion des orteils quand le pied est sur la pointe). */
   class Corps {
     /* squelette : articulations de l'atlas ({ nom, parent, centre, jumeau }) ; sourcePeau(regions) : points de la
@@ -335,7 +336,8 @@
       return q;
     }
     /* La peau posée (les deux côtés), pour la pose en cours : appelle f(x, y, z) pour chaque point. Même mélange que
-       le moteur (quaternions duaux) : ce qu'on mesure ici est ce qui se dessine. */
+       le moteur : quaternions duaux, et, à l'épaule, la part « par la corde » que la source donne pour chaque point
+       (pe.C) — ce qu'on mesure ici est ce qui se dessine. */
     peauPosee(regions, f, unCote) {
       const pe = this.peau(regions); if (!pe) return false;
       const q = this.quaternionsDuaux(), S = this.S;
@@ -350,9 +352,25 @@
         }
         const l = 1 / (Math.hypot(rx, ry, rz, rw) || 1); rx *= l; ry *= l; rz *= l; rw *= l; dx *= l; dy *= l; dz *= l; dw *= l;
         const ux = ry * Z - rz * Y + rw * X, uy = rz * X - rx * Z + rw * Y, uz = rx * Y - ry * X + rw * Z;
-        f(X + 2 * (ry * uz - rz * uy) + 2 * (rw * dx - dw * rx + ry * dz - rz * dy),
-          Y + 2 * (rz * ux - rx * uz) + 2 * (rw * dy - dw * ry + rz * dx - rx * dz),
-          Z + 2 * (rx * uy - ry * ux) + 2 * (rw * dz - dw * rz + rx * dy - ry * dx));
+        let px = X + 2 * (ry * uz - rz * uy) + 2 * (rw * dx - dw * rx + ry * dz - rz * dy),
+          py = Y + 2 * (rz * ux - rx * uz) + 2 * (rw * dy - dw * ry + rz * dx - rx * dz),
+          pz = Z + 2 * (rx * uy - ry * ux) + 2 * (rw * dz - dw * rz + rx * dy - ry * dx);
+        const c = pe.C ? pe.C[v] : 0;
+        if (c > 0) {
+          // Par la corde : la moyenne des places que chaque articulation donnerait au point.
+          let cx = 0, cy = 0, cz = 0, wt = 0;
+          for (let k = 0; k < 4; k++) {
+            const w = pe.W[v * 4 + k]; if (!w) continue;
+            const o = (cote ? S[pe.J[v * 4 + k]].jumeau : pe.J[v * 4 + k]) * 8, ax = q[o], ay = q[o + 1], az = q[o + 2], aw = q[o + 3], bx = q[o + 4], by = q[o + 5], bz = q[o + 6], bw = q[o + 7];
+            const vx = ay * Z - az * Y + aw * X, vy = az * X - ax * Z + aw * Y, vz = ax * Y - ay * X + aw * Z;
+            cx += w * (X + 2 * (ay * vz - az * vy) + 2 * (aw * bx - bw * ax + ay * bz - az * by));
+            cy += w * (Y + 2 * (az * vx - ax * vz) + 2 * (aw * by - bw * ay + az * bx - ax * bz));
+            cz += w * (Z + 2 * (ax * vy - ay * vx) + 2 * (aw * bz - bw * az + ax * by - ay * bx));
+            wt += w;
+          }
+          px += (cx / wt - px) * c; py += (cy / wt - py) * c; pz += (cz / wt - pz) * c;
+        }
+        f(px, py, pz);
       }
       return true;
     }
@@ -419,6 +437,15 @@
       if (!this.peauPosee(regions || ['bassin', 'cuisse', 'jambe'], (x, y, z) => { if (y >= yMin && y <= yMax && z > zMax) zMax = z; }, unCote)) return 0.12;
       return zMax === -Infinity ? 0.12 : zMax;
     }
+    /* Une barre horizontale (en travers, de rayon r) à la hauteur y, amenée contre le corps dans la pose en cours, par
+       l'avant (sens 1) ou par l'arrière (sens -1) : le z de son axe quand elle touche, entre le plan médian et xMax ;
+       null si le corps ne passe pas à cette hauteur. Avec un rayon grossi d'une marge, c'est par où elle passe à
+       distance (devant le visage, derrière le crâne). */
+    barreContre(y, r, regions, xMax, sens) {
+      let m = -Infinity;
+      if (!this.peauPosee(regions, (px, py, pz) => { const dy = py - y; if (px <= xMax && dy < r && dy > -r) { const z = sens * pz + Math.sqrt(r * r - dy * dy); if (z > m) m = z; } }, true)) return null;
+      return m === -Infinity ? null : sens * m;
+    }
     /* Les jambes seules, pour la pose donnée (ni les bras ni la peau) : hanches, genoux, chevilles. Sert à régler une
        posture sur ses jambes sans poser tout le corps. */
     jambesDe(p) {
@@ -470,7 +497,7 @@
       //    elle peut en plus se hausser (haussement d'épaules) ou s'avancer.
       resoudre();
       const libre0 = arc(R.bras.d1.clone().applyQuaternion(QT), d1).multiply(QT);
-      let qc = QT.clone().slerp(libre0, K_CEINTURE);
+      let qc = QT.clone().slerp(libre0, b.ceinture != null ? b.ceinture : K_CEINTURE);
       if (b.hausse || b.avance) qc = qAxe(AZ.clone().applyQuaternion(QT), s * rad(b.hausse || 0)).multiply(qAxe(AY.clone().applyQuaternion(QT), -s * rad(b.avance || 0))).multiply(qc);
       this.poserMonde('clavicule' + x, qc);
       // 2. Le bras, depuis l'épaule ainsi déplacée.
@@ -1104,6 +1131,19 @@
 
   /* Déplace le bassin de la pose p pour qu'une articulation du tronc se trouve à l'endroit voulu. */
   function ancrer(c, p, nom, cible) { c.tronc(p); p.bassin.pos.add(cible.clone().sub(c.monde(nom))); return p; }
+  /* Une main posée par cible n'arrive pas exactement sur sa prise : le radius tourne autour de l'ulna, et le poignet
+     se décale de 2 à 3 cm selon la pronation. Là où la place de la barre compte au centimètre (contre le corps, devant
+     le visage), la cible est corrigée de l'écart constaté jusqu'à ce que la prise tombe juste. cibles : { G, D } (ou un
+     seul côté) ; la pose est modifiée sur place ; rend ce que rend poser. */
+  function viser(c, p, cibles) {
+    for (let n = 0; n < 3; n++) {
+      const info = c.poser(p);
+      let pire = 0;
+      for (const k in cibles) { const e = cibles[k].clone().sub(info.prises[k]); pire = Math.max(pire, e.length()); p.bras[k].prise = p.bras[k].prise.clone().add(e); }
+      if (pire < 5e-4) return info;
+    }
+    return c.poser(p);
+  }
 
   /* ---------- Du texte au mouvement ----------
      Un mouvement s'écrit « famille option option clé=valeur » (par exemple « curl hal assis alt »). Chaque famille
@@ -1173,7 +1213,7 @@
      et l'autre une cible (main posée, pied au sol), celle qui est en angles est convertie : on pose le corps, et on
      note où arrivent la main ou le pied. */
   const enCible = {
-    bras: (info, k, b) => ({ prise: info.prises[k].clone(), pole: info.coudes[k].clone().sub(info.epaules[k]), paume: info.paumes[k].clone(), dirMain: info.dirMains[k].clone(), doigts: b.doigts, hausse: b.hausse, avance: b.avance }),
+    bras: (info, k, b) => ({ prise: info.prises[k].clone(), pole: info.coudes[k].clone().sub(info.epaules[k]), paume: info.paumes[k].clone(), dirMain: info.dirMains[k].clone(), doigts: b.doigts, hausse: b.hausse, avance: b.avance, ceinture: b.ceinture }),
     jambes: (info, k, j) => ({ cheville: info.chevilles[k].clone(), pole: info.genoux[k].clone().sub(info.hanches[k]), pied: info.pieds[k].pied.clone(), hautPied: info.pieds[k].hautPied.clone(), orteils: j.orteils })
   };
   const parCible = { bras: b => b.elev == null && !b.dirBras, jambes: j => j.flex == null };
@@ -1765,6 +1805,110 @@
     const autre = m !== 'GD' ? (haut ? { prise: t.hanches.D.clone().add(V(-0.085, 0.1, 0.03).applyQuaternion(t.qBassin)), pole: dT(-0.8, 0, -0.6), paume: dT(1, -0.2, 0), dirMain: dT(0.2, -0.3, 1), doigts: 'detendu' } : bras(hautP, paumeB).D) : null;
     const d = parLesBras(p, bras(hautP, paumeB), bras(bas, paumeA), m, autre);
     if (m !== 'GD' && !haut && !o.poulie) { d.a.bras.D = cloner(bras(hautP, paumeB).D); d.b.bras.D = cloner(bras(hautP, paumeB).D); if (o.hal || o.kb) { /* l'autre haltère reste en haut */ } }
+    /* Au-dessus de la tête : le geste réel, repris point par point.
+       À la barre :
+       - en bas, la barre repose en haut de la poitrine, à hauteur des clavicules (ou sur les trapèzes, derrière la
+         nuque), les mains juste en dehors des épaules, les poignets cassés sous la barre, les avant-bras verticaux ;
+       - elle ne monte pas en ligne droite jusqu'au bout des bras — elle traverserait le visage : le menton se rentre,
+         le buste s'efface un peu (debout, barre libre), la barre passe devant le visage (ou derrière le crâne) ;
+       - la tête passée, le corps revient dessous : en haut la barre est à l'aplomb des épaules, la tête entre les bras.
+       Mains libres (haltères, kettlebell, poignées de machine, élastique) : en bas les mains à hauteur d'oreille, de
+       part et d'autre de la tête, les coudes dessous ; elles montent en se rapprochant, jusqu'à l'aplomb des épaules.
+       Dans tous les cas : les coudes restent le plus bas possible sous la charge (avant-bras au plus près de la
+       verticale) puis s'ouvrent ; en haut les bras sont tendus ; l'épaule monte avec le bras de 6 à 7 cm, pas jusqu'aux
+       oreilles. Poses clés, du bas vers le haut, réglées une fois sur le corps posé. */
+    let cles = null, zRail = null;
+    if (haut && !o.landmine) {
+      const surBarre = !libre && m === 'GD', guide = !!o.smith, accompagne = surBarre && !guide && P.sorte === 'debout', sens = o.nuque ? -1 : 1;
+      const N = surBarre ? 10 : 6, rB = 0.0135, JEU_BAS = 0.012;
+      const parPoints = pts => f => chemin(pts, f);
+      // Le buste (debout, barre libre) : un peu en arrière au départ et tant que la barre passe le visage, dessous à la fin.
+      const penche = parPoints(o.nuque ? [[0, 2], [1, 1]] : [[0, -4], [0.3, -5], [0.6, -3], [1, 2.5]]), avance = parPoints(o.nuque ? [[0, 0], [1, 0]] : [[0, 0.015], [0.35, 0.02], [1, 0.012]]);
+      // La tête, à la barre : menton rentré (le cou recule, le visage reste droit) le temps qu'elle passe, puis entre les
+      // bras ; derrière la nuque, elle s'incline en avant.
+      const cou = parPoints(o.nuque ? [[0, 12], [0.6, 10], [1, 4]] : [[0, -8], [0.35, -12], [0.6, -4], [1, 7]]), tete = parPoints(o.nuque ? [[0, 0], [1, 0]] : [[0, 6], [0.35, 9], [0.6, 3], [1, -4]]);
+      const troncA = f => {
+        const q = cloner(p);
+        if (accompagne) { q.bassin.rot = qX(penche(f)).multiply(p.bassin.rot); q.bassin.pos.z += avance(f); q.thorax = (p.thorax || 0) - 3 * (1 - f); }
+        if (surBarre) { q.cou = (p.cou || 0) + cou(f); q.tete = (p.tete || 0) + tete(f); }
+        return q;
+      };
+      // L'épaule : la ceinture scapulaire suit moins le bras à mesure qu'il passe au-dessus de la tête.
+      const part = f => lerp(K_CEINTURE, 0.15, lisse(f));
+      // La main. À la barre : le poignet cassé en arrière sous la barre posée (elle repose sur le talon de la main), presque
+      // droit en haut. Mains libres : paume en avant ; neutre : paumes face à face ; kettlebell : de face à face à en avant ;
+      // arnold : la paume part tournée vers soi et finit en avant.
+      const casse = parPoints([[0, surBarre ? (o.nuque ? 14 : 30) : 10], [0.35, surBarre ? (o.nuque ? 12 : 16) : 8], [1, 8]]);
+      const tourne = o.arnold ? parPoints([[0, 180], [0.75, 0], [1, 0]]) : o.kb ? parPoints([[0, 75], [0.7, 0], [1, 0]]) : o.neutre ? () => 84 : () => 0;
+      const mainA = (s, f) => { const w = rad(casse(f)), a = rad(tourne(f)), tour = v => V(-s * (v.z * Math.sin(a)), v.y, v.z * Math.cos(a)); return { paume: tour(V(0, Math.sin(w), Math.cos(w))), dirMain: tour(V(0, Math.cos(w), -Math.sin(w))) }; };
+      // Le coude : le plus bas possible sous la charge, puis vers le dehors quand le bras se tend (paumes face à face ou
+      // tournées vers soi : il part de devant le corps).
+      const devant = o.arnold || o.neutre || o.kb;
+      const versCoude = (s, f) => chemin([[0, V(0, -1, o.nuque ? -0.05 : devant ? 0.15 : 0.08)], [0.5, V(s * 0.55, -1, o.nuque ? -0.05 : devant ? 0.3 : 0.05)], [1, V(s * 1, -0.3, o.nuque ? 0.05 : devant ? 0.4 : 0.2)]], f);
+      // Où va chaque main : à la barre, la prise ne bouge pas sur la barre (mains juste en dehors des épaules ; derrière la
+      // nuque, plus large) ; mains libres, elles partent écartées, coudes dessous, et se rapprochent en montant.
+      const xM = o.nuque ? 0.4 : o.large ? 0.34 : o.serre ? 0.215 : 0.285;
+      const basL = o.arnold ? V(0.19, 0.06, 0.165) : o.kb ? V(0.25, 0.09, 0.16) : o.neutre ? V(0.305, 0.18, 0.19) : o.machine ? V(0.37, 0.14, 0.08) : V(0.4, 0.18, 0.11);
+      const hautL = o.neutre ? V(0.2, 0, 0.02) : o.machine ? V(0.27, 0, 0.01) : V(0.22, 0, 0.01);
+      const travaille = COTES.filter(([k]) => m === 'GD' || m === k);
+      const poserBras = (q, f, cible) => {
+        const t2 = c.tronc(q), dT2 = v => v.applyQuaternion(t2.qThorax), cibles = {};
+        for (const [k, s] of COTES) {
+          if (m !== 'GD' && m !== k) { q.bras[k] = cloner(autre); continue; }
+          const h = mainA(s, f);
+          cibles[k] = cible(s, t2);
+          q.bras[k] = { prise: cibles[k].clone(), pole: versCoude(s, f), paume: dT2(h.paume), dirMain: dT2(h.dirMain), doigts: 'barre', ceinture: part(f) };
+        }
+        return viser(c, q, cibles);
+      };
+      const k0 = travaille[0][0];
+      // En haut : bras tendus (10° au coude : la main reste sur sa prise, le bras ne claque pas), à l'aplomb des épaules.
+      const hautDe = cible => { let a = 0.3, b = 0.85; for (let n = 0; n < 10; n++) { const y = (a + b) / 2; if (poserBras(troncA(1), 1, (s, t2) => cible(s, t2, y)).angles[k0].coude > 10) a = y; else b = y; } return a; };
+      cles = [];
+      if (surBarre) {
+        // En bas : la barre à hauteur des clavicules (devant) ou en haut des trapèzes (derrière).
+        const yBas = c.tronc(troncA(0)).duThorax(V(0, o.nuque ? 0.085 : 0.06, 0)).y;
+        const zFin = c.tronc(troncA(1)).epaules.G.z + (o.nuque ? -0.02 : 0.008);
+        const epY = f => c.tronc(troncA(f)).duThorax(V()).y;
+        const hautBarre = z => epY(1) + hautDe((s, t2, y) => V(s * xM, t2.duThorax(V()).y + y, z));
+        let yHaut = hautBarre(zFin);
+        const barreA = (f, y, z) => poserBras(troncA(f), f, s => V(s * xM, y, z));
+        // Par où passe la barre à la hauteur y, corps posé : elle peut se poser sur la poitrine, les épaules et le cou ; la
+        // tête, elle la passe à 2,5 cm.
+        const regionsCorps = o.nuque ? ['cou', 'dos', 'epaule'] : ['thorax', 'epaule', 'cou'];
+        const auPlusPres = (y, z, jeu) => {
+          const corpsZ = c.barreContre(y, rB + jeu, regionsCorps, xM - 0.06, sens), teteZ = c.barreContre(y, rB + 0.025, ['tete'], 0.14, sens);
+          if (corpsZ != null) z = sens > 0 ? Math.max(z, corpsZ) : Math.min(z, corpsZ);
+          if (teteZ != null) z = sens > 0 ? Math.max(z, teteZ) : Math.min(z, teteZ);
+          return z;
+        };
+        // Premier passage : la barre part posée contre le corps (les bras déjà en place : l'épaule et la poitrine suivent le
+        // bras), puis passe au plus près du chemin prévu sans rien traverser.
+        const zs = [];
+        let z0 = zFin + sens * 0.06;
+        for (let n = 0; n < 2; n++) { barreA(0, yBas, z0); z0 = auPlusPres(yBas, zFin - sens * 0.3, JEU_BAS); }
+        zs.push(z0);
+        for (let i = 1; i <= N; i++) {
+          const f = i / N, y = lerp(yBas, yHaut, f), zPrevu = lerp(z0, zFin, lisse((f - 0.5) / 0.45));
+          barreA(f, y, zPrevu);
+          zs.push(auPlusPres(y, zPrevu, 0.003));
+        }
+        if (guide) {
+          // Barre guidée : elle monte droit sur son rail, placé là où elle passe partout ; la hauteur des bras tendus s'y règle.
+          zRail = sens > 0 ? Math.max(...zs) : Math.min(...zs);
+          yHaut = hautBarre(zRail);
+          for (let i = 0; i <= N; i++) zs[i] = zRail;
+        }
+        for (let i = 0; i <= N; i++) { const f = i / N, q = troncA(f); poserBras(q, f, s => V(s * xM, lerp(yBas, yHaut, f), zs[i])); cles.push([f, q]); }
+      } else {
+        // Mains libres : du bas (à hauteur d'oreille, écartées, placées par rapport au buste) au haut (à la verticale des
+        // épaules : la charge se pousse droit vers le haut, même adossé à un dossier incliné).
+        const auDessus = (s, t2, y) => t2.duThorax(V()).add(V(s * hautL.x, y, hautL.z));
+        const yHaut = hautDe(auDessus);
+        const ou = (s, t2, f) => { const g = lisse(f), B = t2.duThorax(V(s * basL.x, basL.y, basL.z)), T = auDessus(s, t2, yHaut); return V(lerp(B.x, T.x, g), lerp(B.y, T.y, f), lerp(B.z, T.z, g)); };
+        for (let i = 0; i <= N; i++) { const f = i / N, q = troncA(f); poserBras(q, f, (s, t2) => ou(s, t2, f)); cles.push([f, q]); }
+      }
+    }
     // Matériel.
     const r = { disques: haut ? 0.16 : 0.225, sensKb: 'avantbras' };
     let tenu;
@@ -1784,7 +1928,7 @@
       if (o.poulie) for (const s of m === 'GD' ? [1, -1] : [m === 'D' ? -1 : 1]) poserObjet(MAT.colonne(C, anc(s)), V(), null, fixe);
     }
     if (o.smith) {
-      const zB = t.duThorax(hautP(1)).z;
+      const zB = zRail != null ? zRail : t.duThorax(hautP(1)).z;                // la barre guidée monte droit, sur son rail
       fixe = fixe.concat(poseFixe(MAT.smith(C, zB)));
     }
     // Développé couché à la barre : les supports de barre, derrière la tête, crochets juste sous la barre bras tendus.
@@ -1797,9 +1941,11 @@
     Object.assign(d, { fixe, vue, tenu }, rythmeDe(o));
     if (o.pousse) {
       // Développé poussé : les genoux plient un peu puis les jambes lancent la barre. Départ en bas.
-      const A = d.b, Z = d.a;
-      d.pose = u => { const q = mel(A, Z, lisse(borne((u - 0.3) / 0.7, 0, 1))), dy = -0.09 * Math.sin(Math.PI * borne(u / 0.45, 0, 1)); q.bassin.pos.y += dy; q.bassin.pos.z -= 0.02 * Math.sin(Math.PI * borne(u / 0.45, 0, 1)); for (const k of ['G', 'D']) { if (u < 0.45) q.bras[k].prise.y += dy; } return q; };
-    } else if (haut) { const A = d.a; d.a = d.b; d.b = A; }                 // au-dessus de la tête : on part d'en bas
+      const A = d.b, Z = d.a, monter = cles ? v => cloner(chemin(cles, v)) : v => mel(A, Z, v);
+      d.pose = u => { const q = monter(lisse(borne((u - 0.3) / 0.7, 0, 1))), dy = -0.09 * Math.sin(Math.PI * borne(u / 0.45, 0, 1)); q.bassin.pos.y += dy; q.bassin.pos.z -= 0.02 * Math.sin(Math.PI * borne(u / 0.45, 0, 1)); for (const k of ['G', 'D']) { if (u < 0.45) q.bras[k].prise.y += dy; } return q; };
+      if (cles) { delete d.a; delete d.b; }
+    } else if (cles) { delete d.a; delete d.b; d.cles = cles; }                 // poses clés, du bas vers le haut
+    else if (haut) { const A = d.a; d.a = d.b; d.b = A; }                       // au-dessus de la tête : on part d'en bas
     return d;
   };
   V3.prototype.xyz = function () { return [this.x, this.y, this.z]; };

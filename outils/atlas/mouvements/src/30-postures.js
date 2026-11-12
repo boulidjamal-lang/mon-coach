@@ -246,3 +246,16 @@
 
   /* Déplace le bassin de la pose p pour qu'une articulation du tronc se trouve à l'endroit voulu. */
   function ancrer(c, p, nom, cible) { c.tronc(p); p.bassin.pos.add(cible.clone().sub(c.monde(nom))); return p; }
+  /* Une main posée par cible n'arrive pas exactement sur sa prise : le radius tourne autour de l'ulna, et le poignet
+     se décale de 2 à 3 cm selon la pronation. Là où la place de la barre compte au centimètre (contre le corps, devant
+     le visage), la cible est corrigée de l'écart constaté jusqu'à ce que la prise tombe juste. cibles : { G, D } (ou un
+     seul côté) ; la pose est modifiée sur place ; rend ce que rend poser. */
+  function viser(c, p, cibles) {
+    for (let n = 0; n < 3; n++) {
+      const info = c.poser(p);
+      let pire = 0;
+      for (const k in cibles) { const e = cibles[k].clone().sub(info.prises[k]); pire = Math.max(pire, e.length()); p.bras[k].prise = p.bras[k].prise.clone().add(e); }
+      if (pire < 5e-4) return info;
+    }
+    return c.poser(p);
+  }

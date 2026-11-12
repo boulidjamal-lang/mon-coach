@@ -89,6 +89,20 @@ autre membre passe devant.
   saut quand un os dépasse le demi-tour par rapport à un os éloigné. Le moteur écrit ces quaternions dans la texture
   de pose (rangées 2 et 3) ; le solveur de pose fait le même calcul quand il mesure le corps (`Corps.peauPosee`) : ce
   qu'il mesure est ce qui se dessine. La peau, elle, garde ses matrices et ses articulations intermédiaires.
+- **L'épaule fait exception : par la corde.** Un muscle tendu entre le tronc et le bras (deltoïde, grand pectoral,
+  grand dorsal, grand rond) ne tourne pas à distance constante autour de l'articulation : bras levé, il formait une
+  poche à côté du bras — des « ailes » de 15 cm sous un bras tendu au-dessus de la tête. En vrai il va au plus court
+  entre ses attaches. Pour les sommets partagés entre le bras (de l'humérus au bout des doigts) et le tronc, le
+  moteur mélange donc la place « quaternions duaux » avec la place « par la corde » (la moyenne des places que chaque
+  os donnerait au sommet) : 85 % de corde au plus (`CORDE_EPAULE`), amenés en douceur avec le partage des poids pour
+  ne pas faire de marche dans le maillage ; rien au coude, ni entre la clavicule et le thorax, ni pour un sommet tenu
+  par un seul os. Bras le long du corps ou à l'horizontale, les deux places se confondent presque : l'épaule reste
+  ronde. Bras tendus au-dessus de la tête, la chair qui débordait de l'axe du bras passe de 15 à 9 cm (17 à 12 cm
+  pendu à la barre), et l'épaule garde son volume (2 % des points proches de l'articulation s'en rapprochent de plus
+  de moitié : les attaches du grand dorsal et du grand pectoral). Dans le programme des sommets : `u_bras` (les
+  articulations du bras) et `u_corde` ; pour la mesure, `peau()` rend la part de chaque point (`C`) et
+  `Corps.peauPosee` l'applique ; `AnqaAtlas.corde(squelette)` donne la même formule aux outils. Option `corde` du
+  moteur : 0 pour revenir au mélange d'avant.
 - **La carrure.** Le corps de Z-Anatomy est celui d'un homme mince. Au chargement, le moteur étoffe les chairs autour
   des os (`etoffer`, option `carrure` : 1 par défaut, 0 pour le corps d'origine) : chaque sommet s'écarte de l'axe des
   os qu'il suit — l'axe du membre, ou la verticale du milieu du corps pour le tronc — d'un pourcentage qui dépend de
@@ -197,6 +211,38 @@ descendant, le centre de gravité vient au milieu du pied, les genoux avancent a
 36°) au lieu que le bassin s'asseye derrière les talons. Le rowing penché aussi (genoux souples, la barre pend sous
 les épaules), et les flexions avant des étirements. Avec un haltère dans chaque main (`porter`), les bras pendent à
 la verticale et passent en dehors des genoux, au lieu de pencher avec le buste.
+
+### Au-dessus de la tête : la charge contourne la tête, les bras se tendent
+
+Les développés au-dessus de la tête (`src/45-developpes.js`) reliaient en ligne droite deux poses écrites à la main.
+Mesuré sur le développé militaire : la barre traversait le visage (1 cm dans la tête), partait 8 cm sous les épaules
+avec les avant-bras couchés, et finissait bras pliés à 64° — l'épaule monte avec le bras (ceinture scapulaire), de
+9 cm ici, et la hauteur écrite n'en tenait pas compte. Aux haltères : mains collées aux épaules en bas, avant-bras à
+l'horizontale, bras pliés à 75° en haut.
+
+Le geste est maintenant réglé une fois, en poses clés du bas vers le haut, sur le corps posé :
+
+- **à la barre** (libre, assise, derrière la nuque, guidée, développé poussé) : en bas elle repose à hauteur des
+  clavicules — sa place se lit sur la surface du corps, bras en place (`Corps.barreContre` : l'axe d'une barre amenée
+  contre le corps à une hauteur donnée) —, les mains juste en dehors des épaules, poignets cassés dessous, avant-bras
+  verticaux. Elle monte en passant à 2,5 cm du visage (ou du crâne, derrière la nuque) : le menton se rentre, le buste
+  s'efface de quelques degrés debout, puis le corps revient dessous et la barre finit à l'aplomb des épaules, la tête
+  entre les bras. Guidée, elle monte droit sur un rail placé là où elle passe partout. Les mains ne glissent pas sur la
+  barre ;
+- **mains libres** (haltères, kettlebell, machine, élastique ; neutre, arnold, un bras, alterné, à genoux) : en bas
+  les mains à hauteur d'oreille, coudes dessous ; elles montent en se rapprochant jusqu'à la verticale des épaules,
+  même adossé à un dossier incliné ;
+- **dans tous les cas** : le coude reste le plus bas possible sous la charge puis s'ouvre ; la hauteur du haut est
+  celle où le coude garde 10° (dichotomie sur le bras posé) ; la ceinture scapulaire suit moins le bras à mesure qu'il
+  passe au-dessus de la tête (option de bras `ceinture` : la part reprise, 0,24 d'ordinaire, 0,15 en haut) : l'épaule
+  monte de 7 cm, pas de 11.
+
+Une main posée par cible n'arrive pas exactement sur sa prise : le radius tourne autour de l'ulna et le poignet se
+décale de 2 à 3 cm selon la pronation. C'est sans importance pour un haltère ; pour une barre qui frôle le cou et le
+visage, non. `viser` (`src/30-postures.js`) corrige la cible de l'écart constaté jusqu'à ce que la prise tombe juste.
+
+Coût : 17 ms une fois pour la barre (22 ms guidée), 5 ms aux haltères, puis 0,07 ms par image (hors navigateur).
+Le test « au-dessus de la tête… » rejoue le geste instant par instant, y compris entre les poses clés.
 
 ## Les mouvements des exercices
 

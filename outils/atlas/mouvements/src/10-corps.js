@@ -10,7 +10,8 @@
        jambe — cible { cheville, pole, pied, hautPied }
              — angles { flex, abd, rot, genou, pointe } dans le repère du bassin : flexion et abduction de la
                hanche, rotation externe, flexion du genou, extension de la cheville (pointe du pied).
-     Options communes aux bras : hausse (épaule haussée) et avance (épaule portée en avant), en degrés ; doigts.
+     Options communes aux bras : hausse (épaule haussée) et avance (épaule portée en avant), en degrés ; ceinture
+     (part du mouvement du bras reprise par la ceinture scapulaire, à la place de la part ordinaire) ; doigts.
      Options des jambes : orteils (flexion des orteils quand le pied est sur la pointe). */
   class Corps {
     /* squelette : articulations de l'atlas ({ nom, parent, centre, jumeau }) ; sourcePeau(regions) : points de la
@@ -153,7 +154,8 @@
       return q;
     }
     /* La peau posée (les deux côtés), pour la pose en cours : appelle f(x, y, z) pour chaque point. Même mélange que
-       le moteur (quaternions duaux) : ce qu'on mesure ici est ce qui se dessine. */
+       le moteur : quaternions duaux, et, à l'épaule, la part « par la corde » que la source donne pour chaque point
+       (pe.C) — ce qu'on mesure ici est ce qui se dessine. */
     peauPosee(regions, f, unCote) {
       const pe = this.peau(regions); if (!pe) return false;
       const q = this.quaternionsDuaux(), S = this.S;
@@ -168,9 +170,25 @@
         }
         const l = 1 / (Math.hypot(rx, ry, rz, rw) || 1); rx *= l; ry *= l; rz *= l; rw *= l; dx *= l; dy *= l; dz *= l; dw *= l;
         const ux = ry * Z - rz * Y + rw * X, uy = rz * X - rx * Z + rw * Y, uz = rx * Y - ry * X + rw * Z;
-        f(X + 2 * (ry * uz - rz * uy) + 2 * (rw * dx - dw * rx + ry * dz - rz * dy),
-          Y + 2 * (rz * ux - rx * uz) + 2 * (rw * dy - dw * ry + rz * dx - rx * dz),
-          Z + 2 * (rx * uy - ry * ux) + 2 * (rw * dz - dw * rz + rx * dy - ry * dx));
+        let px = X + 2 * (ry * uz - rz * uy) + 2 * (rw * dx - dw * rx + ry * dz - rz * dy),
+          py = Y + 2 * (rz * ux - rx * uz) + 2 * (rw * dy - dw * ry + rz * dx - rx * dz),
+          pz = Z + 2 * (rx * uy - ry * ux) + 2 * (rw * dz - dw * rz + rx * dy - ry * dx);
+        const c = pe.C ? pe.C[v] : 0;
+        if (c > 0) {
+          // Par la corde : la moyenne des places que chaque articulation donnerait au point.
+          let cx = 0, cy = 0, cz = 0, wt = 0;
+          for (let k = 0; k < 4; k++) {
+            const w = pe.W[v * 4 + k]; if (!w) continue;
+            const o = (cote ? S[pe.J[v * 4 + k]].jumeau : pe.J[v * 4 + k]) * 8, ax = q[o], ay = q[o + 1], az = q[o + 2], aw = q[o + 3], bx = q[o + 4], by = q[o + 5], bz = q[o + 6], bw = q[o + 7];
+            const vx = ay * Z - az * Y + aw * X, vy = az * X - ax * Z + aw * Y, vz = ax * Y - ay * X + aw * Z;
+            cx += w * (X + 2 * (ay * vz - az * vy) + 2 * (aw * bx - bw * ax + ay * bz - az * by));
+            cy += w * (Y + 2 * (az * vx - ax * vz) + 2 * (aw * by - bw * ay + az * bx - ax * bz));
+            cz += w * (Z + 2 * (ax * vy - ay * vx) + 2 * (aw * bz - bw * az + ax * by - ay * bx));
+            wt += w;
+          }
+          px += (cx / wt - px) * c; py += (cy / wt - py) * c; pz += (cz / wt - pz) * c;
+        }
+        f(px, py, pz);
       }
       return true;
     }
@@ -237,6 +255,15 @@
       if (!this.peauPosee(regions || ['bassin', 'cuisse', 'jambe'], (x, y, z) => { if (y >= yMin && y <= yMax && z > zMax) zMax = z; }, unCote)) return 0.12;
       return zMax === -Infinity ? 0.12 : zMax;
     }
+    /* Une barre horizontale (en travers, de rayon r) à la hauteur y, amenée contre le corps dans la pose en cours, par
+       l'avant (sens 1) ou par l'arrière (sens -1) : le z de son axe quand elle touche, entre le plan médian et xMax ;
+       null si le corps ne passe pas à cette hauteur. Avec un rayon grossi d'une marge, c'est par où elle passe à
+       distance (devant le visage, derrière le crâne). */
+    barreContre(y, r, regions, xMax, sens) {
+      let m = -Infinity;
+      if (!this.peauPosee(regions, (px, py, pz) => { const dy = py - y; if (px <= xMax && dy < r && dy > -r) { const z = sens * pz + Math.sqrt(r * r - dy * dy); if (z > m) m = z; } }, true)) return null;
+      return m === -Infinity ? null : sens * m;
+    }
     /* Les jambes seules, pour la pose donnée (ni les bras ni la peau) : hanches, genoux, chevilles. Sert à régler une
        posture sur ses jambes sans poser tout le corps. */
     jambesDe(p) {
@@ -288,7 +315,7 @@
       //    elle peut en plus se hausser (haussement d'épaules) ou s'avancer.
       resoudre();
       const libre0 = arc(R.bras.d1.clone().applyQuaternion(QT), d1).multiply(QT);
-      let qc = QT.clone().slerp(libre0, K_CEINTURE);
+      let qc = QT.clone().slerp(libre0, b.ceinture != null ? b.ceinture : K_CEINTURE);
       if (b.hausse || b.avance) qc = qAxe(AZ.clone().applyQuaternion(QT), s * rad(b.hausse || 0)).multiply(qAxe(AY.clone().applyQuaternion(QT), -s * rad(b.avance || 0))).multiply(qc);
       this.poserMonde('clavicule' + x, qc);
       // 2. Le bras, depuis l'épaule ainsi déplacée.

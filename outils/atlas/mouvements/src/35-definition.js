@@ -67,7 +67,7 @@
      et l'autre une cible (main posée, pied au sol), celle qui est en angles est convertie : on pose le corps, et on
      note où arrivent la main ou le pied. */
   const enCible = {
-    bras: (info, k, b) => ({ prise: info.prises[k].clone(), pole: info.coudes[k].clone().sub(info.epaules[k]), paume: info.paumes[k].clone(), dirMain: info.dirMains[k].clone(), doigts: b.doigts, hausse: b.hausse, avance: b.avance }),
+    bras: (info, k, b) => ({ prise: info.prises[k].clone(), pole: info.coudes[k].clone().sub(info.epaules[k]), paume: info.paumes[k].clone(), dirMain: info.dirMains[k].clone(), doigts: b.doigts, hausse: b.hausse, avance: b.avance, ceinture: b.ceinture }),
     jambes: (info, k, j) => ({ cheville: info.chevilles[k].clone(), pole: info.genoux[k].clone().sub(info.hanches[k]), pied: info.pieds[k].pied.clone(), hautPied: info.pieds[k].hautPied.clone(), orteils: j.orteils })
   };
   const parCible = { bras: b => b.elev == null && !b.dirBras, jambes: j => j.flex == null };
