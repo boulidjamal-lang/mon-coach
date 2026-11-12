@@ -103,7 +103,7 @@
     }
     if (o.squatpli) {
       // Accroupi, les mains tiennent les pointes de pieds ; les jambes se tendent, le buste reste plié sur les cuisses.
-      const cle = u => { const p = debout(c, { ecart: 0.24, ouv: 24, dy: lerp(-0.6, -0.14, u), dz: lerp(-0.2, -0.2, u), penche: lerp(34, 98, u), lomb: lerp(14, 30, u), thor: 10, cou: lerp(-20, 20, u) }); const info = c.poser(p); for (const k of ['G', 'D']) tenir(p, k, info.orteils[k].clone().add(V(0, 0.03, 0.04)), V(k === 'G' ? 1 : -1, 0.3, -0.2), V(0, -1, 0)); return p; };
+      const cle = u => { const p = debout(c, { ecart: 0.24, ouv: 24, dy: lerp(-0.6, -0.14, u), dz: lerp(-0.2, -0.2, u), penche: lerp(34, 98, u), lomb: lerp(14, 30, u), thor: 10, cou: lerp(-20, 20, u) }); equilibrer(c, p, p.jambes.G.cheville.z + 0.05); const info = c.poser(p); for (const k of ['G', 'D']) tenir(p, k, info.orteils[k].clone().add(V(0, 0.03, 0.04)), V(k === 'G' ? 1 : -1, 0.3, -0.2), V(0, -1, 0)); return p; };
       d.cles = [0, 0.5, 1].map(u => [u, cle(u)]); d.rythme = 'rep'; d.periode = 5; d.vue = { az: 40, el: 10 }; return d;
     }
     if (o.bebe) {
@@ -127,7 +127,7 @@
     }
     if (o.pli) {
       // Flexion avant debout : jambes tendues, le buste se plie, les mains descendent vers le sol.
-      const cle = u => { const p = debout(c, { ecart: 0.1, ouv: 6, penche: lerp(4, 104, u), dz: lerp(0, -0.11, u), dy: -0.03 * u, lomb: 26 * u, thor: 14 * u, cou: lerp(0, 16, u) }); p.bras = pareil(B(6, lerp(8, 96, u), 0, 6, 150, { doigts: 'detendu' })); return p; };
+      const cle = u => { const p = debout(c, { ecart: 0.1, ouv: 6, penche: lerp(4, 104, u), dz: lerp(0, -0.11, u), dy: -0.03 * u, lomb: 26 * u, thor: 14 * u, cou: lerp(0, 16, u) }); p.bras = pareil(B(6, lerp(8, 96, u), 0, 6, 150, { doigts: 'detendu' })); if (u) equilibrer(c, p, p.jambes.G.cheville.z + 0.05); return p; };   // les hanches reculent juste ce qu'il faut pour tenir sur ses pieds
       d.cles = [0, 0.5, 1].map(u => [u, cle(u)]); d.vue = { az: 70, el: 8 }; return d;
     }
     if (o.ischios) {

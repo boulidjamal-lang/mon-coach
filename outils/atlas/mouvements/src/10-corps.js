@@ -235,6 +235,13 @@
       if (!this.peauPosee(['bassin', 'cuisse', 'jambe'], (x, y, z) => { if (y >= yMin && y <= yMax && z > zMax) zMax = z; })) return 0.12;
       return zMax === -Infinity ? 0.12 : zMax;
     }
+    /* Les jambes seules, pour la pose donnée (ni les bras ni la peau) : hanches, genoux, chevilles. Sert à régler une
+       posture sur ses jambes sans poser tout le corps. */
+    jambesDe(p) {
+      const t = this.tronc(p), info = { angles: {}, chevilles: {}, genoux: {}, orteils: {}, hanches: t.hanches, epaules: t.epaules };
+      for (const [c, s, x] of COTES) this.jambe(c, s, x, p.jambes[c], info);
+      return info;
+    }
     /* Un bras (voir en tête de classe les trois façons de le décrire) ; doigts : 'barre', 'plat', 'detendu', 'poing'. */
     bras(c, s, x, b, info) {
       const L = this.L, R = this.R[c], i = this.i;
