@@ -33,7 +33,7 @@
     return { forme: 'boite', s: [e, l + e * 0.5, e], p: a.clone().add(b).multiplyScalar(0.5), q: new Quat().setFromBasis(x, y, x.clone().cross(y)), couleur, metal: metal == null ? 0.45 : metal, r: e * 0.18 };
   };
   /* Un coussin (mousse sous vinyle) : une boîte aux bords très doux. */
-  const coussin = (lx, ly, lz, x, y, z, C, q) => boite(lx, ly, lz, x, y, z, C.banc, 0.12, q, Math.min(0.024, ly * 0.42));
+  const coussin = (lx, ly, lz, x, y, z, C, q) => Object.assign(boite(lx, ly, lz, x, y, z, C.banc, 0.12, q, Math.min(0.024, ly * 0.42)), { appui: 1 });
   /* Déplace des formes (dans leur repère) : rotation puis position ; les formes restent modifiables. */
   const deplacer = (formes, pos, rot) => formes.map(f => Object.assign({}, f, { p: (rot ? f.p.clone().applyQuaternion(rot) : f.p.clone()).add(pos || V()), q: rot ? rot.clone().multiply(f.q) : f.q }));
 
@@ -124,6 +124,7 @@
     disque(C, r = 0.2) { return galette(C, r, 0.036, 0); },
     balle(C, r = 0.11) { return [sphere(r, 0, 0, 0, C.ballon, 0), tore(r * 1.001, 0, 0, 0, C.gomme, 0, null, r * 0.035), tore(r * 1.001, 0, 0, 0, C.gomme, 0, ANNEAU_X, r * 0.035)]; },
     /* Banc : dossier relevé de `angle` degrés (0 = à plat, négatif = décliné), la charnière à l'origine, la tête vers
+       -Z (lSiege = 0 : pas d'assise — le banc où l'on se couche à plat ventre, les cuisses libres) ;
        -Z ; le dessus du coussin est à la hauteur h. Bâti : une poutre, deux pieds à patins ; banc réglable : la
        crémaillère qui soutient le dossier ; banc décliné : les boudins qui retiennent les jambes. */
     banc(C, angle = 0, h = 0.44, lDossier = 0.9, lSiege = 0.32) {
@@ -137,7 +138,7 @@
         // Dossier : part de la charnière et monte vers l'arrière ; assise : légèrement relevée vers l'avant.
         const qd = qAxe(AX, a), mil = V(0, h - ep / 2 + Math.sin(a) * lDossier / 2, -Math.cos(a) * lDossier / 2);
         f.push(coussin(larg, ep, lDossier, mil.x, mil.y, mil.z, C, qd));
-        f.push(coussin(larg, ep, lSiege, 0, h - ep / 2 + (angle > 0 ? 0.02 : 0), lSiege / 2 + 0.012, C, qAxe(AX, rad(angle > 0 ? -8 : 0))));
+        if (lSiege > 0.05) f.push(coussin(larg, ep, lSiege, 0, h - ep / 2 + (angle > 0 ? 0.02 : 0), lSiege / 2 + 0.012, C, qAxe(AX, rad(angle > 0 ? -8 : 0))));
         f.push(tube(V(0, yP, zAr - 0.06), V(0, yP, zAv + 0.03), 0.055, C.cadre));
         // Le montant avant porte l'assise ; la crémaillère part de la poutre et soutient le dossier aux deux tiers.
         f.push(tube(V(0, 0.03, zAv), V(0, h - ep - 0.02, zAv - 0.04), 0.055, C.cadre));
@@ -145,8 +146,9 @@
         const dessous = V(0, -ep / 2 - 0.012, 0).applyQuaternion(qd), appui = V(0, h - ep / 2 + Math.sin(a) * lDossier * 0.64, -Math.cos(a) * lDossier * 0.64).add(dessous);
         if (appui.y > yP + 0.08) f.push(tube(V(0, yP, Math.min(appui.z + 0.18, -0.05)), appui, 0.045, C.cadre));
         f.push(tube(V(0, 0.03, zAr), V(0, yP, zAr), 0.055, C.cadre));
-        if (angle < 0) for (const [y, z] of [[h + 0.17, lSiege + 0.3], [h - 0.02, lSiege + 0.25]]) {
-          // Banc décliné : les jambes passent sur le boudin du haut, les chevilles sous celui du bas.
+        if (angle < 0) for (const [y, z] of [[h + 0.145, lSiege + 0.165], [h - 0.02, lSiege + 0.325]]) {
+          // Banc décliné : le boudin du haut se loge au creux des genoux (sous la cuisse, derrière le mollet) ; les
+          // chevilles se calent sous celui du bas, qui appuie sur le cou-de-pied (voir allonge : mêmes repères).
           f.push(cyl(0.05, 0.42, 0, y, z, C.banc, 0.12, null, 0.02)); f.push(tube(V(0, yP, zAv), V(0, y, z), 0.04, C.cadre));
         }
       }
@@ -169,7 +171,9 @@
     },
     /* Siège : assise à hauteur h, dossier incliné de `recul` degrés vers l'arrière (0 = sans dossier). */
     siege(C, h = 0.45, dossier = 0, recul = 8, larg = 0.36) {
-      const f = [coussin(larg, 0.065, 0.38, 0, h - 0.0325, 0.02, C), tube(V(0, 0.03, 0), V(0, h - 0.07, 0), 0.06, C.cadre), tube(V(0, 0.03, -0.22), V(0, 0.03, 0.24), 0.055, C.cadre)];
+      // L'assise : 32 cm de profondeur, de 18 cm derrière les hanches à 14 cm devant (on s'y assoit au bord : la cuisse,
+      // qui descend vers le genou, ne la traverse pas).
+      const f = [coussin(larg, 0.065, 0.32, 0, h - 0.0325, -0.02, C), tube(V(0, 0.03, 0), V(0, h - 0.07, 0), 0.06, C.cadre), tube(V(0, 0.03, -0.22), V(0, 0.03, 0.24), 0.055, C.cadre)];
       for (const z of [-0.22, 0.24]) f.push(...patin(C, V(-0.2, 0.028, z), V(0.2, 0.028, z), 0.05));
       if (dossier) {
         const a = rad(recul), q = qAxe(AX, -a);
@@ -187,8 +191,7 @@
         f.push(...patin(C, V(s * l / 2, 0.028, -pied / 2), V(s * l / 2, 0.028, pied / 2), 0.055));
         if (h > 1.4) for (const z of [-1, 1]) f.push(tube(V(s * l / 2, 0.06, z * pied * 0.42), V(s * l / 2, 0.55, 0), 0.035, C.cadre));
       }
-      if (h > 1.4) f.push(tube(V(-l / 2, h + 0.07, 0), V(l / 2, h + 0.07, 0), 0.05, C.cadre));
-      return f;
+      return f;   // rien au-dessus de la barre : la tête et le buste y passent (traction, muscle-up)
     },
     /* Barres parallèles : deux barres le long de Z, à la hauteur h, écartées de 2 × ecart, sur un bâti en U. */
     paralleles(C, h = 1.25, ecart = 0.28, l = 0.7) {
@@ -235,10 +238,10 @@
       f.push(...poulie(C, 0, ancre.y + 0.045, ancre.z, 0.045), ...poulie(C, 0, H - 0.075, zB - 0.02, 0.04));
       for (const [p0, p1] of [[V(0, ancre.y + 0.085, ancre.z + 0.02), V(0, H - 0.04, zB - 0.02)], [V(0, H - 0.075, zB + 0.012), V(0, HAUT_PILE, zB + 0.012)]]) f.push(Object.assign(seg(p0, p1, 0.0042, C.cable, 0.6), { hors: 1 }));
       // L'assise sur son pied, reliée au bâti ; les boudins au-dessus des cuisses.
-      f.push(coussin(0.36, 0.065, 0.36, 0, h - 0.0325, zSiege + 0.02, C));
+      f.push(coussin(0.36, 0.065, 0.32, 0, h - 0.0325, zSiege - 0.02, C));
       f.push(tube(V(0, 0.03, zSiege), V(0, h - 0.07, zSiege), 0.06, C.cadre), tube(V(0, 0.03, zSiege - 0.2), V(0, 0.03, zB), 0.055, C.cadre));
       f.push(...patin(C, V(-0.22, 0.028, zSiege - 0.2), V(0.22, 0.028, zSiege - 0.2), 0.05));
-      const yB = h + 0.215, zR = zSiege + 0.3;
+      const yB = h + 0.175, zR = zSiege + 0.3;
       f.push(tube(V(0, yB, zB), V(0, yB, zR), 0.045, C.cadre));
       f.push(cyl(0.014, 0.5, 0, yB, zR, C.metal, 0.8));
       for (const s of [1, -1]) f.push(cyl(0.052, 0.2, s * 0.14, yB, zR, C.banc, 0.12, null, 0.02));
@@ -256,7 +259,7 @@
     /* Smith machine : deux glissières chromées dans un bâti (montants, socles, traverses) ; la barre coulisse entre
        elles, ses disques à l'extérieur. z : le plan des glissières ; l : écart entre elles + 0,16. */
     smith(C, z, l = 1.6, h = 2.1, penche = 0) {
-      const f = [], x = l / 2 - 0.08, zAr = z - 0.55;
+      const f = [], x = l / 2 - 0.08, zAr = z - 0.68;
       for (const s of [1, -1]) {
         f.push(cyl(0.016, h - 0.1, s * x, h / 2, z, C.metal, 0.95, DEBOUT_Q));
         f.push(tube(V(s * (x + 0.1), 0.03, zAr), V(s * (x + 0.1), h, zAr), 0.06, C.cadre));
@@ -266,7 +269,7 @@
         f.push(boite(0.14, 0.03, 0.08, s * (x + 0.04), h - 0.04, z, C.cadre, 0.5, null, 0.006));
       }
       f.push(tube(V(-(x + 0.1), h, zAr), V(x + 0.1, h, zAr), 0.06, C.cadre));
-      f.push(tube(V(-(x + 0.1), 0.5, zAr), V(x + 0.1, 0.5, zAr), 0.045, C.cadre));
+      f.push(tube(V(-(x + 0.1), 0.09, zAr), V(x + 0.1, 0.09, zAr), 0.045, C.cadre));
       return horsCadre(f);
     },
     /* Pupitre (curl au pupitre) : un coussin incliné devant le buste, sur un pied. */
@@ -295,6 +298,7 @@
       if (f.r) o.r = f.r;
       if (f.leve) o.leve = f.leve;
       if (f.hors) o.hors = 1;
+      if (f.appui) o.appui = 1;
       sortie.push(o);
     }
     return sortie;

@@ -103,7 +103,7 @@
       d.vue = { az: 66, el: 12 }; return d;
     }
     if (o.extension) {
-      const base = allonge(c, { h: 0.58, angle: 76, jambes: J(74, 5, 0, 92, 0), lomb: 0, thor: 0, cou: 0, d: 0.1 });
+      const base = allonge(c, { h: 0.58, angle: 76, jambes: J(74, 5, 0, 92, 0), lomb: 0, thor: 0, cou: 0 });
       fixe.push(...poseFixe(MAT.banc(C, 76, 0.58)));
       const cle = u => { const p = cloner(base); for (const k of ['G', 'D']) { p.jambes[k] = J(74, 5, 0, lerp(94, 6, u), -10 * u); p.bras[k] = B(80, 14, 0, 35, 90); } if (o.uni) p.jambes.D = J(74, 5, 0, 92, 0); return p; };
       d.a = cle(0); d.b = cle(1);
@@ -114,11 +114,16 @@
     if (o.curl) {
       if (o.nordique || o.ghr) {
         // À genoux, chevilles tenues : le corps descend d'un bloc vers l'avant, retenu par les ischios, puis remonte.
-        const cle = u => { const p = aGenoux(c, { flex: 0, penche: 0 }); const a = lerp(0, o.ghr ? 74 : 62, u); p.bassin.rot = qX(a); p.jambes = pareil(J(a, 6, 0, 90 - a, 62)); c.poserSur(p, V(0, o.ghr ? 0.55 : 0, 0), AY, ['jambe', 'pied']); p.lombaires = -2; p.cou = -14 * u; const t = c.tronc(p); p.bras = pareil(B(4, 30 + 40 * u, 0, 100 - 20 * u, 150, { doigts: 'plat' })); return p; };
-        d.cles = [[0, cle(0)], [0.5, cle(0.5)], [1, cle(1)]]; d.vue = { az: 70, el: 8 };
+        // Les genoux ne bougent pas (c'est le pivot) et les tibias restent à plat : cuisses et buste basculent ensemble.
+        const h0 = o.ghr ? 0.55 : 0, p0 = aGenoux(c, { flex: 0, penche: 0 });
+        c.poserSur(p0, V(0, h0, 0), AY, ['jambe', 'pied']);
+        const milieuGenoux = p => { const g = c.poser(p).genoux; return g.G.clone().add(g.D).multiplyScalar(0.5); }, K = milieuGenoux(p0);
+        const cle = u => { const p = cloner(p0), a = lerp(0, o.ghr ? 74 : 62, u); p.bassin.rot = qX(a); p.jambes = pareil(J(0, 6, 0, 90 - a, 62)); p.bassin.pos.add(K.clone().sub(milieuGenoux(p))); p.lombaires = -2; p.cou = -14 * u; p.bras = pareil(B(4, 30 + 40 * u, 0, 100 - 20 * u, 150, { doigts: 'plat' })); return p; };
+        d.cles = [0, 0.25, 0.5, 0.75, 1].map(u => [u, cle(u)]); d.vue = { az: 70, el: 8 };
         const pz = c.poser(cle(0)).chevilles.G;
-        if (o.ghr) fixe.push(pret(boite(0.45, 0.08, 0.4, 0, 0.51, pz.z + 0.5, C.banc, 0)), pret(cyl(0.05, 0.45, 0, pz.y + 0.1, pz.z, C.banc, 0)), pret(boite(0.5, 0.5, 0.06, 0, 0.25, pz.z + 0.3, C.cadre, 0.5)));
-        else fixe.push(pret(cyl(0.045, 0.45, 0, pz.y + 0.1, pz.z - 0.02, C.banc, 0)));
+        // Le boudin retient les jambes juste au-dessus des chevilles (pas sur le talon).
+        if (o.ghr) fixe.push(pret(boite(0.45, 0.08, 0.4, 0, 0.51, pz.z + 0.5, C.banc, 0)), pret(cyl(0.05, 0.45, 0, pz.y + 0.105, pz.z + 0.08, C.banc, 0)), pret(boite(0.5, 0.5, 0.06, 0, 0.25, pz.z + 0.3, C.cadre, 0.5)));
+        else fixe.push(pret(cyl(0.045, 0.45, 0, pz.y + 0.1, pz.z + 0.08, C.banc, 0)));
         return d;
       }
       if (o.glisse || o.ballon || o.anneaux) {
@@ -131,7 +136,7 @@
         return d;
       }
       if (o.assis) {
-        const base = allonge(c, { h: 0.6, angle: 76, jambes: J(74, 5, 0, 12, 0), lomb: 0, thor: 0, cou: 0, d: 0.1 });
+        const base = allonge(c, { h: 0.6, angle: 76, jambes: J(74, 5, 0, 12, 0), lomb: 0, thor: 0, cou: 0 });
         fixe.push(...poseFixe(MAT.banc(C, 76, 0.6)));
         const cle = u => { const p = cloner(base); for (const k of ['G', 'D']) { p.jambes[k] = J(74, 5, 0, lerp(10, 104, u), 0); p.bras[k] = B(80, 14, 0, 35, 90); } if (o.uni) p.jambes.D = J(74, 5, 0, 10, 0); return p; };
         d.a = cle(0); d.b = cle(1);
@@ -176,7 +181,7 @@
     if (o.nordiqueInverse) {
       // À genoux, buste et cuisses alignés : tout le corps part en arrière, retenu par les quadriceps.
       const cle = u => { const a = lerp(0, -48, u), p = aGenoux(c, {}); p.bassin.rot = qX(a); p.jambes = pareil(J(a, 6, 0, 90 - a, 62)); c.poserSur(p, V(), AY, ['jambe', 'pied']); p.cou = 8 * u; p.bras = o.disque ? p.bras : pareil(B(0, 20, 0, 10, 180, { doigts: 'detendu' })); if (o.disque) p.bras = mains(c, c.tronc(p), 'poitrine'); return p; };
-      d.cles = [[0, cle(0)], [0.5, cle(0.5)], [1, cle(1)]]; if (o.disque) d.tenu = [{ t: 'disque', m: 'GD', r: 0.14, axe: AZ }];
+      d.cles = [[0, cle(0)], [0.5, cle(0.5)], [1, cle(1)]]; if (o.disque) d.tenu = [{ t: 'disque', m: 'GD', r: 0.14, axe: 'buste' }];
       return d;
     }
     throw new Error('jambes : sorte inconnue');
@@ -194,9 +199,9 @@
     }
     if (o.assis) {
       // Assis, genoux à angle droit, la charge sur les genoux : seuls les talons montent.
-      const cle = u => { const p = assis(c, { h: 0.5, zPieds: 0.42, pointe: 36 * u, ecart: 0.11, ouv: 4 }); const t = c.tronc(p); if (o.uni) p.jambes.D = pied(c, -1, { x: -0.2, z: p.bassin.pos.z + 0.6, ouv: 10 }); for (const [k, s] of COTES) p.bras[k] = { prise: V(s * 0.16, p.jambes.G.cheville.y + L.jambe + 0.1, p.bassin.pos.z + 0.4), pole: V(s * 1, 0, -0.5), paume: V(0, -1, 0), doigts: 'barre' }; return p; };
-      d.pose = cle; fixe.push(...poseFixe(MAT.siege(C, 0.5)), pret(boite(0.46, 0.08, 0.3, 0, 0.04, 0.5, C.fonte, 0.3, null, 0.012)), pret(tube(V(0, 0.03, 0.2), V(0, 0.03, 0.95), 0.05, C.cadre)), pret(tube(V(0, 0.03, 0.95), V(0, 0.62, 0.95), 0.055, C.cadre)));
-      d.objets = (info, u, sortie) => { const g = info.genoux.G.clone().add(o.uni ? info.genoux.G : info.genoux.D).multiplyScalar(0.5); if (o.hal) poserObjet(MAT.haltere(C, 1.2), g.clone().add(V(0, 0.09, -0.04)), null, sortie); else if (o.barre || o.smith) poserObjet(MAT.barre(C, 1.6, 0.18), g.clone().add(V(0, 0.085, -0.05)), null, sortie); else sortie.push(pret(cyl(0.05, 0.42, g.x, g.y + 0.1, g.z - 0.05, C.banc, 0))); };
+      const cle = u => { const p = assis(c, { h: H_SIEGE, zPieds: 0.42, yPieds: 0.08, pointe: 36 * u, ecart: 0.11, ouv: 4 }); const t = c.tronc(p); if (o.uni) p.jambes.D = pied(c, -1, { x: -0.2, z: p.bassin.pos.z + 0.6, ouv: 10 }); for (const [k, s] of COTES) p.bras[k] = { prise: V(s * 0.16, p.jambes.G.cheville.y + L.jambe + 0.1, p.bassin.pos.z + 0.4), pole: V(s * 1, 0, -0.5), paume: V(0, -1, 0), doigts: 'barre' }; return p; };
+      d.pose = cle; fixe.push(...poseFixe(MAT.siege(C, H_SIEGE)), pret(boite(0.46, 0.08, 0.24, 0, 0.04, 0.63, C.fonte, 0.3, null, 0.012)), pret(tube(V(0, 0.03, 0.2), V(0, 0.03, 0.95), 0.05, C.cadre)), pret(tube(V(0, 0.03, 0.95), V(0, 0.62, 0.95), 0.055, C.cadre)));
+      d.objets = (info, u, sortie) => { const g = info.genoux.G.clone().add(o.uni ? info.genoux.G : info.genoux.D).multiplyScalar(0.5); if (o.hal) poserObjet(MAT.haltere(C, 1.2), g.clone().add(V(0, 0.138, -0.05)), null, sortie); else if (o.barre || o.smith) poserObjet(MAT.barre(C, 1.6, 0.18), g.clone().add(V(0, 0.085, -0.05)), null, sortie); else sortie.push(pret(cyl(0.05, 0.42, g.x, g.y + 0.118, g.z - 0.05, C.banc, 0))); };
       if (o.smith) fixe.push(...poseFixe(MAT.smith(C, 0.37)));
       return d;
     }

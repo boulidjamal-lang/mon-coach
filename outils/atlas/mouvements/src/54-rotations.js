@@ -10,14 +10,14 @@
     // Posture par défaut, admise dans l'écriture : o.debout.
     const L = c.L, fixe = [], d = { vue: { az: 28, el: 10 }, tenu: [], fixe };
     const mainsDevant = (p, loin, bas, ecart) => { const t = c.tronc(p); for (const [k, s] of COTES) p.bras[k] = { prise: t.duThorax(V(s * (ecart == null ? 0.02 : ecart), bas == null ? -0.1 : bas, loin)), pole: V(s * 0.6, -1, 0.1).applyQuaternion(t.qThorax), paume: V(-s, 0, 0).applyQuaternion(t.qThorax), dirMain: V(0, 0.25, 1).applyQuaternion(t.qThorax), doigts: 'barre' }; return t; };
-    const charge = (ecart) => (o.hal ? [{ t: 'haltere', m: 'GD', entre: true }] : o.balle ? [{ t: 'balle', m: 'GD', r: 0.11 }] : o.disque ? [{ t: 'disque', m: 'GD', r: 0.15 }] : o.kb ? [{ t: 'kb', m: 'GD', entre: true }] : []);
+    const charge = (ecart) => (o.hal ? [{ t: 'haltere', m: 'GD', entre: true }] : o.balle ? [{ t: 'balle', m: 'GD', r: 0.11 }] : o.disque ? [{ t: 'disque', m: 'GD', r: 0.15, bord: true }] : o.kb ? [{ t: 'kb', m: 'GD', entre: true }] : []);
 
     if (o.russe) {
       // Assis, buste incliné en arrière, genoux fléchis : les mains (et la charge) passent d'une hanche à l'autre.
       const base = assisSol(c, { recul: 32, lomb: 14, thor: 8, jambes: o.leves ? J(98, 5, 0, 58, 10) : J(108, 5, 0, 109, 0) });
       base.cou = 12;
       d.rythme = 'continu'; d.periode = 2.6;
-      d.pose = ph => { const p = cloner(base), sn = Math.sin(ph * 2 * Math.PI); p.torsion = 52 * sn; p.couRot = -14 * sn; if (o.barre) Object.assign(d, {}); mainsDevant(p, 0.3, -0.2, o.hal ? 0.09 : o.balle || o.disque ? 0.1 : 0.03); return p; };
+      d.pose = ph => { const p = cloner(base), sn = Math.sin(ph * 2 * Math.PI); p.torsion = 52 * sn; p.couRot = -14 * sn; if (o.barre) Object.assign(d, {}); mainsDevant(p, 0.3, -0.2, o.hal ? 0.09 : o.disque ? 0.138 : o.balle ? 0.1 : 0.03); return p; };
       d.tenu = charge();
       if (o.barre) { d.pose = ph => { const p = cloner(base), sn = Math.sin(ph * 2 * Math.PI); p.torsion = 48 * sn; p.couRot = -12 * sn; porter(c, p, { barre: true }, C, 0); return p; }; d.tenu = [{ t: 'barre', l: 1.6, d: 0 }]; }
       if (o.elas) d.tenu = [{ t: 'elastique', de: V(1.25, 0.45, 0.25), m: 'GD', bout: 'corde' }];
@@ -118,9 +118,9 @@
       d.vue = { az: versHaut ? 20 : -20, el: 10 }; return d;
     }
     // Rotation debout ou assise, les mains devant soi ou la barre sur les épaules.
-    const machine = !!o.machine, base = o.assis || machine ? assis(c, { h: 0.47, ecart: 0.14 }) : o.genoux ? aGenoux(c, {}) : debout(c, { ecart: 0.19, ouv: 12, dy: -0.02 });
-    if (o.assis && !machine) fixe.push(...poseFixe(MAT.banc(C, 0), V(0, 0, 0.3)));
-    if (machine) fixe.push(...poseFixe(MAT.siege(C, 0.47, 0, 0)));
+    const machine = !!o.machine, base = o.assis || machine ? assis(c, { h: machine ? H_SIEGE : H_BANC, ecart: 0.14 }) : o.genoux ? aGenoux(c, {}) : debout(c, { ecart: 0.19, ouv: 12, dy: -0.02 });
+    if (o.assis && !machine) fixe.push(...bancAssis(C));
+    if (machine) fixe.push(...poseFixe(MAT.siege(C, H_SIEGE, 0, 0)));
     const amp = machine ? 46 : o.barre ? 50 : 44;
     const poser = (p, tw) => {
       p.torsion = tw; p.couRot = -tw * 0.3;

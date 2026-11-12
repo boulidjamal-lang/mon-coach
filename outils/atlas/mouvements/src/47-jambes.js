@@ -17,8 +17,11 @@
       else barreSur(t.cou.clone().add(dT(0, o.basse ? -0.075 : -0.035, o.basse ? -0.12 : -0.105)), 0.37, s => [s * 0.25, -1, -0.55], [0, 0.35, 1]);
       if (o.sac) r.tenu = [];
     } else if (o.gobelet || (o.kb && !o.kb2)) {
-      for (const [k, s] of COTES) p.bras[k] = { prise: t.duThorax(V(s * 0.06, -0.16, 0.2)), pole: dT(s * 0.5, -1, 0.1), paume: dT(-s, 0.1, 0), dirMain: dT(0, 0.9, 0.3), doigts: 'barre' };
-      r.objets = (info, uu, sortie) => { const m = info.prises.G.clone().add(info.prises.D).multiplyScalar(0.5), haut = AY.clone().applyQuaternion(info.qThorax); if (o.kb) poserObjet(MAT.kettlebell(C), m.clone().add(haut.clone().multiplyScalar(0.02)), qTenu(AX.clone().applyQuaternion(info.qThorax), haut), sortie); else poserObjet(MAT.haltere(C, 1.25), m.clone().add(haut.clone().multiplyScalar(-0.08)), qTenu(haut, AZ), sortie); };
+      // Sur une jambe (pistolet), la charge sert de contrepoids : les bras s'allongent devant à mesure qu'on descend.
+      const loin = o.pistolet ? 0.24 * (u || 0) : 0;
+      for (const [k, s] of COTES) p.bras[k] = { prise: t.duThorax(V(s * 0.06, -0.16 + 0.4 * loin, 0.2 + loin)), pole: dT(s * 0.5, -1, 0.1), paume: dT(-s, 0.1, 0), dirMain: dT(0, 0.9 - 2 * loin, 0.3 + 2 * loin), doigts: 'barre' };
+      if (o.kb) r.tenu = [{ t: 'kb', m: 'GD', entre: true }];
+      else r.objets = (info, uu, sortie) => { const m = info.prises.G.clone().add(info.prises.D).multiplyScalar(0.5), haut = AY.clone().applyQuaternion(info.qThorax); poserObjet(MAT.haltere(C, 1.25), m.clone().add(haut.clone().multiplyScalar(-0.08)), qTenu(haut, AZ), sortie); };
     } else if (o.hal || o.kb2) {
       // Un haltère dans chaque main : les bras pendent à la verticale, quel que soit le buste (ils ne penchent pas avec
       // lui), et s'écartent ce qu'il faut pour passer en dehors de la cuisse et du genou quand on descend.
@@ -60,9 +63,15 @@
     if (o.mur) {
       // Chaise contre le mur : dos au mur, cuisses à l'horizontale ; tenue.
       const p = debout(c, { dy: -0.4, dz: -0.42, penche: 0, ecart: 0.13, ouv: 6 }); p.bras = pareil(B(0, 20, 0, 10, 180, { doigts: 'detendu' }));
-      const zMur = p.bassin.pos.z - L.dos - 0.02;
-      fixe = poseFixe(MAT.mur(C, zMur)); if (o.ballon) fixe.push(pret(sphere(0.2, 0, p.bassin.pos.y + 0.25, zMur + 0.2, C.ballon, 0)));
-      if (o.ballon) { const hautP = debout(c, { dy: -0.05, dz: -0.42, penche: 0, ecart: 0.13, ouv: 6 }); hautP.bras = cloner(p.bras); return { a: hautP, b: p, fixe, vue: { az: 70, el: 8 } }; }
+      // Avec un ballon : il est pris entre le dos et le mur (le corps est donc à un ballon du mur) ; debout, il est au
+      // creux des reins ; quand on descend, il roule le long du dos — son centre monte, vu du bassin, de la moitié.
+      const rB = 0.2, zMur = p.bassin.pos.z - L.dos - (o.ballon ? 2 * rB - 0.015 : 0.02);
+      fixe = poseFixe(MAT.mur(C, zMur));
+      if (o.ballon) {
+        const hautP = debout(c, { dy: -0.05, dz: -0.42, penche: 0, ecart: 0.13, ouv: 6 }); hautP.bras = cloner(p.bras);
+        const yHaut = hautP.bassin.pos.y;
+        return { a: hautP, b: p, fixe, vue: { az: 70, el: 8 }, objets: (info, u, sortie) => sortie.push(pret(sphere(rB, 0, yHaut + 0.16 - (yHaut - info.bassin.y) / 2, zMur + rB, C.ballon, 0))) };
+      }
       const q = cloner(p); q.thorax = 1.5;
       return { a: p, b: q, rythme: 'tenue', fixe, vue: { az: 70, el: 8 } };
     }
@@ -165,10 +174,11 @@
     const fixe = [], d = { vue: { az: 62, el: 8 }, tenu: [], fixe };
     const droit = !(o.barre || o.smith);
     if (o.step) {
-      // Montée sur banc : un pied sur le banc, le corps se hisse ; l'autre pied vient se poser à côté.
+      // Montée sur banc : un pied sur le banc, le corps se hisse ; l'autre pied vient se poser à côté — il monte d'abord,
+      // avance ensuite, pour passer par-dessus le bord de la marche.
       const h = o.poliquin ? 0.2 : 0.4;
       fixe.push(...poseFixe(MAT.step(C, 0.6, h, 0.42, 0, 0.36)));
-      d.pose = u => { const p = debout(c, { dy: h * u - 0.02 * (1 - u), dz: 0.1 + 0.26 * u, penche: 18 * (1 - u) + 2, cou: -10 * (1 - u) }); p.bassin.pos.z = z0 + 0.1 + 0.25 * u; p.jambes.G = pied(c, 1, { z: z0 + 0.34, y0: h, ouv: 6 }); const lv = Math.sin(Math.PI * u); p.jambes.D = pied(c, -1, { z: z0 - 0.12 + 0.44 * u, y0: h * lisse(u) + 0.06 * lv, ouv: 6, pointe: 25 * (1 - u) }); const m = porter(c, p, o, C, 0); d.tenu = m.tenu; d.objets = m.objets; return p; };
+      d.pose = u => { const p = debout(c, { dy: h * u - 0.02 * (1 - u), dz: 0.1 + 0.26 * u, penche: 18 * (1 - u) + 2, cou: -10 * (1 - u) }); p.bassin.pos.z = z0 + 0.1 + 0.25 * u; p.jambes.G = pied(c, 1, { z: z0 + 0.34, y0: h, ouv: 6 }); const lv = Math.sin(Math.PI * u); p.jambes.D = pied(c, -1, { z: z0 - 0.12 + 0.44 * lisse((u - 0.4) / 0.6), y0: h * lisse(u / 0.55) + 0.05 * lv, ouv: 6, pointe: 25 * (1 - lisse(u / 0.5)) }); const m = porter(c, p, o, C, 0); d.tenu = m.tenu; d.objets = m.objets; return p; };
       d.pose(0); if (o.poulie) { d.tenu = [{ t: 'cable', de: V(0, 0.2, 1.4), m: 'G', bout: 'poignee' }]; fixe.push(...poseFixe(MAT.colonne(C, V(0, 0.2, 1.4)))); }
       return d;
     }

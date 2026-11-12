@@ -121,8 +121,8 @@
         const cle = u => { const p = allonge(c, { h: 0, angle: 0, jambes: { G: J(lerp(62, 104, u), 4, 0, lerp(100, 96, u), 10), D: J(lerp(70, 104, u), 34, 72, 92, 10) } }); auSol(p, ['bassin', 'dos', 'thorax', 'jambe', 'pied']); const info = c.poser(p); for (const k of ['G', 'D']) tenir(p, k, info.genoux.G.clone().add(V(k === 'G' ? 0.05 : -0.05, -0.02, -0.08)), V(k === 'G' ? 1 : -1, -0.3, 0.3), V(0, -0.3, -1)); return p; };
         d.vue = { az: 60, el: 22 }; return deux(cle(0), cle(1));
       }
-      const cle = u => { const p = assis(c, { h: 0.46, penche: lerp(2, 32, u), ecart: 0.12 }); p.lombaires = 12 * u; p.jambes.D = J(lerp(80, 84, u) + lerp(2, 32, u), 22, 74, 96, 10); const info = c.poser(p); p.bras.D = B(20, 30, 0, 60, 150, { doigts: 'detendu' }); p.bras.G = B(20, 30, 0, 60, 150, { doigts: 'detendu' }); return p; };
-      fixe.push(...poseFixe(MAT.banc(C, 0), V(0, 0, 0.3)));
+      const cle = u => { const p = assis(c, { h: H_BANC, penche: lerp(2, 32, u), ecart: 0.12 }); p.lombaires = 12 * u; p.jambes.D = J(lerp(80, 84, u) + lerp(2, 32, u), 22, 74, 96, 10); const info = c.poser(p); p.bras.D = B(20, 30, 0, 60, 150, { doigts: 'detendu' }); p.bras.G = B(20, 30, 0, 60, 150, { doigts: 'detendu' }); return p; };
+      fixe.push(...bancAssis(C));
       d.vue = { az: 38, el: 12 }; return deux(cle(0), cle(1));
     }
     if (o.pli) {
@@ -195,15 +195,25 @@
       // Zone par défaut, admise dans l'écriture : o.fessiers.
       d.rythme = 'continu'; d.periode = 2.6;
       if (o.pied) { const base = debout(c, { ecart: 0.1, ouv: 6 }); d.pose = ph => { const p = cloner(base), w = Math.sin(2 * Math.PI * ph); p.jambes.G = pied(c, 1, { x: 0.1, z: L.racine.z + L.hanche.z + 0.1 + 0.05 * w, y0: 0.045, pointe: 6 }); p.bras = mains(c, c.tronc(p), 'hanches'); return p; }; d.objets = (info, u, sortie) => sortie.push(pret(sphere(0.035, info.orteils.G.x, 0.035, info.chevilles.G.z + 0.06, C.ballon, 0))); d.vue = { az: 50, el: 10 }; return d; }
-      const mollets = !!o.mollets;
-      d.pose = ph => {
-        const w = Math.sin(2 * Math.PI * ph), p = corps(qX(mollets ? -34 : -36), { lombaires: 10, cou: 8 });
-        p.jambes = mollets ? pareil(J(56, 4, 0, 4, 10)) : { G: J(118, 6, 0, 128, 0), D: J(112, 28, 70, 100, 10) };
-        p.bassin.pos = V(0, mollets ? 0.2 : 0.235, (mollets ? 0.07 : 0.05) * w);
-        const t = c.tronc(p); for (const [k, s] of COTES) p.bras[k] = { prise: V(s * 0.25, 0.008, t.epaules.G.z - 0.12), pole: V(s * 0.2, 0.2, -1), paume: V(0, -1, 0), dirMain: V(s * 0.3, 0, -1), doigts: 'plat' };
+      const mollets = !!o.mollets, R = 0.07, zR = mollets ? 0.62 : 0;
+      // k : la hauteur du bassin (fessiers) ou la flexion des hanches (mollets : bassin soulevé, jambes tendues).
+      const posture = (w, k) => {
+        const p = corps(qX(mollets ? -46 : -52), { lombaires: 10, cou: 8 });
+        p.jambes = mollets ? pareil(J(k, 4, 0, 4, 10)) : { G: J(134, 6, 0, 128, 0), D: J(128, 28, 70, 100, 10) };
+        p.bassin.pos = V(0, mollets ? 0.2 : k, (mollets ? 0.07 : 0.05) * w);
+        const t = c.tronc(p); for (const [kk, s] of COTES) p.bras[kk] = { prise: V(s * 0.24, 0.008, t.epaules.G.z - 0.1), pole: V(s * 0.2, 0.2, -1), paume: V(0, -1, 0), dirMain: V(s * 0.3, 0, -1), doigts: 'plat' };
         return p;
       };
-      d.objets = (info, u, sortie) => { const z = mollets ? (info.chevilles.G.z + info.genoux.G.z) / 2 + 0.03 : 0.0, y = 0.07; sortie.push(pret(cyl(0.07, 0.42, 0, y, mollets ? 0.62 : 0, C.ballon, 0))); };
+      // Le corps repose sur le rouleau : la chair touche son dessus, enfoncée d'un centimètre. Réglé sur le corps posé à
+      // cinq endroits de l'aller-retour — les fessiers par la hauteur du bassin, les mollets par l'angle des jambes.
+      const dessus = 2 * R - 0.01, surRouleau = (x, y, z) => Math.abs(z - zR) < 0.035 && Math.abs(x) < 0.21;
+      const reglages = [-1, -0.5, 0, 0.5, 1].map(w => {
+        if (!mollets) return [w, c.poserSur(posture(w, 0.235), V(0, dessus, zR), AY, ['bassin', 'cuisse'], surRouleau).bassin.pos.y];
+        const bas = k => { const e = c.extreme(posture(w, k), V(0, -1, 0), ['jambe'], surRouleau); return e === -Infinity ? 0 : -e - dessus; };
+        return [w, zeroDe(bas, 56, 62, 8, 12)];
+      });
+      d.pose = ph => { const w = Math.sin(2 * Math.PI * ph); return posture(w, chemin(reglages, w)); };
+      d.objets = (info, u, sortie) => { sortie.push(pret(cyl(R, 0.42, 0, R, zR, C.ballon, 0))); };
       d.vue = { az: 60, el: 14 }; return d;
     }
     throw new Error('etire : posture non décrite (' + (o._ || []).join(' ') + ')');

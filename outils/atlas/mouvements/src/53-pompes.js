@@ -73,7 +73,9 @@
     const yP = o.decline ? 0.44 : 0;
     const ecart = o.archer ? 0.46 : o.large ? 0.4 : o.diamant ? 0.045 : o.serre || o.triceps ? 0.17 : o.unbras ? 0.07 : 0.26;
     const ferme = !!(o.poignees || o.hal || o.anneaux || o.jointures || o.profonde);   // main refermée, dans l'axe de l'avant-bras
-    const recul = o.pseudo ? 0.27 : 0;
+    // Mains reculées vers la taille (pseudo-planche) ; en diamant, elles sont sous la poitrine, pas sous le visage :
+    // en bas, les avant-bras restent dressés au lieu de se coucher au sol.
+    const recul = o.pseudo ? 0.27 : o.diamant ? 0.12 : 0;
     const pl = planche(c, { yPieds: yP, genoux: !!o.genoux, ecartPieds: o.unbras ? 0.3 : 0.09 });
     const portee = 0.965 * (ferme ? Ap : A), dx = ecart - epX, yAppui = yM + (ferme ? 0 : L.creux + 0.008);
     const hHaut = yAppui + Math.sqrt(Math.max(0.01, portee * portee - dx * dx - recul * recul));
@@ -190,10 +192,10 @@
     }
     if (o.assis) {
       // Machine à dips assise : poignées de chaque côté du siège, les bras poussent vers le bas.
-      const p = assis(c, { h: 0.5, penche: 2 }), t = c.tronc(p);
+      const p = assis(c, { h: H_SIEGE, penche: 2 }), t = c.tronc(p);
       const cle = u => { const q = cloner(p); for (const [k, s] of COTES) q.bras[k] = { prise: V(s * 0.31, lerp(t.epaules.G.y - 0.27, t.epaules.G.y - 0.56, u), t.epaules.G.z + 0.03), pole: V(s * 0.3, 0.2, -1), paume: V(-s, 0, 0), doigts: 'barre' }; return q; };
       d.a = cle(0); d.b = cle(1);
-      fixe.push(...poseFixe(MAT.siege(C, 0.5, 0.6, 6)));
+      fixe.push(...poseFixe(MAT.siege(C, H_SIEGE, 0.6, 6)));
       d.tenu = [{ t: 'levier', de: V(0.31, 0.5, -0.5), m: 'G' }, { t: 'levier', de: V(-0.31, 0.5, -0.5), m: 'D' }];
       d.vue = { az: 55, el: 10 }; return d;
     }

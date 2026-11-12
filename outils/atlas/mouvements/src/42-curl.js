@@ -15,10 +15,10 @@
     let p = P.p, fixe = P.fixe, vue = P.vue, a, b, ancre = V(0, 0.1, 0.8), autre = null, bout = o.barreP ? 'barre' : o.corde ? 'corde' : null, r = { disques: 0.13, lCable: 0.7 };
     if (o.pupitre) {
       // Assis derrière le pupitre, le haut des bras posé sur le coussin incliné.
-      p = assis(c, { h: 0.52, penche: 14, zPieds: 0.3 }); p.thorax = 6; p.cou = -8;
+      p = assis(c, { h: H_SIEGE, penche: 14, zPieds: 0.3 }); p.thorax = 6; p.cou = -8;
       a = B(8, 52, 0, 22, pron); b = B(8, 52, 0, 128, pron);
       const t = c.tronc(p), ep = t.epaules.G;
-      fixe = poseFixe(MAT.siege(C, 0.52)).concat(poseFixe(MAT.pupitre(C, ep.y - 0.2, ep.z + 0.24, 50)));
+      fixe = poseFixe(MAT.siege(C, H_SIEGE)).concat(poseFixe(pupitreSous(c, p, a, C)));
       ancre = V(0, 0.15, ep.z + 0.75); vue = { az: 52, el: 12 };
       r.pivot = s => V(s * 0.2, ep.y - 0.3, ep.z + 0.3);
     } else if (P.sorte === 'ventre') {

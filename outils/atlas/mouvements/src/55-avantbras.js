@@ -38,7 +38,7 @@
       d.vue = { az: 60, el: 18 };
     } else {
       // Assis, buste penché, avant-bras posés sur les cuisses, les mains dépassent des genoux.
-      p = assis(c, { h: 0.46, penche: 34, ecart: 0.13 }); p.cou = -16; fixe.push(...poseFixe(MAT.banc(C, 0), V(0, 0, 0.3)));
+      p = assis(c, { h: H_BANC, penche: 34, ecart: 0.13 }); p.cou = -16; fixe.push(...bancAssis(C));
       bras = u => (tourne ? B(-4, 36, 0, 92, o.supination ? lerp(160, 20, u) : lerp(20, 160, u))
         : o.neutre ? B(-4, 36, 0, 92, 90, { deviation: lerp(-22, 26, u) })
         : o.inverse ? B(-4, 36, 0, 92, 180, { poignet: lerp(36, -44, u) }) : B(-4, 36, 0, 92, 0, { poignet: lerp(-34, 50, u) }));

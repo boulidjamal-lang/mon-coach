@@ -14,8 +14,8 @@
     let P, p, fixe, vue, a, b, ancre = null, autre = null, r = { disques: 0.13, lCable: 0.5 }, plus = {};
     const pose = def => { P = postureDe(c, o, C, def); p = P.p; fixe = P.fixe; vue = P.vue; };
     if (o.front) {
-      pose(); const pr = o.marteau || o.disque ? 90 : 180, plan = o.disque ? -4 : 2;
-      a = B(plan, 10, o.disque ? -18 : 0, 10, pr); b = B(plan, o.haut ? 165 : 94, o.disque ? -18 : 0, 10, pr);
+      pose(); const pr = o.marteau || o.disque ? 90 : 180, plan = o.disque ? 3 : 2;
+      a = B(plan, 10, 0, 10, pr); b = B(plan, o.haut ? 165 : 94, 0, 10, pr);
       ancre = V(0, 0.1, -0.7); r.bout = m === 'GD' && o.poulie ? (o.corde ? 'corde' : 'barre') : null;
       if (o.volant) plus.pose = true;
       if (P.sorte === 'ventre') { const ang = o.ventre === true ? 45 : o.ventre; a = B(2, ang * 0.95, 0, 10, pr); b = B(2, 165, 0, 10, pr); }
@@ -25,8 +25,8 @@
         pose(); a = B(-18, 86, -70, 14, 90); b = B(108, 88, 10, 14, 90); ancre = s => V(-s * 0.75, 1.5, 0.85); vue = { az: 150, el: 10 };
       } else if (o.machine) {
         // Butterfly inversé : assis face au dossier, bras tendus devant qui s'ouvrent.
-        p = assis(c, { h: 0.5, zPieds: 0.3 }); const t = c.tronc(p);
-        fixe = poseFixe(MAT.siege(C, 0.5)).concat([pret(boite(0.3, 0.5, 0.06, 0, t.epaules.G.y - 0.2, t.epaules.G.z + 0.19, C.banc, 0))]);
+        p = assis(c, { h: H_SIEGE, zPieds: 0.3 }); const t = c.tronc(p);
+        fixe = poseFixe(MAT.siege(C, H_SIEGE)).concat([pret(boite(0.3, 0.5, 0.06, 0, t.epaules.G.y - 0.2, t.epaules.G.z + 0.19, C.banc, 0))]);
         a = B(8, 86, -80, 12, 90); b = B(104, 88, 10, 12, 90); r.pivot = () => V(0, t.epaules.G.y + 0.35, t.epaules.G.z + 0.3); vue = { az: 150, el: 12 };
       } else {
         if (o.tabouret) o.penche = 62; else if (o.ventre == null && !o.penche && !o.cote) o.penche = 76;
@@ -81,7 +81,7 @@
       // Kettlebell tenu à deux mains, qui tourne autour de la tête.
       pose(); a = B(0, 60, -30, 120, 90); b = a; plus.halo = true;
     } else if (o.tenue) {
-      pose(); a = B(-3, 92, -18, 8, 90); b = B(-3, 94, -18, 8, 90); plus.rythme = 'tenue';
+      pose(); a = B(o.disque ? 3 : -3, 92, o.disque ? 0 : -18, 8, 90); b = B(o.disque ? 3 : -3, 94, o.disque ? 0 : -18, 8, 90); plus.rythme = 'tenue';
     } else {
       // Élévation latérale : bras presque tendus, levés sur les côtés jusqu'à l'horizontale (lu : jusqu'en haut).
       if (o.cote) {
@@ -103,6 +103,8 @@
     r.ancre = ancre;
     if (o.elas && ancre && !r.deElas && o.ancreElas) r.deElas = ancre;
     const ancres = !ancre ? null : typeof ancre === 'function' ? [ancre(1), ancre(-1)].slice(0, m === 'GD' ? 2 : 1) : ancre;
+    // Un disque se tient par le bord : son rayon est le demi-écart des mains (elles restent à la largeur des épaules).
+    if (o.disque) { const i0 = c.poser(parLesBras(p, a, b, m, autre).b); r.rDisque = borne(i0.prises.G.distanceTo(i0.prises.D) / 2 + 0.012, 0.13, 0.21); }
     const d = Object.assign(parLesBras(p, a, b, m, autre), { fixe: colonneSi(o, C, ancres, fixe || []), vue, tenu: tenuDe(o, m, r) }, rythmeDe(o));
     if (plus.rythme) d.rythme = plus.rythme;
     if (o.smith) { const info = c.poser(d.a); d.tenu = [{ t: 'barre', l: 1.6, d: 0.18 }]; d.fixe = d.fixe.concat(poseFixe(MAT.smith(C, (info.prises.G.z + info.prises.D.z) / 2))); }
@@ -114,7 +116,7 @@
     }
     if (o.passage) d.tenu = [{ t: 'elastique', de: info => info.prises.D, m: 'G', bout: 'rien' }];
     if (plus.cercles) { d.rythme = 'continu'; d.periode = 1.6; const A = d.a; d.pose = ph => { const q = cloner(A), w = ph * 2 * Math.PI; for (const k of ['G', 'D']) { q.bras[k].elev = 88 + 9 * Math.sin(w); q.bras[k].plan = 90 + 9 * Math.cos(w); } return q; }; }
-    if (plus.halo) { d.rythme = 'continu'; d.periode = 3.2; const A = d.a; d.tenu = [{ t: 'kb', m: 'G', sens: 'avantbras' }]; d.pose = ph => { const q = cloner(A), w = ph * 2 * Math.PI; q.bras.G = B(20 + 60 * Math.sin(w), 118 + 30 * Math.sin(w + 1.2), -20, 118, 90); q.bras.D = B(20 - 60 * Math.sin(w), 118 + 30 * Math.sin(w + 1.2), -20, 118, 90); return q; }; }
+    if (plus.halo) { d.rythme = 'continu'; d.periode = 3.2; const A = d.a; d.tenu = [{ t: 'kb', m: 'GD', entre: true, sens: 'renverse' }]; d.pose = ph => { const q = cloner(A), w = ph * 2 * Math.PI; q.bras.G = B(20 + 60 * Math.sin(w), 118 + 30 * Math.sin(w + 1.2), -20, 118, 90); q.bras.D = B(20 - 60 * Math.sin(w), 118 + 30 * Math.sin(w + 1.2), -20, 118, 90); return q; }; }
     if (plus.cles) { const A = d.a, Zl = d.b, F = cloner(d.a); for (const k of ['G', 'D']) F.bras[k] = B(4, 90, 0, 10, 180); d.cles = [[0, A], [0.45, Zl], [1, F]]; }
     if (plus.pose) { const A = d.a, Z = d.b; d.rythme = 'continu'; d.periode = 4; d.pose = ph => { const u = ph < 0.2 ? lisse(ph / 0.2) : ph > 0.85 ? 1 - lisse((ph - 0.85) / 0.15) : 1, q = mel(A, Z, u), w = Math.sin((ph - 0.2) / 0.65 * 2 * Math.PI) * (u >= 1 ? 1 : 0); q.bras.G.elev += 10 * w; q.bras.D.elev -= 10 * w; return q; }; }
     return d;

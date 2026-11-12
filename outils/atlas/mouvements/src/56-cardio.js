@@ -44,9 +44,26 @@
         pose(cyl(0.019, 0.62, 0, 0, 0, C.metal, 0.8, null, 0.008), 0, 1.1, 0.8);
       }
       if (o.escalier) {
-        // Simulateur d'escalier : les marches (nez gainé) entre deux limons, le socle sur ses pieds, deux montants,
-        // la console inclinée et deux mains courantes gainées.
-        for (let k = -1; k < 3; k++) fixe.push(pret(boite(0.56, 0.2, 0.27, 0, y0 - 0.1 - k * 0.2, 0.04 - k * 0.27, C.banc, 0, null, 0.012)), pret(boite(0.56, 0.02, 0.05, 0, y0 - 0.005 - k * 0.2, -0.07 - k * 0.27, C.gomme, 0, null, 0.006)));
+        // Simulateur d'escalier. Les marches descendent sans arrêt (deux par foulée) entre deux limons ; chaque pied
+        // reste posé sur sa marche tant qu'elle descend (six dixièmes de la foulée), puis monte et enjambe la marche
+        // suivante pour se poser deux marches plus haut — il monte d'abord, avance ensuite, pour passer les nez de marche.
+        const Hm = 0.2, Dm = 0.27, zM = 0.04, lieu = k => [y0 + k * Hm, zM + k * Dm];        // dessus et milieu de la marche au rang k
+        const pas = ph => {
+          const k = 1 - 2 * ph, s = ph < 0.6 ? 0 : (ph - 0.6) / 0.4;
+          const [y, z] = lieu(k); return { y: y + 2 * Hm * lisse(s / 0.6) + 0.04 * Math.sin(Math.PI * s), z: z - 0.065 + 2 * Dm * lisse((s - 0.25) / 0.75), leve: Math.sin(Math.PI * s) };
+        };
+        const hanche = y0 + 0.78 + L.racine.y - c.tronc({ bassin: { pos: L.racine.clone(), rot: new Quat() } }).hanches.G.y;
+        d.pose = ph => {
+          const f = ((ph % 1) + 1) % 1, p = { bassin: { pos: V(0, hanche + 0.012 * Math.cos(2 * TAU * f), 0.02), rot: qX(7) }, lombaires: 2, thorax: 2, cou: -5, torsion: 3 * sn(f), bras: {}, jambes: {} };
+          for (const [k, s] of COTES) { const a = pas(k === 'G' ? f : (f + 0.5) % 1); p.jambes[k] = pied(c, s, { x: s * 0.1, z: a.z, y0: a.y, ouv: 4, pointe: -8 * a.leve, pole: V(s * 0.05, 0, 1) }); }
+          for (const [k, s] of COTES) p.bras[k] = { prise: V(s * 0.36, y0 + 1.02, 0.22), pole: V(s * 0.4, -1, -0.5), paume: V(-s * 0.2, -1, 0), dirMain: V(0, 0, 1), doigts: 'barre' };
+          return p;
+        };
+        // Les marches du moment (nez gainé), entre le palier du bas et celui du haut.
+        d.objets = (info, ph, sortie) => {
+          const f = ((ph % 1) + 1) % 1;
+          for (let i = -3; i <= 4; i++) { const k = i - 2 * f + Math.floor(2 * f); if (k < -1.9 || k > 1.45) continue; const [y, z] = lieu(k); sortie.push(pret(boite(0.56, Hm, Dm, 0, y - Hm / 2, z, C.banc, 0, null, 0.012)), pret(boite(0.56, 0.02, 0.05, 0, y - 0.005, z - Dm / 2 + 0.025, C.gomme, 0, null, 0.006))); }
+        };
         for (const s of [1, -1]) {
           // Le limon : un profilé sous le nez des marches, du sol au palier.
           fixe.push(pret(tube(V(s * 0.31, 0.04, -0.34), V(s * 0.31, 0.62, 0.44), 0.07, C.cadre)));
@@ -74,8 +91,13 @@
       // Assis sur la selle, les pieds tournent sur les pédales ; airbike : les mains poussent et tirent les leviers.
       const ax = V(0, 0.31, 0.1), R = 0.17, selle = V(0, 0.95, -0.2), gui = V(0, 1.1, 0.46);
       d.periode = o.airbike ? 0.9 : 1.1;
+      // Le bassin repose sur la selle (sa chair touche le dessus, enfoncée d'un bon centimètre) : hauteur mesurée une
+      // fois sur le corps posé — il y entrait d'une dizaine de centimètres.
+      const ySelle = selle.y + 0.005 + 0.0325, assise = { bassin: { pos: selle.clone().add(V(0, 0.07, 0)), rot: qX(36) }, lombaires: 8, thorax: 6, cou: -30, bras: pareil(brasRepos()), jambes: pareil(J(70, 6, 0, 80, 0)) };
+      c.poserSur(assise, V(0, ySelle - 0.014, 0), AY, ['bassin'], (x, y, z) => Math.abs(x) < 0.08 && Math.abs(z - selle.z + 0.05) < 0.07);
+      const yBassin = assise.bassin.pos.y;
       d.pose = ph => {
-        const p = { bassin: { pos: selle.clone().add(V(0, 0.07, 0)), rot: qX(36) }, lombaires: 8, thorax: 6, cou: -30, bras: {}, jambes: {} };
+        const p = { bassin: { pos: V(selle.x, yBassin, selle.z), rot: qX(36) }, lombaires: 8, thorax: 6, cou: -30, bras: {}, jambes: {} };
         for (const [k, s] of COTES) {
           const a = TAU * (ph + (k === 'D' ? 0.5 : 0)), pd = ax.clone().add(V(s * 0.12, R * Math.cos(a), R * Math.sin(a)));
           p.jambes[k] = { cheville: pd.clone().add(V(0, 0.105, -0.06)), pole: V(s * 0.08, 0.3, 1), pied: V(0, -0.22, 1), hautPied: V(0, 1, 0.22) };
@@ -91,7 +113,7 @@
       fixe.push(...poseFixe(patin(C, V(-0.27, 0.03, -0.46), V(0.27, 0.03, -0.46), 0.055)), ...poseFixe(patin(C, V(-0.27, 0.03, 0.98), V(0.27, 0.03, 0.98), 0.055)));
       P(V(0, 0.055, -0.46), V(0, 0.055, 0.98), 0.06);
       P(V(0, 0.07, -0.2), ax, 0.055); P(ax, V(0, 0.72, -0.105), 0.055); P(ax, roue, 0.05); P(V(0, 0.07, 0.86), tete, 0.055); P(V(0, 0.62, -0.05), V(0, 0.66, 0.66), 0.045);
-      fixe.push(pret(seg(V(0, 0.7, -0.095), V(0, selle.y - 0.02, selle.z + 0.01), 0.017, C.metal, 0.85)), pret(coussin(0.2, 0.065, 0.27, selle.x, selle.y + 0.005, selle.z, C)), pret(boite(0.11, 0.05, 0.1, selle.x, selle.y + 0.012, selle.z + 0.17, C.banc, 0.12, null, 0.02)));
+      fixe.push(pret(seg(V(0, 0.7, -0.095), V(0, selle.y - 0.02, selle.z + 0.01), 0.017, C.metal, 0.85)), pret(coussin(0.17, 0.065, 0.15, selle.x, selle.y + 0.005, selle.z - 0.05, C)), pret(boite(0.06, 0.05, 0.19, selle.x, selle.y + 0.012, selle.z + 0.11, C.banc, 0.12, null, 0.02)));
       // La roue : un volant plein sous un carter (vélo), ou un ventilateur dans sa cage (air bike).
       if (o.airbike) {
         fixe.push(pret(cyl(0.27, 0.06, roue.x, roue.y, roue.z, C.gomme, 0.1, null, 0.01)), pret(cyl(0.05, 0.13, roue.x, roue.y, roue.z, C.metal, 0.8, null, 0.008)));

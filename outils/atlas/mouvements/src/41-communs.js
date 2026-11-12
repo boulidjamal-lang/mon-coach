@@ -14,9 +14,9 @@
     } else if (o.sol) { p = allonge(c, { h: 0, angle: 0, jambes: o.jambes || 'plies' }); vue = { az: 66, el: 16 }; sorte = 'dos'; }
     else if (o.ventre != null && o.ventre !== false) {
       const a = o.ventre === true ? 45 : o.ventre;
-      p = aPlatVentre(c, { h: 0.44, angle: a, d: a > 15 ? 0.3 : 0.25 }); fixe = poseFixe(MAT.banc(C, a), V(), qY(180)); vue = { az: 52, el: 12 }; sorte = 'ventre';
+      p = aPlatVentre(c, { h: 0.44, angle: a, d: 0.08 }); fixe = poseFixe(MAT.banc(C, a, 0.44, 0.68, 0), V(), qY(180)); vue = { az: 52, el: 12 }; sorte = 'ventre';
     } else if (o.assis) { p = allonge(c, { h: 0.44, angle: 84, lomb: 0, thor: 0, cou: 0 }); fixe = poseFixe(MAT.banc(C, 84)); sorte = 'assis'; vue = { az: 38, el: 10 }; }
-    else if (o.tabouret) { p = assis(c, { h: 0.45, penche: o.penche === true ? 0 : (o.penche || 0) }); fixe = poseFixe(MAT.banc(C, 0), V(0, 0, 0.28)); sorte = 'assis'; vue = { az: 38, el: 10 }; }
+    else if (o.tabouret) { p = assis(c, { h: H_BANC, penche: o.penche === true ? 0 : (o.penche || 0) }); fixe = bancAssis(C); sorte = 'assis'; vue = { az: 38, el: 10 }; }
     else if (o.genoux) { p = aGenoux(c, { penche: defauts.penche || 0 }); sorte = 'genoux'; }
     else if (o.demigenou) { p = demiGenou(c, { penche: defauts.penche || 0 }); sorte = 'genoux'; }
     else if (o.penche) {
@@ -61,7 +61,7 @@
     else if (o.ez) t.push({ t: 'barre', ez: true });
     else if (o.hal) t.push({ t: 'haltere', m });
     else if (o.kb) t.push({ t: 'kb', m, sens: r.sensKb });
-    else if (o.disque) t.push({ t: 'disque', m: 'GD' });
+    else if (o.disque) t.push({ t: 'disque', m: 'GD', bord: true, r: r.rDisque });
     else if (o.balle) t.push({ t: 'balle', m: 'GD' });
     else if (o.poulie) {
       if (r.bout === 'barre' || r.bout === 'corde') t.push({ t: 'cable', de: pt(r.ancre, 'G'), bout: r.bout, l: r.lCable });
@@ -70,6 +70,19 @@
     else if (o.machine && r.pivot) for (const k of cotes) t.push({ t: 'levier', de: pt(r.pivot, k), m: k });
     else if (o.sangles && r.ancre) for (const k of cotes) t.push({ t: 'sangle', de: pt(r.ancre, k), m: k, bout: 'poignee' });
     return t;
+  }
+  /* Le pupitre réglé sous les bras, pour la posture p et les bras donnés : son coussin est parallèle au haut des bras
+     et sa face touche le dessous des bras (les triceps s'y posent, enfoncés d'un centimètre) ; le coude est à 7 cm de
+     son bord bas. (Posé à vue, le coussin se trouvait dans les bras : le coude était au milieu de son épaisseur.) */
+  function pupitreSous(c, p, bras, C) {
+    const q = cloner(p); q.bras = pareil(bras);
+    const i = c.poser(q), e = i.epaules.G, k = i.coudes.G, al = Math.atan2(e.y - k.y, k.z - e.z);
+    const n = V(0, Math.cos(al), Math.sin(al)), td = V(0, -Math.sin(al), Math.cos(al));
+    // Le dessous du bras se mesure sur les seize centimètres au-dessus du coude (plus haut, c'est l'aisselle).
+    const sK = td.dot(k); let m = Infinity;
+    c.peauPosee(['bras'], (x, y, z) => { const s = y * td.y + z * td.z; if (s < sK - 0.18 || s > sK - 0.02) return; const h = y * n.y + z * n.z; if (h < m) m = h; });
+    const ctr = n.clone().multiplyScalar(m + ENFONCE - 0.035).add(td.clone().multiplyScalar(sK - 0.14));
+    return MAT.pupitre(C, ctr.y, ctr.z, al * 180 / Math.PI);
   }
   /* Colonne de poulie posée au point d'ancrage (quand l'exercice se fait au câble). */
   const colonneSi = (o, C, ancre, fixe) => { if (o.poulie && ancre) for (const a of Array.isArray(ancre) ? ancre : [ancre]) poserObjet(MAT.colonne(C, a), V(), null, fixe); return fixe; };

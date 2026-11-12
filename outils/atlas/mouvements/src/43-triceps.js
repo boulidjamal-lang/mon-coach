@@ -52,10 +52,10 @@
       a = B(0, 108, 0, 128, 90); b = B(0, 100, 0, 8, 90); ancre = V(0, 1.55, -0.95);
     } else if (o.machine) {
       // Assis, le haut des bras posé sur un coussin : les mains poussent les poignées vers le bas.
-      p = assis(c, { h: 0.52, penche: 10, zPieds: 0.3 }); p.thorax = 4;
+      p = assis(c, { h: H_SIEGE, penche: 10, zPieds: 0.3 }); p.thorax = 4;
       a = B(4, 56, 0, 122, 90); b = B(4, 56, 0, 10, 90);
       const t = c.tronc(p), ep = t.epaules.G;
-      fixe = poseFixe(MAT.siege(C, 0.52, 0.5, 4)).concat(poseFixe(MAT.pupitre(C, ep.y - 0.22, ep.z + 0.25, 35)));
+      fixe = poseFixe(MAT.siege(C, H_SIEGE, 0.5, 4)).concat(poseFixe(pupitreSous(c, p, a, C)));
       r.pivot = s => V(s * 0.2, ep.y - 0.3, ep.z + 0.32); vue = { az: 55, el: 10 };
     } else {
       // Pushdown : face à la poulie haute, coudes au corps ; les avant-bras descendent.
