@@ -336,10 +336,11 @@
     }
     /* La peau posée (les deux côtés), pour la pose en cours : appelle f(x, y, z) pour chaque point. Même mélange que
        le moteur (quaternions duaux) : ce qu'on mesure ici est ce qui se dessine. */
-    peauPosee(regions, f) {
+    peauPosee(regions, f, unCote) {
       const pe = this.peau(regions); if (!pe) return false;
       const q = this.quaternionsDuaux(), S = this.S;
-      for (let cote = 0; cote < 2; cote++) for (let v = 0; v < pe.n; v++) {
+      // unCote : le côté gauche seul (une pose symétrique se lit sur un côté, pour moitié prix).
+      for (let cote = 0; cote < (unCote ? 1 : 2); cote++) for (let v = 0; v < pe.n; v++) {
         const X = cote ? -pe.P[v * 3] : pe.P[v * 3], Y = pe.P[v * 3 + 1], Z = pe.P[v * 3 + 2];
         let rx = 0, ry = 0, rz = 0, rw = 0, dx = 0, dy = 0, dz = 0, dw = 0;
         for (let k = 0; k < 4; k++) {
@@ -409,12 +410,13 @@
     }
     /* Jusqu'où avancent les jambes (cuisses, genoux, tibias) entre deux
        hauteurs, pour la pose donnée : la barre doit passer devant. */
-    devantJambes(p, yMin, yMax) {
+    devantJambes(p, yMin, yMax, regions, unCote) {
       this.tronc(p);
       const info = { angles: {}, chevilles: {}, genoux: {}, orteils: {} };
       for (const [c, s, x] of COTES) this.jambe(c, s, x, p.jambes[c], info);
       let zMax = -Infinity;
-      if (!this.peauPosee(['bassin', 'cuisse', 'jambe'], (x, y, z) => { if (y >= yMin && y <= yMax && z > zMax) zMax = z; })) return 0.12;
+      // regions : pour ne relire que la peau qui peut se trouver à cette hauteur (jambe sous le genou, cuisse et bassin au-dessus).
+      if (!this.peauPosee(regions || ['bassin', 'cuisse', 'jambe'], (x, y, z) => { if (y >= yMin && y <= yMax && z > zMax) zMax = z; }, unCote)) return 0.12;
       return zMax === -Infinity ? 0.12 : zMax;
     }
     /* Les jambes seules, pour la pose donnée (ni les bras ni la peau) : hanches, genoux, chevilles. Sert à régler une
@@ -2372,13 +2374,17 @@
     const prises = (p, y, z) => { for (const [kk, s] of COTES) p.bras[kk] = { prise: V(s * xMain, y, z), pole: V(s * 0.3, 0, -1), paume: neutre ? V(-s, 0, 0) : V(0, 0, -1), dirMain: V(0, -1, 0), doigts: 'barre' }; return p; };
     // La charge contre les jambes : la barre les longe, les haltères passent devant de la largeur d'une tête.
     const marge = o.hal ? 0.067 : rayon + 0.004;
-    const contre = (p, y) => Math.max(0.045, c.devantJambes(p, y - 0.03, y + 0.03) + marge);
-    // En haut : la charge pend bras tendus — contre les cuisses, sur les côtés (barre hexagonale) ou devant le bassin.
+    // Le devant des jambes à la hauteur y, plus la marge : on ne relit que la peau qui peut s'y trouver.
+    const yGenou = y0 + L.chevilleH + L.jambe;
+    const symetrique = !(o.unejambe || o.bstance);   // les deux jambes font la même chose : une seule se relit
+    const contact = (p, y) => c.devantJambes(p, y - 0.03, y + 0.03, y < yGenou - 0.13 ? ['jambe'] : y > yGenou + 0.13 ? ['cuisse', 'bassin'] : ['cuisse', 'jambe'], symetrique) + marge;
+    // En haut : la charge pend bras tendus — contre les cuisses à sa hauteur, sur les côtés (barre hexagonale) ou devant
+    // le bassin. (Deux temps : sa hauteur dépend un peu de son avancée, et son avancée du devant des cuisses à sa hauteur.)
     const eHaut = c.tronc(haut).epaules.G;
-    const zHaut = o.trapbar ? z0 + 0.035 : o.kb || o.poulie ? z0 + 0.09 : c.devantJambes(haut, 0.6 + y0, 1.0 + y0) + marge;
-    const avHaut = eHaut.z - zHaut - zP;
     const chuteDe = av => Math.sqrt(Math.max(1e-4, portee * portee - av * av - Math.pow(xP - eHaut.x, 2)));
-    const yHaut = eHaut.y - chuteDe(avHaut) - L.main;
+    let zHaut = o.trapbar ? z0 + 0.035 : o.kb || o.poulie ? z0 + 0.09 : c.devantJambes(haut, 0.6 + y0, 1.0 + y0, ['cuisse', 'bassin'], true) + marge;
+    if (!(o.trapbar || o.kb || o.poulie)) zHaut = contact(haut, eHaut.y - chuteDe(eHaut.z - zHaut - zP) - L.main);
+    const avHaut = eHaut.z - zHaut - zP, yHaut = eHaut.y - chuteDe(avHaut) - L.main;
     if (!charn) {
       /* Depuis le sol. La pose qui tient les poignets en (y, z), bras tendus, les épaules avancées de `av` sur eux, le
          tibia incliné de `tibia` degrés : plus le buste se penche, plus les hanches reculent et montent, plus le tibia
@@ -2403,21 +2409,38 @@
       // Le tibia : avancé au départ (plus encore sans barre devant lui), droit au passage des genoux — une courbe par
       // trois points (au sol, aux genoux, debout). Plus bas que le sol (pieds surélevés), il n'avance pas davantage.
       const parTrois = (a, b, cc) => h => a * (h - hGenou) * (h - 1) / hGenou + b * h * (h - 1) / (hGenou * (hGenou - 1)) + cc * h * (h - hGenou) / (1 - hGenou);
-      const tibia3 = parTrois(o.trapbar ? 9 : o.kb ? (sumo ? 14 : 10) : sumo ? 3 : 6, o.trapbar ? 5 : o.kb ? (sumo ? 6 : 4) : sumo ? 0 : -2, tibiaHaut);
-      const tibiaA = h => tibia3(Math.max(0, h));
+      const tibia3 = parTrois(o.trapbar ? 9 : o.kb ? (sumo ? 14 : 10) : sumo ? 3 : 6, o.trapbar ? 5 : o.kb ? (sumo ? 6 : 4) : 0, tibiaHaut);
+      // Une fois la barre passée au-dessus des genoux, ils reviennent un peu sous elle (4° de tibia au milieu de la
+      // montée) : les cuisses la rejoignent, elle remonte contre elles.
+      const sousBarre = o.trapbar || o.kb ? 0 : 4;
+      const tibiaA = h => tibia3(Math.max(0, h)) + (h > hGenou && h < 1 ? sousBarre * Math.pow(Math.sin(Math.PI * (h - hGenou) / (1 - hGenou)), 2) : 0);
       // Les épaules : un peu en avant de la charge au départ, au-dessus quand elle passe les genoux, et elles n'en
       // reculent qu'à la fin, quand les hanches viennent sous elles. Pieds surélevés : plus en avant encore (dos plus couché).
       const av0 = o.trapbar ? 0 : sumo || o.kb ? 0.03 : 0.05, avG = o.trapbar ? -0.01 : o.kb ? 0 : sumo ? 0.02 : 0.03;
       const avA = h => (h <= 0 ? av0 - 0.15 * h : h <= hGenou ? lerp(av0, avG, h / hGenou) : avG + (avHaut - avG) * Math.pow((h - hGenou) / (1 - hGenou), 2.2));
       const zLibre = h => (o.trapbar ? zHaut : lerp(z0 + 0.05, zHaut, borne(h, 0, 1)));   // kettlebell : d'entre les pieds au devant du bassin
-      let z = o.trapbar || o.kb ? zLibre(hDe(yBas)) : 0.08;
+      // Le chemin de la charge : au-dessus du milieu du pied, puis, dans la moitié haute, il rejoint en douceur l'endroit où
+      // elle pend debout, contre les cuisses. Les jambes ne le traversent jamais : là où elles avancent plus, elle les longe.
+      const zChemin = h => lerp(0.045, Math.max(0.045, zHaut), lisse((h - 0.6) / 0.4));
+      let z = 0;
       for (let i = 0; i <= N; i++) {
-        const y = lerp(yBas, yHaut, i / N), h = hDe(y), k = 1 - borne(h, 0, 1);
+        const y = lerp(yBas, yHaut, i / N), h = hDe(y), k = 1 - borne(h, 0, 1), tib = borne(tibiaA(h), -6, 20);
         let p;
         if (i === N) { p = cloner(haut); z = zHaut; }
-        else if (o.trapbar || o.kb) { z = zLibre(h); p = tenir(y + L.main, z + zP, avA(h), borne(tibiaA(h), -6, 20), k); }
-        // La charge vient contre les jambes : deux passes à la première hauteur, une seule ensuite (elle a peu bougé).
-        else for (let passe = 0; passe < (i ? 1 : 2); passe++) { p = tenir(y + L.main, z + zP, avA(h), borne(tibiaA(h), -6, 20), k); z = contre(p, y); }
+        else if (o.trapbar || o.kb) { z = zLibre(h); p = tenir(y + L.main, z + zP, avA(h), tib, k); }
+        else {
+          const zc = zChemin(h); let av = avA(h);
+          p = tenir(y + L.main, zc + zP, av, tib, k);
+          let devant = contact(p, y);
+          if (devant > zc + 0.002) { z = devant; p = tenir(y + L.main, z + zP, av, tib, k); }      // les jambes avancent plus : elle les longe
+          else if (h > hGenou && zc - devant > 0.006) {
+            // Au-dessus des genoux, la charge ne flotte pas devant les cuisses : les épaules avancent d'autant, les
+            // hanches et les cuisses avec elles, et les genoux se tendent un peu plus tôt (la barre remonte contre les cuisses).
+            // (La cuisse n'avance que d'une part de ce dont avancent les épaules : on en demande davantage, sans que les
+            // bras partent de plus de 11 cm en arrière.)
+            av = Math.min(0.11, av + 1.7 * (zc - devant)); p = tenir(y + L.main, zc + zP, av, tib, k); devant = contact(p, y); z = Math.max(zc, devant);
+          } else z = zc;
+        }
         cles.push([i / N, prises(p, y, z)]);
       }
       d.cles = cles;
@@ -2433,7 +2456,7 @@
     const sansCharge = !!(o.charniere || o.ceinture || (o.poulie && !o.roumain));
     // En bas : jambes presque tendues et à peine reculées (jambes tendues, sur une jambe) ; sinon genoux souples, et les
     // hanches reculent franchement quand une charge doit rester contre les jambes (les bras ne partent pas en arrière).
-    const tibiaB = tendues ? -8 : o.unejambe ? -4 : sansCharge ? -7 : -10, genouB = tendues ? 9 : o.unejambe ? 14 : o.poulie && !o.roumain ? 28 : sansCharge ? 24 : 32;
+    const tibiaB = tendues ? -8 : o.unejambe ? -4 : sansCharge ? -7 : -9, genouB = tendues ? 9 : o.unejambe ? 14 : o.poulie && !o.roumain ? 28 : sansCharge ? 24 : 32;
     const jambesA = g => ({ tibia: lerp(jHaut.tibia, tibiaB, g), genou: lerp(jHaut.genou, genouB, g) });
     const pencher = (y, z, av, g) => {
       const jb = jambesA(g);
@@ -2465,14 +2488,19 @@
     // Avec une charge : elle descend contre les jambes tant que les bras ne partent pas trop en arrière ; au-delà elle
     // s'en écarte et pend sous les épaules (jambes tendues, sur une jambe). Le kettlebell part de devant le bassin ; la
     // corde d'une poulie basse, devant soi, tire les mains vers l'avant ; la barre guidée monte et descend droit.
-    const yBas = (tendues ? 0.3 : 0.42) + y0, avMax = o.smith ? Infinity : tendues ? 0.12 : o.poulie ? -0.02 : o.unejambe ? 0.08 : o.kb ? 0.06 : 0.11;
+    const yBas = (tendues ? 0.3 : 0.43) + y0, avMax = o.smith ? Infinity : tendues ? 0.12 : o.poulie ? -0.02 : o.unejambe ? 0.08 : o.kb ? 0.06 : 0.13;
     const zFixe = o.smith || o.kb || o.poulie;
+    // Contre les jambes : elle les suit quand les hanches reculent, sans passer en arrière du pied (2 cm devant la cheville).
+    const contre = (p, y) => Math.max(z0 + 0.02, contact(p, y));
     let z = zHaut;
     for (let i = 0; i <= N; i++) {
       const g = i / N, y = lerp(yHaut, yBas, g);
       let p = cloner(haut);
       if (i) {
-        for (let passe = 0; passe < (zFixe || i > 1 ? 1 : 2); passe++) { p = pencher(y + L.main, (zFixe ? zHaut : z) + zP, 0, g); if (!zFixe) z = contre(p, y); }
+        // Les jambes ne dépendent pas du buste : leur devant à cette hauteur se lit sur une première pose, puis le buste
+        // bascule jusqu'à ce que les mains tiennent la charge là.
+        if (!zFixe) { p = pencher(y + L.main, z + zP, 0, g); z = contre(p, y); }
+        p = pencher(y + L.main, (zFixe ? zHaut : z) + zP, 0, g);
         const zc = zFixe ? zHaut : z, e = c.tronc(p).epaules.G;
         if (e.z - zc - zP > avMax) { p = pencher(y + L.main, null, avMax, g); z = Math.max(zc, c.tronc(p).epaules.G.z - avMax - zP); } else z = zc;
       }

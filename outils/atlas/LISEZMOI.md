@@ -174,7 +174,10 @@ voulues, le reste en découle — de deux façons selon ce qui fait le geste :
   restent à l'aplomb de la charge, bras tendus (un peu en avant au départ, au-dessus quand elle passe les genoux, en
   arrière seulement debout) ; le tibia est avancé au départ et droit au passage des genoux ; le penché du buste qui
   satisfait les deux se trouve par dichotomie, et les genoux plient d'autant. Les jambes poussent et le buste se
-  redresse ensemble ; la barre part du milieu du pied et longe les jambes ;
+  redresse ensemble. La barre suit un chemin presque droit au-dessus du milieu du pied (4,5 à 6,5 cm devant l'origine),
+  qui rejoint en douceur, dans la moitié haute, l'endroit où elle pend debout ; là où les jambes avancent davantage
+  (tibias au départ, genoux), elle les longe ; au-dessus des genoux, les épaules avancent ce qu'il faut pour que les
+  cuisses la rejoignent (jour de 2,5 cm au plus), et les genoux reviennent un peu sous elle ;
 - **en charnière** (roumain, jambes tendues, à la poulie, sur une jambe, au poids du corps, good morning,
   balancement du kettlebell) : genoux souples, les hanches reculent, le buste bascule jusqu'à ce que les mains soient
   à la hauteur voulue. La charge reste contre les jambes tant que les bras ne partent pas trop en arrière ; au-delà
@@ -182,7 +185,10 @@ voulues, le reste en découle — de deux façons selon ce qui fait le geste :
 
 Les postures sont réglées une fois, à onze hauteurs de la charge (poses clés), et le geste passe de l'une à l'autre :
 le soulevé de terre ne recalcule plus rien à chaque image (3,8 ms par image auparavant, 0,08 ms maintenant, mesurés
-hors navigateur ; 19 ms une fois, à l'ouverture de l'exercice).
+hors navigateur ; 13 ms une fois, à l'ouverture de l'exercice). Le devant des jambes ne se relit que sur la peau qui
+peut se trouver à la hauteur de la charge (jambe sous le genou, cuisse et bassin au-dessus) et, pour un geste
+symétrique, sur un seul côté. `node` n'est pas l'iPhone : dans le simulateur (moteur web d'iOS), ce réglage a pris de
+50 à 200 ms selon que le moteur était chaud ou non.
 
 `src/30-postures.js` donne deux outils aux autres familles : `equilibrer` avance ou recule le bassin, pieds posés,
 jusqu'à ce que le centre de gravité (masses des segments d'après les tables de Dempster et Winter, charge tenue

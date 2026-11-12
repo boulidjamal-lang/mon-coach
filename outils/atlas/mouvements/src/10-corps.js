@@ -154,10 +154,11 @@
     }
     /* La peau posée (les deux côtés), pour la pose en cours : appelle f(x, y, z) pour chaque point. Même mélange que
        le moteur (quaternions duaux) : ce qu'on mesure ici est ce qui se dessine. */
-    peauPosee(regions, f) {
+    peauPosee(regions, f, unCote) {
       const pe = this.peau(regions); if (!pe) return false;
       const q = this.quaternionsDuaux(), S = this.S;
-      for (let cote = 0; cote < 2; cote++) for (let v = 0; v < pe.n; v++) {
+      // unCote : le côté gauche seul (une pose symétrique se lit sur un côté, pour moitié prix).
+      for (let cote = 0; cote < (unCote ? 1 : 2); cote++) for (let v = 0; v < pe.n; v++) {
         const X = cote ? -pe.P[v * 3] : pe.P[v * 3], Y = pe.P[v * 3 + 1], Z = pe.P[v * 3 + 2];
         let rx = 0, ry = 0, rz = 0, rw = 0, dx = 0, dy = 0, dz = 0, dw = 0;
         for (let k = 0; k < 4; k++) {
@@ -227,12 +228,13 @@
     }
     /* Jusqu'où avancent les jambes (cuisses, genoux, tibias) entre deux
        hauteurs, pour la pose donnée : la barre doit passer devant. */
-    devantJambes(p, yMin, yMax) {
+    devantJambes(p, yMin, yMax, regions, unCote) {
       this.tronc(p);
       const info = { angles: {}, chevilles: {}, genoux: {}, orteils: {} };
       for (const [c, s, x] of COTES) this.jambe(c, s, x, p.jambes[c], info);
       let zMax = -Infinity;
-      if (!this.peauPosee(['bassin', 'cuisse', 'jambe'], (x, y, z) => { if (y >= yMin && y <= yMax && z > zMax) zMax = z; })) return 0.12;
+      // regions : pour ne relire que la peau qui peut se trouver à cette hauteur (jambe sous le genou, cuisse et bassin au-dessus).
+      if (!this.peauPosee(regions || ['bassin', 'cuisse', 'jambe'], (x, y, z) => { if (y >= yMin && y <= yMax && z > zMax) zMax = z; }, unCote)) return 0.12;
       return zMax === -Infinity ? 0.12 : zMax;
     }
     /* Les jambes seules, pour la pose donnée (ni les bras ni la peau) : hanches, genoux, chevilles. Sert à régler une
