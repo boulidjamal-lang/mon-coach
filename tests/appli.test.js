@@ -6976,6 +6976,8 @@ test('atlas 3D : la fiche d\'un exercice montre son mouvement dès l\'ouverture,
     // Agrandir : l'atlas s'ouvre devant la fiche, sur le même exercice ; le cadre de la fiche est défait entre-temps.
     await page.evaluate(() => agrandirMouvementFiche());
     await page.waitForFunction(() => atlasMonte && atlasMonte.atlas.mesures().images > 1, null, { timeout: 120000 });
+    // La préparation du corps (carrure, poids, ombres) faite pour la fiche est reprise telle quelle par l'atlas.
+    assert.deepEqual(await page.evaluate(() => [atlasMonte.atlas.mesures().preparationReprise, atlasMonte.atlas.mesures().preparationMs < 200]), [true, true], 'le corps préparé pour la fiche sert à l\'atlas');
     const g = await page.evaluate(() => {
       const dessus = document.elementFromPoint(innerWidth / 2, innerHeight / 2);
       return { devant: !!dessus.closest('#atlas-modal'), fiche: ficheMouvement, titre: document.getElementById('titre-atlas').textContent, mode: atlasMonte.etat().mode, anim: !!atlasMonte.animation() };

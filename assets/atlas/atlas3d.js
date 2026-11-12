@@ -515,6 +515,8 @@ void main() {
   }
 
   /* ---------- Lecture du fichier du modèle ---------- */
+  /* Les modèles déjà préparés, par fichier chargé (voir creer). */
+  const PREPARES = new WeakMap();
   function lireModele(tampon) {
     const vue = new DataView(tampon);
     if (vue.getUint32(0, true) !== 0x41514e41) throw new Error("atlas : ce fichier n'est pas un modèle Anqā");
@@ -1058,25 +1060,48 @@ void main() {
     try { if (opt.peau) PE = lirePeau(opt.peau); } catch (e) { PE = null; }
     let niveauPeau = PE ? Math.max(0, Math.min(2, opt.niveauPeau | 0)) : 0;
     const NB = S.length, NUM_OS = [E.os.pair, E.os.impair];
-    // La carrure : les sommets du modèle (hors os) et ceux de la peau sont étoffés de la même façon, une fois pour toutes.
-    if (opt.carrure > 0 && E.squelette && E.squelette.length) {
-      const r = etoffer(M.sommets, E.octetsParSommet, E.boite, E.squelette, opt.carrure, (v, o) => M.sommets[o + 10] === NUM_OS[0] || M.sommets[o + 10] === NUM_OS[1]);
-      M.sommets = r.sommets; E.boite = r.boite;
-      if (PE && PE.entete.articulations === E.squelette.length) {
-        const X = PE.entete.intermediaires || [], nj = E.squelette.length, jum = E.squelette.map(a => a.jumeau);
+    // La préparation du modèle (carrure, ombres de contact, poids repris, part « par la corde ») ne dépend que du
+    // fichier et des options : faite à la première ouverture, elle est gardée pour les suivantes (l'appli garde les
+    // fichiers en mémoire et les redonne à chaque fiche ; seule la première ouverture paie ce calcul). La peau, de même,
+    // une fois par fichier de peau. Rien n'écrit plus dans ces tableaux ensuite : les vues les partagent.
+    const clePrep = [opt.carrure, opt.ombres !== false, opt.poids !== false, opt.corde == null ? '' : JSON.stringify(opt.corde)].join('|');
+    let prepares = PREPARES.get(tampon); if (!prepares) PREPARES.set(tampon, prepares = {});
+    const deja = prepares[clePrep], t0Prep = typeof performance !== 'undefined' ? performance.now() : 0;
+    if (deja) {
+      M.sommets = deja.sommets; E.boite = deja.boite; E.squelette = deja.squelette;
+      if (deja.articulationsFichier != null) E.articulationsFichier = deja.articulationsFichier;
+    } else {
+      // La carrure : les sommets du modèle (hors os) sont étoffés (la peau de même, plus bas), une fois pour toutes.
+      if (opt.carrure > 0 && E.squelette && E.squelette.length) {
+        const r = etoffer(M.sommets, E.octetsParSommet, E.boite, E.squelette, opt.carrure, (v, o) => M.sommets[o + 10] === NUM_OS[0] || M.sommets[o + 10] === NUM_OS[1]);
+        M.sommets = r.sommets; E.boite = r.boite;
+      }
+      // « Par la corde » : la part de chaque sommet (hors os), écrite dans son octet libre. (Sans carrure, les sommets
+      // sont encore ceux du fichier, que d'autres vues peuvent partager : on en prend une copie avant d'y écrire.)
+      if (E.squelette && E.squelette.length) {
+        if (M.sommets.buffer === tampon) M.sommets = M.sommets.slice();
+        if (opt.ombres !== false) eclaircirContacts(M.sommets, E.octetsParSommet, E, (v, o) => M.sommets[o + 10] === NUM_OS[0] || M.sommets[o + 10] === NUM_OS[1]);
+        if (opt.poids !== false) reponderer(M.sommets, E.octetsParSommet, E, M.indicesLocaux(), (v, o) => M.sommets[o + 10] === NUM_OS[0] || M.sommets[o + 10] === NUM_OS[1]);
+        marquerCorde(M.sommets, E.octetsParSommet, E.boite, E.squelette, opt.corde, (v, o) => M.sommets[o + 10] === NUM_OS[0] || M.sommets[o + 10] === NUM_OS[1]);
+      }
+      prepares[clePrep] = { sommets: M.sommets, boite: E.boite, squelette: E.squelette, articulationsFichier: E.articulationsFichier };
+    }
+    // La peau, étoffée comme le modèle. Elle connaît les articulations du fichier (pas les attaches ajoutées).
+    const njFichier = E.articulationsFichier != null ? E.articulationsFichier : (E.squelette || []).length;
+    if (PE && opt.carrure > 0 && E.squelette && E.squelette.length && PE.entete.articulations === njFichier) {
+      let pp = opt.peau && typeof opt.peau === 'object' ? PREPARES.get(opt.peau) : null;
+      if (!pp && opt.peau && typeof opt.peau === 'object') PREPARES.set(opt.peau, pp = {});
+      const dp = pp ? pp['carrure ' + opt.carrure] : null;
+      if (dp) { PE.sommets = dp.sommets; PE.entete.boite = dp.boite; }
+      else {
+        const X = PE.entete.intermediaires || [], nj = njFichier, jum = E.squelette.map(a => a.jumeau);
         // Une articulation intermédiaire de la peau compte pour celle qu'elle accompagne (côté gauche, puis côté droit).
         const rp = etoffer(PE.sommets, PE.entete.octetsParSommet, PE.entete.boite, E.squelette, opt.carrure, null, j => (j < nj ? j : j < nj + X.length ? X[j - nj].vers : jum[X[j - nj - X.length].vers]));
         PE.sommets = rp.sommets; PE.entete.boite = rp.boite;
+        if (pp) pp['carrure ' + opt.carrure] = { sommets: PE.sommets, boite: PE.entete.boite };
       }
     }
-    // « Par la corde » : la part de chaque sommet (hors os), écrite dans son octet libre. (Sans carrure, les sommets
-    // sont encore ceux du fichier, que d'autres vues peuvent partager : on en prend une copie avant d'y écrire.)
-    if (E.squelette && E.squelette.length) {
-      if (M.sommets.buffer === tampon) M.sommets = M.sommets.slice();
-      if (opt.ombres !== false) eclaircirContacts(M.sommets, E.octetsParSommet, E, (v, o) => M.sommets[o + 10] === NUM_OS[0] || M.sommets[o + 10] === NUM_OS[1]);
-      if (opt.poids !== false) reponderer(M.sommets, E.octetsParSommet, E, M.indicesLocaux(), (v, o) => M.sommets[o + 10] === NUM_OS[0] || M.sommets[o + 10] === NUM_OS[1]);
-      marquerCorde(M.sommets, E.octetsParSommet, E.boite, E.squelette, opt.corde, (v, o) => M.sommets[o + 10] === NUM_OS[0] || M.sommets[o + 10] === NUM_OS[1]);
-    }
+    const preparation = { reprise: !!deja, ms: typeof performance !== 'undefined' ? Math.round(performance.now() - t0Prep) : 0 };
     // La peau partielle : les triangles de la tête, des mains et des pieds (ongles, poils, cheveux, yeux compris), mis
     // à part une fois pour toutes — d'abord ceux des deux côtés, puis ceux du milieu, comme dans le fichier. Chaque
     // triangle est d'une seule zone (un test le vérifie) : la zone de son premier sommet suffit.
@@ -1851,7 +1876,7 @@ void main() {
       },
       redessiner: demander,
       tailler,
-      mesures: () => ({ enCours: !!demande || !!transition, images: nbImages, dernierTempsMs: dernierTemps, largeur: larg, hauteur: haut, pixels: pp, echelleMouvement, triangles: E.triangles, sommets: E.sommets, appelsDeDessin: 1 + 2 + passeTranslucide().appels + 3 * niveauPeau, trianglesSoumis: 2 * E.triangles + passeTranslucide().triangles + trianglesPeau(), peau: niveauPeau, premierSommet }),
+      mesures: () => ({ preparationReprise: preparation.reprise, preparationMs: preparation.ms, enCours: !!demande || !!transition, images: nbImages, dernierTempsMs: dernierTemps, largeur: larg, hauteur: haut, pixels: pp, echelleMouvement, triangles: E.triangles, sommets: E.sommets, appelsDeDessin: 1 + 2 + passeTranslucide().appels + 3 * niveauPeau, trianglesSoumis: 2 * E.triangles + passeTranslucide().triangles + trianglesPeau(), peau: niveauPeau, premierSommet }),
       detruire() {
         vivant = false; if (demande) cancelAnimationFrame(demande);
         clearTimeout(minuterieNet); document.removeEventListener('visibilitychange', visible);
