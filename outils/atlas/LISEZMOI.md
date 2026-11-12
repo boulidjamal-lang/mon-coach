@@ -127,9 +127,15 @@ autre membre passe devant.
 - **Une préparation par session.** La carrure, les ombres de contact, les poids repris et la part « par la corde »
   ne dépendent que des fichiers et des options : `creer` les fait à la première ouverture et les garde pour les
   suivantes (registre `PREPARES`, par fichier chargé ; l'appli garde les fichiers en mémoire). Mesuré dans Chromium :
-  0,4 s la première fois, 20 ms ensuite ; dans le simulateur iPhone, la première ouverture de la session coûte
-  environ 1,3 s de plus qu'au build 63. `mesures()` dit si la préparation a été reprise (`preparationReprise`) et son
-  temps (`preparationMs`). Pour supprimer aussi la première, il faudrait l'écrire d'avance dans `atlas.bin`.
+  0,4 s la première fois, 20 ms ensuite. `mesures()` dit si la préparation a été reprise (`preparationReprise`) et
+  son temps (`preparationMs`).
+- **La préparation écrite d'avance.** Les ombres de contact et les poids repris sont en plus écrits dans `atlas.bin`
+  (`node outils/atlas/preparer-modele.mjs`, à relancer après toute retouche de `eclaircirContacts`, `reponderer` ou
+  `etoffer`) : un bloc ajouté après les triangles (341 ko : un bit par sommet et les octets de ceux qui changent, plus
+  les attaches), que l'en-tête décrit (`preparation`). Le moteur l'applique au lieu de calculer quand la carrure est
+  celle prévue (1) ; les sommets et triangles du fichier restent ceux d'origine (`POIDS=0` les donne aux outils). Un
+  test vérifie que le bloc redonne octet pour octet le calcul du moteur. Première ouverture dans Chromium : 62 ms au
+  lieu de 0,4 s ; l'image est identique au pixel près.
 - **Les ombres de contact (`eclaircirContacts`, option `ombres`).** L'ombrage de relief du fichier (octet 6) a été
   calculé au repos : le flanc sous le bras, l'intérieur du bras, la main contre la cuisse, l'intérieur des cuisses, et
   les surfaces qu'un autre muscle recouvre restaient presque noirs dès qu'ils se découvraient (bras levé, jambes

@@ -7216,6 +7216,37 @@ test('atlas 3D : bras levés, le dos et le flanc ne se déchirent plus (grand do
   assert.ok(flanc / nf > flanc0 / nf + 8, `le flanc sous le bras s'éclaircit : ${(flanc0 / nf).toFixed(0)} → ${(flanc / nf).toFixed(0)}`);
 });
 
+/* La préparation écrite d'avance dans atlas.bin (outils/atlas/preparer-modele.mjs) est exactement ce que le moteur
+   calculerait au chargement : sinon, elle est à refaire (après une retouche de eclaircirContacts, reponderer ou
+   etoffer). Le moteur l'applique pour la carrure prévue ; pour une autre, il calcule. */
+test('atlas 3D : la préparation écrite dans le modèle est celle que le moteur calculerait', () => {
+  const vm = require('vm'), ctx = { window: {}, Math, Float32Array, Uint8Array, Uint16Array, Uint32Array, Int32Array, DataView, JSON, Object, Array, Infinity, console, Map, WeakMap };
+  vm.createContext(ctx); vm.runInContext(fs.readFileSync(path.join(RACINE, 'assets', 'atlas', 'atlas3d.js'), 'utf8'), ctx);
+  const A = ctx.window.AnqaAtlas, b = fs.readFileSync(path.join(RACINE, 'assets', 'atlas', 'atlas.bin')), lg = b.readUInt32LE(8);
+  const tampon = b.buffer.slice(b.byteOffset, b.byteOffset + b.length), entete = () => JSON.parse(b.subarray(12, 12 + lg).toString('utf8'));
+  const E0 = entete(), P = E0.preparation, pas = E0.octetsParSommet, debut = 12 + lg;
+  assert.ok(P && P.version === A.PREPARATION_VERSION && P.carrure === 1, 'le modèle porte sa préparation, à la version du moteur');
+  assert.equal(P.debut % 4, 0); assert.equal(P.debut + P.octets, b.length, 'le bloc est à la fin du fichier');
+  assert.ok(P.debut >= debut + E0.sommets * pas + E0.triangles * 6, 'après les triangles');
+  // Les deux chemins, sur le corps étoffé : appliquer le bloc, ou calculer.
+  const prepare = appliquer => {
+    const E = entete(); let s = new Uint8Array(b.subarray(debut, debut + E.sommets * pas));
+    const os = (v, o) => s[o + 10] === E.os.pair || s[o + 10] === E.os.impair;
+    const r = A.etoffer(s, pas, E.boite, E.squelette, 1, os); s = r.sommets; E.boite = r.boite;
+    if (appliquer) assert.equal(A.appliquerPreparation(s, pas, E, tampon), true);
+    else { A.eclaircirContacts(s, pas, E, os); A.reponderer(s, pas, E, new Uint16Array(tampon, debut + E.sommets * pas, E.triangles * 3), os); }
+    return { s, E };
+  };
+  const x = prepare(true), y = prepare(false);
+  let diff = 0; for (let i = 0; i < x.s.length; i++) if (x.s[i] !== y.s[i]) diff++;
+  assert.equal(diff, 0, 'le bloc redonne octet pour octet le calcul du moteur (sinon : node outils/atlas/preparer-modele.mjs)');
+  assert.deepEqual(JSON.parse(JSON.stringify(x.E.squelette)), JSON.parse(JSON.stringify(y.E.squelette)), 'les mêmes attaches');
+  assert.equal(x.E.articulationsFichier, y.E.articulationsFichier);
+  // Une seconde application est refusée (les attaches sont déjà là) ; les sommets et triangles du fichier sont ceux d'origine.
+  assert.equal(A.appliquerPreparation(x.s, pas, x.E, tampon), false);
+  assert.ok(b.length - P.octets < 3700000 && P.octets < 400000, 'le bloc reste petit : ' + P.octets + ' octets');
+});
+
 /* Le pupitre (curl, extension des triceps à la machine) : le coussin sous le haut des bras, sans entrer dans la
    poitrine ; la machine tourne autour du coude, son bâti devant le pupitre. Le crible des traversées n'y trouve rien. */
 test('atlas 3D : pupitre et machines à bras — ni coussin dans la poitrine, ni bâti dans les bras', async () => {

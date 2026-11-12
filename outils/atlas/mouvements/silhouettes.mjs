@@ -26,11 +26,16 @@ export function chargerAtlas(fichier) {
     const r = ctx.window.AnqaAtlas.etoffer(new Uint8Array(b.buffer, b.byteOffset, b.length), pas, E.boite, E.squelette, force, (v, o) => b[o + 10] === E.os.pair || b[o + 10] === E.os.impair);
     b = Buffer.from(r.sommets.buffer, r.sommets.byteOffset, r.sommets.length); E.boite = r.boite;
   }
-  // Les poids autour de l'épaule et de l'avant-bras, répondérés par le moteur lui-même (POIDS=0 : poids du fichier).
+  // Les poids autour de l'épaule et de l'avant-bras, répondérés par le moteur lui-même (POIDS=0 : poids du fichier) :
+  // la préparation écrite dans le fichier pour cette carrure, comme l'appli l'applique ; à défaut, le calcul.
   if (ctx.window.AnqaAtlas.reponderer && process.env.POIDS !== '0') {
     if (!(force > 0)) b = Buffer.from(b);
-    const o0 = brut.byteOffset + debut + E.sommets * pas;
-    ctx.window.AnqaAtlas.reponderer(new Uint8Array(b.buffer, b.byteOffset, b.length), pas, E, new Uint16Array(brut.buffer.slice(o0, o0 + E.triangles * 6)), (v, o) => b[o + 10] === E.os.pair || b[o + 10] === E.os.impair);
+    const u8 = new Uint8Array(b.buffer, b.byteOffset, b.length), ab = brut.buffer.slice(brut.byteOffset, brut.byteOffset + brut.length);
+    const pret = E.preparation && +E.preparation.carrure === force && ctx.window.AnqaAtlas.appliquerPreparation && ctx.window.AnqaAtlas.appliquerPreparation(u8, pas, E, ab);
+    if (!pret) {
+      const o0 = brut.byteOffset + debut + E.sommets * pas;
+      ctx.window.AnqaAtlas.reponderer(u8, pas, E, new Uint16Array(brut.buffer.slice(o0, o0 + E.triangles * 6)), (v, o) => b[o + 10] === E.os.pair || b[o + 10] === E.os.impair);
+    }
   }
   // « Par la corde » (épaule, hanche) : la part de chaque sommet, écrite par le moteur lui-même dans son octet libre.
   // CORDE : un nombre, ou un objet en JSON ({"epaule":0.85,"hancheArriere":0.9,"hancheAvant":0.3}), pour essayer un réglage.
