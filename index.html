@@ -19015,8 +19015,21 @@ function mediaExercice(exo) {
   if (m && m.img && m.img.some(mediaTiersInterdit)) return m === EXERCICE_MEDIA[exo.id] ? null : { img: [], ins: exo.ins || [] };
   return m;
 }
-/* Vignette utilisée dans les listes (bibliothèque, sélecteurs) : la photo
-   de EXERCICE_MEDIA si l'exercice y est reconnu, sinon le schéma corps. */
+/* La miniature d'un exercice de la bibliothèque : le corps de l'atlas à l'instant le plus parlant de son mouvement,
+   avec les couleurs de sa fiche (muscles qui travaillent en rose) et son matériel. Rendue d'avance par
+   outils/atlas/outils/vignettes.cjs, une image WebP par exercice, fond transparent : la case lui donne le fond de la
+   fiche, clair ou sombre. Un exercice fusionné montre celle de l'exercice qui l'a remplacé, comme son mouvement ; un
+   exercice créé par l'utilisateur, ou sorti de la bibliothèque, n'en a pas. */
+const DOSSIER_VIGNETTES_3D = 'assets/atlas/vignettes/';
+function vignette3DExercice(exo) {
+  if (!exo || exo.perso) return null;
+  const id = mouvementExercice(exo.id);
+  return id ? DOSSIER_VIGNETTES_3D + encodeURIComponent(id) + '.webp' : null;
+}
+/* Vignette utilisée dans les listes (bibliothèque, sélecteurs, séance,
+   programmes) : la miniature 3D de l'exercice ; à défaut la photo de
+   EXERCICE_MEDIA si l'exercice y est reconnu, sinon le schéma corps. Une
+   vidéo ou des photos posées dans Administration passent avant. */
 function medaillonExercice(exo, anime) {
   // Exercice de la bibliothèque avec une vidéo SmartWorkout : sa vignette
   // passe avant les anciennes photos, pour que la liste montre la même
@@ -19044,6 +19057,10 @@ function medaillonExercice(exo, anime) {
   // data-repli : image distante introuvable (hors ligne, lien mort) → la
   // silhouette du groupe, plutôt que l'icône d'image cassée (voir plus bas).
   const repli = ` data-repli="${escapeHtml(exo.groupe || '')}"`;
+  // La miniature 3D, sauf si une vidéo ou des photos ont été posées pour cet exercice dans Administration. Chargée
+  // près de l'écran seulement : la bibliothèque en affiche des centaines.
+  const v3d = !(typeof exo.video === 'string' && exo.video) && !(exo.img && exo.img.length) && vignette3DExercice(exo);
+  if (v3d) return `<img class="vignette-3d" src="${v3d}" alt="" decoding="async" loading="lazy"${repli}>`;
   if (sw && sw.poster) return `<img src="${escapeHtml(sw.poster)}" alt="" decoding="async" loading="lazy"${repli} style="background:#fff;">`;
   const media = mediaExercice(exo);
   if (media && media.img && media.img[0]) {
@@ -22464,6 +22481,10 @@ function agrandirVideoExercice(exerciceId) {
     const hd = brancherVideosHD(zone, true)[0];
     if (hd && !mini) hd.classList.add('prete');
   } else {
+    // Sans vidéo, la démonstration en grand est celle que montre la miniature : le mouvement en 3D, dans l'atlas
+    // ouvert sur l'exercice. La photo, ou le corps dessiné, reste pour un appareil sans 3D et pour les exercices
+    // sans miniature (créés par l'utilisateur, photos posées dans Administration).
+    if (atlasDisponible() && !(exo.img && exo.img.length) && vignette3DExercice(exo)) { ouvrirAtlas('exercice', { exercice: exo.id }); return; }
     const media = mediaExercice(exo);
     const img = (media && media.img && media.img[0]) || (v && v.poster);
     zone.innerHTML = img ? `<img src="${escapeHtml(img)}" alt="${escapeHtml(libelleExercice(exo))}">` : `<div class="schema-repli" style="position:absolute; inset:0; display:flex; align-items:center; justify-content:center;">${corpsExerciceHTML(exo).html}</div>`;

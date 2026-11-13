@@ -5672,7 +5672,9 @@ test("app iOS : ni vidéo SmartWorkout, ni GIF ExerciseDB, ni image wger ; les a
   assert.match(r.swEtImage.img, /RepDB/);
   assert.deepEqual(r.swEtImage.source, ['Image : RepDB']);
   assert.deepEqual([r.gif.img, r.gif.schema, r.wger.img, r.wger.schema], [null, true, null, true]);
-  assert.match(r.vignette, /^<svg/);
+  // La vignette n'est plus la silhouette du groupe : la miniature de l'atlas, rendue par nous (ni vidéo, ni image tierce).
+  assert.match(r.vignette, /^<img class="vignette-3d" src="assets\/atlas\/vignettes\/sw-crunch-avec-ramene-de-genoux\.webp"/);
+  assert.doesNotMatch(r.vignette, /miniatures|smartworkout|<video/);
   assert.doesNotMatch(r.agrandi, /video|smartworkout/i);
   assert.match(r.agrandi, /schema-repli/);
   assert.equal(r.lienSW, null);
@@ -5700,8 +5702,97 @@ test("site : comme l'app, ni vidéo SmartWorkout ni GIF ExerciseDB (schéma des 
   assert.deepEqual(r.illustration, { video: false, source: ['Illustration : Everkinetic, adaptée par Bryl Lim (CC BY-SA 4.0)'] });
   assert.deepEqual(r.photo, { video: false, source: ['Image : RepDB'] });
   assert.equal(r.gif.video, false); assert.match(r.gif.source.join(' '), /^En vif, le muscle/);
-  assert.match(r.vignette, /^<svg/);
+  assert.match(r.vignette, /^<img class="vignette-3d" src="assets\/atlas\/vignettes\/sw-crunch-avec-ramene-de-genoux\.webp"/);
   assert.doesNotMatch(r.vignette, /miniatures|smartworkout/);
+}));
+
+test("miniatures 3D : chaque exercice de la bibliothèque a la sienne, rendue sur son mouvement actuel, et rien d'autre", () => avecAppli({}, async ({ page }) => {
+  const r = await page.evaluate(() => {
+    const visibles = EXERCICES_BASE.map(e => e.id).filter(id => mouvementExercice(id) === id);
+    const cibles = [...EXERCICES_BASE, ...EXERCICES_RETIRES].map(e => mouvementExercice(e.id)).filter(Boolean);
+    return { visibles, cibles: [...new Set(cibles)], base: EXERCICES_BASE.length,
+      perso: vignette3DExercice({ id: 'maison', perso: true, groupe: 'biceps' }), sansMouvement: vignette3DExercice({ id: 'inconnu' }) };
+  });
+  const dossier = path.join(RACINE, 'assets', 'atlas', 'vignettes');
+  const releve = JSON.parse(fs.readFileSync(path.join(RACINE, 'outils', 'atlas', 'mouvements', 'vignettes.json'), 'utf8'));
+  const table = Object.fromEntries(fs.readFileSync(path.join(RACINE, 'outils', 'atlas', 'mouvements', 'table.txt'), 'utf8').split('\n')
+    .filter(l => l.trim() && !l.startsWith('#')).map(l => l.split('|').map(x => x.trim())).map(([id, spec]) => [id, spec]));
+  assert.equal(r.visibles.length, r.base, 'tous les exercices de la bibliothèque ont leur mouvement');
+  let total = 0;
+  for (const id of r.visibles) {
+    const f = path.join(dossier, id + '.webp');
+    assert.ok(fs.existsSync(f), 'miniature manquante : ' + id + ' (lancer node outils/atlas/outils/vignettes.cjs)');
+    const b = fs.readFileSync(f);
+    assert.ok(b.toString('latin1', 0, 4) === 'RIFF' && b.toString('latin1', 8, 12) === 'WEBP', 'image WebP : ' + id);
+    assert.ok(b.length > 1500 && b.length < 20000, `poids de ${id} : ${b.length} octets`);
+    total += b.length;
+    // Une miniature rendue sur un autre mouvement que celui de la table n'est plus à jour : la relancer.
+    assert.equal(releve.exercices[id] && releve.exercices[id].mouvement, table[id], 'miniature de ' + id + ' rendue sur un autre mouvement (lancer node outils/atlas/outils/vignettes.cjs)');
+  }
+  assert.equal(releve.cote, 176);
+  // Rien d'autre dans le dossier ; un exercice fusionné ou sorti de la bibliothèque, qui joue le mouvement d'un autre,
+  // pointe sur une miniature qui existe ; un exercice créé par l'utilisateur n'en a pas (il garde sa photo ou la silhouette).
+  assert.deepEqual(fs.readdirSync(dossier).filter(f => !r.visibles.includes(f.replace(/\.webp$/, ''))), []);
+  for (const id of r.cibles) assert.ok(r.visibles.includes(id), 'mouvement joué sans miniature : ' + id);
+  assert.deepEqual([r.perso, r.sansMouvement], [null, null]);
+  // L'app les embarque toutes : moins de 8 Mo en tout.
+  assert.ok(total < 8e6, `miniatures : ${(total / 1e6).toFixed(1)} Mo`);
+}));
+
+test("listes : la miniature 3D de chaque exercice sur le fond de la fiche (clair ou sombre) ; en séance, la toucher ouvre le mouvement en 3D", () => avecAppli({ natif: true }, async ({ page }) => {
+  const r = await page.evaluate(async () => {
+    const res = {};
+    ouvrirBibliotheque();
+    await new Promise(ok => setTimeout(ok, 600));
+    const lignes = [...document.querySelectorAll('#picker-liste-exercices .exo-ligne')];
+    const imgs = lignes.map(l => l.querySelector('.exo-ligne-vignette img.vignette-3d'));
+    res.lignes = lignes.length; res.sansMiniature = imgs.filter(i => !i).length; res.silhouettes = document.querySelectorAll('#picker-liste-exercices .exo-ligne-vignette svg').length;
+    res.paresseuses = imgs.filter(i => i && i.getAttribute('loading') === 'lazy').length;
+    // Les premières, à l'écran : chargées, à la taille rendue.
+    const premieres = imgs.slice(0, 4);
+    await Promise.all(premieres.map(i => i.decode().catch(() => null)));
+    res.tailles = premieres.map(i => i.naturalWidth);
+    res.sources = premieres.map(i => i.getAttribute('src'));
+    res.premiersIds = lignes.slice(0, 4).map(l => (l.getAttribute('onclick') || '').match(/choisirExercicePicker\("([^"]+)"\)/)?.[1] || null);
+    const fond = () => getComputedStyle(premieres[0]).backgroundImage;
+    appliquerTheme('light'); res.fondClair = fond();
+    appliquerTheme('dark'); res.fondSombre = fond();
+    fermerModal('picker-exercices-modal');
+    // Une miniature introuvable laisse la place à la silhouette du groupe, pas à une image cassée.
+    const essai = document.createElement('span'); essai.className = 'exo-ligne-vignette';
+    essai.innerHTML = '<img class="vignette-3d" src="assets/atlas/vignettes/absente.webp" alt="" data-repli="biceps">';
+    document.body.appendChild(essai);
+    await new Promise(ok => setTimeout(ok, 400));
+    res.repli = essai.firstElementChild && essai.firstElementChild.tagName.toLowerCase();
+    essai.remove();
+    // Un exercice créé par l'utilisateur garde la silhouette (pas de mouvement, donc pas de miniature).
+    res.perso = medaillonExercice({ id: 'maison', nom: 'Maison', groupe: 'biceps', materiel: 'haltere', perso: true }).slice(0, 4);
+    // En séance : la vignette de l'exercice est sa miniature ; la toucher ouvre l'atlas sur son mouvement.
+    const exo = trouverExercice('e265');
+    musculationProgrammes.push({ id: 'pm', nom: 'Miniatures', exercices: [{ exerciceId: exo.id, series: [{ poids: 40, reps: 8 }] }], maj: Date.now() });
+    allerA('seance'); demarrerSeance('pm');
+    const bouton = document.querySelector('.session-exo-vignette-btn');
+    res.seance = bouton && bouton.querySelector('img.vignette-3d') && bouton.querySelector('img.vignette-3d').getAttribute('src');
+    const vrai = window.ouvrirAtlas; let appel = null;
+    window.ouvrirAtlas = (mode, options) => { appel = [mode, options]; };
+    bouton.click();
+    res.appel = appel;
+    res.zoom = !document.getElementById('video-zoom').classList.contains('hidden');
+    window.ouvrirAtlas = vrai;
+    return res;
+  });
+  assert.ok(r.lignes >= 10, 'la bibliothèque affiche des exercices');
+  assert.deepEqual([r.sansMiniature, r.silhouettes], [0, 0], 'chaque ligne a sa miniature, plus de silhouette');
+  assert.equal(r.paresseuses, r.lignes, 'chargées près de l\'écran seulement');
+  assert.deepEqual(r.tailles, [176, 176, 176, 176]);
+  r.sources.forEach((s, k) => assert.equal(s, 'assets/atlas/vignettes/' + r.premiersIds[k] + '.webp'));
+  assert.match(r.fondClair, /radial-gradient.*rgb\(255, 255, 255\)/);
+  assert.match(r.fondSombre, /radial-gradient.*rgb\(27, 30, 39\)/);
+  assert.equal(r.repli, 'svg');
+  assert.equal(r.perso, '<svg');
+  assert.equal(r.seance, 'assets/atlas/vignettes/e265.webp');
+  assert.deepEqual(r.appel, ['exercice', { exercice: 'e265' }]);
+  assert.equal(r.zoom, false, 'pas de photo agrandie : le mouvement en 3D à la place');
 }));
 
 test("app iOS, Pro pas encore en vente : rien n'est verrouillé ni ne parle de Pro, seuls les essais d'IA restent comptés", () => avecAppli({ natif: true }, async ({ page }) => {

@@ -1562,6 +1562,9 @@ body.couche-ouverte .bandeau-seance-flottant { opacity: 0; pointer-events: none;
 .exo-ligne-vignette .vignette-video { position: absolute; inset: 0; opacity: 0; transition: opacity 0.2s; background: transparent; }
 .exo-ligne-vignette .vignette-video.prete { opacity: 1; }
 .exo-ligne-vignette svg { width: 78%; height: 78%; }
+/* Miniature 3D d'un exercice (fond transparent) : posée sur le fond de la fiche du mouvement, sombre ou clair. */
+img.vignette-3d { background: radial-gradient(ellipse 75% 60% at 50% 42%, #1b1e27 0%, #0d0f15 55%, #07080b 100%); }
+:root[data-theme="light"] img.vignette-3d { background: radial-gradient(ellipse 75% 60% at 50% 42%, #ffffff 0%, #eef1f6 60%, #e2e6ee 100%); }
 
 /* --- Fiche exercice : grande image (photo qui alterne comme un GIF, ou
    schéma corps agrandi) --- */
