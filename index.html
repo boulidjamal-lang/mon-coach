@@ -11680,6 +11680,8 @@ function appliquerTheme(choix) {
   appelNatif('StatusBar', 'setStyle', { style: t === 'dark' ? 'DARK' : 'LIGHT' });
   majManifestTheme(t);
   majSegment('segment-theme', ['light', 'dark', 'auto'], pref);
+  // Les boucles des miniatures 3D portent le fond de leur thème (au démarrage, les listes ne sont pas encore là).
+  try { majVideosVignettes3D(); } catch (e) { /* pas encore de liste */ }
   // Les graphiques sont dessines en pixels : leurs couleurs ne suivent pas le
   // theme toutes seules, il faut les redessiner.
   if (ecranActif === 'stats') { mettreAJourStats(); mettreAJourStatsNutrition(); renderStatsMuscu(); }
@@ -19015,16 +19017,26 @@ function mediaExercice(exo) {
   if (m && m.img && m.img.some(mediaTiersInterdit)) return m === EXERCICE_MEDIA[exo.id] ? null : { img: [], ins: exo.ins || [] };
   return m;
 }
-/* La miniature d'un exercice de la bibliothèque : le corps de l'atlas à l'instant le plus parlant de son mouvement,
-   avec les couleurs de sa fiche (muscles qui travaillent en rose) et son matériel. Rendue d'avance par
-   outils/atlas/outils/vignettes.cjs, une image WebP par exercice, fond transparent : la case lui donne le fond de la
-   fiche, clair ou sombre. Un exercice fusionné montre celle de l'exercice qui l'a remplacé, comme son mouvement ; un
+/* La miniature d'un exercice de la bibliothèque : le corps de l'atlas qui exécute son mouvement, avec les couleurs de
+   sa fiche (muscles qui travaillent en rose) et son matériel. Rendue d'avance par outils/atlas/outils/vignettes.cjs :
+   une image fixe (WebP, fond transparent : la case lui donne le fond de la fiche, clair ou sombre) et une répétition
+   en boucle qui part de cette même image, une par thème (H.264, le fond de la case dans la vidéo). L'image s'affiche
+   tout de suite ; la boucle se pose par-dessus quand la case reste à l'écran (voir vignetteEnVideo), jamais en
+   mouvement réduit. Un exercice fusionné montre celle de l'exercice qui l'a remplacé, comme son mouvement ; un
    exercice créé par l'utilisateur, ou sorti de la bibliothèque, n'en a pas. */
 const DOSSIER_VIGNETTES_3D = 'assets/atlas/vignettes/';
+function idVignette3D(exo) {
+  return exo && !exo.perso ? mouvementExercice(exo.id) : null;
+}
 function vignette3DExercice(exo) {
-  if (!exo || exo.perso) return null;
-  const id = mouvementExercice(exo.id);
+  const id = idVignette3D(exo);
   return id ? DOSSIER_VIGNETTES_3D + encodeURIComponent(id) + '.webp' : null;
+}
+function animationVignette3D(id) {
+  return DOSSIER_VIGNETTES_3D + encodeURIComponent(id) + (themeClairActif() ? '.clair' : '.sombre') + '.mp4';
+}
+function vignettes3DAnimees() {
+  return !(window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches);
 }
 /* Vignette utilisée dans les listes (bibliothèque, sélecteurs, séance,
    programmes) : la miniature 3D de l'exercice ; à défaut la photo de
@@ -19060,7 +19072,10 @@ function medaillonExercice(exo, anime) {
   // La miniature 3D, sauf si une vidéo ou des photos ont été posées pour cet exercice dans Administration. Chargée
   // près de l'écran seulement : la bibliothèque en affiche des centaines.
   const v3d = !(typeof exo.video === 'string' && exo.video) && !(exo.img && exo.img.length) && vignette3DExercice(exo);
-  if (v3d) return `<img class="vignette-3d" src="${v3d}" alt="" decoding="async" loading="lazy"${repli}>`;
+  if (v3d) {
+    const boucle = vignettes3DAnimees() ? ` data-anim3d="${escapeHtml(idVignette3D(exo))}"` : '';
+    return `<img class="vignette-3d${boucle ? ' vignette-differee' : ''}" src="${v3d}" alt="" decoding="async" loading="lazy"${boucle}${repli}>`;
+  }
   if (sw && sw.poster) return `<img src="${escapeHtml(sw.poster)}" alt="" decoding="async" loading="lazy"${repli} style="background:#fff;">`;
   const media = mediaExercice(exo);
   if (media && media.img && media.img[0]) {
@@ -19113,7 +19128,8 @@ function vignetteEnVideo(img) {
   ['muted', 'loop', 'playsinline', 'autoplay', 'disablepictureinpicture', 'disableremoteplayback'].forEach(a => v.setAttribute(a, ''));
   v.setAttribute('aria-hidden', 'true');
   v.addEventListener('playing', () => v.classList.add('prete'), { once: true });
-  v.src = img.dataset.video;
+  // Miniature 3D : la boucle du thème affiché (son fond est celui de la case).
+  v.src = img.dataset.video || animationVignette3D(img.dataset.anim3d);
   img.after(v);
   img._video = v;
   vignettesActives.add(img);
@@ -19125,6 +19141,20 @@ function vignetteSansVideo(img) {
   img._video = null;
   vignettesActives.delete(img);
   if (v) { try { v.pause(); v.removeAttribute('src'); v.load(); } catch (e) {} v.remove(); }
+}
+/* Thème changé : les boucles des miniatures 3D à l'écran prennent celles de l'autre fond. */
+function majVideosVignettes3D() {
+  for (const img of vignettesActives) {
+    const v = img._video, id = img.dataset.anim3d;
+    if (!v || !id) continue;
+    const src = animationVignette3D(id);
+    if (v.getAttribute('src') === src) continue;
+    v.classList.remove('prete');
+    v.addEventListener('playing', () => v.classList.add('prete'), { once: true });
+    v.src = src;
+    const p = v.play();
+    if (p && p.catch) p.catch(() => {});
+  }
 }
 function promouvoirVignetteEnAttente() {
   for (const img of vignettesEnAttente) {

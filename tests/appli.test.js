@@ -5718,25 +5718,71 @@ test("miniatures 3D : chaque exercice de la bibliothèque a la sienne, rendue su
   const table = Object.fromEntries(fs.readFileSync(path.join(RACINE, 'outils', 'atlas', 'mouvements', 'table.txt'), 'utf8').split('\n')
     .filter(l => l.trim() && !l.startsWith('#')).map(l => l.split('|').map(x => x.trim())).map(([id, spec]) => [id, spec]));
   assert.equal(r.visibles.length, r.base, 'tous les exercices de la bibliothèque ont leur mouvement');
-  let total = 0;
+  const total = { image: 0, boucles: 0 };
   for (const id of r.visibles) {
+    // L'image fixe (WebP) et la boucle de chaque thème (MP4).
     const f = path.join(dossier, id + '.webp');
     assert.ok(fs.existsSync(f), 'miniature manquante : ' + id + ' (lancer node outils/atlas/outils/vignettes.cjs)');
     const b = fs.readFileSync(f);
     assert.ok(b.toString('latin1', 0, 4) === 'RIFF' && b.toString('latin1', 8, 12) === 'WEBP', 'image WebP : ' + id);
     assert.ok(b.length > 1500 && b.length < 20000, `poids de ${id} : ${b.length} octets`);
-    total += b.length;
+    total.image += b.length;
+    for (const th of ['clair', 'sombre']) {
+      const v = path.join(dossier, `${id}.${th}.mp4`);
+      assert.ok(fs.existsSync(v), `boucle ${th} manquante : ${id} (lancer node outils/atlas/outils/vignettes.cjs)`);
+      const m = fs.readFileSync(v);
+      assert.equal(m.toString('latin1', 4, 8), 'ftyp', 'vidéo MP4 : ' + v);
+      assert.ok(m.length > 1500 && m.length < 40000, `poids de ${id}.${th}.mp4 : ${m.length} octets`);
+      total.boucles += m.length;
+    }
     // Une miniature rendue sur un autre mouvement que celui de la table n'est plus à jour : la relancer.
-    assert.equal(releve.exercices[id] && releve.exercices[id].mouvement, table[id], 'miniature de ' + id + ' rendue sur un autre mouvement (lancer node outils/atlas/outils/vignettes.cjs)');
+    const x = releve.exercices[id];
+    assert.equal(x && x.mouvement, table[id], 'miniature de ' + id + ' rendue sur un autre mouvement (lancer node outils/atlas/outils/vignettes.cjs)');
+    // Une répétition entière : 16 à 48 images (15 par seconde, 10 pour un geste continu).
+    assert.ok(x.images >= 16 && x.images <= 48 && x.periode > 0, 'une répétition entière : ' + id);
   }
-  assert.equal(releve.cote, 176);
+  assert.deepEqual([releve.version, releve.cote], [2, 176]);
+  // Le fond peint dans les vidéos est celui que la feuille de style donne à la case, dans chaque thème : la boucle
+  // se pose sur l'image sans que le fond change.
+  const css = fs.readFileSync(path.join(RACINE, 'assets', 'styles.css'), 'utf8');
+  assert.ok(css.includes(`img.vignette-3d { background: ${releve.fonds.sombre}; }`), 'fond sombre de la case = fond des boucles sombres');
+  assert.ok(css.includes(`:root[data-theme="light"] img.vignette-3d { background: ${releve.fonds.clair}; }`), 'fond clair de la case = fond des boucles claires');
   // Rien d'autre dans le dossier ; un exercice fusionné ou sorti de la bibliothèque, qui joue le mouvement d'un autre,
   // pointe sur une miniature qui existe ; un exercice créé par l'utilisateur n'en a pas (il garde sa photo ou la silhouette).
-  assert.deepEqual(fs.readdirSync(dossier).filter(f => !r.visibles.includes(f.replace(/\.webp$/, ''))), []);
+  assert.deepEqual(fs.readdirSync(dossier).filter(f => !r.visibles.includes(f.replace(/\.(webp|clair\.mp4|sombre\.mp4)$/, ''))), []);
   for (const id of r.cibles) assert.ok(r.visibles.includes(id), 'mouvement joué sans miniature : ' + id);
   assert.deepEqual([r.perso, r.sansMouvement], [null, null]);
-  // L'app les embarque toutes : moins de 8 Mo en tout.
-  assert.ok(total < 8e6, `miniatures : ${(total / 1e6).toFixed(1)} Mo`);
+  // L'app les embarque toutes : moins de 8 Mo d'images, moins de 16 Mo de boucles.
+  assert.ok(total.image < 8e6, `images : ${(total.image / 1e6).toFixed(1)} Mo`);
+  assert.ok(total.boucles < 16e6, `boucles : ${(total.boucles / 1e6).toFixed(1)} Mo`);
+}));
+
+test("miniatures 3D animées : la boucle du thème affiché se pose sur l'image quand la case reste à l'écran (quatre au plus), suit le thème, et rien en mouvement réduit", () => avecAppli({ natif: true, animations: true }, async ({ page }) => {
+  const r = await page.evaluate(async () => {
+    const res = {};
+    appliquerTheme('light');
+    ouvrirBibliotheque();
+    await new Promise(ok => setTimeout(ok, 1200));
+    const imgs = [...document.querySelectorAll('#picker-liste-exercices .exo-ligne-vignette img.vignette-3d')];
+    res.differees = imgs.filter(i => i.classList.contains('vignette-differee') && i.dataset.anim3d).length;
+    res.images = imgs.length;
+    const videos = () => [...document.querySelectorAll('#picker-liste-exercices .exo-ligne-vignette video.vignette-video')];
+    res.clair = videos().map(v => [v.previousElementSibling.dataset.anim3d, v.getAttribute('src'), v.muted, v.loop, v.hasAttribute('playsinline')]);
+    // Les boucles jouent vraiment (sans geste de l'utilisateur), et se révèlent alors en fondu sur leur image.
+    for (let k = 0; k < 40 && !videos().some(v => v.classList.contains('prete')); k++) await new Promise(ok => setTimeout(ok, 100));
+    res.jouent = videos().filter(v => v.classList.contains('prete') && !v.paused).length;
+    res.duree = videos().map(v => v.duration).filter(d => d > 0).length;
+    appliquerTheme('dark');
+    res.sombre = videos().map(v => v.getAttribute('src'));
+    fermerModal('picker-exercices-modal');
+    return res;
+  });
+  assert.equal(r.differees, r.images, 'chaque miniature a sa boucle');
+  assert.ok(r.clair.length > 0 && r.clair.length <= 4, `boucles posées : ${r.clair.length}`);
+  for (const [id, src, muet, boucle, enLigne] of r.clair) assert.deepEqual([src, muet, boucle, enLigne], [`assets/atlas/vignettes/${id}.clair.mp4`, true, true, true]);
+  assert.deepEqual(r.sombre, r.clair.map(([id]) => `assets/atlas/vignettes/${id}.sombre.mp4`));
+  assert.ok(r.jouent >= 1, 'au moins une boucle joue');
+  assert.ok(r.duree >= 1, 'boucles lues (durée connue)');
 }));
 
 test("listes : la miniature 3D de chaque exercice sur le fond de la fiche (clair ou sombre) ; en séance, la toucher ouvre le mouvement en 3D", () => avecAppli({ natif: true }, async ({ page }) => {
@@ -5748,6 +5794,7 @@ test("listes : la miniature 3D de chaque exercice sur le fond de la fiche (clair
     const imgs = lignes.map(l => l.querySelector('.exo-ligne-vignette img.vignette-3d'));
     res.lignes = lignes.length; res.sansMiniature = imgs.filter(i => !i).length; res.silhouettes = document.querySelectorAll('#picker-liste-exercices .exo-ligne-vignette svg').length;
     res.paresseuses = imgs.filter(i => i && i.getAttribute('loading') === 'lazy').length;
+    res.boucles = imgs.filter(i => i && (i.dataset.anim3d || i.classList.contains('vignette-differee'))).length;
     // Les premières, à l'écran : chargées, à la taille rendue.
     const premieres = imgs.slice(0, 4);
     await Promise.all(premieres.map(i => i.decode().catch(() => null)));
@@ -5784,6 +5831,7 @@ test("listes : la miniature 3D de chaque exercice sur le fond de la fiche (clair
   assert.ok(r.lignes >= 10, 'la bibliothèque affiche des exercices');
   assert.deepEqual([r.sansMiniature, r.silhouettes], [0, 0], 'chaque ligne a sa miniature, plus de silhouette');
   assert.equal(r.paresseuses, r.lignes, 'chargées près de l\'écran seulement');
+  assert.equal(r.boucles, 0, 'mouvement réduit : l\'image seule, pas de boucle');
   assert.deepEqual(r.tailles, [176, 176, 176, 176]);
   r.sources.forEach((s, k) => assert.equal(s, 'assets/atlas/vignettes/' + r.premiersIds[k] + '.webp'));
   assert.match(r.fondClair, /radial-gradient.*rgb\(255, 255, 255\)/);
