@@ -384,22 +384,33 @@ l'appli.
 
 ## Les miniatures des exercices
 
-Dans les listes de l'appli (bibliothèque, choix d'un exercice, séance, programmes), chaque exercice a sa miniature :
-le corps de l'atlas à l'instant le plus parlant de son mouvement, rendu par l'appli elle-même (mêmes couleurs que la
-fiche, muscles qui travaillent en rose, même peau, même matériel), sur fond transparent — la case donne le fond de
-la fiche, sombre ou clair. Une image WebP de 176 points par exercice (la case de 58 pt de la bibliothèque sur un
-écran ×3), autour de 7 ko : `assets/atlas/vignettes/<identifiant>.webp`, chargées près de l'écran seulement.
+Dans les listes de l'appli (bibliothèque, choix d'un exercice, séance, programmes), chaque exercice a sa miniature
+animée : le corps de l'atlas qui exécute son mouvement, rendu par l'appli elle-même (mêmes couleurs que la fiche,
+muscles qui travaillent en rose, même peau, même matériel). Trois fichiers par exercice, dans `assets/atlas/vignettes/` :
+
+- `<identifiant>.webp` : l'image fixe, 176 points (la case de 58 pt de la bibliothèque sur un écran ×3), fond
+  transparent — la case donne le fond de la fiche, sombre ou clair. Elle s'affiche tout de suite, chargée près de
+  l'écran seulement.
+- `<identifiant>.clair.mp4` et `<identifiant>.sombre.mp4` : une répétition entière en boucle (10 images par seconde,
+  16 à 40 images), qui part de l'image fixe et garde son cadrage, sur le fond de la case de chaque thème (H.264 :
+  la vidéo n'a pas de transparence, elle porte ce fond, peint par le navigateur à partir du CSS même de l'appli).
+  Autour de 8 ko. La boucle se pose sur l'image quand la case reste à l'écran un instant, quatre au plus à la fois
+  (le mécanisme des anciennes mini-vidéos, `vignetteEnVideo`), passe à l'autre fond quand le thème change, et ne se
+  lance jamais quand l'appareil demande des animations réduites.
 
 - `node outils/atlas/outils/vignettes.cjs` (depuis le dépôt) : rend les miniatures qui ne sont plus à jour — mouvement,
   couleurs, moteur ou modèle changés — et retire celles des exercices sortis de la bibliothèque. Le relevé
-  `mouvements/vignettes.json` garde, pour chacune, le mouvement montré, l'instant choisi et sa clé. Un quart d'heure
-  pour tout refaire (`TOUT=1`), en rendu logiciel ; des identifiants séparés par des virgules pour quelques-unes.
-- L'instant montré : l'arrivée du mouvement (bras montés, barre tirée, buste enroulé, bas du squat…), sauf si le
-  départ est nettement plus fléchi (soulevé de terre pris au sol), mesuré aux coudes, genoux, épaules, hanches et à
-  l'enroulement de la colonne ; le pont fessier montre toujours ses hanches hautes. Cadrage serré sur la pose et son
-  matériel.
-- Les tests de l'appli vérifient que chaque exercice de la bibliothèque a sa miniature, rendue sur le mouvement de
-  la table : une ligne de `table.txt` changée sans refaire les miniatures les fait échouer.
+  `mouvements/vignettes.json` garde, pour chacune, le mouvement montré, l'instant choisi, le départ de la boucle, sa
+  période, son nombre d'images, les poids et sa clé. Tout refaire (`TOUT=1`) prend plus d'une heure en rendu logiciel
+  (une demi-seconde par image du corps) ; des identifiants séparés par des virgules pour quelques-unes ; `SORTIE=<dossier>`
+  pour un essai hors du dépôt.
+- L'instant de l'image fixe, et donc le départ de la boucle : l'arrivée du mouvement (bras montés, barre tirée, buste
+  enroulé, bas du squat…), sauf si le départ est nettement plus fléchi (soulevé de terre pris au sol), mesuré aux
+  coudes, genoux, épaules, hanches et à l'enroulement de la colonne ; le pont fessier montre toujours ses hanches
+  hautes. Le cadrage tient toute la répétition et son matériel : le corps ne saute pas quand la boucle remplace l'image.
+- Les tests de l'appli vérifient que chaque exercice de la bibliothèque a ses trois fichiers, rendus sur le mouvement
+  de la table (une ligne de `table.txt` changée sans refaire les miniatures les fait échouer), et que le fond peint
+  dans les boucles est celui que la feuille de style donne à la case.
 - Un exercice créé par l'utilisateur, ou dont une vidéo ou des photos ont été posées dans Administration, garde ce
   qu'il avait (sa photo, ou la silhouette de son groupe). En séance, toucher la miniature ouvre l'atlas sur le
   mouvement de l'exercice.
