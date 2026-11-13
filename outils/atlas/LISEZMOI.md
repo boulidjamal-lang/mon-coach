@@ -378,8 +378,31 @@ Chaque exercice de la bibliothèque (`EXERCICES_BASE` dans `index.html`) a son m
   logiciel).
 
 Ajouter ou corriger le mouvement d'un exercice : modifier sa ligne dans `table.txt` (ou la famille dans `src/`),
-relancer `construire.mjs`, puis `controle.mjs --table`, et regarder le résultat sur une planche. Un exercice ajouté
-à la bibliothèque sans ligne dans la table fait échouer les tests de l'appli.
+relancer `construire.mjs`, puis `controle.mjs --table`, regarder le résultat sur une planche, et refaire les
+miniatures (ci-dessous). Un exercice ajouté à la bibliothèque sans ligne dans la table fait échouer les tests de
+l'appli.
+
+## Les miniatures des exercices
+
+Dans les listes de l'appli (bibliothèque, choix d'un exercice, séance, programmes), chaque exercice a sa miniature :
+le corps de l'atlas à l'instant le plus parlant de son mouvement, rendu par l'appli elle-même (mêmes couleurs que la
+fiche, muscles qui travaillent en rose, même peau, même matériel), sur fond transparent — la case donne le fond de
+la fiche, sombre ou clair. Une image WebP de 176 points par exercice (la case de 58 pt de la bibliothèque sur un
+écran ×3), autour de 7 ko : `assets/atlas/vignettes/<identifiant>.webp`, chargées près de l'écran seulement.
+
+- `node outils/atlas/outils/vignettes.cjs` (depuis le dépôt) : rend les miniatures qui ne sont plus à jour — mouvement,
+  couleurs, moteur ou modèle changés — et retire celles des exercices sortis de la bibliothèque. Le relevé
+  `mouvements/vignettes.json` garde, pour chacune, le mouvement montré, l'instant choisi et sa clé. Un quart d'heure
+  pour tout refaire (`TOUT=1`), en rendu logiciel ; des identifiants séparés par des virgules pour quelques-unes.
+- L'instant montré : l'arrivée du mouvement (bras montés, barre tirée, buste enroulé, bas du squat…), sauf si le
+  départ est nettement plus fléchi (soulevé de terre pris au sol), mesuré aux coudes, genoux, épaules, hanches et à
+  l'enroulement de la colonne ; le pont fessier montre toujours ses hanches hautes. Cadrage serré sur la pose et son
+  matériel.
+- Les tests de l'appli vérifient que chaque exercice de la bibliothèque a sa miniature, rendue sur le mouvement de
+  la table : une ligne de `table.txt` changée sans refaire les miniatures les fait échouer.
+- Un exercice créé par l'utilisateur, ou dont une vidéo ou des photos ont été posées dans Administration, garde ce
+  qu'il avait (sa photo, ou la silhouette de son groupe). En séance, toucher la miniature ouvre l'atlas sur le
+  mouvement de l'exercice.
 
 Ce que le mouvement ne montre pas : les
 déplacements (fentes marchées, marches latérales) se font sur place ; les mouvements à plusieurs temps (relevé

@@ -1,0 +1,4789 @@
+{
+ "version": 1,
+ "cote": 176,
+ "regle": "arrivee-sauf-depart-1.2-milieu-1.25-pont-arrivee",
+ "exercices": {
+  "e1": {
+   "mouvement": "developpe barre",
+   "instant": 1,
+   "octets": 9094,
+   "cle": "eff806e4e41b5a1a"
+  },
+  "e10": {
+   "mouvement": "developpe machine assis",
+   "instant": 1,
+   "octets": 7490,
+   "cle": "ca0d7cb1dcb0b9e3"
+  },
+  "e100": {
+   "mouvement": "pont banc hal",
+   "instant": 1,
+   "octets": 7974,
+   "cle": "0058a6317f7d3663"
+  },
+  "e1003": {
+   "mouvement": "dips machine",
+   "instant": 1,
+   "octets": 6678,
+   "cle": "48da7aa841116564"
+  },
+  "e1005": {
+   "mouvement": "gym levier dos",
+   "instant": 1,
+   "octets": 5808,
+   "cle": "7bfa864fab4b578d"
+  },
+  "e101": {
+   "mouvement": "pont",
+   "instant": 1,
+   "octets": 7940,
+   "cle": "0e62fb9ae029e88e"
+  },
+  "e1013": {
+   "mouvement": "hanche assis elas",
+   "instant": 1,
+   "octets": 7718,
+   "cle": "6b5103830da493e0"
+  },
+  "e1014": {
+   "mouvement": "squat elas",
+   "instant": 1,
+   "octets": 8716,
+   "cle": "fa4fe2806eef76e9"
+  },
+  "e1015": {
+   "mouvement": "hanche elas",
+   "instant": 1,
+   "octets": 6836,
+   "cle": "266ce03e444945f1"
+  },
+  "e1018": {
+   "mouvement": "jambes tke elas",
+   "instant": 0,
+   "octets": 8034,
+   "cle": "294421c29b870a41"
+  },
+  "e1026": {
+   "mouvement": "suspendu chaise",
+   "instant": 1,
+   "octets": 4670,
+   "cle": "dd3d1d0469f8d1f2"
+  },
+  "e104": {
+   "mouvement": "hanche elas",
+   "instant": 1,
+   "octets": 6836,
+   "cle": "266ce03e444945f1"
+  },
+  "e105": {
+   "mouvement": "squat sumo gobelet",
+   "instant": 1,
+   "octets": 7780,
+   "cle": "d0f65b205ca4dfbf"
+  },
+  "e1066": {
+   "mouvement": "halt hal arrache",
+   "instant": 0,
+   "octets": 7656,
+   "cle": "aa118dfad356f815"
+  },
+  "e1073": {
+   "mouvement": "developpe barre sol",
+   "instant": 1,
+   "octets": 7024,
+   "cle": "3cc35739363ba7ed"
+  },
+  "e1074": {
+   "mouvement": "gym levier",
+   "instant": 1,
+   "octets": 5850,
+   "cle": "d2d626f37d58c7d9"
+  },
+  "e108": {
+   "mouvement": "jambes presse mollets",
+   "instant": 0,
+   "octets": 10310,
+   "cle": "b85e638821e646fd"
+  },
+  "e1085": {
+   "mouvement": "souleve jefferson hal",
+   "instant": 1,
+   "octets": 6428,
+   "cle": "ec645562f00a84b1"
+  },
+  "e1086": {
+   "mouvement": "cardio jacks",
+   "instant": 0.75,
+   "octets": 6542,
+   "cle": "8f181ea3349cc8e4"
+  },
+  "e109": {
+   "mouvement": "mollets hal",
+   "instant": 1,
+   "octets": 5036,
+   "cle": "c73ccc0a6420580b"
+  },
+  "e1099": {
+   "mouvement": "rotation moulinet kb",
+   "instant": 1,
+   "octets": 5576,
+   "cle": "4515c1cbd4734eea"
+  },
+  "e1101": {
+   "mouvement": "gym lsit",
+   "instant": 1,
+   "octets": 8296,
+   "cle": "5ec3d53c49a6d601"
+  },
+  "e1103": {
+   "mouvement": "triceps front hal",
+   "instant": 0,
+   "octets": 8196,
+   "cle": "e4db7eb9d3e3ccb0"
+  },
+  "e1104": {
+   "mouvement": "halt balle",
+   "instant": 1,
+   "octets": 7750,
+   "cle": "7a3a1b5b6958ba3c"
+  },
+  "e1111": {
+   "mouvement": "developpe kb sol uni",
+   "instant": 1,
+   "octets": 7066,
+   "cle": "634dafed8fb8a2a7"
+  },
+  "e1116": {
+   "mouvement": "squat barre tete",
+   "instant": 1,
+   "octets": 7916,
+   "cle": "4b36f85c57a10848"
+  },
+  "e1129": {
+   "mouvement": "developpe epaules barre pousse",
+   "instant": 0.25,
+   "octets": 8214,
+   "cle": "33dc8383b0993b67"
+  },
+  "e1130": {
+   "mouvement": "abdos inverse",
+   "instant": 1,
+   "octets": 8472,
+   "cle": "7c409f20df561399"
+  },
+  "e1136": {
+   "mouvement": "dips anneaux",
+   "instant": 1,
+   "octets": 3350,
+   "cle": "32abb2250f2086e8"
+  },
+  "e1139": {
+   "mouvement": "cardio course",
+   "instant": 1,
+   "octets": 6624,
+   "cle": "09c19de17a8a63bd"
+  },
+  "e114": {
+   "mouvement": "abdos jambes",
+   "instant": 1,
+   "octets": 8096,
+   "cle": "b970fa19cc288d27"
+  },
+  "e1142": {
+   "mouvement": "triceps nuque hal assis",
+   "instant": 0,
+   "octets": 6774,
+   "cle": "a75d05cd09b2f7d6"
+  },
+  "e1143": {
+   "mouvement": "fente laterale",
+   "instant": 1,
+   "octets": 7668,
+   "cle": "7e94a41147363d5f"
+  },
+  "e1144": {
+   "mouvement": "hanche cote",
+   "instant": 1,
+   "octets": 5626,
+   "cle": "8605319a0e473059"
+  },
+  "e115": {
+   "mouvement": "planche",
+   "instant": 1,
+   "octets": 5036,
+   "cle": "e048c77850b157e0"
+  },
+  "e1153": {
+   "mouvement": "mollets uni",
+   "instant": 1,
+   "octets": 5284,
+   "cle": "7fa31ef5c11c4957"
+  },
+  "e1157": {
+   "mouvement": "souleve goodmorning smith",
+   "instant": 1,
+   "octets": 9448,
+   "cle": "048559ff59b83876"
+  },
+  "e116": {
+   "mouvement": "planche cote",
+   "instant": 1,
+   "octets": 7318,
+   "cle": "2ceb4bde0bf75a8a"
+  },
+  "e1160": {
+   "mouvement": "developpe barre partiel",
+   "instant": 1,
+   "octets": 9616,
+   "cle": "388f0d60c04b8552"
+  },
+  "e1165": {
+   "mouvement": "dips barre",
+   "instant": 1,
+   "octets": 6374,
+   "cle": "ddef486ebcb4b4c6"
+  },
+  "e1169": {
+   "mouvement": "developpe svend debout",
+   "instant": 1,
+   "octets": 5542,
+   "cle": "6ce7a599e6ded473"
+  },
+  "e1178": {
+   "mouvement": "triceps poulie barreP",
+   "instant": 0,
+   "octets": 5828,
+   "cle": "6ee5043c96cf0100"
+  },
+  "e1182": {
+   "mouvement": "squat mur",
+   "instant": 1,
+   "octets": 5656,
+   "cle": "0ef401bf4625b17e"
+  },
+  "e119": {
+   "mouvement": "planche rollout",
+   "instant": 0,
+   "octets": 5538,
+   "cle": "bfdc6a02ba63a190"
+  },
+  "e1190": {
+   "mouvement": "poignet rouleau",
+   "instant": 1,
+   "octets": 6002,
+   "cle": "131fd5e348d8c2a4"
+  },
+  "e120": {
+   "mouvement": "planche grimpeur",
+   "instant": 1,
+   "octets": 7344,
+   "cle": "bd8ec65ae04adfdd"
+  },
+  "e1213": {
+   "mouvement": "etire chatvache",
+   "instant": 1,
+   "octets": 6676,
+   "cle": "04b74edfaf3efe7d"
+  },
+  "e1215": {
+   "mouvement": "etire enfant",
+   "instant": 1,
+   "octets": 5960,
+   "cle": "6eef3845ee396ff1"
+  },
+  "e1219": {
+   "mouvement": "etire pectoraux porte",
+   "instant": 1,
+   "octets": 6272,
+   "cle": "296cd570b503ed5b"
+  },
+  "e122": {
+   "mouvement": "abdos vup",
+   "instant": 1,
+   "octets": 9656,
+   "cle": "ccae31299a0e229b"
+  },
+  "e1226": {
+   "mouvement": "etire bebe",
+   "instant": 1,
+   "octets": 8034,
+   "cle": "8df7ba9fb6fc4fe9"
+  },
+  "e1229": {
+   "mouvement": "etire genoupoitrine",
+   "instant": 1,
+   "octets": 5000,
+   "cle": "412958dc081da263"
+  },
+  "e123": {
+   "mouvement": "abdos dragon",
+   "instant": 1,
+   "octets": 6444,
+   "cle": "86c4b1bdb340a9a4"
+  },
+  "e1239": {
+   "mouvement": "etire cou",
+   "instant": 1,
+   "octets": 6008,
+   "cle": "9b61e527347638a5"
+  },
+  "e124": {
+   "mouvement": "poignet barre",
+   "instant": 1,
+   "octets": 8950,
+   "cle": "5aeee4c6a89be4b3"
+  },
+  "e1240": {
+   "mouvement": "etire triceps",
+   "instant": 1,
+   "octets": 5424,
+   "cle": "d5a4220f8b3677e2"
+  },
+  "e125": {
+   "mouvement": "poignet barre inverse",
+   "instant": 1,
+   "octets": 8682,
+   "cle": "e333a12552e163c2"
+  },
+  "e1250": {
+   "mouvement": "etire ischios assis deux",
+   "instant": 1,
+   "octets": 7880,
+   "cle": "57c5d9045ded42d3"
+  },
+  "e1266": {
+   "mouvement": "tirage machine",
+   "instant": 1,
+   "octets": 7396,
+   "cle": "022ef98090f9fb92"
+  },
+  "e127": {
+   "mouvement": "traction pendu",
+   "instant": 1,
+   "octets": 7174,
+   "cle": "5b16699999823d86"
+  },
+  "e13": {
+   "mouvement": "pompe",
+   "instant": 1,
+   "octets": 5112,
+   "cle": "377bf60ea16155fd"
+  },
+  "e130": {
+   "mouvement": "elevation shrug machine",
+   "instant": 1,
+   "octets": 9272,
+   "cle": "db57f90080566b4f"
+  },
+  "e131": {
+   "mouvement": "cardio rameur",
+   "instant": 0,
+   "octets": 6586,
+   "cle": "2512cf7ee5e2fec3"
+  },
+  "e134": {
+   "mouvement": "cardio sauter",
+   "instant": 1,
+   "octets": 6528,
+   "cle": "fe74870c94d4a9fb"
+  },
+  "e135": {
+   "mouvement": "cardio burpee",
+   "instant": 0.75,
+   "octets": 9648,
+   "cle": "634496e054168cb0"
+  },
+  "e136": {
+   "mouvement": "souleve swing",
+   "instant": 0,
+   "octets": 7550,
+   "cle": "7974afc0d7e8d176"
+  },
+  "e14": {
+   "mouvement": "pompe incline",
+   "instant": 1,
+   "octets": 8374,
+   "cle": "42308e57b2750abb"
+  },
+  "e140": {
+   "mouvement": "halt getup",
+   "instant": 0.25,
+   "octets": 8306,
+   "cle": "434a537e4126d03d"
+  },
+  "e143": {
+   "mouvement": "dips leste",
+   "instant": 1,
+   "octets": 6668,
+   "cle": "a0997272755c3791"
+  },
+  "e144": {
+   "mouvement": "pompe leste",
+   "instant": 1,
+   "octets": 5212,
+   "cle": "d58f44743c900c55"
+  },
+  "e145": {
+   "mouvement": "pompe anneaux",
+   "instant": 1,
+   "octets": 6230,
+   "cle": "f6d9437a669899be"
+  },
+  "e148": {
+   "mouvement": "developpe landmine debout",
+   "instant": 1,
+   "octets": 7408,
+   "cle": "a0a33e9abad557bc"
+  },
+  "e149": {
+   "mouvement": "rowing barre pendlay",
+   "instant": 1,
+   "octets": 10236,
+   "cle": "6b33f2ed6b732fb6"
+  },
+  "e15": {
+   "mouvement": "pompe decline",
+   "instant": 1,
+   "octets": 5314,
+   "cle": "e879f1ff77e6bce3"
+  },
+  "e150": {
+   "mouvement": "rowing barre seal",
+   "instant": 1,
+   "octets": 6328,
+   "cle": "28b7fc076fc97572"
+  },
+  "e151": {
+   "mouvement": "rowing poulie assis large",
+   "instant": 1,
+   "octets": 7336,
+   "cle": "672778254b9d0fe3"
+  },
+  "e153": {
+   "mouvement": "traction leste",
+   "instant": 1,
+   "octets": 6576,
+   "cle": "4755628642bdd033"
+  },
+  "e154": {
+   "mouvement": "traction machine",
+   "instant": 1,
+   "octets": 6568,
+   "cle": "ea649ef42d02c4ed"
+  },
+  "e155": {
+   "mouvement": "suspension row",
+   "instant": 1,
+   "octets": 9360,
+   "cle": "562024d63a92d66f"
+  },
+  "e156": {
+   "mouvement": "souleve trapbar",
+   "instant": 0,
+   "octets": 8634,
+   "cle": "f06ad8aa73358c9e"
+  },
+  "e157": {
+   "mouvement": "souleve blocs",
+   "instant": 0,
+   "octets": 7242,
+   "cle": "fb6d56a60598ff45"
+  },
+  "e159": {
+   "mouvement": "rowing machine",
+   "instant": 1,
+   "octets": 9094,
+   "cle": "8a81509c3734df93"
+  },
+  "e16": {
+   "mouvement": "dips pecs",
+   "instant": 1,
+   "octets": 7016,
+   "cle": "c02d8d5f113a5f44"
+  },
+  "e160": {
+   "mouvement": "traction negative",
+   "instant": 1,
+   "octets": 7316,
+   "cle": "808af53916e172f8"
+  },
+  "e162": {
+   "mouvement": "developpe epaules barre nuque",
+   "instant": 0,
+   "octets": 7684,
+   "cle": "084767f78466fcd7"
+  },
+  "e163": {
+   "mouvement": "elevation arriere hal penche",
+   "instant": 1,
+   "octets": 8760,
+   "cle": "168e2ce6678ccdbd"
+  },
+  "e165": {
+   "mouvement": "elevation lat landmine uni",
+   "instant": 1,
+   "octets": 8446,
+   "cle": "150df6bde31342bd"
+  },
+  "e17": {
+   "mouvement": "developpe barre serre",
+   "instant": 1,
+   "octets": 9180,
+   "cle": "0797036074bbbb74"
+  },
+  "e170": {
+   "mouvement": "curl hal zottman",
+   "instant": 1,
+   "octets": 6000,
+   "cle": "30528e54f6ffa596"
+  },
+  "e172": {
+   "mouvement": "curl barre drag",
+   "instant": 1,
+   "octets": 6812,
+   "cle": "5736160537a493bb"
+  },
+  "e173": {
+   "mouvement": "curl poulie incline",
+   "instant": 1,
+   "octets": 9498,
+   "cle": "89943f4dc2dca0fc"
+  },
+  "e177": {
+   "mouvement": "triceps kickback poulie uni",
+   "instant": 0,
+   "octets": 8216,
+   "cle": "27b4fbb31dc0e599"
+  },
+  "e180": {
+   "mouvement": "squat barre zercher",
+   "instant": 1,
+   "octets": 9612,
+   "cle": "bef56af474935b0d"
+  },
+  "e182": {
+   "mouvement": "jambes presse unejambe",
+   "instant": 0,
+   "octets": 10794,
+   "cle": "ebd72256b403669e"
+  },
+  "e185": {
+   "mouvement": "squat pistolet",
+   "instant": 1,
+   "octets": 8964,
+   "cle": "f611c2d10ee072f9"
+  },
+  "e190": {
+   "mouvement": "souleve unejambe roumain hal",
+   "instant": 1,
+   "octets": 7956,
+   "cle": "ef41f366f0317f0e"
+  },
+  "e192": {
+   "mouvement": "pont banc machine",
+   "instant": 1,
+   "octets": 9562,
+   "cle": "8ebb8f9aa1713706"
+  },
+  "e193": {
+   "mouvement": "pont grenouille",
+   "instant": 1,
+   "octets": 9116,
+   "cle": "c2c0400b543ae410"
+  },
+  "e195": {
+   "mouvement": "souleve poulie",
+   "instant": 1,
+   "octets": 8604,
+   "cle": "d22ca2eef21541ab"
+  },
+  "e199": {
+   "mouvement": "abdos poulie",
+   "instant": 1,
+   "octets": 5416,
+   "cle": "4ee7f8fb1d724fc2"
+  },
+  "e2": {
+   "mouvement": "developpe barre banc=30",
+   "instant": 1,
+   "octets": 10894,
+   "cle": "e9cc5808336b7f38"
+  },
+  "e20": {
+   "mouvement": "traction",
+   "instant": 1,
+   "octets": 6630,
+   "cle": "118af8b7ff5e24f7"
+  },
+  "e200": {
+   "mouvement": "abdos hollow",
+   "instant": 1,
+   "octets": 5466,
+   "cle": "8b624d8062b4909c"
+  },
+  "e201": {
+   "mouvement": "abdos situp leste",
+   "instant": 1,
+   "octets": 8026,
+   "cle": "b1a158642098c9b1"
+  },
+  "e202": {
+   "mouvement": "suspendu barre",
+   "instant": 1,
+   "octets": 6576,
+   "cle": "c19f1f532f92d6f3"
+  },
+  "e204": {
+   "mouvement": "abdos jambes incline",
+   "instant": 1,
+   "octets": 9028,
+   "cle": "c5e8f66a76789ae1"
+  },
+  "e205": {
+   "mouvement": "abdos situp",
+   "instant": 1,
+   "octets": 7998,
+   "cle": "f811dbe87ace8639"
+  },
+  "e206": {
+   "mouvement": "poignet debout hal inverse",
+   "instant": 1,
+   "octets": 5810,
+   "cle": "549d829ce43d91d7"
+  },
+  "e21": {
+   "mouvement": "traction sup",
+   "instant": 1,
+   "octets": 6198,
+   "cle": "c5f052e5025f016c"
+  },
+  "e211": {
+   "mouvement": "cardio velo",
+   "instant": 1,
+   "octets": 9412,
+   "cle": "addabe656588fa38"
+  },
+  "e212": {
+   "mouvement": "cardio escalier",
+   "instant": 1,
+   "octets": 6888,
+   "cle": "d50cdff4d8a758c9"
+  },
+  "e215": {
+   "mouvement": "cardio cordes",
+   "instant": 1,
+   "octets": 5342,
+   "cle": "145ca829a45216f8"
+  },
+  "e216": {
+   "mouvement": "saut boite",
+   "instant": 0.75,
+   "octets": 5572,
+   "cle": "d95603c792fd0ab3"
+  },
+  "e22": {
+   "mouvement": "tirage large neutre",
+   "instant": 1,
+   "octets": 6836,
+   "cle": "16191507aaf9934f"
+  },
+  "e225": {
+   "mouvement": "planche birddog",
+   "instant": 0,
+   "octets": 6784,
+   "cle": "fb961602eeba0d3d"
+  },
+  "e226": {
+   "mouvement": "abdos deadbug",
+   "instant": 1,
+   "octets": 5256,
+   "cle": "aa539a6b8d44c79f"
+  },
+  "e23": {
+   "mouvement": "tirage serre",
+   "instant": 1,
+   "octets": 6540,
+   "cle": "d5f60f593b3fca12"
+  },
+  "e239": {
+   "mouvement": "hanche adduction poulie",
+   "instant": 1,
+   "octets": 7922,
+   "cle": "34ce68129c16ea67"
+  },
+  "e24": {
+   "mouvement": "rowing barre",
+   "instant": 1,
+   "octets": 8866,
+   "cle": "a65097deda9a4f75"
+  },
+  "e243": {
+   "mouvement": "hanche adduction elas",
+   "instant": 1,
+   "octets": 5298,
+   "cle": "23ff4a4d7d46b115"
+  },
+  "e244": {
+   "mouvement": "abdos velo",
+   "instant": 1,
+   "octets": 6540,
+   "cle": "d4ca48c6746ecee0"
+  },
+  "e245": {
+   "mouvement": "curl hal marteau alt",
+   "instant": 1,
+   "octets": 5564,
+   "cle": "fcfee71df8a0ce72"
+  },
+  "e247": {
+   "mouvement": "curl hal incline alt",
+   "instant": 1,
+   "octets": 7710,
+   "cle": "33d08ee792b47ece"
+  },
+  "e255": {
+   "mouvement": "pont barre sol",
+   "instant": 1,
+   "octets": 8706,
+   "cle": "515e6879f5743822"
+  },
+  "e258": {
+   "mouvement": "rowing barre haut large",
+   "instant": 1,
+   "octets": 8708,
+   "cle": "8c16dcf487e98194"
+  },
+  "e260": {
+   "mouvement": "mollets assis machine",
+   "instant": 1,
+   "octets": 7646,
+   "cle": "7b0037085183b947"
+  },
+  "e261": {
+   "mouvement": "developpe epaules barre assis",
+   "instant": 1,
+   "octets": 7034,
+   "cle": "c3ab288eb4b1d5cd"
+  },
+  "e262": {
+   "mouvement": "elevation shrug barre dos",
+   "instant": 1,
+   "octets": 7460,
+   "cle": "d392d064548deb4d"
+  },
+  "e265": {
+   "mouvement": "squat barre",
+   "instant": 1,
+   "octets": 9994,
+   "cle": "6b6db74f8273bf19"
+  },
+  "e27": {
+   "mouvement": "rowing poulie assis",
+   "instant": 1,
+   "octets": 8056,
+   "cle": "65254fa2a3fd068d"
+  },
+  "e270": {
+   "mouvement": "developpe barre",
+   "instant": 1,
+   "octets": 9094,
+   "cle": "eff806e4e41b5a1a"
+  },
+  "e275": {
+   "mouvement": "rowing hal appui uni",
+   "instant": 1,
+   "octets": 10040,
+   "cle": "0c1777ffb64b75df"
+  },
+  "e29": {
+   "mouvement": "souleve",
+   "instant": 0,
+   "octets": 9678,
+   "cle": "5b3cbb89c630cb41"
+  },
+  "e292": {
+   "mouvement": "developpe poulie assis",
+   "instant": 1,
+   "octets": 10266,
+   "cle": "abce2957943e389d"
+  },
+  "e295": {
+   "mouvement": "curl poulie corde marteau",
+   "instant": 1,
+   "octets": 7510,
+   "cle": "b3c24c3c633edd18"
+  },
+  "e3": {
+   "mouvement": "developpe barre decline",
+   "instant": 1,
+   "octets": 8920,
+   "cle": "74954f67ce18f170"
+  },
+  "e30": {
+   "mouvement": "souleve roumain",
+   "instant": 1,
+   "octets": 8850,
+   "cle": "46830161e42d8497"
+  },
+  "e303": {
+   "mouvement": "curl poulie pupitre barreP",
+   "instant": 1,
+   "octets": 10262,
+   "cle": "9779a703b7076213"
+  },
+  "e304": {
+   "mouvement": "elevation arriere poulie",
+   "instant": 1,
+   "octets": 10086,
+   "cle": "7126571bf412d0e5"
+  },
+  "e306": {
+   "mouvement": "triceps nuque poulie corde",
+   "instant": 0,
+   "octets": 6846,
+   "cle": "f7dc1ce81043d50b"
+  },
+  "e31": {
+   "mouvement": "souleve sumo",
+   "instant": 0,
+   "octets": 8836,
+   "cle": "6fa4358cef93cb08"
+  },
+  "e311": {
+   "mouvement": "elevation shrug poulie",
+   "instant": 1,
+   "octets": 6602,
+   "cle": "4c828e6954f80dde"
+  },
+  "e312": {
+   "mouvement": "poignet poulie",
+   "instant": 1,
+   "octets": 9724,
+   "cle": "bbc609b2cdeb10c6"
+  },
+  "e322": {
+   "mouvement": "developpe hal serre neutre",
+   "instant": 1,
+   "octets": 7582,
+   "cle": "6873387fa3ce2f5f"
+  },
+  "e323": {
+   "mouvement": "curl ez serre",
+   "instant": 1,
+   "octets": 6662,
+   "cle": "157a26a5a2e9823d"
+  },
+  "e328": {
+   "mouvement": "curl hal croise marteau alt",
+   "instant": 1,
+   "octets": 5778,
+   "cle": "4198118229be20d8"
+  },
+  "e33": {
+   "mouvement": "elevation facepull poulie",
+   "instant": 1,
+   "octets": 8432,
+   "cle": "ef0386355ee5fcfa"
+  },
+  "e332": {
+   "mouvement": "ecarte hal decline",
+   "instant": 1,
+   "octets": 9672,
+   "cle": "0eb668c63343321a"
+  },
+  "e333": {
+   "mouvement": "developpe smith decline",
+   "instant": 1,
+   "octets": 8528,
+   "cle": "3c24b985311ada5c"
+  },
+  "e334": {
+   "mouvement": "souleve deficit",
+   "instant": 0,
+   "octets": 8504,
+   "cle": "4823ac4d7f9a7d7b"
+  },
+  "e336": {
+   "mouvement": "curl hal alt",
+   "instant": 1,
+   "octets": 5792,
+   "cle": "76528ec9c76a8185"
+  },
+  "e338": {
+   "mouvement": "curl hal",
+   "instant": 1,
+   "octets": 5750,
+   "cle": "293f86d9f577e50d"
+  },
+  "e341": {
+   "mouvement": "poignet pronation couche uni",
+   "instant": 1,
+   "octets": 6310,
+   "cle": "b06302df4d2ced9a"
+  },
+  "e35": {
+   "mouvement": "planche superman",
+   "instant": 1,
+   "octets": 4868,
+   "cle": "8f53b68026ead884"
+  },
+  "e353": {
+   "mouvement": "halt arrache suspendu",
+   "instant": 0.5,
+   "octets": 6602,
+   "cle": "f1cf19898f5a106a"
+  },
+  "e36": {
+   "mouvement": "souleve goodmorning",
+   "instant": 1,
+   "octets": 8160,
+   "cle": "f24f7426538c43b5"
+  },
+  "e37": {
+   "mouvement": "rowing barre yates",
+   "instant": 1,
+   "octets": 7358,
+   "cle": "107f40cc1f850f63"
+  },
+  "e375": {
+   "mouvement": "halt",
+   "instant": 1,
+   "octets": 7002,
+   "cle": "f989af303aff7253"
+  },
+  "e377": {
+   "mouvement": "halt arrache",
+   "instant": 0,
+   "octets": 9292,
+   "cle": "bf6939b20fbfa440"
+  },
+  "e384": {
+   "mouvement": "souleve goodmorning assis",
+   "instant": 1,
+   "octets": 7596,
+   "cle": "91a3ecf22683d56a"
+  },
+  "e388": {
+   "mouvement": "pont unejambe",
+   "instant": 1,
+   "octets": 7312,
+   "cle": "d1a20231ac7a5ac4"
+  },
+  "e39": {
+   "mouvement": "developpe epaules barre",
+   "instant": 0,
+   "octets": 7810,
+   "cle": "ee45df408c5ad88e"
+  },
+  "e391": {
+   "mouvement": "elevation menton smith",
+   "instant": 1,
+   "octets": 10314,
+   "cle": "bc405c8648850360"
+  },
+  "e393": {
+   "mouvement": "mollets",
+   "instant": 1,
+   "octets": 5122,
+   "cle": "7d0e4d9c0ec65f37"
+  },
+  "e394": {
+   "mouvement": "elevation menton hal",
+   "instant": 1,
+   "octets": 6962,
+   "cle": "223e3d6af327455c"
+  },
+  "e4": {
+   "mouvement": "developpe hal",
+   "instant": 1,
+   "octets": 7280,
+   "cle": "37a9a47e600b3205"
+  },
+  "e40": {
+   "mouvement": "developpe epaules hal assis",
+   "instant": 1,
+   "octets": 6434,
+   "cle": "bec5b133dadc4580"
+  },
+  "e404": {
+   "mouvement": "elevation menton elas",
+   "instant": 1,
+   "octets": 7634,
+   "cle": "8b49e639fb4f9e1c"
+  },
+  "e41": {
+   "mouvement": "developpe epaules hal arnold assis",
+   "instant": 1,
+   "octets": 6316,
+   "cle": "592fb32cc150eb9c"
+  },
+  "e417": {
+   "mouvement": "curl machine pupitre",
+   "instant": 1,
+   "octets": 7852,
+   "cle": "357ac3b6842f28a0"
+  },
+  "e42": {
+   "mouvement": "elevation lat hal",
+   "instant": 1,
+   "octets": 6556,
+   "cle": "11decf0c477dd47b"
+  },
+  "e43": {
+   "mouvement": "elevation lat poulie",
+   "instant": 1,
+   "octets": 12098,
+   "cle": "6e0f66573b806b21"
+  },
+  "e44": {
+   "mouvement": "elevation front hal",
+   "instant": 1,
+   "octets": 5442,
+   "cle": "243cc19755a5237d"
+  },
+  "e45": {
+   "mouvement": "elevation front barre",
+   "instant": 1,
+   "octets": 6210,
+   "cle": "6f1ca7d8c72e445e"
+  },
+  "e47": {
+   "mouvement": "developpe epaules machine assis",
+   "instant": 1,
+   "octets": 8740,
+   "cle": "7118d8beabdd4be0"
+  },
+  "e49": {
+   "mouvement": "elevation menton poulie",
+   "instant": 1,
+   "octets": 6486,
+   "cle": "3e00751eac048681"
+  },
+  "e5": {
+   "mouvement": "developpe hal banc=30",
+   "instant": 1,
+   "octets": 10204,
+   "cle": "ff6f33a1099e22d5"
+  },
+  "e51": {
+   "mouvement": "elevation lat machine",
+   "instant": 1,
+   "octets": 8116,
+   "cle": "8626da4e669d752a"
+  },
+  "e52": {
+   "mouvement": "pompe equilibre",
+   "instant": 1,
+   "octets": 2960,
+   "cle": "6bd73d0de396c070"
+  },
+  "e53": {
+   "mouvement": "pompe pike",
+   "instant": 1,
+   "octets": 8522,
+   "cle": "8f49959d23d5b2cc"
+  },
+  "e56": {
+   "mouvement": "curl ez",
+   "instant": 1,
+   "octets": 6438,
+   "cle": "a08ea842978f72da"
+  },
+  "e58": {
+   "mouvement": "curl hal marteau",
+   "instant": 1,
+   "octets": 5768,
+   "cle": "32b162b6364fb74a"
+  },
+  "e6": {
+   "mouvement": "developpe hal decline",
+   "instant": 1,
+   "octets": 8138,
+   "cle": "eef62f511941b4d7"
+  },
+  "e60": {
+   "mouvement": "curl hal concentre uni",
+   "instant": 1,
+   "octets": 8732,
+   "cle": "2cd45c096a2edb8d"
+  },
+  "e61": {
+   "mouvement": "curl barre pupitre",
+   "instant": 1,
+   "octets": 9116,
+   "cle": "2ce95d46ebce62d0"
+  },
+  "e67": {
+   "mouvement": "curl barre pro",
+   "instant": 1,
+   "octets": 7198,
+   "cle": "234a6297dbe2ee3c"
+  },
+  "e69": {
+   "mouvement": "triceps corde",
+   "instant": 0,
+   "octets": 5390,
+   "cle": "9a2520373e1fbebb"
+  },
+  "e76": {
+   "mouvement": "triceps machine",
+   "instant": 0,
+   "octets": 7806,
+   "cle": "f955f5a83a56074e"
+  },
+  "e77": {
+   "mouvement": "pompe diamant",
+   "instant": 1,
+   "octets": 5506,
+   "cle": "2bc6e74ed614ac70"
+  },
+  "e80": {
+   "mouvement": "squat barre avant",
+   "instant": 1,
+   "octets": 9744,
+   "cle": "84fdd19c9759a2a7"
+  },
+  "e81": {
+   "mouvement": "squat gobelet",
+   "instant": 1,
+   "octets": 7374,
+   "cle": "e7821131186d3ce5"
+  },
+  "e82": {
+   "mouvement": "jambes presse",
+   "instant": 0,
+   "octets": 10102,
+   "cle": "f82e65e5ded570bc"
+  },
+  "e84": {
+   "mouvement": "fente avant hal",
+   "instant": 1,
+   "octets": 6342,
+   "cle": "6076ad11031ae794"
+  },
+  "e85": {
+   "mouvement": "fente marchee hal",
+   "instant": 1,
+   "octets": 6370,
+   "cle": "aab1361b32eb8c65"
+  },
+  "e87": {
+   "mouvement": "jambes extension",
+   "instant": 0,
+   "octets": 9550,
+   "cle": "01b934ebf142ba63"
+  },
+  "e88": {
+   "mouvement": "squat hack",
+   "instant": 1,
+   "octets": 10922,
+   "cle": "fb8730a492ca96a6"
+  },
+  "e89": {
+   "mouvement": "squat saut",
+   "instant": 1,
+   "octets": 4918,
+   "cle": "05bc4875f1282873"
+  },
+  "e9": {
+   "mouvement": "pullover hal",
+   "instant": 0,
+   "octets": 7164,
+   "cle": "bffd3b080d901ac4"
+  },
+  "e91": {
+   "mouvement": "fente step hal",
+   "instant": 0,
+   "octets": 4788,
+   "cle": "4b7caacfae40c121"
+  },
+  "e92": {
+   "mouvement": "squat sissy",
+   "instant": 1,
+   "octets": 7246,
+   "cle": "02583b52fea825fc"
+  },
+  "e94": {
+   "mouvement": "jambes curl assis machine",
+   "instant": 1,
+   "octets": 8620,
+   "cle": "22b2991ab3c8548f"
+  },
+  "e97": {
+   "mouvement": "jambes curl nordique",
+   "instant": 0,
+   "octets": 6906,
+   "cle": "f95ba7c8cf5f1934"
+  },
+  "e99": {
+   "mouvement": "pont banc barre",
+   "instant": 1,
+   "octets": 9006,
+   "cle": "fdb1924db3d3296b"
+  },
+  "sw-abduction-de-la-hanche-a-la-poulie": {
+   "mouvement": "hanche poulie",
+   "instant": 1,
+   "octets": 8788,
+   "cle": "aee4caeb5456140e"
+  },
+  "sw-abduction-de-la-hanche-assis": {
+   "mouvement": "hanche assis machine",
+   "instant": 1,
+   "octets": 7812,
+   "cle": "a0dd21253abe92c0"
+  },
+  "sw-adduction-des-hanches-assis": {
+   "mouvement": "hanche adduction assis machine",
+   "instant": 1,
+   "octets": 7348,
+   "cle": "e1fdc6ed95509a7b"
+  },
+  "sw-ange-mural": {
+   "mouvement": "elevation ange",
+   "instant": 1,
+   "octets": 3962,
+   "cle": "44ce825933902e99"
+  },
+  "sw-arrache-avec-kettlebell": {
+   "mouvement": "halt kb",
+   "instant": 0,
+   "octets": 7582,
+   "cle": "2edad8ceb899a0a5"
+  },
+  "sw-aspiration-abdominale": {
+   "mouvement": "abdos vacuum",
+   "instant": 1,
+   "octets": 5464,
+   "cle": "b654d008025d3d98"
+  },
+  "sw-balancement-a-un-bras-avec-kettlebell": {
+   "mouvement": "souleve swing uni",
+   "instant": 0,
+   "octets": 7494,
+   "cle": "45775d8005ec5588"
+  },
+  "sw-balancements-de-jambes": {
+   "mouvement": "hanche balancement",
+   "instant": 1,
+   "octets": 6196,
+   "cle": "1985b20913706280"
+  },
+  "sw-balancements-lateraux-de-jambe": {
+   "mouvement": "hanche balancement lateral",
+   "instant": 1,
+   "octets": 5322,
+   "cle": "21911f5235bd49be"
+  },
+  "sw-band-biceps-curl": {
+   "mouvement": "curl elas",
+   "instant": 1,
+   "octets": 5980,
+   "cle": "2008b8a7045767c8"
+  },
+  "sw-battement-de-jambes-assis": {
+   "mouvement": "abdos battements assis",
+   "instant": 1,
+   "octets": 8996,
+   "cle": "07e80313a0b22def"
+  },
+  "sw-bird-dog-unilateral-avec-trx": {
+   "mouvement": "planche trx",
+   "instant": 1,
+   "octets": 5826,
+   "cle": "b3621d14b955d0b6"
+  },
+  "sw-boxe-avec-sac-de-frappe": {
+   "mouvement": "cardio boxe",
+   "instant": 1,
+   "octets": 4030,
+   "cle": "65f121f69131f032"
+  },
+  "sw-bulgarian-bag-walking-lunges-fentes-marchees-avec-sac-bulgare": {
+   "mouvement": "fente marchee sac",
+   "instant": 1,
+   "octets": 6220,
+   "cle": "ef159d5042e06d99"
+  },
+  "sw-butterfly-inverse": {
+   "mouvement": "elevation arriere machine",
+   "instant": 1,
+   "octets": 8896,
+   "cle": "7e53bef1b14a9235"
+  },
+  "sw-cercles-d-x27-epaules": {
+   "mouvement": "elevation cercles pc",
+   "instant": 1,
+   "octets": 6884,
+   "cle": "62df63a69f14571a"
+  },
+  "sw-cercles-de-genoux-en-suspension": {
+   "mouvement": "suspendu cercles",
+   "instant": 1,
+   "octets": 6396,
+   "cle": "38ecb062cec8a0ca"
+  },
+  "sw-cercles-de-hanches": {
+   "mouvement": "hanche cercles",
+   "instant": 1,
+   "octets": 5430,
+   "cle": "03232cf9f9606e33"
+  },
+  "sw-charniere-de-hanche": {
+   "mouvement": "souleve charniere",
+   "instant": 1,
+   "octets": 7248,
+   "cle": "a3267319d96a71ca"
+  },
+  "sw-chien-tete-en-bas": {
+   "mouvement": "etire chienbas",
+   "instant": 1,
+   "octets": 8702,
+   "cle": "f41de58c114c82d7"
+  },
+  "sw-chien-tete-en-bas-debout": {
+   "mouvement": "etire chienbas debout",
+   "instant": 1,
+   "octets": 8260,
+   "cle": "cf996c3d6f47d59a"
+  },
+  "sw-chien-tete-en-haut": {
+   "mouvement": "planche chienHaut",
+   "instant": 1,
+   "octets": 5544,
+   "cle": "3fc053bd47b6553d"
+  },
+  "sw-ciseaux": {
+   "mouvement": "abdos ciseaux",
+   "instant": 1,
+   "octets": 5966,
+   "cle": "624b8869da5d8341"
+  },
+  "sw-ciseaux-suspendus": {
+   "mouvement": "suspendu ciseaux",
+   "instant": 1,
+   "octets": 6926,
+   "cle": "d5713a0f591f45af"
+  },
+  "sw-conducteur-de-volant-avec-disque": {
+   "mouvement": "elevation front volant disque",
+   "instant": 1,
+   "octets": 5744,
+   "cle": "d46607b2789f038b"
+  },
+  "sw-coquille-thoracique-assise": {
+   "mouvement": "etire pectoraux coudes",
+   "instant": 1,
+   "octets": 6116,
+   "cle": "e7e14c0c8c634447"
+  },
+  "sw-coquilles-avec-bande-elastique-en-position-allongee": {
+   "mouvement": "hanche coquille elas",
+   "instant": 1,
+   "octets": 5792,
+   "cle": "f422809fecb541c0"
+  },
+  "sw-coudes-opposes-au-genou": {
+   "mouvement": "rotation genoucoude",
+   "instant": 1,
+   "octets": 5736,
+   "cle": "7ea3dea20029848d"
+  },
+  "sw-coup-de-hache-avec-charge": {
+   "mouvement": "rotation hache hal",
+   "instant": 1,
+   "octets": 6534,
+   "cle": "905ee59ed0510ed8"
+  },
+  "sw-coup-de-hache-de-haut-en-bas-avec-bande-elastique": {
+   "mouvement": "rotation hache elas",
+   "instant": 1,
+   "octets": 7730,
+   "cle": "9c48310434b4b95f"
+  },
+  "sw-coup-de-pied-de-mule": {
+   "mouvement": "hanche kickback quatrepattes",
+   "instant": 1,
+   "octets": 8054,
+   "cle": "dc42abd3705ab7e3"
+  },
+  "sw-course-sur-tapis-roulant": {
+   "mouvement": "cardio course tapis",
+   "instant": 1,
+   "octets": 8358,
+   "cle": "afdb6d2232d437fc"
+  },
+  "sw-crunch-abdominal-assis-a-la-cable": {
+   "mouvement": "abdos poulie assis",
+   "instant": 1,
+   "octets": 7756,
+   "cle": "76df7f7ffb5c9d86"
+  },
+  "sw-crunch-allonge-a-la-machine": {
+   "mouvement": "abdos",
+   "instant": 1,
+   "octets": 7350,
+   "cle": "db5618d9e71cd807"
+  },
+  "sw-crunch-avec-bras-tendus-et-poids": {
+   "mouvement": "abdos tendus",
+   "instant": 1,
+   "octets": 8354,
+   "cle": "5b5f998e042c4223"
+  },
+  "sw-crunch-avec-ramene-de-genoux": {
+   "mouvement": "abdos genoux",
+   "instant": 1,
+   "octets": 9162,
+   "cle": "ba4dd32dff1d9daa"
+  },
+  "sw-crunch-debout-a-la-poulie": {
+   "mouvement": "abdos poulie debout",
+   "instant": 1,
+   "octets": 6662,
+   "cle": "bf230cbf2d7770e8"
+  },
+  "sw-crunch-decline-avec-poids": {
+   "mouvement": "abdos decline leste",
+   "instant": 1,
+   "octets": 8286,
+   "cle": "6b2b16aa5a2153eb"
+  },
+  "sw-crunch-en-v": {
+   "mouvement": "abdos vsit",
+   "instant": 1,
+   "octets": 10092,
+   "cle": "9fb925824ec20a42"
+  },
+  "sw-crunch-grenouille": {
+   "mouvement": "abdos grenouille",
+   "instant": 1,
+   "octets": 7530,
+   "cle": "fb255266e285cef3"
+  },
+  "sw-crunch-lateral": {
+   "mouvement": "abdos lateral",
+   "instant": 1,
+   "octets": 6868,
+   "cle": "b561dec17c9b3f36"
+  },
+  "sw-crunch-lateral-a-genoux-avec-cable": {
+   "mouvement": "abdos poulie lateral",
+   "instant": 1,
+   "octets": 6160,
+   "cle": "2ea6c0ede4369aa1"
+  },
+  "sw-crunch-sur-ballon-de-stabilite": {
+   "mouvement": "abdos ballon",
+   "instant": 1,
+   "octets": 8276,
+   "cle": "c13aab8c5e3e1197"
+  },
+  "sw-crunch-torsion-a-genoux-avec-bande": {
+   "mouvement": "abdos elas torsion",
+   "instant": 1,
+   "octets": 5586,
+   "cle": "16c50dba6650ced0"
+  },
+  "sw-crunchs-abdominaux": {
+   "mouvement": "abdos",
+   "instant": 1,
+   "octets": 7350,
+   "cle": "db5618d9e71cd807"
+  },
+  "sw-crunchs-abdominaux-a-genoux-avec-bande": {
+   "mouvement": "abdos elas",
+   "instant": 1,
+   "octets": 5460,
+   "cle": "1b17d08756f66630"
+  },
+  "sw-crunchs-abdominaux-a-la-machine": {
+   "mouvement": "abdos machine",
+   "instant": 1,
+   "octets": 8372,
+   "cle": "51319016c9a396c1"
+  },
+  "sw-crunchs-abdominaux-ponderes": {
+   "mouvement": "abdos leste",
+   "instant": 1,
+   "octets": 7044,
+   "cle": "9125726026949c39"
+  },
+  "sw-crunchs-alternes-assis": {
+   "mouvement": "abdos genoux alt",
+   "instant": 1,
+   "octets": 9588,
+   "cle": "e4c1b6fbc66bfcb6"
+  },
+  "sw-crunchs-debout-avec-elastique": {
+   "mouvement": "abdos elas debout",
+   "instant": 1,
+   "octets": 6896,
+   "cle": "6a4e433e091a1de8"
+  },
+  "sw-crunchs-debout-avec-rotation-et-elastique": {
+   "mouvement": "abdos elas debout torsion",
+   "instant": 1,
+   "octets": 7094,
+   "cle": "e14fa1544ea4392d"
+  },
+  "sw-crunchs-inverses-en-cercle-assis": {
+   "mouvement": "abdos cercles",
+   "instant": 1,
+   "octets": 9714,
+   "cle": "bd39d12f57995970"
+  },
+  "sw-crunchs-sur-banc-decline": {
+   "mouvement": "abdos decline",
+   "instant": 1,
+   "octets": 8950,
+   "cle": "7cd8b01b852f418a"
+  },
+  "sw-crunchs-velos-avec-elastique": {
+   "mouvement": "abdos velo",
+   "instant": 1,
+   "octets": 6552,
+   "cle": "44cb2438003f4fd6"
+  },
+  "sw-curl-a-genoux-avec-cable": {
+   "mouvement": "curl poulie accroupi barreP",
+   "instant": 1,
+   "octets": 9504,
+   "cle": "9092a11e6c951b05"
+  },
+  "sw-curl-a-la-barre": {
+   "mouvement": "curl barre",
+   "instant": 1,
+   "octets": 6604,
+   "cle": "bf9d881cf7342fcb"
+  },
+  "sw-curl-araignee-avec-barre-ez": {
+   "mouvement": "curl ez araignee",
+   "instant": 1,
+   "octets": 8176,
+   "cle": "dbc9804e10ac6082"
+  },
+  "sw-curl-araignee-avec-halteres": {
+   "mouvement": "curl hal araignee",
+   "instant": 1,
+   "octets": 7978,
+   "cle": "049e68641e131712"
+  },
+  "sw-curl-araignee-inverse-a-la-barre-ez": {
+   "mouvement": "curl ez pro araignee",
+   "instant": 1,
+   "octets": 8734,
+   "cle": "6184ffb5b5559965"
+  },
+  "sw-curl-assis-avec-halteres": {
+   "mouvement": "curl hal assis",
+   "instant": 1,
+   "octets": 7100,
+   "cle": "9bb009561a92bb50"
+  },
+  "sw-curl-au-pupitre-a-un-bras-a-la-machine": {
+   "mouvement": "curl machine pupitre uni",
+   "instant": 1,
+   "octets": 7980,
+   "cle": "8236d12d0bddc1d7"
+  },
+  "sw-curl-au-pupitre-avec-barre-ez": {
+   "mouvement": "curl ez pupitre",
+   "instant": 1,
+   "octets": 7808,
+   "cle": "4b3370def4972ef8"
+  },
+  "sw-curl-au-pupitre-avec-haltere-a-un-bras": {
+   "mouvement": "curl hal pupitre uni",
+   "instant": 1,
+   "octets": 7120,
+   "cle": "b958863218c69e3d"
+  },
+  "sw-curl-au-pupitre-avec-halteres": {
+   "mouvement": "curl hal pupitre",
+   "instant": 1,
+   "octets": 7966,
+   "cle": "f9f415bd4db01b72"
+  },
+  "sw-curl-avec-haltere-unique": {
+   "mouvement": "curl hal uni",
+   "instant": 1,
+   "octets": 5770,
+   "cle": "be2ffe6242bc840b"
+  },
+  "sw-curl-bayesien-a-la-poulie": {
+   "mouvement": "curl poulie bayesien uni",
+   "instant": 1,
+   "octets": 8522,
+   "cle": "ebaac9989938f1ba"
+  },
+  "sw-curl-biceps-a-la-barre-avec-cable": {
+   "mouvement": "curl poulie barreP",
+   "instant": 1,
+   "octets": 7598,
+   "cle": "4d2bbec60712029a"
+  },
+  "sw-curl-biceps-a-la-machine": {
+   "mouvement": "curl machine pupitre",
+   "instant": 1,
+   "octets": 7872,
+   "cle": "690154e183ccfc0c"
+  },
+  "sw-curl-biceps-assis-avec-cable": {
+   "mouvement": "curl poulie bayesien uni tabouret",
+   "instant": 1,
+   "octets": 8826,
+   "cle": "559df015738037d8"
+  },
+  "sw-curl-biceps-avec-halteres-et-support-de-bras": {
+   "mouvement": "curl hal",
+   "instant": 1,
+   "octets": 5750,
+   "cle": "293f86d9f577e50d"
+  },
+  "sw-curl-biceps-avec-kettlebell": {
+   "mouvement": "curl kb",
+   "instant": 1,
+   "octets": 5730,
+   "cle": "c9aba601fff3c44a"
+  },
+  "sw-curl-biceps-avec-trx": {
+   "mouvement": "suspension curl sangles",
+   "instant": 1,
+   "octets": 4700,
+   "cle": "31997bc5fb615a89"
+  },
+  "sw-curl-biceps-prise-serree": {
+   "mouvement": "curl barre serre",
+   "instant": 1,
+   "octets": 6830,
+   "cle": "2bdeb07d4db2d400"
+  },
+  "sw-curl-biceps-unilateral-a-la-cable": {
+   "mouvement": "curl poulie uni",
+   "instant": 1,
+   "octets": 7276,
+   "cle": "a983297e954ca376"
+  },
+  "sw-curl-debout-a-la-barre-avec-prise-large": {
+   "mouvement": "curl barre large",
+   "instant": 1,
+   "octets": 6832,
+   "cle": "d9e8f0444fd317d0"
+  },
+  "sw-curl-des-biceps-a-la-poulie-en-position-allongee": {
+   "mouvement": "curl poulie allonge barreP",
+   "instant": 1,
+   "octets": 7332,
+   "cle": "eb2c6614d9733321"
+  },
+  "sw-curl-des-ischio-jambiers-allonge-avec-bande-elastique": {
+   "mouvement": "jambes curl elas",
+   "instant": 1,
+   "octets": 7062,
+   "cle": "6ea8999a178a10bc"
+  },
+  "sw-curl-des-ischio-jambiers-avec-anneaux": {
+   "mouvement": "jambes curl anneaux",
+   "instant": 1,
+   "octets": 7176,
+   "cle": "15a78fe5bc530ae8"
+  },
+  "sw-curl-des-ischio-jambiers-couche-avec-halteres": {
+   "mouvement": "jambes curl hal",
+   "instant": 1,
+   "octets": 8120,
+   "cle": "992cc1371535d68d"
+  },
+  "sw-curl-des-ischio-jambiers-debout": {
+   "mouvement": "jambes curl debout machine",
+   "instant": 1,
+   "octets": 6466,
+   "cle": "21d3c8f13851ae66"
+  },
+  "sw-curl-des-ischio-jambiers-en-glissement": {
+   "mouvement": "jambes curl glisse",
+   "instant": 1,
+   "octets": 7308,
+   "cle": "ac363b116852c660"
+  },
+  "sw-curl-des-ischio-jambiers-en-position-couchee": {
+   "mouvement": "jambes curl machine",
+   "instant": 1,
+   "octets": 7186,
+   "cle": "1b8f9dc55c7ea6de"
+  },
+  "sw-curl-des-jambes-sur-swiss-ball": {
+   "mouvement": "jambes curl ballon",
+   "instant": 1,
+   "octets": 8232,
+   "cle": "ce303efddcd12da0"
+  },
+  "sw-curl-des-poignets-debout-avec-barre": {
+   "mouvement": "poignet dos barre",
+   "instant": 1,
+   "octets": 6834,
+   "cle": "1a429188e08d8749"
+  },
+  "sw-curl-en-traction-avec-halteres": {
+   "mouvement": "curl hal drag",
+   "instant": 1,
+   "octets": 5438,
+   "cle": "0533eb5d57fc80e0"
+  },
+  "sw-curl-haltere-a-un-bras-en-prise-neutre": {
+   "mouvement": "poignet neutre uni",
+   "instant": 1,
+   "octets": 8986,
+   "cle": "7e15935c0451a864"
+  },
+  "sw-curl-heracles": {
+   "mouvement": "curl poulie hercule",
+   "instant": 1,
+   "octets": 6866,
+   "cle": "c7c5e08b2bec9a85"
+  },
+  "sw-curl-incline-assis-pour-biceps": {
+   "mouvement": "curl hal incline",
+   "instant": 1,
+   "octets": 8008,
+   "cle": "1ddc3e0138ffde87"
+  },
+  "sw-curl-incline-avec-barre-en-pronation": {
+   "mouvement": "curl barre araignee",
+   "instant": 1,
+   "octets": 8482,
+   "cle": "37f5fe06e755a5fe"
+  },
+  "sw-curl-inverse-a-la-poulie": {
+   "mouvement": "curl poulie pro",
+   "instant": 1,
+   "octets": 7676,
+   "cle": "dbe1a4418d0f0f34"
+  },
+  "sw-curl-inverse-des-biceps-avec-barre-ez": {
+   "mouvement": "curl ez pro",
+   "instant": 1,
+   "octets": 6762,
+   "cle": "705ad1534a2e099c"
+  },
+  "sw-curl-inverse-des-biceps-avec-halteres": {
+   "mouvement": "curl hal pro",
+   "instant": 1,
+   "octets": 6040,
+   "cle": "96a10d2100bd43e3"
+  },
+  "sw-curl-inverse-des-poignets-assis-avec-barre-ez": {
+   "mouvement": "poignet ez inverse",
+   "instant": 1,
+   "octets": 8574,
+   "cle": "4ae998dab69f263c"
+  },
+  "sw-curl-inverse-du-poignet-avec-haltere-a-un-bras": {
+   "mouvement": "poignet hal inverse uni",
+   "instant": 1,
+   "octets": 9070,
+   "cle": "ad32b5a54a6337db"
+  },
+  "sw-curl-ischio-jambier-unilateral-a-la-poulie": {
+   "mouvement": "jambes curl debout poulie uni",
+   "instant": 1,
+   "octets": 8690,
+   "cle": "99710adf96afbd9e"
+  },
+  "sw-curl-ischio-jambier-unilateral-couche": {
+   "mouvement": "jambes curl machine uni",
+   "instant": 1,
+   "octets": 6854,
+   "cle": "8c15e3d41bcc78e4"
+  },
+  "sw-curl-ischio-jambiers-assis-a-une-jambe": {
+   "mouvement": "jambes curl assis machine uni",
+   "instant": 1,
+   "octets": 8236,
+   "cle": "7da1817c889442e9"
+  },
+  "sw-curl-marteau-alterne-assis-avec-halteres": {
+   "mouvement": "curl hal assis marteau alt",
+   "instant": 1,
+   "octets": 6774,
+   "cle": "65ccfccf597c30f3"
+  },
+  "sw-curl-marteau-araignee": {
+   "mouvement": "curl hal araignee marteau",
+   "instant": 1,
+   "octets": 8352,
+   "cle": "458b17c5ad815679"
+  },
+  "sw-curl-marteau-assis": {
+   "mouvement": "curl hal assis marteau",
+   "instant": 1,
+   "octets": 7254,
+   "cle": "44c9e4c615bb2e3b"
+  },
+  "sw-curl-marteau-au-pupitre": {
+   "mouvement": "curl hal pupitre marteau",
+   "instant": 1,
+   "octets": 8132,
+   "cle": "00b432e1f78e051f"
+  },
+  "sw-curl-marteau-avec-bande": {
+   "mouvement": "curl elas marteau",
+   "instant": 1,
+   "octets": 6078,
+   "cle": "963b248dc9e970e0"
+  },
+  "sw-curl-marteau-de-concentration": {
+   "mouvement": "curl hal concentre marteau uni",
+   "instant": 1,
+   "octets": 8378,
+   "cle": "7604042ca83c1573"
+  },
+  "sw-curl-marteau-incline-avec-halteres": {
+   "mouvement": "curl hal incline marteau",
+   "instant": 1,
+   "octets": 8168,
+   "cle": "363cc609b4bdf546"
+  },
+  "sw-curl-marteau-sur-pupitre-avec-un-bras": {
+   "mouvement": "curl hal pupitre marteau uni",
+   "instant": 1,
+   "octets": 7190,
+   "cle": "cdd9de7e931b6389"
+  },
+  "sw-curl-mural-avec-barre": {
+   "mouvement": "curl barre mur",
+   "instant": 1,
+   "octets": 5072,
+   "cle": "f5c3b16a7e5420d4"
+  },
+  "sw-curl-poignet-debout-avec-barre": {
+   "mouvement": "poignet debout barre",
+   "instant": 1,
+   "octets": 6710,
+   "cle": "b40b43300b918bde"
+  },
+  "sw-dead-bug-avec-ballon": {
+   "mouvement": "abdos deadbug balle",
+   "instant": 1,
+   "octets": 6742,
+   "cle": "d68b075f7b04048e"
+  },
+  "sw-demi-moulinet-suspendu": {
+   "mouvement": "suspendu moulinet",
+   "instant": 1,
+   "octets": 6654,
+   "cle": "adfe60f457dbb71b"
+  },
+  "sw-demi-squat": {
+   "mouvement": "squat barre demi",
+   "instant": 1,
+   "octets": 9242,
+   "cle": "0a14aa7f015bd120"
+  },
+  "sw-deroule-a-la-barre-a-genoux": {
+   "mouvement": "planche rollout barre",
+   "instant": 0,
+   "octets": 5094,
+   "cle": "70eac731eda07b11"
+  },
+  "sw-developpe-alterne-debout-avec-halteres": {
+   "mouvement": "developpe epaules hal alt",
+   "instant": 1,
+   "octets": 5794,
+   "cle": "4fad3ffe92320186"
+  },
+  "sw-developpe-avec-kettlebell-a-un-bras-au-dessus-de-la-tete": {
+   "mouvement": "developpe epaules kb uni",
+   "instant": 1,
+   "octets": 5286,
+   "cle": "a401cd111b3c18fa"
+  },
+  "sw-developpe-californien": {
+   "mouvement": "triceps jm barre",
+   "instant": 1,
+   "octets": 8920,
+   "cle": "c8acb0a620b93cbb"
+  },
+  "sw-developpe-couche-a-la-cable": {
+   "mouvement": "developpe poulie plat",
+   "instant": 1,
+   "octets": 8980,
+   "cle": "4d53fad3bb2965b9"
+  },
+  "sw-developpe-couche-a-la-smith-machine": {
+   "mouvement": "developpe smith",
+   "instant": 1,
+   "octets": 9440,
+   "cle": "5cc7ef8af4435f5b"
+  },
+  "sw-developpe-couche-a-un-bras-avec-haltere": {
+   "mouvement": "developpe hal uni",
+   "instant": 1,
+   "octets": 8654,
+   "cle": "a0df29108d0d133b"
+  },
+  "sw-developpe-couche-au-sol-avec-halteres": {
+   "mouvement": "developpe hal sol",
+   "instant": 1,
+   "octets": 6738,
+   "cle": "1190d70b1dafe215"
+  },
+  "sw-developpe-couche-avec-arret": {
+   "mouvement": "developpe barre partiel",
+   "instant": 1,
+   "octets": 9616,
+   "cle": "388f0d60c04b8552"
+  },
+  "sw-developpe-couche-avec-bande": {
+   "mouvement": "developpe elas",
+   "instant": 1,
+   "octets": 8336,
+   "cle": "4a9fd0b9a887fae9"
+  },
+  "sw-developpe-couche-avec-bande-de-resistance": {
+   "mouvement": "developpe barre elas",
+   "instant": 1,
+   "octets": 9328,
+   "cle": "3242e3fd4cb60f22"
+  },
+  "sw-developpe-couche-avec-halteres-en-prise-marteau": {
+   "mouvement": "developpe hal neutre",
+   "instant": 1,
+   "octets": 7328,
+   "cle": "20c71d696b632618"
+  },
+  "sw-developpe-couche-decline": {
+   "mouvement": "developpe machine assis decline",
+   "instant": 1,
+   "octets": 7920,
+   "cle": "ae607276705c5623"
+  },
+  "sw-developpe-couche-decline-a-la-barre": {
+   "mouvement": "triceps front barre decline",
+   "instant": 0,
+   "octets": 8410,
+   "cle": "f605c890e7e41d22"
+  },
+  "sw-developpe-couche-decline-a-la-poulie": {
+   "mouvement": "developpe poulie decline",
+   "instant": 1,
+   "octets": 8972,
+   "cle": "2f69f7847fb4d361"
+  },
+  "sw-developpe-couche-incline-avec-halteres-prise-serree": {
+   "mouvement": "developpe hal banc=30 serre neutre",
+   "instant": 1,
+   "octets": 10030,
+   "cle": "bd05880ea003d221"
+  },
+  "sw-developpe-couche-jm-smith": {
+   "mouvement": "developpe smith serre",
+   "instant": 1,
+   "octets": 8804,
+   "cle": "7c5ba65e97e56790"
+  },
+  "sw-developpe-couche-larsen-avec-barre": {
+   "mouvement": "developpe barre larsen",
+   "instant": 1,
+   "octets": 7100,
+   "cle": "8092b2bd70a62e0b"
+  },
+  "sw-developpe-couche-prise-marteau": {
+   "mouvement": "developpe machine",
+   "instant": 1,
+   "octets": 9446,
+   "cle": "635e3d9373b399f5"
+  },
+  "sw-developpe-couche-prise-serree-a-la-machine-smith": {
+   "mouvement": "triceps jm smith",
+   "instant": 1,
+   "octets": 9428,
+   "cle": "6d8237b0b9232c77"
+  },
+  "sw-developpe-debout-a-la-poulie-pour-les-pectoraux": {
+   "mouvement": "developpe poulie debout",
+   "instant": 1,
+   "octets": 10194,
+   "cle": "61c5279bb76f1003"
+  },
+  "sw-developpe-derriere-la-nuque-a-la-machine-smith-en-position-assise": {
+   "mouvement": "developpe epaules smith nuque assis",
+   "instant": 1,
+   "octets": 10618,
+   "cle": "c208421c96624485"
+  },
+  "sw-developpe-epaules-a-un-bras-avec-haltere": {
+   "mouvement": "developpe epaules hal uni",
+   "instant": 1,
+   "octets": 5264,
+   "cle": "400b373222bafd7c"
+  },
+  "sw-developpe-epaules-a-un-bras-avec-landmine-en-position-debout": {
+   "mouvement": "developpe landmine debout uni",
+   "instant": 1,
+   "octets": 7772,
+   "cle": "1dc5c6559b5e4816"
+  },
+  "sw-developpe-epaules-assis-a-la-smith-machine": {
+   "mouvement": "developpe epaules smith assis",
+   "instant": 1,
+   "octets": 10726,
+   "cle": "c65425fa7c88a696"
+  },
+  "sw-developpe-epaules-assis-prise-neutre": {
+   "mouvement": "developpe epaules hal assis neutre",
+   "instant": 1,
+   "octets": 6266,
+   "cle": "eeaa1b023f6f3589"
+  },
+  "sw-developpe-epaules-avec-bande-elastique": {
+   "mouvement": "developpe epaules elas",
+   "instant": 1,
+   "octets": 5822,
+   "cle": "72f5163a1cdd6fdb"
+  },
+  "sw-developpe-epaules-avec-halteres-en-position-demi-genouillee": {
+   "mouvement": "developpe epaules hal demigenou uni",
+   "instant": 1,
+   "octets": 5208,
+   "cle": "8e6f468db8184dde"
+  },
+  "sw-developpe-epaules-debout-avec-halteres": {
+   "mouvement": "developpe epaules hal",
+   "instant": 1,
+   "octets": 5866,
+   "cle": "e56e062501d9c4d3"
+  },
+  "sw-developpe-epaules-tsunami": {
+   "mouvement": "developpe epaules barre",
+   "instant": 0,
+   "octets": 7810,
+   "cle": "ee45df408c5ad88e"
+  },
+  "sw-developpe-incline-a-la-machine-smith": {
+   "mouvement": "developpe smith banc=30",
+   "instant": 1,
+   "octets": 10586,
+   "cle": "a10a81d01e7ec7bd"
+  },
+  "sw-developpe-incline-a-la-poulie-basse": {
+   "mouvement": "developpe poulie banc=30",
+   "instant": 1,
+   "octets": 10492,
+   "cle": "9d57150e927c8a8f"
+  },
+  "sw-developpe-incline-avec-haltere-a-un-bras": {
+   "mouvement": "developpe hal banc=30 uni",
+   "instant": 1,
+   "octets": 8104,
+   "cle": "588c4770f6d7e54f"
+  },
+  "sw-developpe-incline-avec-halteres-en-prise-neutre": {
+   "mouvement": "developpe hal banc=30 neutre",
+   "instant": 1,
+   "octets": 10714,
+   "cle": "9d00d4bf986b2f3a"
+  },
+  "sw-developpe-incline-marteau": {
+   "mouvement": "developpe machine assis incline",
+   "instant": 1,
+   "octets": 8044,
+   "cle": "d04d03dfd747c661"
+  },
+  "sw-developpe-larsen-avec-halteres": {
+   "mouvement": "developpe hal larsen",
+   "instant": 1,
+   "octets": 5700,
+   "cle": "acd02d6abbaa152c"
+  },
+  "sw-developpe-poliquin-avec-halteres": {
+   "mouvement": "developpe hal",
+   "instant": 1,
+   "octets": 7198,
+   "cle": "b72eebbcb1d0341a"
+  },
+  "sw-developpe-pousse-avec-halteres": {
+   "mouvement": "developpe epaules hal pousse",
+   "instant": 0.25,
+   "octets": 7674,
+   "cle": "0dc83d494ea8b673"
+  },
+  "sw-developpe-unilateral-en-travers-du-corps": {
+   "mouvement": "developpe machine assis uni",
+   "instant": 1,
+   "octets": 8234,
+   "cle": "fa2f7b47b7ae5072"
+  },
+  "sw-dips": {
+   "mouvement": "dips",
+   "instant": 1,
+   "octets": 6696,
+   "cle": "69b506603bdab04e"
+  },
+  "sw-dips-coreens": {
+   "mouvement": "dips coreen",
+   "instant": 1,
+   "octets": 6456,
+   "cle": "52a68c66666d920f"
+  },
+  "sw-dips-en-planche": {
+   "mouvement": "pompe planche",
+   "instant": 1,
+   "octets": 4652,
+   "cle": "a4a13972f812cc9f"
+  },
+  "sw-dips-sur-banc-avec-poids": {
+   "mouvement": "dips banc leste",
+   "instant": 1,
+   "octets": 7524,
+   "cle": "b8acb5d40cb47958"
+  },
+  "sw-dips-triceps-assis-sur-banc": {
+   "mouvement": "dips banc",
+   "instant": 1,
+   "octets": 7398,
+   "cle": "144f116512897cfe"
+  },
+  "sw-drapeau": {
+   "mouvement": "gym drapeau",
+   "instant": 1,
+   "octets": 6844,
+   "cle": "c8663514fc65cf02"
+  },
+  "sw-driver-debout-avec-halteres": {
+   "mouvement": "elevation front volant hal",
+   "instant": 1,
+   "octets": 5518,
+   "cle": "0a13f4c9a41bc0e1"
+  },
+  "sw-dumbbell-alternate-hammer-front-raise-elevation-frontale-alternee-avec-halteres-en-prise-marteau": {
+   "mouvement": "elevation front hal marteau alt",
+   "instant": 1,
+   "octets": 5708,
+   "cle": "a4671322127191ec"
+  },
+  "sw-ecarte-a-la-corde-pour-le-milieu-de-la-poitrine": {
+   "mouvement": "ecarte poulie",
+   "instant": 1,
+   "octets": 7390,
+   "cle": "5f04903583e409b1"
+  },
+  "sw-ecarte-a-la-machine-pec-deck": {
+   "mouvement": "ecarte machine pecdeck",
+   "instant": 1,
+   "octets": 7990,
+   "cle": "816bdc538949b38f"
+  },
+  "sw-ecarte-a-la-machine-pour-pectoraux": {
+   "mouvement": "ecarte machine",
+   "instant": 1,
+   "octets": 7996,
+   "cle": "3dcfca8d0b5cd91a"
+  },
+  "sw-ecarte-a-la-poulie-assis": {
+   "mouvement": "ecarte poulie assis",
+   "instant": 1,
+   "octets": 7520,
+   "cle": "e6687693f7414f89"
+  },
+  "sw-ecarte-a-la-poulie-haute-a-basse-a-genoux": {
+   "mouvement": "ecarte poulie haut genoux",
+   "instant": 0,
+   "octets": 9228,
+   "cle": "3f9d0398ab022282"
+  },
+  "sw-ecarte-a-la-poulie-haute-vers-basse-a-un-bras": {
+   "mouvement": "ecarte poulie haut uni",
+   "instant": 0,
+   "octets": 7460,
+   "cle": "89a59004510bacb5"
+  },
+  "sw-ecarte-a-un-bras-a-la-poulie": {
+   "mouvement": "ecarte poulie uni",
+   "instant": 1,
+   "octets": 7550,
+   "cle": "6d821dbe4923734f"
+  },
+  "sw-ecarte-a-un-bras-avec-haltere-en-position-basse": {
+   "mouvement": "ecarte hal debout bas uni",
+   "instant": 1,
+   "octets": 5824,
+   "cle": "9d055c03cf222498"
+  },
+  "sw-ecarte-avec-bande-elastique": {
+   "mouvement": "ecarte elas",
+   "instant": 1,
+   "octets": 6598,
+   "cle": "fa40c520630a2841"
+  },
+  "sw-ecarte-avec-halteres-de-bas-en-haut": {
+   "mouvement": "ecarte hal debout bas",
+   "instant": 1,
+   "octets": 6238,
+   "cle": "db1b85eaaa8c886b"
+  },
+  "sw-ecarte-couche-a-la-poulie": {
+   "mouvement": "ecarte poulie plat",
+   "instant": 1,
+   "octets": 10568,
+   "cle": "f3abc34cb05d3316"
+  },
+  "sw-ecarte-couche-a-la-poulie-basse-haute": {
+   "mouvement": "ecarte poulie bas",
+   "instant": 1,
+   "octets": 8052,
+   "cle": "627d1c76d9dc7cfe"
+  },
+  "sw-ecarte-couche-au-sol-avec-halteres": {
+   "mouvement": "ecarte hal sol",
+   "instant": 1,
+   "octets": 11208,
+   "cle": "a6ac3b6466ef4ab9"
+  },
+  "sw-ecarte-couche-avec-halteres": {
+   "mouvement": "ecarte hal",
+   "instant": 1,
+   "octets": 9078,
+   "cle": "0b4435a8772e22bb"
+  },
+  "sw-ecarte-couche-en-suspension": {
+   "mouvement": "suspension ecarte sangles",
+   "instant": 1,
+   "octets": 4862,
+   "cle": "31f1e74c437fc7e8"
+  },
+  "sw-ecarte-couche-incline-a-la-poulie": {
+   "mouvement": "ecarte poulie banc=30",
+   "instant": 1,
+   "octets": 11104,
+   "cle": "5c6a57dcf6967189"
+  },
+  "sw-ecarte-couche-incline-avec-halteres": {
+   "mouvement": "ecarte hal banc=30",
+   "instant": 1,
+   "octets": 8220,
+   "cle": "7150741e5d83bea6"
+  },
+  "sw-ecarte-incline-debout-avec-bande-elastique": {
+   "mouvement": "ecarte elas bas",
+   "instant": 1,
+   "octets": 8622,
+   "cle": "f6ae496b307d8617"
+  },
+  "sw-ecartes-a-la-poulie": {
+   "mouvement": "ecarte poulie haut",
+   "instant": 0,
+   "octets": 9046,
+   "cle": "9adebd921d775c96"
+  },
+  "sw-ecartes-poliquin": {
+   "mouvement": "ecarte hal",
+   "instant": 1,
+   "octets": 9106,
+   "cle": "a8b4c464e80ad2f6"
+  },
+  "sw-echauffement-dynamique-des-epaules-avec-bande-elastique": {
+   "mouvement": "elevation passage elas",
+   "instant": 1,
+   "octets": 4714,
+   "cle": "01c6c1afc0d10cd0"
+  },
+  "sw-elevation-arriere-des-deltoides-a-un-bras-avec-cable": {
+   "mouvement": "elevation arriere poulie uni",
+   "instant": 1,
+   "octets": 6696,
+   "cle": "b5972588e8f21f49"
+  },
+  "sw-elevation-arriere-des-deltoides-avec-barre": {
+   "mouvement": "elevation arriere barre penche",
+   "instant": 1,
+   "octets": 7646,
+   "cle": "21542a849c887a0e"
+  },
+  "sw-elevation-de-powell": {
+   "mouvement": "elevation lat hal cote uni",
+   "instant": 1,
+   "octets": 5550,
+   "cle": "1651b28b21a87aa7"
+  },
+  "sw-elevation-de-powell-inclinee": {
+   "mouvement": "elevation lat hal cote uni",
+   "instant": 1,
+   "octets": 5550,
+   "cle": "1651b28b21a87aa7"
+  },
+  "sw-elevation-des-genoux-a-la-poitrine-en-suspension": {
+   "mouvement": "suspendu poitrine",
+   "instant": 1,
+   "octets": 6294,
+   "cle": "303aaed3f8ce2715"
+  },
+  "sw-elevation-des-genoux-obliques-en-suspension": {
+   "mouvement": "suspendu oblique",
+   "instant": 1,
+   "octets": 6376,
+   "cle": "c6abececcada9bcb"
+  },
+  "sw-elevation-des-jambes-assis": {
+   "mouvement": "abdos assisJambes",
+   "instant": 1,
+   "octets": 8616,
+   "cle": "7040db0599c50a7f"
+  },
+  "sw-elevation-des-jambes-suspendues": {
+   "mouvement": "suspendu jambes",
+   "instant": 1,
+   "octets": 6414,
+   "cle": "b8e35a6015fd87ec"
+  },
+  "sw-elevation-des-jambes-suspendues-avec-poids": {
+   "mouvement": "suspendu jambes leste",
+   "instant": 1,
+   "octets": 6360,
+   "cle": "6ccfd08ca1e19f16"
+  },
+  "sw-elevation-des-jambes-tendues-sur-barres-paralleles": {
+   "mouvement": "suspendu paralleles jambes",
+   "instant": 1,
+   "octets": 5582,
+   "cle": "f545821bdc224bd6"
+  },
+  "sw-elevation-des-mollets-a-la-machine": {
+   "mouvement": "mollets machine",
+   "instant": 1,
+   "octets": 7162,
+   "cle": "f19a65fc5b8b31d8"
+  },
+  "sw-elevation-des-mollets-a-une-jambe-sur-machine-assise": {
+   "mouvement": "mollets assis machine uni",
+   "instant": 1,
+   "octets": 7908,
+   "cle": "00dcad709001fb43"
+  },
+  "sw-elevation-des-mollets-assis-a-la-machine-smith": {
+   "mouvement": "mollets assis smith",
+   "instant": 1,
+   "octets": 9106,
+   "cle": "73229bff2b96ffc9"
+  },
+  "sw-elevation-des-mollets-assis-avec-poids": {
+   "mouvement": "mollets assis hal",
+   "instant": 1,
+   "octets": 7692,
+   "cle": "d1059394c91797a2"
+  },
+  "sw-elevation-des-mollets-avec-barre": {
+   "mouvement": "mollets barre",
+   "instant": 1,
+   "octets": 5584,
+   "cle": "58569a6d01417c47"
+  },
+  "sw-elevation-des-mollets-unilaterale-a-la-smith-machine": {
+   "mouvement": "mollets smith uni",
+   "instant": 1,
+   "octets": 8206,
+   "cle": "07f41c7e993d6e51"
+  },
+  "sw-elevation-du-mollet-assis-sur-une-jambe-avec-haltere": {
+   "mouvement": "mollets assis hal uni",
+   "instant": 1,
+   "octets": 7906,
+   "cle": "62b85f8bd57f20e4"
+  },
+  "sw-elevation-du-tibial-anterieur-en-position-debout": {
+   "mouvement": "mollets tibial",
+   "instant": 1,
+   "octets": 4462,
+   "cle": "13de99e0c662791d"
+  },
+  "sw-elevation-en-t-incline-avec-halteres": {
+   "mouvement": "elevation arriere t hal ventre=35",
+   "instant": 1,
+   "octets": 9426,
+   "cle": "3a7a81249402554a"
+  },
+  "sw-elevation-en-y-a-la-poulie": {
+   "mouvement": "elevation y poulie",
+   "instant": 1,
+   "octets": 9732,
+   "cle": "0d24af731bb0e352"
+  },
+  "sw-elevation-en-y-pour-trapezes": {
+   "mouvement": "elevation y hal ventre=30",
+   "instant": 1,
+   "octets": 6824,
+   "cle": "2b32c3f4303a8e40"
+  },
+  "sw-elevation-en-y-sur-banc-incline-avec-support-dorsal": {
+   "mouvement": "elevation y poulie banc=60",
+   "instant": 1,
+   "octets": 9978,
+   "cle": "0740bdea28e52041"
+  },
+  "sw-elevation-frontale-a-la-corde-avec-un-bras": {
+   "mouvement": "elevation front poulie uni",
+   "instant": 1,
+   "octets": 7764,
+   "cle": "d39c4b685e6793ce"
+  },
+  "sw-elevation-frontale-a-la-poulie": {
+   "mouvement": "elevation front poulie",
+   "instant": 1,
+   "octets": 8366,
+   "cle": "a593a1102c796d74"
+  },
+  "sw-elevation-frontale-alternee-avec-halteres": {
+   "mouvement": "elevation front hal alt",
+   "instant": 1,
+   "octets": 5424,
+   "cle": "7be93a42054089d1"
+  },
+  "sw-elevation-frontale-avec-disque": {
+   "mouvement": "elevation front disque",
+   "instant": 1,
+   "octets": 5490,
+   "cle": "d53b84ab63cf80d5"
+  },
+  "sw-elevation-ischio-jambiers-gluteaux-1-2": {
+   "mouvement": "jambes curl ghr",
+   "instant": 0,
+   "octets": 6196,
+   "cle": "a122874955f0055a"
+  },
+  "sw-elevation-laterale-a-frontale": {
+   "mouvement": "elevation lat hal latfront",
+   "instant": 1,
+   "octets": 6178,
+   "cle": "76b4037f72d5dcc7"
+  },
+  "sw-elevation-laterale-a-un-bras-avec-cable": {
+   "mouvement": "elevation lat poulie uni",
+   "instant": 1,
+   "octets": 9778,
+   "cle": "e238d6156976183e"
+  },
+  "sw-elevation-laterale-a-un-bras-avec-haltere": {
+   "mouvement": "elevation lat hal uni",
+   "instant": 1,
+   "octets": 6500,
+   "cle": "58b8d18df2b3a63c"
+  },
+  "sw-elevation-laterale-arriere-assise-a-la-cable": {
+   "mouvement": "elevation arriere poulie tabouret",
+   "instant": 1,
+   "octets": 9572,
+   "cle": "b5afe619f19e7903"
+  },
+  "sw-elevation-laterale-arriere-avec-halteres-allonge": {
+   "mouvement": "elevation arriere poulie plat",
+   "instant": 1,
+   "octets": 10900,
+   "cle": "f600dc2162be2703"
+  },
+  "sw-elevation-laterale-assise-avec-halteres": {
+   "mouvement": "elevation lat hal tabouret",
+   "instant": 1,
+   "octets": 8410,
+   "cle": "0d46b6c5f3345e49"
+  },
+  "sw-elevation-laterale-avec-bande": {
+   "mouvement": "elevation lat elas",
+   "instant": 1,
+   "octets": 9056,
+   "cle": "efa6fb98101663bd"
+  },
+  "sw-elevation-laterale-avec-haltere-a-un-bras-en-appui-penche": {
+   "mouvement": "elevation arriere hal penche uni",
+   "instant": 1,
+   "octets": 7276,
+   "cle": "20996a0e9c1719b1"
+  },
+  "sw-elevation-laterale-inclinee-a-la-poulie": {
+   "mouvement": "elevation lat poulie uni penchecote",
+   "instant": 1,
+   "octets": 10154,
+   "cle": "3b6c364a715aa6e1"
+  },
+  "sw-elevation-laterale-inclinee-avec-haltere-a-un-bras": {
+   "mouvement": "elevation lat hal cote uni",
+   "instant": 1,
+   "octets": 5600,
+   "cle": "b02da21d66cee755"
+  },
+  "sw-elevation-laterale-inversee-avec-halteres-en-position-penchee": {
+   "mouvement": "elevation arriere hal penche alt",
+   "instant": 1,
+   "octets": 8376,
+   "cle": "d7c3e5a39c151526"
+  },
+  "sw-elevation-laterale-penchee-a-un-bras-avec-cable": {
+   "mouvement": "elevation arriere poulie penche uni",
+   "instant": 1,
+   "octets": 6300,
+   "cle": "df9f1b79e48a7bfc"
+  },
+  "sw-elevation-laterale-poliquin-avec-halteres": {
+   "mouvement": "elevation lat hal poliquin",
+   "instant": 0,
+   "octets": 6804,
+   "cle": "c71b0c3a882e550c"
+  },
+  "sw-elevation-posterieure-a-un-bras": {
+   "mouvement": "elevation arriere machine uni",
+   "instant": 1,
+   "octets": 9266,
+   "cle": "4e546d4a137a981a"
+  },
+  "sw-elevation-suspendue-des-jambes-en-prise-garhammer": {
+   "mouvement": "suspendu garhammer",
+   "instant": 1,
+   "octets": 6280,
+   "cle": "311fb7474d0d2c13"
+  },
+  "sw-elevations-de-jambes-droites-a-la-chaise-romaine": {
+   "mouvement": "suspendu chaise jambes",
+   "instant": 1,
+   "octets": 4944,
+   "cle": "81e8d4b1640c6d70"
+  },
+  "sw-elevations-des-mollets-a-la-machine-smith": {
+   "mouvement": "mollets smith",
+   "instant": 1,
+   "octets": 8034,
+   "cle": "9cbc2031d7e8ee20"
+  },
+  "sw-elevations-frontales-avec-rotation": {
+   "mouvement": "elevation front disque haut",
+   "instant": 1,
+   "octets": 5490,
+   "cle": "71023acb389f43d7"
+  },
+  "sw-elevations-laterales-avec-halteres": {
+   "mouvement": "elevation lat hal lu",
+   "instant": 1,
+   "octets": 5824,
+   "cle": "e8c7f5c3dc0a0350"
+  },
+  "sw-elevations-laterales-incline-avec-support-pour-la-poitrine-et-halteres": {
+   "mouvement": "elevation lat hal ventre=40",
+   "instant": 1,
+   "octets": 9228,
+   "cle": "e913b4ee52c4edb7"
+  },
+  "sw-elevations-unilaterales-avec-haltere": {
+   "mouvement": "mollets hal uni",
+   "instant": 1,
+   "octets": 4992,
+   "cle": "9f1af9a3033039fc"
+  },
+  "sw-enroulement-de-poignet-debout-a-la-cable": {
+   "mouvement": "poignet rouleau poulie",
+   "instant": 1,
+   "octets": 7450,
+   "cle": "87f744cfe102cc7e"
+  },
+  "sw-entraineur-elliptique": {
+   "mouvement": "cardio elliptique",
+   "instant": 1,
+   "octets": 8950,
+   "cle": "c304cb5e73f982ce"
+  },
+  "sw-epaule-jete-avec-kettlebell": {
+   "mouvement": "halt jete kb",
+   "instant": 0,
+   "octets": 7522,
+   "cle": "8026ec1d8bea5a6b"
+  },
+  "sw-ergometre-de-ski": {
+   "mouvement": "cardio skierg",
+   "instant": 0.75,
+   "octets": 5890,
+   "cle": "9d33b4517a729373"
+  },
+  "sw-etirement-90-a-90": {
+   "mouvement": "etire 9090",
+   "instant": 1,
+   "octets": 10540,
+   "cle": "41b927f3ffe3f323"
+  },
+  "sw-etirement-complet-du-corps": {
+   "mouvement": "etire monde",
+   "instant": 1,
+   "octets": 7324,
+   "cle": "8b14625a69723d93"
+  },
+  "sw-etirement-de-la-demi-grenouille-en-mouvement": {
+   "mouvement": "etire grenouille demi",
+   "instant": 1,
+   "octets": 7512,
+   "cle": "d3d480fca42d537d"
+  },
+  "sw-etirement-de-la-poitrine-avec-bras-flechis": {
+   "mouvement": "etire pectoraux coude",
+   "instant": 1,
+   "octets": 6322,
+   "cle": "4ff26aacd556097f"
+  },
+  "sw-etirement-de-la-poitrine-avec-les-coudes-ecartes": {
+   "mouvement": "etire pectoraux coudes",
+   "instant": 1,
+   "octets": 6116,
+   "cle": "e7e14c0c8c634447"
+  },
+  "sw-etirement-des-ischio-jambiers-a-genoux": {
+   "mouvement": "etire ischios",
+   "instant": 1,
+   "octets": 8542,
+   "cle": "9eb858f32e6372f7"
+  },
+  "sw-etirement-des-quadriceps-en-position-allongee": {
+   "mouvement": "etire quadriceps couche",
+   "instant": 1,
+   "octets": 5220,
+   "cle": "721587f6772dc3ed"
+  },
+  "sw-etirement-des-quadriceps-en-position-debout": {
+   "mouvement": "etire quadriceps debout",
+   "instant": 1,
+   "octets": 5794,
+   "cle": "135eace5f57ac4fd"
+  },
+  "sw-etirement-des-quadriceps-en-position-laterale-couche": {
+   "mouvement": "etire quadriceps cote",
+   "instant": 1,
+   "octets": 4444,
+   "cle": "26f6fac7a63a3150"
+  },
+  "sw-etirement-du-deltoide-posterieur": {
+   "mouvement": "etire deltarriere",
+   "instant": 1,
+   "octets": 5634,
+   "cle": "99bfa48fac04bd3f"
+  },
+  "sw-etirement-du-quadriceps-en-demi-agenouillement": {
+   "mouvement": "etire quadriceps",
+   "instant": 1,
+   "octets": 8578,
+   "cle": "e937c66abede394b"
+  },
+  "sw-etirement-en-fente": {
+   "mouvement": "etire fente",
+   "instant": 1,
+   "octets": 7884,
+   "cle": "58008658897b9c2c"
+  },
+  "sw-etirement-en-figure-4-sur-chaise": {
+   "mouvement": "etire figure4",
+   "instant": 1,
+   "octets": 8720,
+   "cle": "c7713bf7884c8c68"
+  },
+  "sw-etirement-en-position-assise-en-figure-4": {
+   "mouvement": "etire figure4",
+   "instant": 1,
+   "octets": 8720,
+   "cle": "c7713bf7884c8c68"
+  },
+  "sw-etirement-en-rotation-du-dos-a-genoux": {
+   "mouvement": "etire rotationdos",
+   "instant": 1,
+   "octets": 9704,
+   "cle": "5fb88dd4b9dd8f41"
+  },
+  "sw-etirement-ischio-jambiers-unilateral-assis": {
+   "mouvement": "etire ischios assis",
+   "instant": 1,
+   "octets": 8994,
+   "cle": "be694adfdbb52123"
+  },
+  "sw-etirement-lateral-debout": {
+   "mouvement": "etire lateral",
+   "instant": 1,
+   "octets": 6398,
+   "cle": "e6516f33897e0d9e"
+  },
+  "sw-etirement-papillon": {
+   "mouvement": "etire papillon",
+   "instant": 1,
+   "octets": 7864,
+   "cle": "a1336f2182e4d4e5"
+  },
+  "sw-etirement-papillon-incline-vers-l-x27-avant": {
+   "mouvement": "etire papillon avant",
+   "instant": 1,
+   "octets": 10952,
+   "cle": "ac40aee6e3c42e8e"
+  },
+  "sw-extension-de-jambe-avec-bande-elastique": {
+   "mouvement": "hanche kickback quatrepattes elas",
+   "instant": 1,
+   "octets": 8154,
+   "cle": "cac66a5e3c9a16d6"
+  },
+  "sw-extension-de-la-hanche-a-la-machine-smith": {
+   "mouvement": "pont banc smith",
+   "instant": 1,
+   "octets": 10010,
+   "cle": "02b0763c392bdacb"
+  },
+  "sw-extension-de-la-hanche-a-la-machine-smith-2": {
+   "mouvement": "hanche kickback smith",
+   "instant": 1,
+   "octets": 8250,
+   "cle": "3c59407db4cc7ca5"
+  },
+  "sw-extension-de-la-hanche-a-la-poulie": {
+   "mouvement": "hanche kickback poulie",
+   "instant": 1,
+   "octets": 8698,
+   "cle": "3008f40c81dc1756"
+  },
+  "sw-extension-de-la-hanche-en-equilibre-avec-bande": {
+   "mouvement": "hanche kickback elas",
+   "instant": 1,
+   "octets": 7364,
+   "cle": "29c4c95360cefd11"
+  },
+  "sw-extension-des-hanches-a-la-machine": {
+   "mouvement": "hanche kickback machine",
+   "instant": 0,
+   "octets": 5972,
+   "cle": "ceea5b7d5ad64717"
+  },
+  "sw-extension-des-triceps-a-deux-bras-a-la-poulie": {
+   "mouvement": "triceps kickback poulie",
+   "instant": 0,
+   "octets": 8098,
+   "cle": "9672380df8627060"
+  },
+  "sw-extension-des-triceps-a-la-barre-au-dessus-de-la-tete-en-position-debout": {
+   "mouvement": "triceps nuque barre",
+   "instant": 0,
+   "octets": 6820,
+   "cle": "d9acca6cafa20f85"
+  },
+  "sw-extension-des-triceps-a-la-barre-droite-en-position-couchee": {
+   "mouvement": "triceps pullover barre",
+   "instant": 0,
+   "octets": 7862,
+   "cle": "53a85b879a239846"
+  },
+  "sw-extension-des-triceps-a-la-barre-ez": {
+   "mouvement": "triceps poulie barreP",
+   "instant": 0,
+   "octets": 5828,
+   "cle": "6ee5043c96cf0100"
+  },
+  "sw-extension-des-triceps-a-la-barre-sur-banc-incline": {
+   "mouvement": "triceps front barre banc=30",
+   "instant": 0,
+   "octets": 9176,
+   "cle": "6f370e06f243b626"
+  },
+  "sw-extension-des-triceps-a-la-poulie-croisee": {
+   "mouvement": "triceps croise poulie",
+   "instant": 0,
+   "octets": 9826,
+   "cle": "8362989fea285f58"
+  },
+  "sw-extension-des-triceps-a-la-poulie-en-position-couchee": {
+   "mouvement": "triceps front poulie",
+   "instant": 0,
+   "octets": 8158,
+   "cle": "1ec2fade6ce510d1"
+  },
+  "sw-extension-des-triceps-a-la-poulie-haute": {
+   "mouvement": "triceps nuque poulie haute",
+   "instant": 0,
+   "octets": 7772,
+   "cle": "355cd639105b8b5e"
+  },
+  "sw-extension-des-triceps-a-la-poulie-haute-barre": {
+   "mouvement": "triceps nuque poulie barreP",
+   "instant": 0,
+   "octets": 6896,
+   "cle": "5a5b0a6f49598397"
+  },
+  "sw-extension-des-triceps-a-la-poulie-horizontale-assis": {
+   "mouvement": "triceps horizontal poulie",
+   "instant": 0,
+   "octets": 8422,
+   "cle": "12f77edbab560ba9"
+  },
+  "sw-extension-des-triceps-a-la-poulie-inclinee": {
+   "mouvement": "triceps front poulie banc=30",
+   "instant": 0,
+   "octets": 9804,
+   "cle": "6319500891d47506"
+  },
+  "sw-extension-des-triceps-a-la-poulie-prise-inversee": {
+   "mouvement": "triceps poulie sup barreP",
+   "instant": 0,
+   "octets": 5364,
+   "cle": "2dc815f9d22cff6e"
+  },
+  "sw-extension-des-triceps-a-un-bras-a-la-poulie": {
+   "mouvement": "triceps poulie uni",
+   "instant": 0,
+   "octets": 5568,
+   "cle": "df30ff4df4e4f77f"
+  },
+  "sw-extension-des-triceps-allonge-a-la-barre-ez": {
+   "mouvement": "triceps front ez",
+   "instant": 0,
+   "octets": 8500,
+   "cle": "afbe6b64bc0f590a"
+  },
+  "sw-extension-des-triceps-assis-a-la-barre-ez": {
+   "mouvement": "triceps nuque ez assis",
+   "instant": 0,
+   "octets": 7428,
+   "cle": "92d82605bb7f6b86"
+  },
+  "sw-extension-des-triceps-au-dessus-de-la-tete-avec-bande-elastique": {
+   "mouvement": "triceps nuque elas",
+   "instant": 0,
+   "octets": 6932,
+   "cle": "0c4935d4dd41384e"
+  },
+  "sw-extension-des-triceps-avec-bande-elastique": {
+   "mouvement": "triceps elas",
+   "instant": 0,
+   "octets": 5524,
+   "cle": "caf51e5c23c15638"
+  },
+  "sw-extension-des-triceps-avec-halteres-sur-banc-incline": {
+   "mouvement": "triceps front hal banc=30",
+   "instant": 0,
+   "octets": 9648,
+   "cle": "2d194e0c92d9c9f1"
+  },
+  "sw-extension-des-triceps-en-suspension": {
+   "mouvement": "suspension triceps sangles",
+   "instant": 1,
+   "octets": 4858,
+   "cle": "5f81e2e6ff165c51"
+  },
+  "sw-extension-dorsale-sur-machine": {
+   "mouvement": "souleve extension machine",
+   "instant": 1,
+   "octets": 9290,
+   "cle": "cb3eb250096db225"
+  },
+  "sw-extension-du-dos": {
+   "mouvement": "souleve extension hal",
+   "instant": 0,
+   "octets": 7522,
+   "cle": "790af7594220db41"
+  },
+  "sw-extension-du-dos-avec-haltere": {
+   "mouvement": "souleve extension hal",
+   "instant": 0,
+   "octets": 7522,
+   "cle": "790af7594220db41"
+  },
+  "sw-extension-du-genou-a-la-poulie": {
+   "mouvement": "jambes tke poulie",
+   "instant": 0,
+   "octets": 7976,
+   "cle": "51c15e31c9e164d5"
+  },
+  "sw-extension-horizontale-du-triceps-debout-a-un-bras-avec-cable": {
+   "mouvement": "triceps travers poulie uni",
+   "instant": 0,
+   "octets": 9688,
+   "cle": "1a5c0722a29cd033"
+  },
+  "sw-extension-triceps-a-un-haltere-debout": {
+   "mouvement": "triceps nuque hal1",
+   "instant": 0,
+   "octets": 5400,
+   "cle": "176748174385c4e3"
+  },
+  "sw-extension-triceps-katana": {
+   "mouvement": "triceps nuque poulie katana uni",
+   "instant": 0,
+   "octets": 6126,
+   "cle": "de799e71b43bba3c"
+  },
+  "sw-extension-triceps-unilaterale-au-dessus-de-la-tete": {
+   "mouvement": "triceps nuque hal uni",
+   "instant": 0,
+   "octets": 5508,
+   "cle": "745e47556dd8b581"
+  },
+  "sw-extension-triceps-unilaterale-en-prise-inversee-a-la-poulie": {
+   "mouvement": "triceps poulie sup uni",
+   "instant": 0,
+   "octets": 5386,
+   "cle": "afbe0137782d520f"
+  },
+  "sw-extension-unilaterale-de-la-jambe": {
+   "mouvement": "jambes extension uni",
+   "instant": 0,
+   "octets": 9188,
+   "cle": "699bffbeb2226e13"
+  },
+  "sw-extensions-a-la-poulie": {
+   "mouvement": "triceps poulie barreP",
+   "instant": 0,
+   "octets": 5828,
+   "cle": "6ee5043c96cf0100"
+  },
+  "sw-extensions-triceps": {
+   "mouvement": "triceps front barre",
+   "instant": 0,
+   "octets": 7880,
+   "cle": "90fc024dae329069"
+  },
+  "sw-fente-arriere": {
+   "mouvement": "fente arriere",
+   "instant": 1,
+   "octets": 7890,
+   "cle": "e8cac589eb7eca7a"
+  },
+  "sw-fente-arriere-a-la-smith-machine": {
+   "mouvement": "fente arriere smith",
+   "instant": 1,
+   "octets": 8942,
+   "cle": "8ebdb64061c1a409"
+  },
+  "sw-fente-arriere-avec-barre-sur-step": {
+   "mouvement": "fente arriere deficit barre",
+   "instant": 1,
+   "octets": 6900,
+   "cle": "a3011bc54e05f076"
+  },
+  "sw-fente-arriere-avec-halteres": {
+   "mouvement": "fente arriere hal",
+   "instant": 1,
+   "octets": 6872,
+   "cle": "fa28659d1138ec32"
+  },
+  "sw-fente-arriere-avec-halteres-sur-marche": {
+   "mouvement": "fente arriere deficit hal",
+   "instant": 1,
+   "octets": 6236,
+   "cle": "9f250db3d12ef03e"
+  },
+  "sw-fente-arriere-avec-kettlebell": {
+   "mouvement": "fente arriere kb",
+   "instant": 1,
+   "octets": 7100,
+   "cle": "41e62cad0a99a34a"
+  },
+  "sw-fente-avant-avec-barre": {
+   "mouvement": "fente avant barre",
+   "instant": 1,
+   "octets": 7372,
+   "cle": "e8bb34ff63b93e53"
+  },
+  "sw-fente-avec-barre": {
+   "mouvement": "fente barre",
+   "instant": 1,
+   "octets": 7620,
+   "cle": "b598425c32c8b047"
+  },
+  "sw-fente-avec-halteres": {
+   "mouvement": "fente hal",
+   "instant": 1,
+   "octets": 6758,
+   "cle": "acbb49f5d3ad74a4"
+  },
+  "sw-fente-avec-pied-avant-sureleve": {
+   "mouvement": "fente piedAvantHaut barre",
+   "instant": 1,
+   "octets": 7464,
+   "cle": "16a355a888e28cb7"
+  },
+  "sw-fente-bulgare": {
+   "mouvement": "fente bulgare",
+   "instant": 1,
+   "octets": 7494,
+   "cle": "580e373299b40299"
+  },
+  "sw-fente-bulgare-2": {
+   "mouvement": "fente",
+   "instant": 1,
+   "octets": 7830,
+   "cle": "98d6de696dae6595"
+  },
+  "sw-fente-bulgare-a-la-smith-machine": {
+   "mouvement": "fente bulgare smith",
+   "instant": 1,
+   "octets": 9028,
+   "cle": "8de40ffe85d79c3b"
+  },
+  "sw-fente-laterale-plyometrique": {
+   "mouvement": "fente laterale pliometrique",
+   "instant": 1,
+   "octets": 7130,
+   "cle": "44b29d93511f875b"
+  },
+  "sw-fente-sur-machine-smith": {
+   "mouvement": "fente smith",
+   "instant": 1,
+   "octets": 8778,
+   "cle": "dc98db2b2b150a4f"
+  },
+  "sw-fentes": {
+   "mouvement": "fente marchee barre",
+   "instant": 1,
+   "octets": 7396,
+   "cle": "7f587883233f2dd3"
+  },
+  "sw-fentes-arriere-avec-barre": {
+   "mouvement": "fente arriere barre",
+   "instant": 1,
+   "octets": 8152,
+   "cle": "5432491d74861b32"
+  },
+  "sw-fentes-laterales-avec-halteres": {
+   "mouvement": "fente laterale hal",
+   "instant": 1,
+   "octets": 8774,
+   "cle": "ab529c26082c022f"
+  },
+  "sw-fentes-marchees": {
+   "mouvement": "fente marchee",
+   "instant": 1,
+   "octets": 7568,
+   "cle": "bf8b3a4b75f2cd47"
+  },
+  "sw-flexion-avant-debout": {
+   "mouvement": "etire pli",
+   "instant": 1,
+   "octets": 8398,
+   "cle": "9c16864b58f9709f"
+  },
+  "sw-flexion-des-poignets-a-la-poulie-assis": {
+   "mouvement": "poignet poulie",
+   "instant": 1,
+   "octets": 9724,
+   "cle": "bbc609b2cdeb10c6"
+  },
+  "sw-flexion-des-poignets-assis-avec-barre-ez": {
+   "mouvement": "poignet ez",
+   "instant": 1,
+   "octets": 8548,
+   "cle": "cdfa464edc58a85d"
+  },
+  "sw-flexion-des-poignets-debout-avec-halteres": {
+   "mouvement": "poignet debout hal",
+   "instant": 1,
+   "octets": 5628,
+   "cle": "9f907114fdb17fb1"
+  },
+  "sw-flexion-du-cou": {
+   "mouvement": "etire cou curl",
+   "instant": 1,
+   "octets": 7630,
+   "cle": "abefe8d2dde0de9e"
+  },
+  "sw-flexion-du-poignet-a-un-bras-avec-haltere": {
+   "mouvement": "poignet hal uni",
+   "instant": 1,
+   "octets": 8554,
+   "cle": "5308fbaf2fca3be5"
+  },
+  "sw-flexion-et-extension-des-jambes": {
+   "mouvement": "abdos inout",
+   "instant": 1,
+   "octets": 9096,
+   "cle": "cff966bc0318560b"
+  },
+  "sw-flexion-laterale-debout-avec-bande-elastique": {
+   "mouvement": "rotation flexion elas",
+   "instant": 1,
+   "octets": 7286,
+   "cle": "291188283ff4873c"
+  },
+  "sw-gainage-frontal-statique": {
+   "mouvement": "elevation tenue disque",
+   "instant": 1,
+   "octets": 5610,
+   "cle": "76b63c91f08b18b2"
+  },
+  "sw-genoux-aux-coudes-suspendus": {
+   "mouvement": "suspendu coudes",
+   "instant": 1,
+   "octets": 6338,
+   "cle": "18952d9da4d5d17f"
+  },
+  "sw-grenouille-balancante": {
+   "mouvement": "etire grenouille",
+   "instant": 1,
+   "octets": 7392,
+   "cle": "eff3e22d5e5783f3"
+  },
+  "sw-hand-gripper-poignee-de-musculation": {
+   "mouvement": "poignet pince",
+   "instant": 1,
+   "octets": 5480,
+   "cle": "cca529f0e520fe65"
+  },
+  "sw-hang-power-clean": {
+   "mouvement": "halt suspendu",
+   "instant": 1,
+   "octets": 6840,
+   "cle": "1643d31d93bb3cc9"
+  },
+  "sw-haussement-d-x27-epaules-a-la-smith-machine": {
+   "mouvement": "elevation shrug smith",
+   "instant": 1,
+   "octets": 9684,
+   "cle": "c6fe21f667a3a3db"
+  },
+  "sw-haussement-d-x27-epaules-avec-barre": {
+   "mouvement": "elevation shrug barre",
+   "instant": 1,
+   "octets": 7056,
+   "cle": "2e8f72d838923898"
+  },
+  "sw-haussement-d-x27-epaules-inverse": {
+   "mouvement": "gym equilibre mur shrug",
+   "instant": 1,
+   "octets": 2652,
+   "cle": "92e33b29f41c9f87"
+  },
+  "sw-haussements-d-x27-epaules-avec-barre-hexagonale": {
+   "mouvement": "elevation shrug trapbar",
+   "instant": 1,
+   "octets": 7000,
+   "cle": "bf6a4eb07a4a2520"
+  },
+  "sw-haussements-d-x27-epaules-avec-halteres": {
+   "mouvement": "elevation shrug hal",
+   "instant": 1,
+   "octets": 5724,
+   "cle": "7bc76a94b8ca295e"
+  },
+  "sw-haussements-d-x27-epaules-avec-halteres-en-position-assise": {
+   "mouvement": "elevation shrug hal tabouret",
+   "instant": 1,
+   "octets": 7668,
+   "cle": "62e35ccbc1db62ad"
+  },
+  "sw-haussements-d-x27-epaules-en-dips": {
+   "mouvement": "dips shrug",
+   "instant": 1,
+   "octets": 5716,
+   "cle": "68a52ae74b505aa7"
+  },
+  "sw-haussements-d-x27-epaules-kelso-avec-halteres": {
+   "mouvement": "elevation shrug hal kelso",
+   "instant": 1,
+   "octets": 8434,
+   "cle": "f00cf6b33a2af93d"
+  },
+  "sw-hyperextension-inversee-avec-bande": {
+   "mouvement": "hanche hyperinverse elas",
+   "instant": 1,
+   "octets": 7378,
+   "cle": "f5430c24e0237e82"
+  },
+  "sw-inclinaison-laterale-debout-avec-halteres": {
+   "mouvement": "rotation flexion hal",
+   "instant": 1,
+   "octets": 6132,
+   "cle": "a7251f90d32af895"
+  },
+  "sw-insecte-mort-leste": {
+   "mouvement": "abdos deadbug balle",
+   "instant": 1,
+   "octets": 6684,
+   "cle": "a8e3b74cb419d1a7"
+  },
+  "sw-kickback-assis-avec-haltere-a-un-bras": {
+   "mouvement": "triceps kickback hal uni tabouret",
+   "instant": 0,
+   "octets": 6694,
+   "cle": "3fcd043286a09a11"
+  },
+  "sw-machine-de-flexion-des-poignets": {
+   "mouvement": "poignet machine",
+   "instant": 1,
+   "octets": 9194,
+   "cle": "4663f731c84e8424"
+  },
+  "sw-maintien-en-equilibre-sur-les-mains": {
+   "mouvement": "gym equilibre mur",
+   "instant": 1,
+   "octets": 2678,
+   "cle": "85bfe05b88f26df6"
+  },
+  "sw-maintien-en-position-creuse-lestee": {
+   "mouvement": "abdos hollow leste",
+   "instant": 1,
+   "octets": 5330,
+   "cle": "867b225b55503132"
+  },
+  "sw-marche-cardio": {
+   "mouvement": "cardio marche",
+   "instant": 1,
+   "octets": 5620,
+   "cle": "0ebcb1c3b18de15e"
+  },
+  "sw-marche-du-fermier-unilaterale": {
+   "mouvement": "cardio marche kb uni",
+   "instant": 1,
+   "octets": 5900,
+   "cle": "a5ee5bea1539fd0e"
+  },
+  "sw-marche-laterale-avec-bande": {
+   "mouvement": "hanche monstre lateral elas",
+   "instant": 1,
+   "octets": 7188,
+   "cle": "50f575c13e6d4da6"
+  },
+  "sw-marche-monstre-avant-avec-bande": {
+   "mouvement": "hanche monstre elas",
+   "instant": 1,
+   "octets": 6746,
+   "cle": "809f11642f95c632"
+  },
+  "sw-montee-sur-banc-avec-barre": {
+   "mouvement": "fente step barre",
+   "instant": 0,
+   "octets": 5658,
+   "cle": "1f1cb76374d0013d"
+  },
+  "sw-montee-sur-banc-avec-cable": {
+   "mouvement": "fente step poulie",
+   "instant": 0,
+   "octets": 7742,
+   "cle": "cba77277db7e07ce"
+  },
+  "sw-montee-sur-banc-poliquin": {
+   "mouvement": "fente step poliquin",
+   "instant": 0,
+   "octets": 6610,
+   "cle": "0e8bcde7cb84785e"
+  },
+  "sw-montee-sur-boite": {
+   "mouvement": "fente step",
+   "instant": 0,
+   "octets": 6172,
+   "cle": "4816246e786465a5"
+  },
+  "sw-montee-sur-tapis-roulant": {
+   "mouvement": "cardio marche tapis pente",
+   "instant": 1,
+   "octets": 7346,
+   "cle": "cff90dd72b0756bf"
+  },
+  "sw-moulinet-au-poids-du-corps": {
+   "mouvement": "rotation moulinet",
+   "instant": 1,
+   "octets": 6830,
+   "cle": "928c07d3ff4fdb2e"
+  },
+  "sw-muscle-up": {
+   "mouvement": "gym muscleup",
+   "instant": 0.25,
+   "octets": 6438,
+   "cle": "cb4a4c458b557d3e"
+  },
+  "sw-muscle-up-aux-anneaux": {
+   "mouvement": "gym muscleup anneaux",
+   "instant": 0.25,
+   "octets": 3734,
+   "cle": "5567971df7ec19bf"
+  },
+  "sw-muscle-up-avec-charge": {
+   "mouvement": "gym muscleup leste",
+   "instant": 0.25,
+   "octets": 6384,
+   "cle": "5751147fb4f17ba0"
+  },
+  "sw-nageur-en-decubitus-ventral": {
+   "mouvement": "planche nageur",
+   "instant": 1,
+   "octets": 4580,
+   "cle": "b712015e0917345b"
+  },
+  "sw-one-arm-hammer-cable-curl-flexion-du-bras-a-la-corde-en-prise-marteau": {
+   "mouvement": "curl poulie marteau uni",
+   "instant": 1,
+   "octets": 7226,
+   "cle": "14333a0f7e5e2d03"
+  },
+  "sw-ouverture-de-la-poitrine-en-position-debout": {
+   "mouvement": "etire pectoraux coudes",
+   "instant": 1,
+   "octets": 6116,
+   "cle": "e7e14c0c8c634447"
+  },
+  "sw-pallof-press-horizontal-a-la-poulie": {
+   "mouvement": "rotation pallof poulie",
+   "instant": 0,
+   "octets": 9604,
+   "cle": "8a19dd4fcaa5a876"
+  },
+  "sw-pallof-press-horizontal-a-la-poulie-basse": {
+   "mouvement": "rotation pallof poulie bas genoux",
+   "instant": 0,
+   "octets": 8338,
+   "cle": "6fd2344bd674f5b0"
+  },
+  "sw-passage-de-bande-au-dessus-des-epaules": {
+   "mouvement": "elevation passage elas",
+   "instant": 1,
+   "octets": 4738,
+   "cle": "a8c00b9cdcc69c56"
+  },
+  "sw-pike-sur-anneaux": {
+   "mouvement": "planche pike",
+   "instant": 1,
+   "octets": 5620,
+   "cle": "b5d5be5893d212f8"
+  },
+  "sw-planche-avec-extension-bras-et-jambe-opposes": {
+   "mouvement": "planche birddog planche mains",
+   "instant": 1,
+   "octets": 5102,
+   "cle": "99265f843d567fe3"
+  },
+  "sw-planche-avec-poids": {
+   "mouvement": "planche leste",
+   "instant": 1,
+   "octets": 5164,
+   "cle": "8d55f995ab91615d"
+  },
+  "sw-planche-complete": {
+   "mouvement": "gym planche",
+   "instant": 1,
+   "octets": 5398,
+   "cle": "1f2b9e1816198785"
+  },
+  "sw-planche-de-l-x27-ours": {
+   "mouvement": "planche ours",
+   "instant": 1,
+   "octets": 7886,
+   "cle": "bfbdf9d5f1a65884"
+  },
+  "sw-planche-ecartee": {
+   "mouvement": "gym planche ecart",
+   "instant": 1,
+   "octets": 5024,
+   "cle": "f3ce92c56c770aad"
+  },
+  "sw-planche-grenouille": {
+   "mouvement": "gym planche grenouille",
+   "instant": 1,
+   "octets": 7192,
+   "cle": "bd4e48e3fb42501d"
+  },
+  "sw-planche-inclinee": {
+   "mouvement": "gym planche penchee",
+   "instant": 1,
+   "octets": 5722,
+   "cle": "cbe61f84a8dc581d"
+  },
+  "sw-planche-laterale-avec-abduction-de-la-hanche": {
+   "mouvement": "planche cote abduction",
+   "instant": 1,
+   "octets": 7120,
+   "cle": "f5a3453fdbac6ff8"
+  },
+  "sw-planche-laterale-avec-coquille": {
+   "mouvement": "planche cote coquille",
+   "instant": 1,
+   "octets": 7684,
+   "cle": "672ed95e932a8c91"
+  },
+  "sw-planche-scie": {
+   "mouvement": "planche scie",
+   "instant": 1,
+   "octets": 4956,
+   "cle": "4aec11f05b182002"
+  },
+  "sw-planche-sur-ballon-suisse": {
+   "mouvement": "planche ballon",
+   "instant": 1,
+   "octets": 6774,
+   "cle": "91c07d3389fefbb5"
+  },
+  "sw-pompe-a-un-bras": {
+   "mouvement": "pompe unbras",
+   "instant": 1,
+   "octets": 5350,
+   "cle": "cf151d7806bc5c4a"
+  },
+  "sw-pompe-avec-extension-bras-jambe-opposes": {
+   "mouvement": "pompe birddog",
+   "instant": 0.25,
+   "octets": 5560,
+   "cle": "a2c104933fc1f3f7"
+  },
+  "sw-pompe-cobra": {
+   "mouvement": "pompe cobra",
+   "instant": 0,
+   "octets": 6862,
+   "cle": "f2d0bdf0d8ba2ae0"
+  },
+  "sw-pompe-diamant-en-declinaison": {
+   "mouvement": "pompe decline diamant",
+   "instant": 1,
+   "octets": 6196,
+   "cle": "27e5f2f9994c5ae7"
+  },
+  "sw-pompe-en-pike-entre-bancs": {
+   "mouvement": "pompe pike entre",
+   "instant": 1,
+   "octets": 7490,
+   "cle": "5b18f42f3f27b622"
+  },
+  "sw-pompe-en-pike-entre-des-chaises": {
+   "mouvement": "pompe pike entre",
+   "instant": 1,
+   "octets": 7490,
+   "cle": "5b18f42f3f27b622"
+  },
+  "sw-pompe-en-pike-sur-banc": {
+   "mouvement": "pompe pike banc",
+   "instant": 1,
+   "octets": 7338,
+   "cle": "2b4ae71445ca0698"
+  },
+  "sw-pompe-en-planche-complete": {
+   "mouvement": "pompe planche",
+   "instant": 1,
+   "octets": 4632,
+   "cle": "ff16fa8912ca4643"
+  },
+  "sw-pompe-inclinee-prise-serree": {
+   "mouvement": "pompe incline serre",
+   "instant": 1,
+   "octets": 7902,
+   "cle": "35415b28af7c3c30"
+  },
+  "sw-pompe-inversee": {
+   "mouvement": "pompe inverse",
+   "instant": 1,
+   "octets": 4864,
+   "cle": "5448c8ba9c128008"
+  },
+  "sw-pompe-negative": {
+   "mouvement": "pompe negatif",
+   "instant": 1,
+   "octets": 5112,
+   "cle": "085f72dc61368506"
+  },
+  "sw-pompe-profonde-sur-barres-paralleles": {
+   "mouvement": "pompe profonde",
+   "instant": 1,
+   "octets": 5764,
+   "cle": "3a5aad78fba74ef8"
+  },
+  "sw-pompe-superman": {
+   "mouvement": "pompe superman",
+   "instant": 1,
+   "octets": 4496,
+   "cle": "20be2bfdf6844b09"
+  },
+  "sw-pompe-sur-les-doigts": {
+   "mouvement": "pompe doigts",
+   "instant": 1,
+   "octets": 5294,
+   "cle": "abe50c6bc2e36ee5"
+  },
+  "sw-pompe-sur-les-jointures": {
+   "mouvement": "pompe jointures",
+   "instant": 1,
+   "octets": 4814,
+   "cle": "cfdb924718fc307b"
+  },
+  "sw-pompes-archer": {
+   "mouvement": "pompe archer",
+   "instant": 1,
+   "octets": 6118,
+   "cle": "b3663724f0b47566"
+  },
+  "sw-pompes-aux-anneaux-a-genoux": {
+   "mouvement": "pompe genoux anneaux",
+   "instant": 1,
+   "octets": 6010,
+   "cle": "0f75839cfeacf49e"
+  },
+  "sw-pompes-avec-bande-de-resistance": {
+   "mouvement": "pompe elas",
+   "instant": 1,
+   "octets": 5216,
+   "cle": "afe5e8947e4170d8"
+  },
+  "sw-pompes-avec-claquement": {
+   "mouvement": "pompe claquement",
+   "instant": 1,
+   "octets": 6224,
+   "cle": "0456a1af4fcfee52"
+  },
+  "sw-pompes-bras-croises": {
+   "mouvement": "pompe serre",
+   "instant": 1,
+   "octets": 5128,
+   "cle": "5cb2477c753287eb"
+  },
+  "sw-pompes-completes-sur-les-poignets": {
+   "mouvement": "pompe genoux poignets",
+   "instant": 1,
+   "octets": 6864,
+   "cle": "6fe0bed7a1444db8"
+  },
+  "sw-pompes-diamant-sur-les-genoux": {
+   "mouvement": "pompe genoux diamant",
+   "instant": 1,
+   "octets": 5716,
+   "cle": "9b2b437d346b8907"
+  },
+  "sw-pompes-jack": {
+   "mouvement": "pompe jack",
+   "instant": 1,
+   "octets": 5308,
+   "cle": "48b3bfa9ecc73287"
+  },
+  "sw-pompes-larges-a-genoux": {
+   "mouvement": "pompe genoux large",
+   "instant": 1,
+   "octets": 5180,
+   "cle": "86db9122c4e16c9a"
+  },
+  "sw-pompes-mains-larges": {
+   "mouvement": "pompe large",
+   "instant": 1,
+   "octets": 5126,
+   "cle": "8d1e1c84073d68eb"
+  },
+  "sw-pompes-prise-serree": {
+   "mouvement": "pompe serre",
+   "instant": 1,
+   "octets": 5152,
+   "cle": "ec6fb9d4199daa04"
+  },
+  "sw-pompes-profondes-avec-halteres": {
+   "mouvement": "pompe hal",
+   "instant": 1,
+   "octets": 4680,
+   "cle": "1c3661c8ef69447f"
+  },
+  "sw-pompes-pseudo-planche": {
+   "mouvement": "pompe pseudo",
+   "instant": 1,
+   "octets": 4642,
+   "cle": "76533522bb58dd49"
+  },
+  "sw-pompes-scapulaires": {
+   "mouvement": "pompe scapulaire",
+   "instant": 1,
+   "octets": 6410,
+   "cle": "f518a6c8170ec31a"
+  },
+  "sw-pompes-serrees-sur-les-genoux": {
+   "mouvement": "pompe genoux serre",
+   "instant": 1,
+   "octets": 4930,
+   "cle": "b232c0d57fc5b92c"
+  },
+  "sw-pompes-sur-les-genoux": {
+   "mouvement": "pompe genoux",
+   "instant": 1,
+   "octets": 4786,
+   "cle": "180c6492f618aa71"
+  },
+  "sw-pompes-sur-les-poignets": {
+   "mouvement": "pompe genoux poignets",
+   "instant": 1,
+   "octets": 6866,
+   "cle": "ff4cdb7fc77837d9"
+  },
+  "sw-pompes-sur-poignees": {
+   "mouvement": "pompe poignees",
+   "instant": 1,
+   "octets": 4966,
+   "cle": "f01d9714b3081265"
+  },
+  "sw-pompes-triceps": {
+   "mouvement": "pompe triceps",
+   "instant": 1,
+   "octets": 5128,
+   "cle": "fe854e5bdeaa1111"
+  },
+  "sw-pont-fessier-avec-mini-bande": {
+   "mouvement": "pont elas",
+   "instant": 1,
+   "octets": 7960,
+   "cle": "a57facdfc9e3f363"
+  },
+  "sw-pont-fessier-avec-poids": {
+   "mouvement": "pont disque",
+   "instant": 1,
+   "octets": 8298,
+   "cle": "ea4b51dae0219f07"
+  },
+  "sw-pont-fessier-kas": {
+   "mouvement": "pont banc kas",
+   "instant": 1,
+   "octets": 8056,
+   "cle": "7c4bc3e8ac716fff"
+  },
+  "sw-pont-fessier-sur-banc": {
+   "mouvement": "pont banc",
+   "instant": 1,
+   "octets": 8056,
+   "cle": "3d114a71360cc3b8"
+  },
+  "sw-pont-fessier-unilateral-avec-charge": {
+   "mouvement": "pont unejambe disque",
+   "instant": 1,
+   "octets": 8472,
+   "cle": "94d6a36bbb5a9365"
+  },
+  "sw-pont-lateral-avec-halteres": {
+   "mouvement": "planche cote hal",
+   "instant": 1,
+   "octets": 7754,
+   "cle": "df887ffc4c24913c"
+  },
+  "sw-porte-de-fermier-avec-halteres": {
+   "mouvement": "cardio marche hal",
+   "instant": 1,
+   "octets": 6030,
+   "cle": "8d7fa81389e6c688"
+  },
+  "sw-posture-de-la-chandelle": {
+   "mouvement": "abdos chandelle",
+   "instant": 1,
+   "octets": 5476,
+   "cle": "d050443550dd6dca"
+  },
+  "sw-posture-du-crabe": {
+   "mouvement": "planche crabe",
+   "instant": 1,
+   "octets": 6668,
+   "cle": "9155465772dcf5f8"
+  },
+  "sw-posture-du-lezard": {
+   "mouvement": "etire lezard",
+   "instant": 1,
+   "octets": 6690,
+   "cle": "6c9086eb979d720b"
+  },
+  "sw-posture-du-papillon-couche": {
+   "mouvement": "etire papillon couche",
+   "instant": 1,
+   "octets": 7848,
+   "cle": "6299db8bcfb879c0"
+  },
+  "sw-posture-du-pigeon": {
+   "mouvement": "etire pigeon",
+   "instant": 1,
+   "octets": 5652,
+   "cle": "8322d65ac56e1d29"
+  },
+  "sw-posture-sur-la-tete-avec-appui-sirsasana": {
+   "mouvement": "gym tete",
+   "instant": 1,
+   "octets": 5216,
+   "cle": "e85bcdb7b3b405d4"
+  },
+  "sw-press-cubain-assis": {
+   "mouvement": "elevation cubain hal tabouret",
+   "instant": 1,
+   "octets": 9078,
+   "cle": "ac6ef6620ff75bc8"
+  },
+  "sw-press-pallof-avec-bande": {
+   "mouvement": "rotation pallof elas",
+   "instant": 0,
+   "octets": 8216,
+   "cle": "bd656000179ef17d"
+  },
+  "sw-presse-a-cuisses-a-45-degres-avec-pieds-rapproches": {
+   "mouvement": "jambes presse serre",
+   "instant": 0,
+   "octets": 10166,
+   "cle": "2f681b152324ac56"
+  },
+  "sw-presse-a-cuisses-avec-ceinture": {
+   "mouvement": "souleve roumain poulie",
+   "instant": 1,
+   "octets": 8566,
+   "cle": "eaa4ecc434bad2de"
+  },
+  "sw-presse-a-cuisses-en-position-large": {
+   "mouvement": "jambes presse large",
+   "instant": 0,
+   "octets": 10062,
+   "cle": "6c5da09a5b970c7f"
+  },
+  "sw-presse-a-cuisses-horizontale": {
+   "mouvement": "jambes presse horizontale",
+   "instant": 0,
+   "octets": 6836,
+   "cle": "81f408da85f1b2b9"
+  },
+  "sw-presse-a-jambes-verticale-sur-machine-smith": {
+   "mouvement": "jambes presse verticale",
+   "instant": 0,
+   "octets": 6172,
+   "cle": "a5393b072ceea862"
+  },
+  "sw-presse-a-la-poitrine-basse-avec-cable-en-position-debout": {
+   "mouvement": "developpe poulie debout bas",
+   "instant": 1,
+   "octets": 10242,
+   "cle": "457f09bcc581e1bf"
+  },
+  "sw-presse-a-pectoraux-a-prise-marteau-sur-machine": {
+   "mouvement": "developpe machine assis neutre",
+   "instant": 1,
+   "octets": 7352,
+   "cle": "bb6cdf0697a5000e"
+  },
+  "sw-presse-a-triceps-a-la-machine": {
+   "mouvement": "dips assis",
+   "instant": 0,
+   "octets": 7458,
+   "cle": "3a2f457f8c0c3d41"
+  },
+  "sw-presse-cubaine-debout": {
+   "mouvement": "elevation cubain hal",
+   "instant": 1,
+   "octets": 6714,
+   "cle": "c26ef78647a3f983"
+  },
+  "sw-presse-epaules-assis-prise-marteau-a-levier": {
+   "mouvement": "developpe epaules machine assis neutre",
+   "instant": 1,
+   "octets": 8002,
+   "cle": "f8de2ad103a67895"
+  },
+  "sw-presse-pectorale-a-la-machine": {
+   "mouvement": "developpe machine assis",
+   "instant": 1,
+   "octets": 7490,
+   "cle": "ca0d7cb1dcb0b9e3"
+  },
+  "sw-presse-tate": {
+   "mouvement": "triceps tate hal",
+   "instant": 1,
+   "octets": 8326,
+   "cle": "5c95b6dd926ffa92"
+  },
+  "sw-pression-debout-circulaire": {
+   "mouvement": "developpe poulie autour uni",
+   "instant": 1,
+   "octets": 8832,
+   "cle": "9ecd176b56fa5e9f"
+  },
+  "sw-pull-over-a-la-machine": {
+   "mouvement": "pullover machine",
+   "instant": 0,
+   "octets": 8646,
+   "cle": "def1677a44ee3a9e"
+  },
+  "sw-pull-over-avec-halteres-et-jambes-elevees": {
+   "mouvement": "pullover hal jambesHautes",
+   "instant": 0,
+   "octets": 7366,
+   "cle": "b5ca144d43f1ef90"
+  },
+  "sw-pullover-avec-barre": {
+   "mouvement": "pullover barre",
+   "instant": 0,
+   "octets": 6976,
+   "cle": "5cef0b07b130e344"
+  },
+  "sw-rameur-a-la-barre-en-t-penche": {
+   "mouvement": "rowing tbar",
+   "instant": 1,
+   "octets": 7402,
+   "cle": "6c0517c924d8d784"
+  },
+  "sw-rameur-a-prise-serree-avec-barre-au-sol": {
+   "mouvement": "rowing landmine serre",
+   "instant": 1,
+   "octets": 7334,
+   "cle": "e9b199e746b0daf7"
+  },
+  "sw-rameur-assis-a-la-poulie-en-flexion": {
+   "mouvement": "rowing poulie assis",
+   "instant": 1,
+   "octets": 8056,
+   "cle": "65254fa2a3fd068d"
+  },
+  "sw-rameur-kayak-thibaudeau-a-cable": {
+   "mouvement": "tirage tendus",
+   "instant": 0,
+   "octets": 6504,
+   "cle": "697f231d39a1b022"
+  },
+  "sw-rameur-renegat-avec-kettlebell": {
+   "mouvement": "planche renegat kb",
+   "instant": 1,
+   "octets": 6656,
+   "cle": "b455d684cd494594"
+  },
+  "sw-rangee-alternee-en-position-de-planche": {
+   "mouvement": "planche renegat",
+   "instant": 1,
+   "octets": 6376,
+   "cle": "50351b3d0154bd7e"
+  },
+  "sw-rangee-en-suspension": {
+   "mouvement": "suspension row sangles",
+   "instant": 1,
+   "octets": 4536,
+   "cle": "059fbe8a2e3446be"
+  },
+  "sw-rangee-inversee-en-suspension": {
+   "mouvement": "suspension row sangles",
+   "instant": 1,
+   "octets": 4508,
+   "cle": "bf60d39ca6b43d88"
+  },
+  "sw-redressement-assis-incline-avec-rotation": {
+   "mouvement": "abdos situp decline torsion",
+   "instant": 1,
+   "octets": 10112,
+   "cle": "898a90d87c3db8ef"
+  },
+  "sw-releve-de-bassin": {
+   "mouvement": "pont banc",
+   "instant": 1,
+   "octets": 8072,
+   "cle": "7f1872f7ff5f2c8b"
+  },
+  "sw-releve-de-bassin-a-genoux-a-la-smith-machine": {
+   "mouvement": "pont genoux",
+   "instant": 1,
+   "octets": 7914,
+   "cle": "d70651acd78cfa4a"
+  },
+  "sw-releve-de-bassin-unilateral-avec-haltere": {
+   "mouvement": "pont banc hal unejambe",
+   "instant": 1,
+   "octets": 6606,
+   "cle": "33128f2fa8c81f43"
+  },
+  "sw-releve-de-buste-janda": {
+   "mouvement": "abdos situp",
+   "instant": 1,
+   "octets": 7994,
+   "cle": "448e85b5016bbd0a"
+  },
+  "sw-releve-de-genoux-a-l-x27-ab-coaster": {
+   "mouvement": "suspendu chaise",
+   "instant": 1,
+   "octets": 4670,
+   "cle": "dd3d1d0469f8d1f2"
+  },
+  "sw-retractions-scapulaires-suspendues": {
+   "mouvement": "traction scapulaire",
+   "instant": 1,
+   "octets": 7254,
+   "cle": "3a315069c4b7a606"
+  },
+  "sw-rotation-a-genou-avec-elastique": {
+   "mouvement": "rotation hache elas demigenou",
+   "instant": 0,
+   "octets": 6850,
+   "cle": "eced817a7ab06c64"
+  },
+  "sw-rotation-ascendante": {
+   "mouvement": "rotation hache bas",
+   "instant": 1,
+   "octets": 6362,
+   "cle": "de189da6f49ff9f1"
+  },
+  "sw-rotation-assise": {
+   "mouvement": "rotation assis",
+   "instant": 1,
+   "octets": 7346,
+   "cle": "d9c25d3d7ebf09ce"
+  },
+  "sw-rotation-autour-de-la-tete-avec-kettlebell": {
+   "mouvement": "elevation tete kb",
+   "instant": 1,
+   "octets": 5886,
+   "cle": "46834ce7130969e4"
+  },
+  "sw-rotation-avec-barre-en-t": {
+   "mouvement": "rotation landmine",
+   "instant": 0,
+   "octets": 6754,
+   "cle": "9609b44c7fd1ea7c"
+  },
+  "sw-rotation-avec-cable-haut-bas": {
+   "mouvement": "rotation hache poulie",
+   "instant": 1,
+   "octets": 8736,
+   "cle": "7ed4d2fff4075531"
+  },
+  "sw-rotation-avec-cable-horizontale": {
+   "mouvement": "rotation debout poulie",
+   "instant": 1,
+   "octets": 8458,
+   "cle": "cdd76aeeb455e213"
+  },
+  "sw-rotation-cubaine-avec-halteres": {
+   "mouvement": "elevation cubain hal",
+   "instant": 1,
+   "octets": 6660,
+   "cle": "efc456472e89d6e9"
+  },
+  "sw-rotation-debout-avec-barre": {
+   "mouvement": "rotation debout barre",
+   "instant": 1,
+   "octets": 6448,
+   "cle": "a5e80303c31fe63b"
+  },
+  "sw-rotation-du-tronc-a-la-machine-assise": {
+   "mouvement": "rotation machine",
+   "instant": 1,
+   "octets": 7316,
+   "cle": "4a6af9e6f50b1b79"
+  },
+  "sw-rotation-du-tronc-a-la-poulie-en-position-a-genoux": {
+   "mouvement": "rotation hache poulie genoux",
+   "instant": 0,
+   "octets": 8306,
+   "cle": "e86fdeb899c19a16"
+  },
+  "sw-rotation-du-tronc-debout": {
+   "mouvement": "rotation debout",
+   "instant": 1,
+   "octets": 5792,
+   "cle": "05eecbdc9944e622"
+  },
+  "sw-rotation-externe-de-l-x27-epaule-en-position-assise": {
+   "mouvement": "elevation rotext hal tabouret uni",
+   "instant": 1,
+   "octets": 8150,
+   "cle": "5ada4006daf9d137"
+  },
+  "sw-rotation-externe-en-decubitus-lateral": {
+   "mouvement": "elevation rotext hal cote uni",
+   "instant": 1,
+   "octets": 5278,
+   "cle": "c6901e72581bbeb5"
+  },
+  "sw-rotation-horizontale-avec-bande-elastique": {
+   "mouvement": "rotation debout elas",
+   "instant": 1,
+   "octets": 7810,
+   "cle": "14a069fe1c0019ba"
+  },
+  "sw-rotation-russe-avec-barre": {
+   "mouvement": "rotation assis barre",
+   "instant": 1,
+   "octets": 7810,
+   "cle": "0ad22abb2261b29c"
+  },
+  "sw-rotation-russe-avec-elastique": {
+   "mouvement": "rotation russe elas",
+   "instant": 1,
+   "octets": 7116,
+   "cle": "ee8a5bc55e37069e"
+  },
+  "sw-rotation-russe-avec-halteres": {
+   "mouvement": "rotation russe hal",
+   "instant": 1,
+   "octets": 7870,
+   "cle": "147358ba32f7cff9"
+  },
+  "sw-rotation-russe-avec-medecine-ball": {
+   "mouvement": "rotation russe balle",
+   "instant": 1,
+   "octets": 7648,
+   "cle": "711ff0431e7e008b"
+  },
+  "sw-rotation-russe-avec-poids": {
+   "mouvement": "rotation russe disque",
+   "instant": 1,
+   "octets": 7740,
+   "cle": "b189858e7d7dfbaf"
+  },
+  "sw-roulement-des-fessiers": {
+   "mouvement": "etire rouleau fessiers",
+   "instant": 1,
+   "octets": 9942,
+   "cle": "278357e1134cb268"
+  },
+  "sw-roulement-des-mollets": {
+   "mouvement": "etire rouleau mollets",
+   "instant": 1,
+   "octets": 6826,
+   "cle": "4a2eaca951c7926e"
+  },
+  "sw-roulement-du-pied": {
+   "mouvement": "etire rouleau pied",
+   "instant": 1,
+   "octets": 5264,
+   "cle": "fc6362919ee11537"
+  },
+  "sw-rowing-a-la-barre-en-pronation-inversee-penche-en-avant": {
+   "mouvement": "rowing barre sup",
+   "instant": 1,
+   "octets": 8858,
+   "cle": "a2c8626cee9f193b"
+  },
+  "sw-rowing-a-prise-large-sur-banc-incline": {
+   "mouvement": "rowing machine large",
+   "instant": 1,
+   "octets": 8562,
+   "cle": "6efcc7416760f48b"
+  },
+  "sw-rowing-a-un-bras-avec-barre-fixee-au-sol-en-position-penchee": {
+   "mouvement": "rowing landmine uni",
+   "instant": 1,
+   "octets": 7692,
+   "cle": "aea7237c350cf167"
+  },
+  "sw-rowing-arriere-avec-halteres-pour-deltoides-posterieurs": {
+   "mouvement": "rowing hal haut",
+   "instant": 1,
+   "octets": 8312,
+   "cle": "5ca1739cc089b60f"
+  },
+  "sw-rowing-assis-a-un-bras-avec-poulie-basse": {
+   "mouvement": "rowing poulie assis uni",
+   "instant": 1,
+   "octets": 7904,
+   "cle": "2e0c484eeb79d3f7"
+  },
+  "sw-rowing-barre-incline-prise-large": {
+   "mouvement": "rowing barre ventre=35 large",
+   "instant": 1,
+   "octets": 9502,
+   "cle": "c7c5e0b1ccd90e04"
+  },
+  "sw-rowing-barre-penche-depuis-pin": {
+   "mouvement": "rowing barre pendlay",
+   "instant": 1,
+   "octets": 10148,
+   "cle": "a1682ff42079af8a"
+  },
+  "sw-rowing-buste-penche-avec-halteres": {
+   "mouvement": "rowing hal",
+   "instant": 1,
+   "octets": 7460,
+   "cle": "106c31dbee79e6a6"
+  },
+  "sw-rowing-gorilla": {
+   "mouvement": "rowing kb gorille alt",
+   "instant": 1,
+   "octets": 7146,
+   "cle": "d5a91f7f9dd9c812"
+  },
+  "sw-rowing-halteres-sur-banc-incline": {
+   "mouvement": "rowing hal seal",
+   "instant": 1,
+   "octets": 5774,
+   "cle": "10ef13536fa8319f"
+  },
+  "sw-rowing-incline-avec-barre-poitrine-soutenue": {
+   "mouvement": "rowing barre ventre=35",
+   "instant": 1,
+   "octets": 9396,
+   "cle": "4eed5c6f041c376d"
+  },
+  "sw-rowing-incline-avec-halteres-prise-neutre": {
+   "mouvement": "rowing hal ventre=35 neutre",
+   "instant": 1,
+   "octets": 8146,
+   "cle": "1977418c66708587"
+  },
+  "sw-rowing-large-incline-avec-halteres": {
+   "mouvement": "rowing hal ventre=35 haut",
+   "instant": 1,
+   "octets": 8620,
+   "cle": "9bde3a34518b8023"
+  },
+  "sw-rowing-menton-a-la-barre-prise-largeur-d-epaules": {
+   "mouvement": "elevation menton barre",
+   "instant": 1,
+   "octets": 8306,
+   "cle": "375a87fe82070fe3"
+  },
+  "sw-rowing-penche-a-la-barre-guidee": {
+   "mouvement": "rowing smith",
+   "instant": 1,
+   "octets": 9658,
+   "cle": "02719aa2219a1463"
+  },
+  "sw-rowing-penche-avec-kettlebell": {
+   "mouvement": "rowing kb",
+   "instant": 1,
+   "octets": 7486,
+   "cle": "66ab724e480d0228"
+  },
+  "sw-rowing-t-bar-avec-appui-poitrine": {
+   "mouvement": "rowing tbar ventre",
+   "instant": 1,
+   "octets": 8042,
+   "cle": "ce7b2ef7dd6f78d0"
+  },
+  "sw-rowing-unilateral-avec-haltere-en-appui-sur-scapula-en-flexion-du-tronc": {
+   "mouvement": "rowing hal appui uni amp=0.25",
+   "instant": 1,
+   "octets": 8976,
+   "cle": "12d25876f630934f"
+  },
+  "sw-rowing-vertical-a-la-barre-avec-prise-serree": {
+   "mouvement": "elevation menton barre serre",
+   "instant": 1,
+   "octets": 8306,
+   "cle": "a14d5118bfe1212a"
+  },
+  "sw-saut-avec-halteres": {
+   "mouvement": "squat saut hal",
+   "instant": 0.25,
+   "octets": 8020,
+   "cle": "f75bba73226d4981"
+  },
+  "sw-saut-en-longueur": {
+   "mouvement": "saut longueur",
+   "instant": 0.75,
+   "octets": 6496,
+   "cle": "ec96e0d72bbeec2c"
+  },
+  "sw-saut-sur-boite-a-une-jambe": {
+   "mouvement": "saut boite unejambe",
+   "instant": 0.25,
+   "octets": 7358,
+   "cle": "d810f3df1710a012"
+  },
+  "sw-sauts-sur-place": {
+   "mouvement": "saut pogo",
+   "instant": 1,
+   "octets": 5062,
+   "cle": "acf8a9c8e6cc5023"
+  },
+  "sw-snatch-arrache": {
+   "mouvement": "halt arrache squat",
+   "instant": 0.5,
+   "octets": 7396,
+   "cle": "cf1c7a391f0dbbd0"
+  },
+  "sw-souleve-de-terre-a-partir-de-blocs": {
+   "mouvement": "souleve blocs",
+   "instant": 0,
+   "octets": 7234,
+   "cle": "bc9eed8821135913"
+  },
+  "sw-souleve-de-terre-avec-halteres": {
+   "mouvement": "souleve hal",
+   "instant": 0,
+   "octets": 7960,
+   "cle": "78f429dbe2986300"
+  },
+  "sw-souleve-de-terre-avec-kettlebell": {
+   "mouvement": "souleve kb",
+   "instant": 0,
+   "octets": 7298,
+   "cle": "a3bc86e279481835"
+  },
+  "sw-souleve-de-terre-jambes-tendues-avec-barre": {
+   "mouvement": "souleve tendues",
+   "instant": 1,
+   "octets": 10018,
+   "cle": "fdcc90fa11463432"
+  },
+  "sw-souleve-de-terre-jambes-tendues-avec-halteres": {
+   "mouvement": "souleve tendues hal",
+   "instant": 1,
+   "octets": 8678,
+   "cle": "fbfca06d10818a12"
+  },
+  "sw-souleve-de-terre-roumain-a-la-poulie": {
+   "mouvement": "souleve roumain poulie",
+   "instant": 1,
+   "octets": 8428,
+   "cle": "2047508f9adeb89a"
+  },
+  "sw-souleve-de-terre-roumain-a-la-smith-machine": {
+   "mouvement": "souleve roumain smith",
+   "instant": 1,
+   "octets": 9452,
+   "cle": "1b2b6e55459c3c53"
+  },
+  "sw-souleve-de-terre-roumain-avec-halteres": {
+   "mouvement": "souleve roumain hal",
+   "instant": 1,
+   "octets": 7132,
+   "cle": "128aad05096c1cc9"
+  },
+  "sw-souleve-de-terre-roumain-en-position-b": {
+   "mouvement": "souleve roumain bstance kb",
+   "instant": 1,
+   "octets": 7452,
+   "cle": "1ec4881b9e1edea5"
+  },
+  "sw-souleve-de-terre-unilateral": {
+   "mouvement": "souleve unejambe",
+   "instant": 1,
+   "octets": 7634,
+   "cle": "e828cbffafceff3d"
+  },
+  "sw-squat": {
+   "mouvement": "squat",
+   "instant": 1,
+   "octets": 8216,
+   "cle": "19a6b8ee30ea20e7"
+  },
+  "sw-squat-a-la-machine-avec-ceinture": {
+   "mouvement": "squat ceinture",
+   "instant": 1,
+   "octets": 7926,
+   "cle": "bd7375135d084d10"
+  },
+  "sw-squat-anderson": {
+   "mouvement": "squat barre partiel",
+   "instant": 1,
+   "octets": 9828,
+   "cle": "c031419369c652cf"
+  },
+  "sw-squat-au-banc-avec-smith-machine": {
+   "mouvement": "squat smith boite",
+   "instant": 1,
+   "octets": 9850,
+   "cle": "0ff488a24978f57a"
+  },
+  "sw-squat-au-smith-machine": {
+   "mouvement": "squat smith",
+   "instant": 1,
+   "octets": 10148,
+   "cle": "fc1f80ae83405564"
+  },
+  "sw-squat-avant-a-la-smith-machine": {
+   "mouvement": "squat smith avant",
+   "instant": 1,
+   "octets": 9788,
+   "cle": "7d99fd8dfe7727ae"
+  },
+  "sw-squat-avant-avec-arret": {
+   "mouvement": "squat barre avant partiel",
+   "instant": 1,
+   "octets": 9296,
+   "cle": "821b2126cddeaeae"
+  },
+  "sw-squat-avant-avec-barre-sur-banc": {
+   "mouvement": "squat barre avant boite",
+   "instant": 1,
+   "octets": 8924,
+   "cle": "918bac770ffa3e11"
+  },
+  "sw-squat-avec-barre-basse": {
+   "mouvement": "squat barre basse",
+   "instant": 1,
+   "octets": 9230,
+   "cle": "3c4f77806120afb6"
+  },
+  "sw-squat-avec-barre-pivotante": {
+   "mouvement": "squat landmine",
+   "instant": 1,
+   "octets": 7366,
+   "cle": "495fef8c8dc9ad79"
+  },
+  "sw-squat-avec-epaule": {
+   "mouvement": "halt squat",
+   "instant": 0.5,
+   "octets": 8700,
+   "cle": "ba79a5f6411f40af"
+  },
+  "sw-squat-avec-halteres": {
+   "mouvement": "squat hal",
+   "instant": 1,
+   "octets": 8608,
+   "cle": "3d22b957d82098bb"
+  },
+  "sw-squat-bulgare-avec-barre": {
+   "mouvement": "fente bulgare barre",
+   "instant": 1,
+   "octets": 9660,
+   "cle": "5186f815e8cb5872"
+  },
+  "sw-squat-bulgare-avec-halteres": {
+   "mouvement": "fente bulgare hal",
+   "instant": 1,
+   "octets": 8340,
+   "cle": "9470193c0e530415"
+  },
+  "sw-squat-chaise-sur-smith-machine": {
+   "mouvement": "squat smith",
+   "instant": 1,
+   "octets": 10178,
+   "cle": "b212e3def46ec5c6"
+  },
+  "sw-squat-contre-le-mur-avec-ballon-de-stabilite": {
+   "mouvement": "squat mur ballon",
+   "instant": 1,
+   "octets": 7012,
+   "cle": "ae264bd2a5904b24"
+  },
+  "sw-squat-cosaque": {
+   "mouvement": "squat cosaque",
+   "instant": 1,
+   "octets": 7614,
+   "cle": "0d250215664685d5"
+  },
+  "sw-squat-cosaque-avec-barre-olympique": {
+   "mouvement": "squat cosaque barre",
+   "instant": 1,
+   "octets": 9164,
+   "cle": "18e93dd1f6fdbda0"
+  },
+  "sw-squat-cosaque-avec-halteres": {
+   "mouvement": "squat cosaque gobelet",
+   "instant": 1,
+   "octets": 7584,
+   "cle": "8e1c9bb61bc7898c"
+  },
+  "sw-squat-cycliste": {
+   "mouvement": "squat barre cycliste",
+   "instant": 1,
+   "octets": 10260,
+   "cle": "b7cd62178b9b968e"
+  },
+  "sw-squat-gobelet-avec-kettlebell": {
+   "mouvement": "squat kb",
+   "instant": 1,
+   "octets": 7398,
+   "cle": "fb882e25af755026"
+  },
+  "sw-squat-hack-a-la-barre": {
+   "mouvement": "squat barre hack",
+   "instant": 1,
+   "octets": 8898,
+   "cle": "4322c8d825185341"
+  },
+  "sw-squat-hack-a-la-machine-smith": {
+   "mouvement": "squat smith",
+   "instant": 1,
+   "octets": 10148,
+   "cle": "fc1f80ae83405564"
+  },
+  "sw-squat-hack-inverse-a-la-machine": {
+   "mouvement": "squat hack",
+   "instant": 1,
+   "octets": 10838,
+   "cle": "6da71d7edda4574d"
+  },
+  "sw-squat-partiel": {
+   "mouvement": "squat barre partiel",
+   "instant": 1,
+   "octets": 9828,
+   "cle": "c031419369c652cf"
+  },
+  "sw-squat-pistole-avec-poids": {
+   "mouvement": "squat pistolet kb",
+   "instant": 1,
+   "octets": 8096,
+   "cle": "7a204598fede8593"
+  },
+  "sw-squat-pistolet-assiste": {
+   "mouvement": "squat pistolet assiste",
+   "instant": 1,
+   "octets": 5956,
+   "cle": "ac724bebdd87fad3"
+  },
+  "sw-squat-profond-avec-flexion-large-et-maintien-du-pied": {
+   "mouvement": "etire squatpli",
+   "instant": 1,
+   "octets": 9350,
+   "cle": "d52e4c85714c1bd7"
+  },
+  "sw-squat-saute-bulgare": {
+   "mouvement": "fente bulgare pliometrique",
+   "instant": 0.25,
+   "octets": 7650,
+   "cle": "28d877302ed1b70d"
+  },
+  "sw-squat-sissy-a-genoux": {
+   "mouvement": "jambes nordiqueInverse",
+   "instant": 1,
+   "octets": 7874,
+   "cle": "a5618da015c75f5d"
+  },
+  "sw-squat-sissy-avec-poids": {
+   "mouvement": "squat sissy",
+   "instant": 1,
+   "octets": 7246,
+   "cle": "02583b52fea825fc"
+  },
+  "sw-squat-sissy-pondere-en-position-agenouillee": {
+   "mouvement": "jambes nordiqueInverse disque",
+   "instant": 1,
+   "octets": 7894,
+   "cle": "f55cc15c3f8a6ada"
+  },
+  "sw-squat-sumo": {
+   "mouvement": "squat sumo",
+   "instant": 1,
+   "octets": 8162,
+   "cle": "a6766a8c43dc0f9f"
+  },
+  "sw-squat-sumo-avec-barre": {
+   "mouvement": "squat barre sumo",
+   "instant": 1,
+   "octets": 10096,
+   "cle": "e7ea9ad580d7b94b"
+  },
+  "sw-squat-sumo-avec-smith-machine": {
+   "mouvement": "squat smith sumo",
+   "instant": 1,
+   "octets": 10280,
+   "cle": "72fe5ac88ae1b2ca"
+  },
+  "sw-squat-sumo-sur-stepbox": {
+   "mouvement": "souleve kb sumo deficit",
+   "instant": 0,
+   "octets": 7054,
+   "cle": "bf4b7371802bdc7f"
+  },
+  "sw-squat-sur-boite": {
+   "mouvement": "squat barre boite",
+   "instant": 1,
+   "octets": 9746,
+   "cle": "d9d8d4cac0585e56"
+  },
+  "sw-squat-sur-boite-en-pistolet": {
+   "mouvement": "squat pistolet boite",
+   "instant": 1,
+   "octets": 8086,
+   "cle": "d88d92d8b489d3b1"
+  },
+  "sw-squat-zercher-a-la-smith-machine": {
+   "mouvement": "squat smith zercher",
+   "instant": 1,
+   "octets": 9826,
+   "cle": "81f8a0572bc98a18"
+  },
+  "sw-supination-couchee-avec-halteres": {
+   "mouvement": "poignet supination uni",
+   "instant": 1,
+   "octets": 8738,
+   "cle": "0b7fb17039cbd4d5"
+  },
+  "sw-tapping-genou-haut-en-sautant": {
+   "mouvement": "saut genoux",
+   "instant": 1,
+   "octets": 6062,
+   "cle": "269c9d1086017f04"
+  },
+  "sw-taps-de-cheville": {
+   "mouvement": "abdos chevilles",
+   "instant": 1,
+   "octets": 7462,
+   "cle": "ca5d1ea49bbc307f"
+  },
+  "sw-thruster-avec-barre": {
+   "mouvement": "squat barre avant thruster",
+   "instant": 0.25,
+   "octets": 10082,
+   "cle": "a72d7843ea49e749"
+  },
+  "sw-tirage-a-la-bande-derriere-la-nuque": {
+   "mouvement": "tirage elas genoux nuque",
+   "instant": 1,
+   "octets": 6130,
+   "cle": "c381e40c7c0278b9"
+  },
+  "sw-tirage-a-la-cable-prise-large-derriere-la-nuque": {
+   "mouvement": "tirage large nuque",
+   "instant": 1,
+   "octets": 7154,
+   "cle": "7167fb12b2047817"
+  },
+  "sw-tirage-a-la-corde-bras-tendus": {
+   "mouvement": "tirage tendus corde",
+   "instant": 0,
+   "octets": 6610,
+   "cle": "e8b04496f25c7848"
+  },
+  "sw-tirage-a-la-poulie-haute-prise-inversee": {
+   "mouvement": "tirage sup",
+   "instant": 1,
+   "octets": 6702,
+   "cle": "e8d724a2903f4117"
+  },
+  "sw-tirage-a-la-poulie-unilateral-en-demi-genou": {
+   "mouvement": "tirage demigenou uni",
+   "instant": 1,
+   "octets": 5002,
+   "cle": "0bd0501afd9f5d0f"
+  },
+  "sw-tirage-a-un-bras-sur-machine-avec-support-pour-la-poitrine": {
+   "mouvement": "rowing machine uni",
+   "instant": 1,
+   "octets": 9234,
+   "cle": "e7deadf5b0473845"
+  },
+  "sw-tirage-assis-a-la-poulie-avec-prise-neutre": {
+   "mouvement": "rowing poulie assis neutre",
+   "instant": 1,
+   "octets": 7928,
+   "cle": "6b163c2ad13e2029"
+  },
+  "sw-tirage-assis-a-la-poulie-avec-prise-supine": {
+   "mouvement": "rowing poulie assis sup",
+   "instant": 1,
+   "octets": 8016,
+   "cle": "cd699e55207e5dc2"
+  },
+  "sw-tirage-assis-a-un-bras": {
+   "mouvement": "rowing machine uni",
+   "instant": 1,
+   "octets": 9258,
+   "cle": "8c7f0f7ad3813541"
+  },
+  "sw-tirage-bas-a-un-bras-a-la-poulie": {
+   "mouvement": "rowing poulie assis uni",
+   "instant": 1,
+   "octets": 7900,
+   "cle": "3b31f6a6895a6ca6"
+  },
+  "sw-tirage-bas-avec-levier": {
+   "mouvement": "rowing machine",
+   "instant": 1,
+   "octets": 9108,
+   "cle": "e1cc0312d11395bf"
+  },
+  "sw-tirage-circulaire": {
+   "mouvement": "traction autour",
+   "instant": 1,
+   "octets": 6748,
+   "cle": "62692f9041733a13"
+  },
+  "sw-tirage-d-x27-arrache": {
+   "mouvement": "halt arrache tirage",
+   "instant": 0,
+   "octets": 8656,
+   "cle": "030dfe5f914cea75"
+  },
+  "sw-tirage-facial-aux-anneaux": {
+   "mouvement": "suspension facepull anneaux",
+   "instant": 1,
+   "octets": 5102,
+   "cle": "4e2a131164de7388"
+  },
+  "sw-tirage-haut-a-la-machine": {
+   "mouvement": "rowing machine haut",
+   "instant": 1,
+   "octets": 8310,
+   "cle": "5557dca774732f09"
+  },
+  "sw-tirage-haut-a-un-bras-avec-levier": {
+   "mouvement": "rowing machine haut uni",
+   "instant": 1,
+   "octets": 7646,
+   "cle": "b5d3a604075e3c4a"
+  },
+  "sw-tirage-haut-assis-penche-avec-halteres": {
+   "mouvement": "rowing hal haut tabouret",
+   "instant": 1,
+   "octets": 7594,
+   "cle": "36f2b684495dcfba"
+  },
+  "sw-tirage-haut-unilateral-a-la-cable": {
+   "mouvement": "rowing poulie demigenou haut uni",
+   "instant": 1,
+   "octets": 7532,
+   "cle": "eaec4cefc1f91fec"
+  },
+  "sw-tirage-large-avec-bande-ancree-en-hauteur": {
+   "mouvement": "rowing elas debout haut large",
+   "instant": 1,
+   "octets": 6880,
+   "cle": "e5335c08ab6da13b"
+  },
+  "sw-tirage-lateral-avec-bande-en-position-penchee": {
+   "mouvement": "tirage elas debout",
+   "instant": 1,
+   "octets": 5728,
+   "cle": "ebf4446d0e910ecf"
+  },
+  "sw-tirage-vertical-a-genoux-a-la-poulie": {
+   "mouvement": "tirage genoux",
+   "instant": 1,
+   "octets": 5370,
+   "cle": "e6b793de0d2520a6"
+  },
+  "sw-tirage-vertical-a-la-barre-avec-prise-large": {
+   "mouvement": "elevation menton barre large",
+   "instant": 1,
+   "octets": 7394,
+   "cle": "a009fadb5aaaeae4"
+  },
+  "sw-tirage-vertical-a-la-poulie": {
+   "mouvement": "tirage",
+   "instant": 1,
+   "octets": 6570,
+   "cle": "e2816be56cb5d321"
+  },
+  "sw-tirage-vertical-a-la-poulie-prise-neutre": {
+   "mouvement": "tirage neutre",
+   "instant": 1,
+   "octets": 6572,
+   "cle": "5b75062c5b66c7e2"
+  },
+  "sw-tirage-vertical-a-un-bras": {
+   "mouvement": "tirage uni",
+   "instant": 1,
+   "octets": 6558,
+   "cle": "a44bac8bd3b42f90"
+  },
+  "sw-tirage-vertical-a-un-bras-avec-bande-elastique": {
+   "mouvement": "tirage elas genoux uni",
+   "instant": 1,
+   "octets": 5360,
+   "cle": "8c62c897fe4cfe8f"
+  },
+  "sw-tirage-vertical-bras-tendus": {
+   "mouvement": "tirage tendus",
+   "instant": 0,
+   "octets": 6544,
+   "cle": "6a3865344cdecc41"
+  },
+  "sw-tirage-vertical-unilateral-a-la-poulie": {
+   "mouvement": "tirage tendus uni",
+   "instant": 0,
+   "octets": 6420,
+   "cle": "a2c07338f19cc896"
+  },
+  "sw-tirage-visage-a-la-poulie-en-supination": {
+   "mouvement": "elevation facepull poulie sup",
+   "instant": 1,
+   "octets": 8310,
+   "cle": "db023887445b5d57"
+  },
+  "sw-tirage-visage-assis": {
+   "mouvement": "elevation facepull poulie tabouret",
+   "instant": 1,
+   "octets": 8802,
+   "cle": "9cc1dceabf1305eb"
+  },
+  "sw-tirage-visage-avec-bande-elastique": {
+   "mouvement": "elevation facepull elas",
+   "instant": 1,
+   "octets": 6586,
+   "cle": "099fd8bba09919c6"
+  },
+  "sw-tirage-visage-couche-a-la-poulie": {
+   "mouvement": "elevation facepull poulie sol",
+   "instant": 1,
+   "octets": 7032,
+   "cle": "5225b2f261e0b522"
+  },
+  "sw-torsion-vertebrale-couchee": {
+   "mouvement": "rotation couche",
+   "instant": 1,
+   "octets": 6688,
+   "cle": "671ef936be09443f"
+  },
+  "sw-touche-d-x27-epaule": {
+   "mouvement": "planche epaule",
+   "instant": 1,
+   "octets": 5730,
+   "cle": "76c07abcd41f6a3a"
+  },
+  "sw-toucher-des-orteils": {
+   "mouvement": "abdos toucher",
+   "instant": 1,
+   "octets": 8110,
+   "cle": "72e52b09ed4a5ae2"
+  },
+  "sw-traction-a-la-barre-fixe-avec-prise-neutre-et-charge-additionnelle": {
+   "mouvement": "traction neutre leste",
+   "instant": 1,
+   "octets": 6616,
+   "cle": "550c61b4ff36af91"
+  },
+  "sw-traction-arriere-prise-large": {
+   "mouvement": "traction large nuque",
+   "instant": 1,
+   "octets": 6342,
+   "cle": "bc06a89f62d6e3a0"
+  },
+  "sw-traction-assistee-par-bande-elastique": {
+   "mouvement": "traction elastique",
+   "instant": 1,
+   "octets": 6690,
+   "cle": "5d69017686062f78"
+  },
+  "sw-traction-australienne-a-prise-etroite-avec-anneaux": {
+   "mouvement": "suspension row anneaux",
+   "instant": 1,
+   "octets": 4612,
+   "cle": "b49b97abe92cd1e4"
+  },
+  "sw-traction-australienne-prise-supination": {
+   "mouvement": "suspension row sup",
+   "instant": 1,
+   "octets": 8670,
+   "cle": "08a6043d59c0c131"
+  },
+  "sw-traction-aux-anneaux": {
+   "mouvement": "traction anneaux",
+   "instant": 1,
+   "octets": 4670,
+   "cle": "3fff5c862167a313"
+  },
+  "sw-traction-avec-charge": {
+   "mouvement": "traction sup leste",
+   "instant": 1,
+   "octets": 6096,
+   "cle": "9a2d80db026fa0c4"
+  },
+  "sw-traction-en-levier-avant": {
+   "mouvement": "gym levier traction",
+   "instant": 1,
+   "octets": 5622,
+   "cle": "6ff551bd7e4485e7"
+  },
+  "sw-traction-en-prise-neutre": {
+   "mouvement": "traction neutre",
+   "instant": 1,
+   "octets": 6708,
+   "cle": "34f5e9aadb798bd2"
+  },
+  "sw-traction-en-prise-serree": {
+   "mouvement": "traction serre",
+   "instant": 1,
+   "octets": 6214,
+   "cle": "3002b53dd462bad1"
+  },
+  "sw-tractions-prise-large": {
+   "mouvement": "traction large",
+   "instant": 1,
+   "octets": 6658,
+   "cle": "de1a46fb6846a4f6"
+  },
+  "sw-traineau-prowler": {
+   "mouvement": "cardio traineau",
+   "instant": 1,
+   "octets": 7446,
+   "cle": "c4e8bf3ca686301e"
+  },
+  "sw-v-ups-en-suspension": {
+   "mouvement": "planche pike",
+   "instant": 1,
+   "octets": 5606,
+   "cle": "c525ce447084a554"
+  },
+  "sw-velo-air-debout": {
+   "mouvement": "rotation genoucoude",
+   "instant": 1,
+   "octets": 5660,
+   "cle": "061b764ebe3f37de"
+  },
+  "sw-velo-d-x27-assaut-air": {
+   "mouvement": "cardio airbike",
+   "instant": 1,
+   "octets": 9856,
+   "cle": "040ed4e68c53ab63"
+  }
+ }
+}
