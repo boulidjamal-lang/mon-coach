@@ -18968,7 +18968,7 @@ const SW_ASSET = 'https://api.smartworkout.app/asset/';
    et le dossier assets/miniatures a été retiré ; les branches qui en
    dépendaient restent en place pour les vidéos ajoutées dans Administration. */
 function mediaTiersInterdit(url) {
-  return /smartworkout\.app|exercisedb\.dev|wger\.de/i.test(url || '');
+  return /smart-?workout|exercisedb\.dev|wger\.de/i.test(url || '');
 }
 function videoSmartWorkout() {
   return null;
@@ -19039,9 +19039,10 @@ function vignettes3DAnimees() {
   return !(window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches);
 }
 /* Vignette utilisée dans les listes (bibliothèque, sélecteurs, séance,
-   programmes) : la miniature 3D de l'exercice ; à défaut la photo de
-   EXERCICE_MEDIA si l'exercice y est reconnu, sinon le schéma corps. Une
-   vidéo ou des photos posées dans Administration passent avant. */
+   programmes) : la miniature 3D de l'exercice, toujours, quand il a son
+   mouvement. Sinon (exercice créé par l'utilisateur, sorti de la
+   bibliothèque) : sa vidéo ou ses photos d'Administration, la photo de
+   EXERCICE_MEDIA s'il y est reconnu, à défaut le schéma corps. */
 function medaillonExercice(exo, anime) {
   // Exercice de la bibliothèque avec une vidéo SmartWorkout : sa vignette
   // passe avant les anciennes photos, pour que la liste montre la même
@@ -19051,6 +19052,14 @@ function medaillonExercice(exo, anime) {
   // la vidéo (120 px, ~10 Ko, dans assets/miniatures) au lieu de l'originale
   // Full HD de ~1 Mo, trop lente à charger pour une vignette. Ailleurs
   // (bibliothèque, sélecteurs : des centaines de lignes) elle reste une image.
+  // Un exercice de la bibliothèque qui a son mouvement montre toujours sa miniature 3D, même si une vidéo ou des
+  // photos lui ont été posées autrefois dans Administration (c'étaient des copies de SmartWorkout, sans licence) :
+  // chargée près de l'écran seulement, la bibliothèque en affiche des centaines.
+  const v3d = vignette3DExercice(exo);
+  if (v3d) {
+    const boucle = vignettes3DAnimees() ? ` data-anim3d="${escapeHtml(idVignette3D(exo))}"` : '';
+    return `<img class="vignette-3d${boucle ? ' vignette-differee' : ''}" src="${v3d}" alt="" decoding="async" loading="lazy"${boucle} data-repli="${escapeHtml(exo.groupe || '')}">`;
+  }
   const sw = !exo.perso && videoExercice(exo);
   const swBase = !exo.perso && typeof exo.video !== 'string' && videoSmartWorkout(exo.id);
   if (swBase) {
@@ -19069,13 +19078,6 @@ function medaillonExercice(exo, anime) {
   // data-repli : image distante introuvable (hors ligne, lien mort) → la
   // silhouette du groupe, plutôt que l'icône d'image cassée (voir plus bas).
   const repli = ` data-repli="${escapeHtml(exo.groupe || '')}"`;
-  // La miniature 3D, sauf si une vidéo ou des photos ont été posées pour cet exercice dans Administration. Chargée
-  // près de l'écran seulement : la bibliothèque en affiche des centaines.
-  const v3d = !(typeof exo.video === 'string' && exo.video) && !(exo.img && exo.img.length) && vignette3DExercice(exo);
-  if (v3d) {
-    const boucle = vignettes3DAnimees() ? ` data-anim3d="${escapeHtml(idVignette3D(exo))}"` : '';
-    return `<img class="vignette-3d${boucle ? ' vignette-differee' : ''}" src="${v3d}" alt="" decoding="async" loading="lazy"${boucle}${repli}>`;
-  }
   if (sw && sw.poster) return `<img src="${escapeHtml(sw.poster)}" alt="" decoding="async" loading="lazy"${repli} style="background:#fff;">`;
   const media = mediaExercice(exo);
   if (media && media.img && media.img[0]) {
@@ -22182,8 +22184,12 @@ function afficherFicheExerciceBiblio(id, options) {
   if (videoBrute && !videoBrute.video && videoBrute.poster && !(media && media.img && media.img.length)) media = { img: [videoBrute.poster] };
   // Le mouvement en trois dimensions s'affiche d'emblée quand l'exercice en a un (et que l'appareil sait l'afficher) :
   // il prend la place de la photo, qui reste à portée d'un bouton quand il y en a une.
-  const mouvement3d = !video && atlasDisponible() && mouvementExercice(e.id);
-  if (video) {
+  // Il passe aussi avant une vidéo posée autrefois dans Administration (des copies de SmartWorkout, sans licence) :
+  // elle ne sert plus qu'aux exercices sans mouvement (créés par l'utilisateur) et aux appareils sans 3D.
+  const mouvement3d = atlasDisponible() && mouvementExercice(e.id);
+  if (mouvement3d) {
+    html += `<div id="fiche-exo-media">${mouvementFicheHTML(e, media)}</div>`;
+  } else if (video) {
     // Comme l'agrandissement (agrandirVideoExercice) : la mini-vidéo locale
     // (~10 Ko) joue tout de suite, la vidéo HD distante (~1 Mo) la recouvre
     // en fondu dès qu'elle peut jouer. Avant, la fiche restait sur une image
@@ -22192,8 +22198,6 @@ function afficherFicheExerciceBiblio(id, options) {
     const miniFiche = brutFiche ? 'assets/miniatures/' + brutFiche[0] : null;
     html += `<div class="fiche-exo-video${miniFiche ? ' fiche-exo-video--mini' : ''}">${miniFiche ? `<video class="mini" src="${miniFiche}.mp4" poster="${miniFiche}.jpg" autoplay muted loop playsinline disablepictureinpicture aria-hidden="true"></video>` : ''}<span class="hd-place" data-url="${escapeHtml(video.video)}"${video.poster && !miniFiche ? ` data-poster="${escapeHtml(video.poster)}"` : ''} data-label="Démonstration : ${escapeHtml(libelleExercice(e))}"></span></div>
     ${/smartworkout\.app/i.test(video.page) ? `<p class="note fiche-exo-note-source">Vidéo : <a href="${escapeHtml(video.page)}" target="_blank" rel="noopener" style="color:var(--accent);">SmartWorkout</a></p>` : ''}`;
-  } else if (mouvement3d) {
-    html += `<div id="fiche-exo-media">${mouvementFicheHTML(e, media)}</div>`;
   } else {
     html += `<div id="fiche-exo-media">${mediaStatiqueFicheHTML(e, media)}</div>`;
   }
@@ -22465,6 +22469,8 @@ function prechargerVideosExercices(ids) {
   if (economieDonnees()) return;
   ids.forEach(id => {
     const exo = trouverExercice(id);
+    // Un exercice qui a sa miniature 3D ne montre pas de vidéo : rien à précharger (voir agrandirVideoExercice).
+    if (exo && vignette3DExercice(exo)) return;
     const v = exo && (!exo.perso || typeof exo.video === 'string') && videoExercice(exo);
     const url = v && v.video;
     if (url && !videosHD.has(url) && !videosHDAttente.includes(url) && videosHDAttente.length < VIDEOS_HD_MAX) videosHDAttente.push(url);
@@ -22502,6 +22508,10 @@ function agrandirVideoExercice(exerciceId) {
   if (!exo) return;
   const zone = document.getElementById('video-zoom-media');
   document.getElementById('video-zoom-titre').textContent = libelleExercice(exo);
+  // La démonstration en grand est celle que montre la miniature : le mouvement en 3D, dans l'atlas ouvert sur
+  // l'exercice, même si une vidéo lui a été posée autrefois dans Administration. La vidéo, la photo ou le corps
+  // dessiné restent pour un appareil sans 3D et pour les exercices sans miniature (créés par l'utilisateur).
+  if (atlasDisponible() && vignette3DExercice(exo)) { ouvrirAtlas('exercice', { exercice: exo.id }); return; }
   const v = videoExercice(exo);
   const brut = !exo.perso && typeof exo.video !== 'string' && videoSmartWorkout(exo.id);
   if (v && v.video) {
@@ -22511,10 +22521,6 @@ function agrandirVideoExercice(exerciceId) {
     const hd = brancherVideosHD(zone, true)[0];
     if (hd && !mini) hd.classList.add('prete');
   } else {
-    // Sans vidéo, la démonstration en grand est celle que montre la miniature : le mouvement en 3D, dans l'atlas
-    // ouvert sur l'exercice. La photo, ou le corps dessiné, reste pour un appareil sans 3D et pour les exercices
-    // sans miniature (créés par l'utilisateur, photos posées dans Administration).
-    if (atlasDisponible() && !(exo.img && exo.img.length) && vignette3DExercice(exo)) { ouvrirAtlas('exercice', { exercice: exo.id }); return; }
     const media = mediaExercice(exo);
     const img = (media && media.img && media.img[0]) || (v && v.poster);
     zone.innerHTML = img ? `<img src="${escapeHtml(img)}" alt="${escapeHtml(libelleExercice(exo))}">` : `<div class="schema-repli" style="position:absolute; inset:0; display:flex; align-items:center; justify-content:center;">${corpsExerciceHTML(exo).html}</div>`;

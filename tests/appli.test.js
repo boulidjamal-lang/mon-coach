@@ -3592,9 +3592,10 @@ test("séance en cours : en-tête (chrono, avancée, corps) et un mini-cadran pa
 
 test('vidéos HD : préchargées au démarrage de la séance, reprises telles quelles par la fiche et l\'agrandissement', () => avecAppli({}, async ({ page }) => {
   const r = await page.evaluate(() => {
-    // Une vidéo ajoutée dans Administration (plus aucune vidéo tierce par défaut).
-    const exo = toutesLesExercices().find(e => !e.perso && typeof e.video !== 'string');
-    exo.video = 'https://exemple.fr/demo.mp4';
+    // Une vidéo ajoutée à un exercice créé par l'utilisateur (plus aucune vidéo tierce par défaut ; un exercice de
+    // la bibliothèque, lui, montre son mouvement en 3D même s'il a une vidéo : voir le test suivant).
+    musculationExosPerso.push({ id: 'perso-filme', nom: 'Exercice maison filmé', groupe: 'biceps', secondaires: [], materiel: 'haltere', perso: true, video: 'https://exemple.fr/demo.mp4' });
+    const exo = trouverExercice('perso-filme');
     const url = videoExercice(exo).video;
     musculationProgrammes.push({ id: 'pv', nom: 'Test', exercices: [{ exerciceId: exo.id, series: [{ poids: 20, reps: 8 }] }], maj: Date.now() });
     allerA('seance'); demarrerSeance('pv');
@@ -3608,6 +3609,38 @@ test('vidéos HD : préchargées au démarrage de la séance, reprises telles qu
       revenue: document.querySelector('#fiche-exercice-container video.hd') === prechargee, src: fiche && fiche.getAttribute('src') === url };
   });
   assert.deepEqual(r, { prechargee: true, memeFiche: true, memeZoom: true, revenue: true, src: true });
+}));
+
+test("une vidéo ou des photos posées autrefois dans Administration ne remplacent plus la 3D d'un exercice de la bibliothèque (miniature, fiche, séance) ; toute copie de SmartWorkout est écartée", () => avecAppli({}, async ({ page }) => {
+  const r = await page.evaluate(() => {
+    // Les corrections telles que le serveur les rend (exercices_base_overrides) : une vidéo hébergée ailleurs
+    // que chez SmartWorkout, des photos.
+    appliquerOverridesBase([{ id: 'e265', donnees: { video: 'https://videos.exemple.fr/squat.mp4', img: ['https://images.exemple.fr/squat.jpg'] } }]);
+    const exo = trouverExercice('e265');
+    const res = { vignette: medaillonExercice(exo).slice(0, 80), vignetteSeance: medaillonExercice(exo, true).slice(0, 80) };
+    afficherFicheExerciceBiblio('e265');
+    const fiche = document.getElementById('fiche-exercice-container');
+    res.fiche = { trois_d: !!fiche.querySelector('#fiche-exo-3d'), video: !!fiche.querySelector('.fiche-exo-video, video.hd') };
+    fermerModal('fiche-exercice-modal');
+    // En séance : la vidéo n'est pas préchargée, et toucher la miniature ouvre l'atlas sur le mouvement.
+    prechargerVideosExercices(['e265']);
+    res.prechargee = videosHDAttente.includes('https://videos.exemple.fr/squat.mp4') || videosHD.has('https://videos.exemple.fr/squat.mp4');
+    const vrai = window.ouvrirAtlas; let appel = null;
+    window.ouvrirAtlas = (mode, options) => { appel = [mode, options]; };
+    agrandirVideoExercice('e265');
+    window.ouvrirAtlas = vrai;
+    res.appel = appel;
+    // Une copie de SmartWorkout hébergée ailleurs est reconnue à son adresse.
+    res.copies = ['https://cdn.exemple.com/smartworkout/x.mp4', 'https://smart-workout.b-cdn.net/v.mp4', 'https://api.smartworkout.app/asset/video/1.mp4'].map(mediaTiersInterdit);
+    res.autre = mediaTiersInterdit('https://videos.exemple.fr/squat.mp4');
+    return res;
+  });
+  assert.match(r.vignette, /^<img class="vignette-3d[^"]*" src="assets\/atlas\/vignettes\/e265\.webp"/);
+  assert.match(r.vignetteSeance, /^<img class="vignette-3d[^"]*" src="assets\/atlas\/vignettes\/e265\.webp"/);
+  assert.deepEqual(r.fiche, { trois_d: true, video: false });
+  assert.equal(r.prechargee, false);
+  assert.deepEqual(r.appel, ['exercice', { exercice: 'e265' }]);
+  assert.deepEqual([r.copies, r.autre], [[true, true, true], false]);
 }));
 
 test("frictions : confirmation de l'appli (plus de fenêtre du navigateur), série supprimée avec Annuler, quantité prête à taper, mot de passe plus gardé", () => avecAppli({}, async ({ page, dialogues }) => {
