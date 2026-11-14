@@ -1,6 +1,6 @@
 -- 0002_securite_des_donnees — généré depuis index.html par scripts/exporter-sql.mjs ; ne pas modifier à la main.
 -- À exécuter UNE FOIS que toi et l'autre personne avez chacun créé un
--- compte (bouton <svg class="icone-ui" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2" /><circle cx="12" cy="7" r="4" /></svg> <svg class="icone-ui" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 18 6-6-6-6" /></svg> Créer un compte). Idempotent : relancer ne casse rien.
+-- compte (« Créer un compte » dans l'appli). Idempotent : relancer ne casse rien.
 -- Avant ça, les tables sont fermées (le script 1 ne crée plus de règle) ;
 -- après, chaque compte ne peut lire/écrire que les lignes où
 -- utilisateur = son propre auth.uid() — sauf l'administrateur, qui voit et
@@ -118,11 +118,31 @@ create policy "exercices_perso_musculation par compte" on exercices_perso_muscul
   using ((utilisateur = auth.uid()::text and not est_bloque(utilisateur) and mon_compte_existe()) or public.est_admin())
   with check ((utilisateur = auth.uid()::text and not est_bloque(utilisateur) and mon_compte_existe()) or public.est_admin());
 
--- Important : ces policies exigent d'être connecté (auth.uid() non nul).
--- Si l'un de vous continue à utiliser l'identifiant libre sans jamais se
--- connecter, ses lectures/écritures échoueront après ce script — dans ce
--- cas, gardez plutôt les policies par défaut ("using (true)") tant que
--- vous n'avez pas tous les deux un compte actif.
+-- Règles ouvertes à tous restées sur ces cinq tables (créées à la main dans
+-- Supabase, ou par une ancienne version sous un autre nom) : les règles se
+-- cumulent, une seule suffit à ouvrir la table à quiconque a la clé publique.
+-- Retirées ici, table par table, là où la règle par compte est en place
+-- (refaite juste au-dessus). Le contrôle admin_regles_ouvertes(), en fin de
+-- script, doit ensuite valoir 0 (ligne 2 de l'écran Administration en vert).
+do $$
+declare r record;
+begin
+  for r in
+    select p.tablename, p.policyname from pg_policies p
+    where p.schemaname = 'public'
+      and p.tablename in ('journees', 'profil', 'programmes_musculation', 'seances_musculation', 'exercices_perso_musculation')
+      and (p.qual = 'true' or p.with_check = 'true')
+      and p.policyname <> p.tablename || ' par compte'
+      and exists (select 1 from pg_policies c where c.schemaname = 'public' and c.tablename = p.tablename
+                  and c.policyname = p.tablename || ' par compte' and c.qual is distinct from 'true')
+  loop
+    execute format('drop policy %I on public.%I', r.policyname, r.tablename);
+    raise notice 'Règle ouverte retirée : % sur %', r.policyname, r.tablename;
+  end loop;
+end $$;
+
+-- Ces règles exigent d'être connecté (auth.uid() non nul) : l'appli exige
+-- un compte, il n'y a plus d'accès sans connexion.
 
 -- Fonction dédiée au panneau Administration : la table auth.users (qui
 -- contient les emails) n'est normalement pas interrogeable directement par

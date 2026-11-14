@@ -4561,8 +4561,8 @@ html:root[data-theme="light"] body :is(.modal, .feuille) { background-color: rgb
 html:root body .btn:disabled { opacity: .4 !important; cursor: not-allowed; }
 
 /* App iOS (classe posée par la couche native) : ce qui n'a de sens que sur
-   le web (installer l'appli, Withings par le navigateur, caméra du
-   navigateur), ou que dans l'app (Apple Santé, scanner natif). */
+   le web (installer l'appli, l'astuce « Ouvrir dans Safari » de Withings,
+   caméra du navigateur), ou que dans l'app (Apple Santé, scanner natif). */
 html.app-ios .seulement-web { display: none !important; }
 /* Compte : l'accord IA (retirable) et la suppression du compte, discrète mais là. */
 .compte-accord-ia { margin: 16px 2px 0; }

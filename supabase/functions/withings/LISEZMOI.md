@@ -27,13 +27,17 @@ n'importe quel site et renvoyait les jetons au navigateur.
   peut pas en imposer une autre. Côté appli, chaque demande de connexion
   part avec un `state` aléatoire gardé sur l'appareil, exigé au retour.
 - **La balance fait partie de Pro**, comme dans l'appli : relier, importer
-  ou lire les pesées exige un abonnement valable (402 sinon).
+  ou lire les pesées exige un abonnement valable (402 sinon), sauf pour
+  l'administrateur (reconnu par `est_admin()`, lue avec la session du
+  compte ; sans clé publique, par la table `admins`). Tant que le serveur
+  n'a pas la table `abonnements` (SQL Pro pas encore exécuté), rien n'est
+  réservé, comme dans l'appli.
 
 ## Actions
 
 | Action (POST JSON `{ action, … }`) | Réponse | Rôle |
 |---|---|---|
-| `etat` | `{ connecte }` | La balance est-elle reliée à ce compte ? |
+| `etat` | `{ connecte, autorise }` | La balance est-elle reliée à ce compte, et ce compte peut-il s'en servir ? (L'app iPhone, où Pro n'est pas vendu, ne montre la balance qu'à un compte `autorise` ou déjà relié, et à l'administrateur.) |
 | `connecter` `{ code }` | `{ connecte: true }` | Échange le code OAuth du retour de Withings et garde les jetons |
 | `mesures` | `{ status: 0, body: { measuregrps } }` | Les 10 dernières pesées (format Withings `getmeas`), jeton rafraîchi au besoin ; `409 { connecte: false }` si la connexion a expiré |
 | `deconnecter` | `{ connecte: false }` | Oublie les jetons |
@@ -56,6 +60,13 @@ supabase secrets set WITHINGS_CLIENT_SECRET=xxxxxxxxxxxxxxxxxxxx
 supabase functions deploy withings
 ```
 
+Sans la CLI : tableau de bord Supabase › Edge Functions › *Deploy a new
+function* › *Via Editor*, nom `withings`, coller le contenu d'`index.ts`,
+*Deploy* (la vérification du JWT reste activée). Le secret
+`WITHINGS_CLIENT_SECRET` se pose dans Edge Functions › Secrets : il ne
+suffit pas seul, la fonction doit être déployée (sinon l'appli répond
+« La connexion Withings attend le déploiement de la fonction serveur »).
+
 Puis, dans l'éditeur SQL de Supabase, exécuter le SQL n° 10 « Balance
 Withings » (Administration › Serveur et SQL › Copier le SQL). Il crée la
 table, reprend les jetons que les anciennes versions avaient laissés dans le
@@ -68,12 +79,17 @@ supabase functions delete dynamic-responder
 
 Dans le tableau de bord développeur Withings, l'URL de redirection reste
 `https://boulidjamal-lang.github.io/mon-coach/` (la même que
-`WITHINGS_REDIRECT_URI` dans `index.html` et dans la fonction).
+`WITHINGS_REDIRECT_URI` dans `index.html` et dans la fonction). L'app
+iPhone garde cette même adresse : elle ouvre la page Withings dans une
+feuille à elle (module natif `ConnexionWeb`, dépôt Anqa) et l'arrête au
+moment où Withings y renvoie, sans la charger ; le code repart de l'app
+vers cette fonction, comme depuis le site.
 
 ## Vérifier
 
-1. Réglages › Balance Withings › **Connecter** : la page Withings s'ouvre,
-   puis l'appli affiche « Balance Withings connectée ! ».
+1. Réglages › Balance Withings › **Connecter** : la page Withings s'ouvre
+   (dans l'app iPhone, dans une feuille de l'app), puis l'appli affiche
+   « Balance Withings connectée ! ».
 2. Administration › Serveur et SQL : la ligne n° 10 est **OK** (la table
    existe et refuse même l'administrateur ; « Accès ouvert à tous » signale
    une table lisible, « Manquant » un SQL pas encore passé).

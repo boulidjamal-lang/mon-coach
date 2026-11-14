@@ -5227,6 +5227,107 @@ test('app iOS : sur le web, rien ne change (aucun module natif, caméra du navig
   assert.deepEqual(r, { natif: null, classe: false, installee: false, vibrations: [[120, 80, 120], 4], retour: true, lecteur: 'block', sante: 'none', withings: 'flex' });
 }));
 
+test("app iOS : la balance Withings se montre au compte qui peut s'en servir, se relie dans une feuille de l'app (« state » exigé, code au serveur) et importe ses pesées ; Pro n'y est jamais proposé", () => avecAppli({ natif: true }, async ({ page, dialogues }) => {
+  const r = await page.evaluate(async () => {
+    const appels = [];
+    const serveur = { connecte: false, autorise: false, etat404: false, connecter: null };
+    supa = { functions: { invoke: async (nom, o) => {
+      appels.push(o.body.action + (o.body.code ? ':' + o.body.code : ''));
+      const a = o.body.action;
+      if (a === 'etat') return serveur.etat404 ? { data: null, error: { context: { status: 404, json: async () => ({}) } } } : { data: { connecte: serveur.connecte, autorise: serveur.autorise }, error: null };
+      if (a === 'connecter') {
+        if (serveur.connecter) return serveur.connecter;
+        serveur.connecte = true; return { data: { connecte: true }, error: null };
+      }
+      if (a === 'mesures') return { data: { status: 0, body: { measuregrps: [{ date: 1762560000, measures: [{ type: 1, value: 79800, unit: -3 }, { type: 6, value: 205, unit: -1 }, { type: 76, value: 6010, unit: -2 }] }] } }, error: null };
+      return { data: { connecte: false }, error: null };
+    } } };
+    sessionUtilisateur = { id: 'u-1', email: 'moi@test.fr', admin: false };
+    const vue = () => {
+      const ligne = document.getElementById('ligne-withings-reglages');
+      const off = document.getElementById('withings-deconnecte'), on = document.getElementById('withings-connecte');
+      const montre = el => !el.classList.contains('hidden') && getComputedStyle(el).display !== 'none';
+      return [montre(ligne), montre(off), montre(on)];
+    };
+    const res = {};
+    // Compte gratuit, Pro en place sur le serveur : rien de la balance dans l'app.
+    await rafraichirEtatWithings();
+    res.gratuit = vue();
+    // Le serveur l'ouvre à ce compte : la ligne des réglages et le bouton de Mesures, sans pastille Pro.
+    serveur.autorise = true;
+    await rafraichirEtatWithings();
+    res.autorise = vue();
+    res.sansPro = [...document.querySelectorAll('#ligne-withings-reglages .pastille-pro, #withings-deconnecte .pastille-pro')].every(p => getComputedStyle(p).display === 'none');
+    res.noteSafari = getComputedStyle(document.querySelector('#withings-deconnecte .note')).display;
+    // « Connecter » : la feuille s'ouvre sur la page Withings, avec l'adresse de retour du site et un « state » neuf.
+    let reponse = o => ({ url: o.retour + '?code=CODE-APP&state=' + new URL(o.url).searchParams.get('state') });
+    window.__reponsesNatives['ConnexionWeb.ouvrir'] = o => reponse(o);
+    const lien = document.querySelector('#withings-deconnecte a');
+    res.suivi = connexionWithings({ currentTarget: lien, preventDefault() { res.empeche = true; } });
+    for (let i = 0; i < 40 && !serveur.connecte; i++) await new Promise(ok => setTimeout(ok, 25));
+    await new Promise(ok => setTimeout(ok, 50));
+    const ouverture = window.__appelsNatifs.filter(a => a[0] === 'ConnexionWeb' && a[1] === 'ouvrir').map(a => a[2]);
+    const u = new URL(ouverture[0].url);
+    res.ouverture = [ouverture.length, u.origin + u.pathname, u.searchParams.get('client_id') === WITHINGS_CLIENT_ID, u.searchParams.get('redirect_uri'), ouverture[0].retour, ouverture[0].titre, u.searchParams.get('state').length];
+    res.relie = [serveur.connecte, etatWithings.connecte, localStorage.getItem(WITHINGS_STATE_LS), vue()];
+    // Import : les pesées lues par le serveur remplissent Mesures ; le bouton garde son icône.
+    await importerPoidsWithings();
+    res.mesures = [document.getElementById('mes-poids').value, document.getElementById('mes-grasse-pct').value, document.getElementById('mes-muscle-kg').value,
+      !!document.querySelector('#btn-import-withings svg')];
+    // Un retour qui ne porte pas le « state » de la demande : rien ne part au serveur.
+    serveur.connecte = false; etatWithings.connecte = false; majUIWithings();
+    reponse = o => ({ url: o.retour + '?code=CODE-PIRATE&state=autre' });
+    await connexionWithingsNatif();
+    // Refus chez Withings (bon « state », pas de code) ; feuille fermée par la personne.
+    reponse = o => ({ url: o.retour + '?error=access_denied&state=' + new URL(o.url).searchParams.get('state') });
+    await connexionWithingsNatif();
+    reponse = () => ({ annule: true });
+    await connexionWithingsNatif();
+    res.sansCode = [appels.filter(a => /^connecter/.test(a)), localStorage.getItem(WITHINGS_STATE_LS)];
+    // Le serveur refuse (Pro exigé) : pas de fenêtre Pro dans l'app, un mot, et la balance quitte l'écran.
+    reponse = o => ({ url: o.retour + '?code=CODE-REFUS&state=' + new URL(o.url).searchParams.get('state') });
+    serveur.connecter = { data: null, error: { context: { status: 402, json: async () => ({ erreur: 'La balance Withings fait partie de Pro.', code: 'pro_requis' }) } } };
+    await connexionWithingsNatif();
+    res.refus = [document.getElementById('pro-modal').classList.contains('show'), vue()];
+    // L'administrateur la voit même quand le serveur ne répond pas encore (fonction pas déployée).
+    serveur.etat404 = true;
+    sessionUtilisateur.admin = true;
+    await rafraichirEtatWithings();
+    res.admin = vue();
+    // Fonction pas encore déployée : on le dit tout de suite, sans passer par la page Withings.
+    const avantAdmin = window.__appelsNatifs.length;
+    await connexionWithingsNatif();
+    res.adminSansServeur = window.__appelsNatifs.slice(avantAdmin).filter(a => a[0] === 'ConnexionWeb').length;
+    // Une app sans le module natif : on le dit, rien ne s'ouvre.
+    const avant = window.__appelsNatifs.length;
+    AppNatif.disponible = nom => nom !== 'ConnexionWeb';
+    await connexionWithingsNatif();
+    res.sansModule = window.__appelsNatifs.slice(avant).filter(a => a[0] === 'ConnexionWeb').length;
+    res.appels = appels;
+    return res;
+  });
+  assert.deepEqual(r.gratuit, [false, false, false], 'compte sans accès : la balance n\'apparaît pas');
+  assert.deepEqual(r.autorise, [true, true, false], 'accès ouvert : « Connecter » dans Réglages et dans Mesures');
+  assert.equal(r.sansPro, true, 'aucune pastille Pro dans l\'app');
+  assert.equal(r.noteSafari, 'none', "l'astuce « Ouvrir dans Safari » reste au web");
+  assert.deepEqual([r.suivi, r.empeche], [false, true], 'le lien ne part pas dans Safari');
+  assert.deepEqual(r.ouverture, [1, 'https://account.withings.com/oauth2_user/authorize2', true, 'https://boulidjamal-lang.github.io/mon-coach/', 'https://boulidjamal-lang.github.io/mon-coach/', 'Withings', 32]);
+  assert.deepEqual(r.relie, [true, true, null, [true, false, true]], 'reliée : le code est parti, le « state » est consommé, Mesures propose l\'import');
+  assert.deepEqual(r.mesures, ['79.8', '20.5', '60.1', true]);
+  assert.deepEqual(r.sansCode, [['connecter:CODE-APP'], null], 'ni « state » étranger, ni refus, ni feuille fermée n\'envoient de code');
+  assert.deepEqual(r.refus, [false, [false, false, false]]);
+  assert.deepEqual(r.admin, [true, true, false], "l'administrateur garde la balance sous les yeux");
+  assert.equal(r.adminSansServeur, 0, 'pas de page Withings tant que la fonction serveur manque');
+  assert.ok(dialogues.some(d => /attend le déploiement de la fonction serveur/.test(d)), dialogues.join(' | '));
+  assert.equal(r.sansModule, 0);
+  assert.ok(dialogues.some(d => /Balance Withings connectée/.test(d)), dialogues.join(' | '));
+  assert.ok(dialogues.some(d => /ignorée/.test(d)));
+  assert.ok(dialogues.some(d => /Connexion Withings annulée/.test(d)));
+  assert.ok(dialogues.some(d => /n'est pas ouverte sur ce compte/.test(d)));
+  assert.ok(dialogues.some(d => /mets-la à jour/.test(d)));
+  assert.ok(!dialogues.some(d => /Apple Santé/.test(d)), "plus de renvoi vers Apple Santé à la place de la balance");
+}));
+
 test('app iOS : démarrage, barre d\'état, liens externes et partage passent par les modules de l\'iPhone', () => avecAppli({ natif: true }, async ({ page }) => {
   const depart = await appelsNatifs(page);
   assert.ok(depart.some(a => a.m === 'ScreenOrientation' && a.f === 'lock' && a.o.orientation === 'portrait'), 'portrait au démarrage');

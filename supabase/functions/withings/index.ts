@@ -8,10 +8,12 @@
 //   - ne répond qu'aux origines de l'appli (CORS), jamais à un site tiers ;
 //   - impose elle-même l'URL de retour enregistrée chez Withings : un appel
 //     ne peut pas en choisir une autre ;
-//   - réserve la balance aux comptes Pro, comme l'appli.
+//   - réserve la balance aux comptes Pro et à l'administrateur ; tant que le
+//     serveur n'a pas la table « abonnements » (Pro pas encore en place), elle
+//     est ouverte à tous, comme l'appli.
 //
 // Actions (POST JSON { action, ... }) :
-//   etat        → { connecte }         la balance est-elle reliée à ce compte ?
+//   etat        → { connecte, autorise } la balance est-elle reliée à ce compte, et ce compte peut-il s'en servir ?
 //   connecter   → { connecte: true }   échange le code OAuth du retour de Withings et garde les jetons
 //   mesures     → { status, body }     les dernières pesées (format Withings « getmeas »), jeton rafraîchi au besoin
 //   deconnecter → { connecte: false }  oublie les jetons
@@ -48,6 +50,40 @@ const admin = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE
 type Abonnement = { statut: string; fin: string | null } | null;
 function estPro(a: Abonnement) {
   return !!a && ['actif', 'essai', 'annule', 'impaye'].includes(a.statut) && (!a.fin || new Date(a.fin) > new Date());
+}
+
+// La table n'existe pas encore sur ce serveur (son SQL n'a pas été exécuté).
+function tableAbsente(e: { code?: string; message?: string } | null) {
+  return !!e && (e.code === 'PGRST205' || e.code === '42P01' || /does not exist|schema cache/i.test(e.message || ''));
+}
+
+// L'administrateur, reconnu comme partout ailleurs par la base elle-même :
+// est_admin(), lue avec la session du compte (table admins, et l'e-mail de
+// transition tant qu'il y est). Sans clé publique, la table admins seule.
+async function estAdministrateur(moi: string, jeton: string) {
+  const url = Deno.env.get('SUPABASE_URL');
+  const cle = Deno.env.get('SUPABASE_ANON_KEY');
+  if (url && cle) {
+    const commeLui = createClient(url, cle, {
+      auth: { persistSession: false, autoRefreshToken: false },
+      global: { headers: { Authorization: 'Bearer ' + jeton } },
+    });
+    const { data, error } = await commeLui.rpc('est_admin');
+    if (!error) return data === true;
+  }
+  const { data, error } = await admin.from('admins').select('utilisateur').eq('utilisateur', moi).maybeSingle();
+  return !error && !!data;
+}
+
+// Relier, importer, lire les pesées : un abonnement Pro valable, ou
+// l'administrateur ; tout le monde tant que Pro n'est pas en place sur le
+// serveur (pas de table « abonnements »), comme dans l'appli. Une autre
+// erreur de lecture ne vaut pas accès.
+async function accesBalance(moi: string, jeton: string) {
+  const { data, error } = await admin.from('abonnements').select('statut, fin').eq('utilisateur', moi).maybeSingle();
+  if (error && tableAbsente(error)) return true;
+  if (!error && estPro(data as Abonnement)) return true;
+  return await estAdministrateur(moi, jeton);
 }
 
 type Jetons = { access_token: string; refresh_token: string; expire_le: string; userid: string | null };
@@ -111,12 +147,11 @@ Deno.serve(async (req: Request) => {
   try { demande = JSON.parse(brut || '{}'); } catch { return json({ erreur: 'Demande illisible.' }, 400); }
   const action = demande && typeof demande.action === 'string' ? demande.action : '';
 
-  if (action === 'etat') return json({ connecte: !!(await jetonsDe(moi)) });
+  if (action === 'etat') return json({ connecte: !!(await jetonsDe(moi)), autorise: await accesBalance(moi, jeton) });
   if (action === 'deconnecter') { await oublier(moi); return json({ connecte: false }); }
   if (!['connecter', 'mesures', 'importer'].includes(action)) return json({ erreur: 'Action inconnue.' }, 400);
 
-  const { data: abonnement } = await admin.from('abonnements').select('statut, fin').eq('utilisateur', moi).maybeSingle();
-  if (!estPro(abonnement as Abonnement)) return json({ erreur: 'La balance Withings fait partie de Pro.', code: 'pro_requis' }, 402);
+  if (!(await accesBalance(moi, jeton))) return json({ erreur: 'La balance Withings fait partie de Pro.', code: 'pro_requis' }, 402);
 
   const secret = Deno.env.get('WITHINGS_CLIENT_SECRET');
   if (!secret) return json({ erreur: "La connexion Withings n'est pas encore configurée sur le serveur." }, 503);
