@@ -7602,6 +7602,75 @@ test("atlas 3D : au fond du squat, l'arrière de la cuisse ne pend plus sous la 
   assert.ok(haut > 100, 'près de la hanche, le bassin tient encore la cuisse (' + haut + ' points)');
 });
 
+// La main sur la barre : le calcul de la prise (Corps.prise) mesuré sur la vraie peau des mains (atlas-peau.bin), posée
+// comme le moteur la pose (quatre os par sommet), avant que le moteur ne l'écrase à la surface de la barre (tenus).
+const SPECS_PRISE = ['developpe barre', 'souleve de terre barre', 'curl barre', 'traction'];
+test("atlas 3D : la main se referme sur la barre — chaque phalange et le pouce posés contre elle, rien ne la traverse ; à plat, les doigts posés au sol", async () => {
+  const { pathToFileURL } = require('url'), dossier = path.join(RACINE, 'outils', 'atlas', 'mouvements');
+  const { chargerAtlas, chargerMouvements, FICHIER_ATLAS, FICHIER_MOUVEMENTS } = await import(pathToFileURL(path.join(dossier, 'silhouettes.mjs')).href);
+  const atlas = chargerAtlas(FICHIER_ATLAS), M = chargerMouvements(FICHIER_MOUVEMENTS), C = M.TEINTES.clair, V = M.V3;
+  const corps = new M.Corps(atlas.E.squelette, atlas.peau), SQ = atlas.E.squelette, nb = SQ.length;
+  const brut = fs.readFileSync(path.join(RACINE, 'assets', 'atlas', 'atlas-peau.bin')), lg = brut.readUInt32LE(8), EP = JSON.parse(brut.slice(12, 12 + lg).toString());
+  const zones = [EP.zones.indexOf('main'), EP.zones.indexOf('ongle')], jReel = j => (j < nb ? j : EP.intermediaires[j - nb].de);
+  const peau = [];
+  for (let v = 0; v < EP.sommets; v++) {
+    const o = 12 + lg + v * EP.octetsParSommet; if (!zones.includes(brut[o + 10])) continue;
+    const js = [0, 1, 2, 3].map(k => jReel(brut[o + 12 + k])), ws = [0, 1, 2, 3].map(k => brut[o + 16 + k] / 255), s = ws.reduce((a, b) => a + b, 0) || 1;
+    let km = 0; for (let k = 1; k < 4; k++) if (ws[k] > ws[km]) km = k;
+    peau.push({ p: [0, 1, 2].map(k => EP.boite.min[k] + brut.readUInt16LE(o + k * 2) / 65535 * EP.boite.etendue[k]), js, ws: ws.map(w => w / s), os: SQ[js[km]].nom });
+  }
+  for (const spec of SPECS_PRISE) for (const u of [0, 1]) {
+    const info = corps.poser(M.poseA(M.definir(spec, corps, C), 0, u));
+    assert.equal(info.tenus.length, 2, spec + ' : les deux mains serrent la barre');
+    for (const cote of ['G', 'D']) {
+      const t = info.tenus.find(x => x.c.distanceTo(info.prises[cote]) < 1e-9), ecart = {}, droite = cote === 'D';
+      // L'écart de chaque os de la main à la surface de la barre (m ; négatif : la peau entre dans la barre). Le fichier
+      // ne garde que la main gauche : la droite en est le miroir, posée par les os jumeaux (comme dans le moteur).
+      for (const s of peau) {
+        if (!s.os.endsWith('.G')) continue;
+        const q = new V(), p = new V(droite ? -s.p[0] : s.p[0], s.p[1], s.p[2]);
+        for (let k = 0; k < 4; k++) if (s.ws[k]) { const j = droite && SQ[s.js[k]].jumeau >= 0 ? SQ[s.js[k]].jumeau : s.js[k]; q.add(p.clone().sub(corps.tete[j]).applyQuaternion(corps.qw[j]).add(corps.pw[j]).multiplyScalar(s.ws[k])); }
+        const w = q.sub(t.c), e = w.sub(t.a.clone().multiplyScalar(w.dot(t.a))).length() - t.r, n = s.os.slice(0, -2);
+        if (!(ecart[n] <= e)) ecart[n] = e;
+      }
+      const mm = x => (x * 1000).toFixed(1) + ' mm', ou = `${spec} (u=${u}), main ${cote}`;
+      // Les quatre doigts s'enroulent : chaque phalange touche la barre, la pulpe serrée dessus de 6,5 mm au plus.
+      for (let f = 2; f <= 5; f++) for (let j = 1; j <= 3; j++) {
+        const e = ecart[`doigt${f}-${j}`];
+        assert.ok(e > -0.0065 && e < 0.003, `${ou} : phalange ${j} du doigt ${f} à ${mm(e)} de la barre`);
+      }
+      // Le pouce en fait le tour par l'autre côté : sa dernière phalange est contre la barre.
+      assert.ok(ecart['doigt1-3'] > -0.0065 && ecart['doigt1-3'] < 0.004, `${ou} : le bout du pouce est à ${mm(ecart['doigt1-3'])} de la barre`);
+      // Rien n'y entre de plus d'un centimètre (au plus profond : la peau entre le pouce et l'index, à moitié portée
+      // par le pouce) ; le moteur la pose ensuite à la surface de la barre. Avant : la barre passait 11 mm dans la paume
+      // et 6 à 13 mm dans les premières phalanges.
+      const pire = Math.min(...Object.values(ecart));
+      assert.ok(pire > -0.011, `${ou} : la peau de la main entre de ${mm(-pire)} dans la barre`);
+    }
+  }
+  // Main à plat au sol (pompes) : les doigts sont posés à la hauteur de la paume (avant : 16 à 25 mm sous le sol).
+  for (const u of [0, 1]) {
+    corps.poser(M.poseA(M.definir('pompe', corps, C), 0, u));
+    const bas = {};
+    for (const s of peau) {
+      if (!s.os.endsWith('.G')) continue;
+      const q = new V();
+      for (let k = 0; k < 4; k++) if (s.ws[k]) { const j = s.js[k]; q.add(new V(...s.p).sub(corps.tete[j]).applyQuaternion(corps.qw[j]).add(corps.pw[j]).multiplyScalar(s.ws[k])); }
+      const g = s.os.replace(/-\d\.G$/, '').replace('.G', '');
+      if (!(bas[g] <= q.y)) bas[g] = q.y;
+    }
+    for (let f = 1; f <= 5; f++) assert.ok(bas['doigt' + f] > bas.main - 0.008, `pompe (u=${u}) : le doigt ${f} descend ${((bas.main - bas['doigt' + f]) * 1000).toFixed(0)} mm sous la paume`);
+  }
+  // L'animation passe au moteur ce que serrent les mains, à chaque image ; plus rien en quittant l'exercice.
+  const appels = [];
+  const moteur = { squelette: atlas.E.squelette, peau: atlas.peau, poser() {}, objets() {}, ombre() {}, appuis() {}, animer() {}, cadrerBoite() {}, tenus(l) { appels.push(l); } };
+  const anim = M.creerAnimation(moteur, { spec: 'developpe barre' }), info = anim.rendre(0, 0.5), dernier = appels[appels.length - 1];
+  assert.equal(dernier.length, 2);
+  for (const k of ['G', 'D']) assert.ok(dernier.some(x => x.c.distanceTo(info.prises[k]) < 1e-9 && Math.abs(x.r - 0.0145) < 1e-9 && Math.abs(x.a.dot(info.axes[k])) > 0.999), 'la main ' + k + ' serre la barre');
+  anim.quitter();
+  assert.equal(appels[appels.length - 1], null);
+});
+
 test('atlas 3D : sans WebGL 2, aucun accès ; avec, la fenêtre s\'ouvre, anime un exercice et libère tout à la fermeture', async () => {
   // Sans WebGL 2 : pas de bouton, et l'ouverture forcée prévient sans rien casser.
   await avecAppli({}, async ({ page, dialogues }) => {

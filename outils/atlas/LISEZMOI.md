@@ -328,6 +328,43 @@ repousse le sol : le corps monte, bras tendus (il descendait, coudes pliés à 4
 
 Le test « pendu ou bras levés… » vérifie les coudes et la place des mains sur la barre, instant par instant.
 
+### La prise : la main se referme sur la barre
+
+Mesurée sur la vraie peau des mains (`atlas-peau.bin`, posée comme le moteur la pose), l'ancienne prise faisait passer
+la barre 11 mm dans la paume et 6 à 13 mm dans les premières phalanges : les doigts avaient des angles fixes et la
+barre était à 24 mm du plan de la main, sous la peau de la paume (18 mm).
+
+`Corps.prise` (`src/10-corps.js`) calcule la main sur une barre, une fois par côté et par rayon, dans le repère de la
+main au repos — la prise ne dépend pas du reste de la pose :
+- la barre est posée sur la paume : son axe à `PEAU_PAUME + rayon` du plan de la main (17,5 + 14,5 mm par défaut ;
+  `b.rayon` pour un autre diamètre) ;
+- chaque phalange des quatre doigts, de la première à la dernière, s'enroule jusqu'à être tangente à la barre (sa
+  pulpe s'écrase de 5 mm au plus) ; une phalange qui entrerait dans la barre dès le départ se redresse, et le bout
+  du doigt ne rentre pas dans la paume ;
+- le pouce fait le tour par l'autre côté, à côté de l'index : levé devant la paume, tourné pour présenter sa pulpe à
+  la barre, il s'abaisse puis s'enroule jusqu'à la barre, ou jusqu'au dos de l'index et du majeur.
+Les phalanges y sont des capsules (`PHALANGES` : épaisseur côté pulpe et côté dos, longueur et angle de la dernière
+phalange), mesurées sur la peau de la main gauche au repos (85e centile, de 15 à 85 % de la longueur de l'os).
+
+La peau qui entre encore dans la barre (pulpe écrasée, peau entre le pouce et l'index, à moitié portée par le pouce)
+est posée à sa surface par le moteur, comme la chair d'une vraie main : `atlas.tenus([{ c, a, r, h }])` reçoit à chaque
+image ce que serrent les mains (`info.tenus`, rempli par `bras` pour les doigts `'barre'`), et le programme de la peau
+y repousse les sommets des mains et des ongles.
+
+Les autres mains, par le même calcul de contact :
+- à plat (`Corps.aPlat`, doigts `'plat'` : sol, banc, mur) : la surface est sous la paume, à `L.creux` + 6 mm du plan
+  de la main ; chaque phalange s'y pose (les doigts du modèle, un peu pliés au repos, entraient de 16 à 25 mm dans le
+  sol aux pompes), le pouce aussi, en tournant autour de sa base ;
+- poing (`'poing'`) : les doigts se referment comme sur une barre de 4 mm, jusqu'à la paume, le pouce par-dessus ;
+- détendue : les doigts se plient un peu plus de l'index vers le petit doigt.
+Sous la peau des mains, la chair portée par les os des doigts (tendons des fléchisseurs et des extenseurs, petits
+muscles de la main) n'est pas dessinée (`u_doigts`, `v_doigt` dans le programme des muscles) : doigts très pliés, elle
+perçait la peau en lames blanches aux jointures. Sans peau (`niveauPeau` 0), elle reste.
+
+`node outils/mains.cjs sortie.jpg liste.txt` montre la main de près sous tous les angles, sans le reste du matériel
+(une ligne : `exercice | G|D | az,el | u1,u2,… [| champ]`). Le test « la main se referme sur la barre… » mesure chaque
+phalange et le pouce contre la barre, sur la peau réelle, des deux côtés (développé, soulevé de terre, curl, traction).
+
 ## Les mouvements des exercices
 
 Chaque exercice de la bibliothèque (`EXERCICES_BASE` dans `index.html`) a son mouvement. Tout est dans `mouvements/` :
