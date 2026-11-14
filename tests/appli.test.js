@@ -5227,6 +5227,28 @@ test('app iOS : sur le web, rien ne change (aucun module natif, caméra du navig
   assert.deepEqual(r, { natif: null, classe: false, installee: false, vibrations: [[120, 80, 120], 4], retour: true, lecteur: 'block', sante: 'none', withings: 'flex' });
 }));
 
+test("balance Withings : quand Supabase répond à la place de la fonction (session refusée, fonction qui ne démarre pas, rien de lisible), le message dit le code et la raison", () => avecAppli({}, async ({ page }) => {
+  const r = await page.evaluate(async () => {
+    sessionUtilisateur = { id: 'u-1', email: 'moi@test.fr' };
+    const essai = async erreur => { supa = { functions: { invoke: async () => ({ data: null, error: erreur }) } }; return (await appelWithings('etat')).erreur; };
+    const reponse = (status, corps) => ({ context: { status, json: async () => corps } });
+    return [
+      await essai(reponse(404, { code: 'NOT_FOUND', message: 'Requested function was not found' })),
+      await essai(reponse(401, { code: 401, message: 'Invalid JWT' })),
+      await essai(reponse(503, { code: 'BOOT_ERROR', message: 'Function failed to start (please check logs)' })),
+      await essai(reponse(502, { erreur: 'Withings a refusé la connexion. Relance « Connecter ».' })),
+      await essai({ context: new TypeError('Load failed') })
+    ];
+  });
+  assert.deepEqual(r, [
+    'La connexion Withings attend le déploiement de la fonction serveur « withings ».',
+    'Le serveur Withings ne répond pas (erreur 401 : Invalid JWT). Réessaie dans un instant.',
+    'Le serveur Withings ne répond pas (erreur 503 : Function failed to start (please check logs)). Réessaie dans un instant.',
+    'Withings a refusé la connexion. Relance « Connecter ».',
+    'Le serveur Withings ne répond pas (aucune réponse lisible : réseau, ou fonction « withings » qui ne démarre pas). Réessaie dans un instant.'
+  ]);
+}));
+
 test("app iOS : la balance Withings se montre au compte qui peut s'en servir, se relie dans une feuille de l'app (« state » exigé, code au serveur) et importe ses pesées ; Pro n'y est jamais proposé", () => avecAppli({ natif: true }, async ({ page, dialogues }) => {
   const r = await page.evaluate(async () => {
     const appels = [];

@@ -16293,8 +16293,15 @@ async function appelWithings(action, corps) {
     const statut = error.context && typeof error.context.status === 'number' ? error.context.status : 0;
     let detail = {};
     try { detail = await error.context.json(); } catch (e) {}
-    const generique = statut === 404 ? 'La connexion Withings attend le déploiement de la fonction serveur « withings ».' : 'Le serveur Withings ne répond pas. Réessaie dans un instant.';
-    return Object.assign({ erreur: generique }, detail || {}, { statut });
+    if (!detail || typeof detail !== 'object') detail = {};
+    // Quand ce n'est pas la fonction qui répond mais Supabase (session refusée,
+    // fonction qui ne démarre pas…), son code et sa raison restent entre
+    // parenthèses : une capture d'écran suffit à trouver la cause.
+    const cause = typeof detail.message === 'string' ? detail.message : typeof detail.code === 'string' ? detail.code : '';
+    const generique = statut === 404 ? 'La connexion Withings attend le déploiement de la fonction serveur « withings ».'
+      : statut ? `Le serveur Withings ne répond pas (erreur ${statut}${cause ? ' : ' + cause.slice(0, 80) : ''}). Réessaie dans un instant.`
+      : 'Le serveur Withings ne répond pas (aucune réponse lisible : réseau, ou fonction « withings » qui ne démarre pas). Réessaie dans un instant.';
+    return Object.assign({ erreur: generique }, detail, { statut });
   } catch (e) {
     return { erreur: 'Le serveur Withings ne répond pas. Réessaie dans un instant.', statut: 0 };
   }
