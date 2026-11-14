@@ -10,8 +10,8 @@ const { pathToFileURL } = require('url');
 
 // Une base Supabase en mémoire : tables et fonctions SQL utilisées par les fonctions.
 function fausseBase() {
-  const tables = { abonnements: [], usages_ia: [], withings_jetons: [] };
-  const comptes = { 'jeton-libre': 'u-libre', 'jeton-pro': 'u-pro', 'jeton-fondateur': 'u-fondateur' };
+  const tables = { abonnements: [], usages_ia: [], withings_jetons: [], admins: [] };
+  const comptes = { 'jeton-libre': 'u-libre', 'jeton-pro': 'u-pro', 'jeton-fondateur': 'u-fondateur', 'jeton-admin': 'u-admin' };
   const client = {
     tables,
     auth: { getUser: async jeton => ({ data: { user: comptes[jeton] ? { id: comptes[jeton] } : null } }) },
@@ -21,7 +21,9 @@ function fausseBase() {
       const requete = {
         select() { return requete; },
         eq(c, v) { filtres.push([c, v]); return requete; },
-        maybeSingle: async () => ({ data: lignes()[0] || null, error: null }),
+        // Une table supprimée de « tables » répond comme une table absente du serveur.
+        maybeSingle: async () => (tables[nom] ? { data: lignes()[0] || null, error: null }
+          : { data: null, error: { code: 'PGRST205', message: `Could not find the table 'public.${nom}' in the schema cache` } }),
         upsert: async ligne => {
           const i = tables[nom].findIndex(l => l.utilisateur === ligne.utilisateur);
           if (i >= 0) tables[nom][i] = { ...tables[nom][i], ...ligne }; else tables[nom].push({ ...ligne });
@@ -55,7 +57,15 @@ function fausseBase() {
 async function chargerFonction(nom, env, base, stripe) {
   let gestionnaire = null;
   globalThis.Deno = { env: { get: k => env[k] }, serve: h => { gestionnaire = h; } };
-  globalThis.__doubles = { createClient: () => base, Stripe: stripe };
+  // Un client ouvert avec la session d'un compte (clé publique + son jeton) :
+  // est_admin() y répond pour ce compte-là (base.estAdmin : ses jetons).
+  globalThis.__doubles = { createClient: (url, cle, options) => {
+    const session = options && options.global && options.global.headers && options.global.headers.Authorization;
+    if (!session) return base;
+    const jeton = session.replace(/^Bearer\s+/i, '');
+    return Object.assign(Object.create(base), { rpc: async nom => (nom === 'est_admin'
+      ? { data: (base.estAdmin || []).includes(jeton), error: null } : { data: null, error: { message: 'rpc inconnue ' + nom } }) });
+  }, Stripe: stripe };
   const url = pathToFileURL(path.join(__dirname, '..', 'supabase', 'functions', nom, 'index.ts')).href + '?' + Math.random();
   await import(url);
   return gestionnaire;
@@ -339,7 +349,7 @@ test('fonction « withings » : session exigée, origines de l\'appli seulement,
   assert.equal((await appelWithings(h, 'jeton-pro', { action: 'etat' }, 'POST', 'https://pirate.example')).status, 403);
   // Origine de l'appli : renvoyée telle quelle (CORS) ; sans origine (serveur à serveur) : la première.
   const ok = await appelWithings(h, 'jeton-pro', { action: 'etat' }, 'POST', 'capacitor://localhost');
-  assert.deepEqual([ok.status, ok.corps, ok.entetes['access-control-allow-origin'], ok.entetes['vary']], [200, { connecte: false }, 'capacitor://localhost', 'Origin']);
+  assert.deepEqual([ok.status, ok.corps, ok.entetes['access-control-allow-origin'], ok.entetes['vary']], [200, { connecte: false, autorise: false }, 'capacitor://localhost', 'Origin']);
   assert.equal((await appelWithings(h, 'jeton-pro', { action: 'etat' })).entetes['access-control-allow-origin'], 'https://boulidjamal-lang.github.io');
   const pre = await h(new Request('https://x.supabase.co/functions/v1/withings', { method: 'OPTIONS', headers: { Origin: 'https://boulidjamal-lang.github.io' } }));
   assert.deepEqual([pre.status, pre.headers.get('access-control-allow-origin')], [200, 'https://boulidjamal-lang.github.io']);
@@ -358,6 +368,38 @@ test('fonction « withings » : session exigée, origines de l\'appli seulement,
   // Sans secret côté serveur : 503, et Withings n'est jamais appelé.
   const sans = await chargerFonction('withings', { ...envWithings, WITHINGS_CLIENT_SECRET: undefined }, base);
   assert.equal((await appelWithings(sans, 'jeton-pro', { action: 'connecter', code: 'c' })).status, 503);
+});
+
+test("fonction « withings » : l'administrateur y a accès sans abonnement (est_admin lu avec sa session, sinon la table admins) ; sans table « abonnements », la balance est ouverte à tous, comme l'appli", async () => {
+  globalThis.fetch = async () => { throw new Error('Withings ne doit pas être appelé'); };
+  const lire = async (h, jeton) => {
+    const etat = await appelWithings(h, jeton, { action: 'etat' });
+    // Sans balance reliée, « mesures » s'arrête avant Withings : 409 si l'accès est ouvert, 402 sinon.
+    const mesures = await appelWithings(h, jeton, { action: 'mesures' });
+    return [etat.corps.autorise, mesures.status, mesures.corps.code || null];
+  };
+  // est_admin() répond pour la session du compte : l'administrateur passe, un compte gratuit non.
+  const base = fausseBase();
+  base.estAdmin = ['jeton-admin'];
+  const h = await chargerFonction('withings', { ...envWithings, SUPABASE_ANON_KEY: 'publique' }, base);
+  assert.deepEqual(await lire(h, 'jeton-admin'), [true, 409, null]);
+  assert.deepEqual(await lire(h, 'jeton-libre'), [false, 402, 'pro_requis']);
+  // Sans clé publique : la table admins décide.
+  const base2 = fausseBase();
+  base2.tables.admins.push({ utilisateur: 'u-admin' });
+  const h2 = await chargerFonction('withings', envWithings, base2);
+  assert.deepEqual(await lire(h2, 'jeton-admin'), [true, 409, null]);
+  assert.deepEqual(await lire(h2, 'jeton-libre'), [false, 402, 'pro_requis']);
+  // Un abonnement Pro valable ouvre l'accès, un abonnement terminé non.
+  base2.tables.abonnements.push({ utilisateur: 'u-libre', formule: 'mois', statut: 'actif', fin: new Date(Date.now() - 864e5).toISOString() });
+  assert.deepEqual(await lire(h2, 'jeton-libre'), [false, 402, 'pro_requis']);
+  base2.tables.abonnements[0].fin = new Date(Date.now() + 864e5).toISOString();
+  assert.deepEqual(await lire(h2, 'jeton-libre'), [true, 409, null]);
+  // Le SQL Pro pas encore exécuté (table absente) : rien n'est réservé.
+  const base3 = fausseBase();
+  delete base3.tables.abonnements;
+  const h3 = await chargerFonction('withings', envWithings, base3);
+  assert.deepEqual(await lire(h3, 'jeton-libre'), [true, 409, null]);
 });
 
 test('fonction « withings » : le code OAuth est échangé avec l\'URL de retour du serveur, les jetons restent sur le serveur, les pesées sont lues et le jeton rafraîchi sans que l\'appli en voie un', async () => {
@@ -385,7 +427,7 @@ test('fonction « withings » : le code OAuth est échangé avec l\'URL de retou
     grant_type: 'authorization_code', code: 'code-123', redirect_uri: 'https://boulidjamal-lang.github.io/mon-coach/' });
   assert.deepEqual([jetons.length, jetons[0].utilisateur, jetons[0].access_token, jetons[0].refresh_token, jetons[0].userid], [1, 'u-pro', 'acces-authorization_code', 'refresh-authorization_code', '42']);
   assert.ok(new Date(jetons[0].expire_le).getTime() > Date.now() + 10_000_000, 'expiration gardée en date');
-  assert.deepEqual((await appelWithings(h, 'jeton-pro', { action: 'etat' })).corps, { connecte: true });
+  assert.deepEqual((await appelWithings(h, 'jeton-pro', { action: 'etat' })).corps, { connecte: true, autorise: true });
   // Pesées : le jeton valable sert tel quel ; la plus récente d'abord ; le format Withings est conservé.
   r = await appelWithings(h, 'jeton-pro', { action: 'mesures' });
   assert.equal(r.status, 200);

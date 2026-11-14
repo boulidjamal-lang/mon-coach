@@ -91,6 +91,21 @@ si('fonctions réservées : admin_regles_ouvertes() répond à l\'administrateur
   assert.equal(refuse(B, 'b@test.fr', `select admin_liste_comptes();`), true, 'liste des comptes réservée');
 });
 
+si('le script 2 retire toute règle ouverte à tous restée sur les tables de données, sous n\'importe quel nom, et seulement là où la règle par compte est en place', () => {
+  const ouvertes = () => compte(ADM, ADMIN, 'select coalesce(admin_regles_ouvertes(), -1);');
+  const bVoitA = () => compte(B, 'b@test.fr', `select count(*) from journees where utilisateur = '${A}';`);
+  const avant = compte(A, 'a@test.fr', `select count(*) from journees where utilisateur = '${A}';`);
+  // Deux règles ouvertes créées à la main (noms du tableau de bord Supabase) : la table s'ouvre à tous.
+  pg.sql(`create policy "Enable read access for all users" on journees for select using (true);
+          create policy "Enable insert for all users" on profil for insert with check (true);`);
+  assert.deepEqual([ouvertes(), bVoitA() > 0], [2, true], 'une seule règle ouverte suffit à tout ouvrir');
+  // Le script 2 rejoué : retirées, chacun ne voit plus que ses lignes, et la règle par compte reste.
+  pg.sql(null, { fichier: path.join(MIGRATIONS, fs.readdirSync(MIGRATIONS).find(f => f.startsWith('0002'))) });
+  assert.deepEqual([ouvertes(), bVoitA()], [0, 0]);
+  assert.equal(compte(A, 'a@test.fr', `select count(*) from journees where utilisateur = '${A}';`), avant, 'A garde ses lignes');
+  assert.match(pg.sql(`\\pset tuples_only on\nselect string_agg(policyname, ',' order by policyname) from pg_policies where schemaname = 'public' and tablename = 'journees';`), /^\s*journees par compte\s*$/m);
+});
+
 si('rejouer le script 1 après le script 2 ne rouvre rien (SEC-01)', () => {
   pg.sql(null, { fichier: path.join(MIGRATIONS, fs.readdirSync(MIGRATIONS).find(f => f.startsWith('0001'))) });
   assert.equal(compte(B, 'b@test.fr', 'select count(*) from journees;'), 0);

@@ -96,7 +96,7 @@ function installerFauxNatif() {
   });
   const natif = { plateforme: 'ios', version: 'test', disponible: () => true };
   ['App', 'Browser', 'Filesystem', 'Haptics', 'Keyboard', 'LocalNotifications', 'ScreenOrientation', 'Share', 'SplashScreen',
-    'StatusBar', 'KeepAwake', 'CapacitorBarcodeScanner', 'Health', 'NativePurchases', 'Onglets', 'Scanner', 'ActiviteSeance', 'Resume', 'Entrainements'].forEach(n => { natif[n] = module(n); });
+    'StatusBar', 'KeepAwake', 'CapacitorBarcodeScanner', 'Health', 'NativePurchases', 'Onglets', 'Scanner', 'ActiviteSeance', 'Resume', 'Entrainements', 'ConnexionWeb'].forEach(n => { natif[n] = module(n); });
   window.AppNatif = natif;
 }
 

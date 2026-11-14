@@ -1157,7 +1157,7 @@
       <div class="adm-sql" data-sql="rls">
         <button type="button" class="ligne-reglage ligne-reglage--bouton" aria-expanded="false" onclick="basculerSqlAdmin(this)"><span class="adm-num">2</span><span class="ligne-txt"><b>Sécurité des données</b><small>Chacun ne voit que ses données</small></span><span class="adm-etat adm-etat--attente" data-etat-sql>&hellip;</span></button>
         <div class="adm-sql-corps hidden">
-        <p class="note note-explicative">Sans lui, personne ne peut lire ni écrire (les tables sont fermées). Avec lui, chaque compte ne lit et ne modifie que ses propres données (l'administrateur voit tout), et l'appli vérifie qu'aucune règle ouverte à tous ne subsiste.</p>
+        <p class="note note-explicative">Sans lui, personne ne peut lire ni écrire (les tables sont fermées). Avec lui, chaque compte ne lit et ne modifie que ses propres données (l'administrateur voit tout) ; il retire aussi toute règle ouverte à tous restée sur ces tables, et l'appli vérifie qu'il n'en reste aucune.</p>
         <div class="bloc-sql" id="bloc-sql-rls"></div>
         <button class="btn btn-secondaire" type="button" onclick="copierSqlRls()">Copier le SQL</button>
         </div>
@@ -1956,9 +1956,9 @@
 
     <div class="reglages-titre">Appareils</div>
     <div class="carte-liste">
-      <div class="ligne-reglage seulement-web">
+      <div class="ligne-reglage" id="ligne-withings-reglages">
         <span class="action-ic"><svg class="icone-ui" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="5" r="3" /><path d="M6.5 8a2 2 0 0 0-1.905 1.46L2.1 18.5A2 2 0 0 0 4 21h16a2 2 0 0 0 1.925-2.54L19.4 9.5A2 2 0 0 0 17.48 8Z" /></svg></span>
-        <span class="ligne-txt"><small>Balance</small><b>Withings<span class="pastille-pro">Pro</span></b></span>
+        <span class="ligne-txt"><small>Balance</small><b>Withings<span class="pastille-pro seulement-web">Pro</span></b></span>
         <span id="withings-deconnecte-reglages"><a href="#" class="pilule lien-connexion-withings" target="_blank" rel="noopener" onclick="return connexionWithings(event)">Connecter</a></span>
         <span id="withings-connecte-reglages" class="hidden"><button type="button" class="pilule" onclick="deconnexionWithings()">Déconnecter</button></span>
       </div>
@@ -2262,11 +2262,11 @@
       <input type="number" id="mes-poids" step="0.1" placeholder="70" inputmode="decimal">
     </div>
 
-    <div id="withings-deconnecte" class="seulement-web">
-      <a href="#" class="btn btn-secondaire lien-connexion-withings" style="margin:-6px 0 6px; display:inline-block; box-sizing:border-box; text-align:center; text-decoration:none;" target="_blank" rel="noopener" onclick="return connexionWithings(event)"><svg class="icone-ui" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v18" /><path d="m19 8 3 8a5 5 0 0 1-6 0zV7" /><path d="M3 7h1a17 17 0 0 0 8-2 17 17 0 0 0 8 2h1" /><path d="m5 8 3 8a5 5 0 0 1-6 0zV7" /><path d="M7 21h10" /></svg> Connecter ma balance Withings<span class="pastille-pro">Pro</span></a>
-      <p class="note note-explicative" style="margin:0 0 14px;">Bloqué dans l'appli Withings au lieu de revenir ici ? Reste appuyé sur ce bouton pour choisir « Ouvrir dans Safari ».</p>
+    <div id="withings-deconnecte">
+      <a href="#" class="btn btn-secondaire lien-connexion-withings" style="margin:-6px 0 6px; display:inline-block; box-sizing:border-box; text-align:center; text-decoration:none;" target="_blank" rel="noopener" onclick="return connexionWithings(event)"><svg class="icone-ui" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v18" /><path d="m19 8 3 8a5 5 0 0 1-6 0zV7" /><path d="M3 7h1a17 17 0 0 0 8-2 17 17 0 0 0 8 2h1" /><path d="m5 8 3 8a5 5 0 0 1-6 0zV7" /><path d="M7 21h10" /></svg> Connecter ma balance Withings<span class="pastille-pro seulement-web">Pro</span></a>
+      <p class="note note-explicative seulement-web" style="margin:0 0 14px;">Bloqué dans l'appli Withings au lieu de revenir ici ? Reste appuyé sur ce bouton pour choisir « Ouvrir dans Safari ».</p>
     </div>
-    <div id="withings-connecte" class="hidden seulement-web">
+    <div id="withings-connecte" class="hidden">
       <button class="btn btn-secondaire" id="btn-import-withings" style="margin:-6px 0 6px;" onclick="importerPoidsWithings()"><svg class="icone-ui" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v18" /><path d="m19 8 3 8a5 5 0 0 1-6 0zV7" /><path d="M3 7h1a17 17 0 0 0 8-2 17 17 0 0 0 8 2h1" /><path d="m5 8 3 8a5 5 0 0 1-6 0zV7" /><path d="M7 21h10" /></svg> Importer ma dernière pesée Withings</button>
       <p class="note" id="note-import-withings" style="margin:0 0 14px;"></p>
     </div>
@@ -16446,15 +16446,33 @@ async function appelWithings(action, corps) {
   }
 }
 
-/* L'état côté serveur (reliée ou non), demandé à la connexion du compte et
-   après chaque changement ; sur le web seulement (dans l'app iPhone, c'est
-   Apple Santé qui apporte les pesées). */
+/* L'état côté serveur, demandé à la connexion du compte et après chaque
+   changement : la balance est-elle reliée, et ce compte peut-il s'en servir
+   (autorise : Pro, administrateur, ou Pro pas encore en place sur le
+   serveur) ? Sur le web comme dans l'app iPhone. */
 async function rafraichirEtatWithings() {
-  if (NATIF || !sessionUtilisateur) { etatWithings = { connecte: false, connu: false }; majUIWithings(); return; }
+  if (!sessionUtilisateur) { etatWithings = { connecte: false, connu: false }; majUIWithings(); return; }
   await reprendreJetonWithingsLocal();
   const r = await appelWithings('etat');
-  if (!r.erreur) etatWithings = { connecte: !!r.connecte, connu: true };
+  if (!r.erreur) etatWithings = { connecte: !!r.connecte, autorise: r.autorise === true, connu: true };
   majUIWithings();
+}
+
+/* Sur le web, la balance se montre toujours (Pro se propose au besoin). Dans
+   l'app iPhone, où Pro n'est ni vendu ni mentionné, seulement quand elle sert
+   à ce compte : déjà reliée, ouverte par le serveur, ou pour l'administrateur
+   (qui voit ainsi ce qui manque encore au serveur). */
+function withingsVisibleIci() {
+  return !NATIF || !!(etatWithings.connecte || etatWithings.autorise || estCompteAdmin());
+}
+
+/* Balance refusée faute de Pro : la fenêtre Pro sur le web ; dans l'app
+   iPhone, un simple mot, et la balance quitte les écrans de ce compte. */
+function refusWithingsPro() {
+  if (!NATIF) { ouvrirPro('withings'); return; }
+  etatWithings = Object.assign({}, etatWithings, { autorise: false });
+  majUIWithings();
+  informer("La balance Withings n'est pas ouverte sur ce compte.");
 }
 
 /* Les anciennes versions gardaient le jeton dans le profil et sur l'appareil.
@@ -16475,7 +16493,7 @@ async function reprendreJetonWithingsLocal() {
 async function deconnexionWithings() {
   const r = await appelWithings('deconnecter');
   if (r.erreur) { informer(r.erreur); return; }
-  etatWithings = { connecte: false, connu: true };
+  etatWithings = Object.assign({}, etatWithings, { connecte: false, connu: true });
   majUIWithings();
   informer('Balance Withings déconnectée.');
 }
@@ -16558,7 +16576,9 @@ if (NATIF) {
 
 function majUIWithings() {
   majUISante();
-  const t = etatWithings.connecte;
+  const t = etatWithings.connecte, visible = withingsVisibleIci();
+  const ligne = document.getElementById('ligne-withings-reglages');
+  if (ligne) ligne.classList.toggle('hidden', !visible);
   const paires = [
     ['withings-deconnecte', 'withings-connecte'],
     ['withings-deconnecte-reglages', 'withings-connecte-reglages']
@@ -16566,8 +16586,8 @@ function majUIWithings() {
   paires.forEach(([offId, onId]) => {
     const zoneOff = document.getElementById(offId);
     const zoneOn = document.getElementById(onId);
-    if (zoneOff) zoneOff.classList.toggle('hidden', !!t);
-    if (zoneOn) zoneOn.classList.toggle('hidden', !t);
+    if (zoneOff) zoneOff.classList.toggle('hidden', !visible || !!t);
+    if (zoneOn) zoneOn.classList.toggle('hidden', !visible || !t);
   });
 }
 
@@ -16630,7 +16650,7 @@ function brancherLiensWithings() {
 function connexionWithings(e) {
   if (NATIF) {
     if (e) e.preventDefault();
-    informer("Dans l'app iPhone, connecte plutôt Apple Santé (Profil › Réglages › Appareils) : l'app Withings y envoie déjà tes pesées.");
+    connexionWithingsNatif();
     return false;
   }
   if (!accesPro()) {
@@ -16649,20 +16669,67 @@ function connexionWithings(e) {
   return true;
 }
 
-/* Étape 2 : appelée automatiquement au chargement si l'URL contient un code
-   (donc juste après le retour de Withings). Échange ce code contre les
-   jetons d'accès. */
+/* Dans l'app iPhone : la page de connexion Withings s'ouvre dans une
+   feuille de l'app (module natif ConnexionWeb), pas dans Safari — d'où
+   aucun chemin ne ramenait à l'app. Quand Withings renvoie vers l'adresse
+   de retour enregistrée chez lui (le site), la feuille se referme sans la
+   charger et rend cette adresse : son code part au serveur, comme au retour
+   sur le site, et le « state » gardé sur l'appareil est exigé de même. */
+let connexionWithingsEnCours = false;
+async function connexionWithingsNatif() {
+  if (connexionWithingsEnCours) return;
+  if (!sessionUtilisateur) { informer('Connecte-toi à ton compte pour relier ta balance.'); return; }
+  if (!NATIF.ConnexionWeb || (NATIF.disponible && !NATIF.disponible('ConnexionWeb'))) {
+    informer("Cette version de l'app ne sait pas encore relier une balance Withings : mets-la à jour.");
+    return;
+  }
+  connexionWithingsEnCours = true;
+  try {
+    // Le serveur d'abord : inutile de passer par Withings s'il ne peut pas
+    // relier la balance (fonction pas encore déployée, compte sans accès).
+    const etat = await appelWithings('etat');
+    if (etat.erreur) { informer(etat.erreur); return; }
+    if (etat.autorise === false) { refusWithingsPro(); return; }
+    let r = null;
+    try {
+      r = await NATIF.ConnexionWeb.ouvrir({ url: urlAutorisationWithings(nouvelEtatWithings()), retour: WITHINGS_REDIRECT_URI, titre: 'Withings' });
+    } catch (e) {
+      informer("La page de connexion Withings ne s'est pas ouverte. Réessaie dans un instant.");
+      return;
+    }
+    // Fermée sans aller au bout : rien à faire, la demande est oubliée.
+    if (!r || r.annule || !r.url) { try { localStorage.removeItem(WITHINGS_STATE_LS); } catch (e) {} return; }
+    let params = null;
+    try { params = new URL(r.url).searchParams; } catch (e) {}
+    if (params) await terminerConnexionWithings(params);
+  } finally {
+    connexionWithingsEnCours = false;
+  }
+}
+
+/* Étape 2 (site) : appelée automatiquement au chargement si l'URL contient
+   un code (donc juste après le retour de Withings). */
 async function traiterRetourWithings() {
   const params = new URLSearchParams(window.location.search);
-  const code = params.get('code');
-  if (!code) return;
-  const state = params.get('state');
+  if (!params.get('code')) return;
   // On retire le code de l'URL tout de suite : rechargée par erreur, la page
   // ne doit pas retenter le même code (Withings le refuse une 2e fois).
   window.history.replaceState({}, '', window.location.pathname);
+  await terminerConnexionWithings(params);
+}
+
+/* Le retour de Withings, sur le site ou rendu par la feuille de l'app :
+   échange le code contre les jetons, gardés par le serveur. */
+async function terminerConnexionWithings(params) {
+  const code = params.get('code');
   // Le « state » doit être celui de la demande partie de cet appareil.
-  if (!etatWithingsAttendu(state)) {
+  if (!etatWithingsAttendu(params.get('state'))) {
     informer('Connexion Withings ignorée : cette demande ne vient pas de cet appareil ou a expiré. Relance « Connecter » depuis Réglages.');
+    return;
+  }
+  // Refusé chez Withings (« Refuser ») : pas de code, rien à échanger.
+  if (!code) {
+    informer(params.get('error') === 'access_denied' ? 'Connexion Withings annulée : la balance reste non reliée.' : "Withings n'a pas relié la balance. Relance « Connecter ».");
     return;
   }
   // La session du compte arrive parfois un instant après la page.
@@ -16670,11 +16737,11 @@ async function traiterRetourWithings() {
   // Le secret et les jetons restent côté serveur : on n'envoie que le code.
   const r = await appelWithings('connecter', { code });
   if (r.erreur) {
-    if (r.code === 'pro_requis') { ouvrirPro('withings'); return; }
+    if (r.code === 'pro_requis') { refusWithingsPro(); return; }
     informer('Connexion à Withings impossible : ' + r.erreur);
     return;
   }
-  etatWithings = { connecte: true, connu: true };
+  etatWithings = Object.assign({}, etatWithings, { connecte: true, connu: true });
   majUIWithings();
   informer('Balance Withings connectée !');
 }
@@ -16701,15 +16768,15 @@ const WITHINGS_MEASTYPES = { poids: 1, grassePct: 6, muscleKg: 76, osKg: 88, eau
    ne donnent pas la composition corporelle, seulement le poids). */
 async function importerPoidsWithings() {
   const bouton = document.getElementById('btn-import-withings');
-  const texteInitial = bouton ? bouton.textContent : '';
+  const contenuInitial = bouton ? bouton.innerHTML : '';
   if (bouton) { bouton.disabled = true; bouton.innerHTML = '<svg class="icone-ui" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 22h14" /><path d="M5 2h14" /><path d="M17 22v-4.172a2 2 0 0 0-.586-1.414L12 12l-4.414 4.414A2 2 0 0 0 7 17.828V22" /><path d="M7 2v4.172a2 2 0 0 0 .586 1.414L12 12l4.414-4.414A2 2 0 0 0 17 6.172V2" /></svg> Récupération…'; }
   try {
     // Les pesées sont lues par le serveur, qui détient le jeton (et le
     // rafraîchit au besoin) : l'appli ne reçoit que les mesures.
     const data = await appelWithings('mesures');
     if (data.erreur) {
-      if (data.connecte === false) { etatWithings = { connecte: false, connu: true }; majUIWithings(); }
-      if (data.code === 'pro_requis') { ouvrirPro('withings'); return; }
+      if (data.connecte === false) { etatWithings = Object.assign({}, etatWithings, { connecte: false, connu: true }); majUIWithings(); }
+      if (data.code === 'pro_requis') { refusWithingsPro(); return; }
       alert(data.erreur);
       return;
     }
@@ -16756,7 +16823,7 @@ async function importerPoidsWithings() {
   } catch (e) {
     alert('Erreur pendant la récupération : ' + e.message);
   } finally {
-    if (bouton) { bouton.disabled = false; bouton.textContent = texteInitial; }
+    if (bouton) { bouton.disabled = false; bouton.innerHTML = contenuInitial; }
   }
 }
 
@@ -17630,7 +17697,7 @@ drop policy if exists "acces exercices_perso_musculation" on exercices_perso_mus
 const ADMIN_EMAIL = 'jambou592@gmail.com';
 
 const SQL_RLS = `-- À exécuter UNE FOIS que toi et l'autre personne avez chacun créé un
--- compte (bouton <svg class="icone-ui" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2" /><circle cx="12" cy="7" r="4" /></svg> <svg class="icone-ui" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 18 6-6-6-6" /></svg> Créer un compte). Idempotent : relancer ne casse rien.
+-- compte (« Créer un compte » dans l'appli). Idempotent : relancer ne casse rien.
 -- Avant ça, les tables sont fermées (le script 1 ne crée plus de règle) ;
 -- après, chaque compte ne peut lire/écrire que les lignes où
 -- utilisateur = son propre auth.uid() — sauf l'administrateur, qui voit et
@@ -17748,11 +17815,31 @@ create policy "exercices_perso_musculation par compte" on exercices_perso_muscul
   using ((utilisateur = auth.uid()::text and not est_bloque(utilisateur) and mon_compte_existe()) or public.est_admin())
   with check ((utilisateur = auth.uid()::text and not est_bloque(utilisateur) and mon_compte_existe()) or public.est_admin());
 
--- Important : ces policies exigent d'être connecté (auth.uid() non nul).
--- Si l'un de vous continue à utiliser l'identifiant libre sans jamais se
--- connecter, ses lectures/écritures échoueront après ce script — dans ce
--- cas, gardez plutôt les policies par défaut ("using (true)") tant que
--- vous n'avez pas tous les deux un compte actif.
+-- Règles ouvertes à tous restées sur ces cinq tables (créées à la main dans
+-- Supabase, ou par une ancienne version sous un autre nom) : les règles se
+-- cumulent, une seule suffit à ouvrir la table à quiconque a la clé publique.
+-- Retirées ici, table par table, là où la règle par compte est en place
+-- (refaite juste au-dessus). Le contrôle admin_regles_ouvertes(), en fin de
+-- script, doit ensuite valoir 0 (ligne 2 de l'écran Administration en vert).
+do $$
+declare r record;
+begin
+  for r in
+    select p.tablename, p.policyname from pg_policies p
+    where p.schemaname = 'public'
+      and p.tablename in ('journees', 'profil', 'programmes_musculation', 'seances_musculation', 'exercices_perso_musculation')
+      and (p.qual = 'true' or p.with_check = 'true')
+      and p.policyname <> p.tablename || ' par compte'
+      and exists (select 1 from pg_policies c where c.schemaname = 'public' and c.tablename = p.tablename
+                  and c.policyname = p.tablename || ' par compte' and c.qual is distinct from 'true')
+  loop
+    execute format('drop policy %I on public.%I', r.policyname, r.tablename);
+    raise notice 'Règle ouverte retirée : % sur %', r.policyname, r.tablename;
+  end loop;
+end $$;
+
+-- Ces règles exigent d'être connecté (auth.uid() non nul) : l'appli exige
+-- un compte, il n'y a plus d'accès sans connexion.
 
 -- Fonction dédiée au panneau Administration : la table auth.users (qui
 -- contient les emails) n'est normalement pas interrogeable directement par
@@ -30507,7 +30594,7 @@ async function verifierAdminServeur() {
     if (error || !sessionUtilisateur) return;
     const avant = estCompteAdmin();
     sessionUtilisateur.admin = data === true;
-    if (estCompteAdmin() !== avant) majUICompte();
+    if (estCompteAdmin() !== avant) { majUICompte(); majUIWithings(); }
   } catch (e) {}
 }
 /* Doublons d'aliments à valider : un même produit ajouté par plusieurs
