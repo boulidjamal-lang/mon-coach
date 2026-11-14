@@ -46,6 +46,7 @@
     function rendre(t, uFixe) {
       const { info, formes } = placer(t, uFixe);
       atlas.poser(corps.matrices());
+      if (atlas.tenus) atlas.tenus(info.tenus);
       atlas.objets(formes);
       const b = corps.pw[0];
       atlas.ombre({ centre: [(mini[0] + maxi[0]) / 2, (mini[2] + maxi[2]) / 2], taille: [Math.max(0.45, (maxi[0] - mini[0]) * 0.5), Math.max(0.45, (maxi[2] - mini[2]) * 0.5)], pieds: false, force: b.y > 1.4 ? 0.5 : 1 });
@@ -59,7 +60,7 @@
       demarrer() { if (!actif) { actif = true; t0 = 0; atlas.animer(pas); } },
       arreter() { actif = false; atlas.animer(null); },
       // Retour à la position anatomique, sans matériel.
-      quitter() { actif = false; atlas.animer(null); atlas.poser(null); atlas.objets([]); atlas.ombre(null); if (atlas.appuis) atlas.appuis(null); }
+      quitter() { actif = false; atlas.animer(null); atlas.poser(null); atlas.objets([]); atlas.ombre(null); if (atlas.appuis) atlas.appuis(null); if (atlas.tenus) atlas.tenus(null); }
     };
   }
 

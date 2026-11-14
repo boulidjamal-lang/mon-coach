@@ -111,7 +111,7 @@
     if (o.blocs) for (const s of [1, -1]) fixe.push(pret(boite(0.3, 0.5 - 0.225, 0.4, s * 0.6, (0.5 - 0.225) / 2, 0.2, C.banc, 0)));
     // La prise : barre et haltères paumes vers l'arrière ; barre hexagonale et corde paumes face à face.
     const neutre = !!(o.trapbar || o.poulie), xMain = o.trapbar ? 0.32 : o.kb ? 0.05 : o.poulie ? 0.05 : o.hal ? 0.2 : sumo ? 0.2 : 0.27;
-    const xP = xMain + (neutre ? L.creux : 0), zP = neutre ? 0 : L.creux;   // du centre de la prise au poignet
+    const xP = xMain + (neutre ? L.creuxBarre : 0), zP = neutre ? 0 : L.creuxBarre;   // du centre de la prise au poignet
     const prises = (p, y, z) => { for (const [kk, s] of COTES) p.bras[kk] = { prise: V(s * xMain, y, z), pole: V(s * 0.3, 0, -1), paume: neutre ? V(-s, 0, 0) : V(0, 0, -1), dirMain: V(0, -1, 0), doigts: 'barre' }; return p; };
     // La charge contre les jambes : la barre les longe, les haltères passent devant de la largeur d'une tête.
     const marge = o.hal ? 0.067 : rayon + 0.004;

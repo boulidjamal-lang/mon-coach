@@ -54,8 +54,10 @@ uniform int u_attaches;           // le numéro de la première attache (0 : le 
 uniform vec4 u_appuis[24];        // les appuis (6 au plus), quatre lignes chacun : voir appuis()
 uniform sampler2D u_etats;
 uniform highp sampler2D u_os;      // la pose : lignes 2 et 3, un déplacement rigide par articulation (côté gauche, côté droit) ; pour une attache, un troisième texel : l'axe de son glissement et son évasement
+uniform uvec4 u_doigts;           // les os des doigts (un bit par articulation)
+uniform float u_mainsCouvertes;   // 1 : la peau couvre les mains
 out vec3 v_pos, v_nor;
-out float v_ombre, v_tendon;
+out float v_ombre, v_tendon, v_doigt;
 flat out vec4 v_teinte, v_etat;
 flat out float v_num;
 vec3 octa(vec2 e) {
@@ -143,6 +145,11 @@ void main() {
   vec3 n = normalize(n0 + 2.0 * cross(qr.xyz, cross(qr.xyz, n0) + qr.w * n0));
   v_pos = p; v_nor = n;
   v_ombre = a_ombreTendon.x; v_tendon = a_ombreTendon.y;
+  // La chair portée par les os des doigts (tendons des fléchisseurs et des extenseurs, petits muscles) : sous la peau des
+  // mains, elle ne se voit pas ; doigts très pliés, elle la percerait — elle n'est pas dessinée (voir PIXELS).
+  float wd = 0.0;
+  for (int k = 0; k < 4; k++) { uint j = a_os[k]; if (a_poids[k] > 0.0 && j < 128u && ((u_doigts[int(j >> 5u)] >> (j & 31u)) & 1u) == 1u) wd += a_poids[k]; }
+  v_doigt = u_mainsCouvertes * wd / max(a_poids.x + a_poids.y + a_poids.z + a_poids.w, 1e-4);
   gl_Position = voir ? u_vp * vec4(p, 1.0) : vec4(2.0, 2.0, 2.0, 1.0);
 }`;
 
@@ -164,6 +171,8 @@ uniform mat4 u_vp;
 uniform float u_cote, u_tire, u_fenetre;
 uniform vec2 u_short;
 uniform highp sampler2D u_os;
+uniform vec4 u_tenuC[2], u_tenuA[2];   // ce que serrent les mains : centre et rayon, axe et demi-longueur
+uniform int u_nbTenus;
 out vec3 v_pos, v_nor, v_repos;
 out float v_ombre, v_short;
 flat out float v_zone;
@@ -186,8 +195,17 @@ void main() {
   float tissu = a_ombreShort.y * smoothstep(u_short.x - 0.006, u_short.x + 0.002, p4.y) * (1.0 - smoothstep(u_short.y - 0.002, u_short.y + 0.006, p4.y));
   p4.xyz += n0 * 0.004 * tissu;
   vec3 p = vec3(dot(r0, p4), dot(r1, p4), dot(r2, p4));
-  v_pos = p; v_repos = p4.xyz;
   v_nor = normalize(vec3(dot(r0.xyz, n0), dot(r1.xyz, n0), dot(r2.xyz, n0)));
+  // Une main qui serre une barre : sa peau (paume, doigts, ongles) ne rentre pas dans la barre, elle s'écrase à sa
+  // surface, comme la chair d'une vraie main ; sa normale suit en partie la surface de la barre.
+  if (abs(a_zone - 2.0) < 0.5 || abs(a_zone - 4.0) < 0.5) for (int i = 0; i < 2; i++) {
+    if (i >= u_nbTenus) break;
+    vec3 w = p - u_tenuC[i].xyz, ax = u_tenuA[i].xyz;
+    float t = dot(w, ax), r = u_tenuC[i].w;
+    vec3 q = w - t * ax; float d = length(q);
+    if (abs(t) < u_tenuA[i].w && d < r && d > 1e-5) { p += q * (r / d - 1.0); v_nor = normalize(mix(v_nor, q / d, 0.5)); }
+  }
+  v_pos = p; v_repos = p4.xyz;
   v_ombre = a_ombreShort.x; v_short = a_ombreShort.y; v_zone = a_zone;
   // Fenêtre : la peau du corps recule derrière le muscle qu'elle recouvre (son épaisseur, plus une marge).
   float tire = (u_fenetre > 0.5 && a_zone < 0.5) ? -(a_epais * 0.1275 + 0.016) : u_tire;
@@ -278,7 +296,7 @@ void main() {
   const PIXELS = `#version 300 es
 precision highp float;
 in vec3 v_pos, v_nor;
-in float v_ombre, v_tendon;
+in float v_ombre, v_tendon, v_doigt;
 flat in vec4 v_teinte, v_etat;
 flat in float v_num;
 uniform vec3 u_cam, u_tendon, u_accent;
@@ -300,6 +318,7 @@ vec3 neutre(vec3 c) {
 }
 float ggx(float nh, float r) { float a = r * r, a2 = a * a, d = nh * nh * (a2 - 1.0) + 1.0; return a2 / (3.14159 * d * d); }
 void main() {
+  if (v_doigt > 0.3) discard;
   vec3 N = normalize(v_nor); if (!gl_FrontFacing) N = -N;
   vec3 V = normalize(u_cam - v_pos);
   float nv = max(dot(N, V), 0.0);
@@ -365,12 +384,12 @@ void main() {
   const PIXELS_REPERAGE = `#version 300 es
 precision highp float;
 in vec3 v_pos, v_nor;
-in float v_ombre, v_tendon;
+in float v_ombre, v_tendon, v_doigt;
 flat in vec4 v_teinte, v_etat;
 flat in float v_num;
 uniform float u_cote;
 out vec4 o;
-void main() { o = vec4(v_num / 255.0, (u_cote + 1.0) / 255.0, 0.0, 1.0); }`;
+void main() { if (v_doigt > 0.3) discard; o = vec4(v_num / 255.0, (u_cote + 1.0) / 255.0, 0.0, 1.0); }`;
 
   const SOL_S = `#version 300 es
 precision highp float;
@@ -1182,6 +1201,8 @@ void main() {
     // NJ : les articulations du fichier (celles dont on reçoit les matrices, et que la peau connaît) ; NQ : avec les
     // attaches ajoutées par reponderer, dont le moteur calcule lui-même le déplacement (voir ecrireQuaternions).
     const SQ = E.squelette || [], NQ = Math.max(1, SQ.length), NJ = Math.max(1, Math.min(NQ, E.articulationsFichier || NQ));
+    // Les os des doigts, un bit par articulation : voir u_doigts.
+    const BITS_DOIGTS = new Uint32Array(4); SQ.forEach((a, j) => { if (j < 128 && /^doigt/.test(a.nom)) BITS_DOIGTS[j >> 5] |= 1 << (j & 31); });
     // La peau ajoute des articulations intermédiaires (une fraction de la rotation entre deux os, voir peau.mjs) : elles
     // prennent place à la suite, côté gauche puis côté droit, et le moteur calcule leur pose à chaque changement.
     const INTER = PE && PE.entete.articulations === NJ && PE.entete.intermediaires ? PE.entete.intermediaires : [];
@@ -1505,6 +1526,7 @@ void main() {
       gl.uniform1f(pr.u.u_corde, 1);
       gl.uniform1i(pr.u.u_attaches, NQ > NJ ? NJ : 0);
       gl.uniform1i(pr.u.u_nbAppuis, nbAppuis); if (nbAppuis) gl.uniform4fv(pr.u.u_appuis, appuisU);
+      gl.uniform4ui(pr.u.u_doigts, BITS_DOIGTS[0], BITS_DOIGTS[1], BITS_DOIGTS[2], BITS_DOIGTS[3]); gl.uniform1f(pr.u.u_mainsCouvertes, PE && niveauPeau > 0 ? 1 : 0);
       if (reperage) return;
       const c = Math.cos(m.az), s = Math.sin(m.az);
       gl.uniformMatrix3fv(prog.u.u_lum, false, [c, 0, -s, 0, 1, 0, s, 0, c]);
@@ -1538,6 +1560,7 @@ void main() {
       if (H.oeil) gl.uniform4f(pr.u.u_oeil, H.oeil.centre[0], H.oeil.centre[1], H.oeil.centre[2], H.oeil.rayon);
       gl.uniform3fv(pr.u.u_teint, couleur(opt.teint).map(x => lin(x / 255))); gl.uniform3fv(pr.u.u_tissu, couleur(opt.tissu).map(x => lin(x / 255))); gl.uniform3fv(pr.u.u_poil, couleur(opt.poil).map(x => lin(x / 255)));
       gl.uniform1f(pr.u.u_tire, PEAU_AVANT);
+      gl.uniform4fv(pr.u.u_tenuC, tenusU.subarray(0, 8)); gl.uniform4fv(pr.u.u_tenuA, tenusU.subarray(8, 16)); gl.uniform1i(pr.u.u_nbTenus, nbTenus);
       const tracer = () => {
         for (let cote = 0; cote < 2; cote++) {
           gl.uniform1f(pr.u.u_cote, cote); gl.frontFace(cote ? gl.CW : gl.CCW);
@@ -1556,6 +1579,7 @@ void main() {
     let nbImages = 0, dernierTemps = 0;
     let objets = [], ombreSol = null, animation = null, scene = null;
     const appuisU = new Float32Array(24 * 4); let nbAppuis = 0;   // les appuis, tels que le programme les lit
+    const tenusU = new Float32Array(16); let nbTenus = 0;          // ce que serrent les mains (voir tenus)
     function dessiner() {
       if (gl.isContextLost()) return;
       const t0 = performance.now();
@@ -1845,6 +1869,13 @@ void main() {
       appuis(liste) {
         nbAppuis = Math.min(6, liste ? liste.length : 0);
         for (let i = 0; i < nbAppuis; i++) appuisU.set(liste[i].slice(0, 16), i * 16);
+        demander();
+      },
+      // Ce que serrent les mains (deux au plus ; null : rien) : { c (centre), a (axe, unitaire), r (rayon), h (demi-longueur) },
+      // en mètres. La peau des mains qui entrerait dedans s'écrase à sa surface.
+      tenus(liste) {
+        nbTenus = Math.min(2, liste ? liste.length : 0);
+        for (let i = 0; i < nbTenus; i++) { const t = liste[i]; tenusU.set([t.c.x, t.c.y, t.c.z, t.r], i * 4); tenusU.set([t.a.x, t.a.y, t.a.z, t.h], 8 + i * 4); }
         demander();
       },
       // Fonction appelée à chaque image (temps en secondes) tant qu'elle renvoie vrai : l'animation d'un exercice.

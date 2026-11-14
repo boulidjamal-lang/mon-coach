@@ -198,6 +198,57 @@
      Options communes aux bras : hausse (épaule haussée) et avance (épaule portée en avant), en degrés ; ceinture
      (part du mouvement du bras reprise par la ceinture scapulaire, à la place de la part ordinaire) ; doigts.
      Options des jambes : orteils (flexion des orteils quand le pied est sur la pointe). */
+
+  /* La main sur une barre (voir Corps.prise). Les phalanges y sont des capsules, mesurées sur la peau de la main gauche
+     au repos (outils/atlas/LISEZMOI.md, « La prise ») : épaisseur côté pulpe et côté dos de chaque os, du métacarpien
+     du pouce ou de la première phalange au bout du doigt (m) ; longueur de la dernière phalange jusqu'au bout du doigt ;
+     angle de la dernière phalange sur le prolongement de la deuxième, vers la pulpe (rad). */
+  const PHALANGES = {
+    1: { pulpe: [0.0142, 0.0137, 0.0102], dos: [0.0256, 0.0126, 0.0059], bout: 0.0346, angle: -0.143 },
+    2: { pulpe: [0.0171, 0.0124, 0.0105], dos: [0.0098, 0.0068, 0.0051], bout: 0.0283, angle: 0.360 },
+    3: { pulpe: [0.0154, 0.0108, 0.0106], dos: [0.0130, 0.0077, 0.0042], bout: 0.0252, angle: 0.462 },
+    4: { pulpe: [0.0151, 0.0113, 0.0100], dos: [0.0105, 0.0094, 0.0048], bout: 0.0253, angle: 0.620 },
+    5: { pulpe: [0.0141, 0.0112, 0.0071], dos: [0.0076, 0.0063, 0.0036], bout: 0.0229, angle: 0.318 }
+  };
+  // La pulpe du pouce au repos (à l'opposé de son ongle) : vers les doigts, vers le petit doigt, hors de la paume.
+  const PULPE_POUCE = [0.18, 0.97, -0.17];
+  const PEAU_PAUME = 0.0175;   // du plan de la main à la peau de la paume, sous la barre (un demi-millimètre écrasé)
+  const RAYON_PRISE = 0.0145;  // ce que tient la main, par défaut : barre 13,5 mm, haltère 14,5 à 16 mm de rayon
+  const RAYON_POING = 0.004;   // le poing : les doigts refermés jusqu'à la paume, comme sur une barre très fine
+  const ECRASE = 0.001;        // la peau d'un doigt s'écrase d'un millimètre sur un autre doigt
+  const SERRE = 0.005;         // et la pulpe de 5 mm sur la barre serrée (le moteur pose la peau à sa surface : tenus)
+  /* Distance du segment [p, q] à la droite qui passe par c, de direction a (unitaire). */
+  function distSegDroite(p, q, c, a) {
+    const w = p.clone().sub(c), d = q.clone().sub(p);
+    w.sub(a.clone().multiplyScalar(w.dot(a))); d.sub(a.clone().multiplyScalar(d.dot(a)));
+    const dd = d.dot(d), t = dd > 1e-12 ? borne(-w.dot(d) / dd, 0, 1) : 0;
+    return w.add(d.multiplyScalar(t)).length();
+  }
+  /* Distance entre les segments [p1, q1] et [p2, q2]. */
+  function distSegSeg(p1, q1, p2, q2) {
+    const d1 = q1.clone().sub(p1), d2 = q2.clone().sub(p2), r = p1.clone().sub(p2);
+    const a = d1.dot(d1), e = d2.dot(d2), f = d2.dot(r), c = d1.dot(r), b = d1.dot(d2), den = a * e - b * b;
+    let s = den > 1e-12 ? borne((b * f - c * e) / den, 0, 1) : 0, t = e > 1e-12 ? (b * s + f) / e : 0;
+    if (t < 0) { t = 0; s = a > 1e-12 ? borne(-c / a, 0, 1) : 0; } else if (t > 1) { t = 1; s = a > 1e-12 ? borne((b - c) / a, 0, 1) : 0; }
+    return p1.clone().add(d1.multiplyScalar(s)).sub(p2.clone().add(d2.multiplyScalar(t))).length();
+  }
+  /* La k-ième articulation d'une chaîne (angles en radians) tourne de 0 vers max jusqu'au contact (touche(angles)
+     vrai), affinée par dichotomie ; déjà en contact à 0, elle se redresse vers min jusqu'à ne plus toucher. Elle
+     s'arrête toujours du côté libre. */
+  function jusquAuContact(angles, k, min, max, touche) {
+    angles[k] = 0;
+    const dedans = touche(angles), cible = dedans ? min : max, n = Math.max(1, Math.ceil(Math.abs(cible) / 0.03));
+    let avant = 0;
+    for (let i = 1; i <= n; i++) {
+      const t = cible * i / n; angles[k] = t;
+      if (touche(angles) === dedans) { avant = t; continue; }
+      let lo = avant, hi = t;   // lo : encore comme au départ ; hi : de l'autre côté
+      for (let m = 0; m < 7; m++) { const mi = (lo + hi) / 2; angles[k] = mi; if (touche(angles) === dedans) lo = mi; else hi = mi; }
+      return (angles[k] = dedans ? hi : lo);
+    }
+    return (angles[k] = cible);
+  }
+
   class Corps {
     /* squelette : articulations de l'atlas ({ nom, parent, centre, jumeau }) ; sourcePeau(regions) : points de la
        surface du corps au repos ({ n, P, J, W }) pour mesurer le corps posé (appuis, contrôles). */
@@ -220,13 +271,15 @@
       this.mats = new Float32Array(nb * 12);
       this.sourcePeau = typeof sourcePeau === 'function' ? sourcePeau : null;
       this.peaux = {};
+      this.prisesFaites = {};   // la main sur une barre, par côté et par rayon (voir prise)
       this.majMonde();
       const T = nom => this.tete[this.i[nom]];
       const L = this.L = {
         bras: T('ulna.G').distanceTo(T('humerus.G')),
         avantBras: T('main.G').distanceTo(T('ulna.G')),
         main: 0.85 * T('doigt3-1.G').distanceTo(T('main.G')),   // du poignet au creux de la main
-        creux: 0.024,                                            // du plan de la main au centre d'une barre tenue
+        creux: 0.024,                                            // du plan de la main au point visé, main ouverte
+        creuxBarre: PEAU_PAUME + RAYON_PRISE,                    // du plan de la main à l'axe d'une barre tenue
         cuisse: T('tibia.G').distanceTo(T('femur.G')),
         jambe: T('pied.G').distanceTo(T('tibia.G')),
         chevilleH: T('pied.G').y,
@@ -480,7 +533,7 @@
     /* Place tout le corps ; renvoie où sont les mains et les pieds (pour le matériel). */
     poser(p) {
       this.tronc(p);
-      const info = { prises: {}, axes: {}, poignets: {}, coudes: {}, paumes: {}, dirMains: {}, chevilles: {}, genoux: {}, orteils: {}, pieds: {}, angles: {} };
+      const info = { prises: {}, axes: {}, poignets: {}, coudes: {}, paumes: {}, dirMains: {}, chevilles: {}, genoux: {}, orteils: {}, pieds: {}, angles: {}, tenus: [] };
       for (const [c, s, x] of COTES) this.bras(c, s, x, p.bras[c], info);
       for (const [c, s, x] of COTES) this.jambe(c, s, x, p.jambes[c], info);
       info.epaules = { G: this.monde('humerus.G'), D: this.monde('humerus.D') };
@@ -519,6 +572,8 @@
     /* Un bras (voir en tête de classe les trois façons de le décrire) ; doigts : 'barre', 'plat', 'detendu', 'poing'. */
     bras(c, s, x, b, info) {
       const L = this.L, R = this.R[c], i = this.i;
+      // Du plan de la main au point visé : l'axe de la barre tenue (voir prise), ou la peau de la paume, main ouverte.
+      const barre = b.doigts === 'barre', rayon = b.rayon || RAYON_PRISE, hPrise = barre ? PEAU_PAUME + rayon : L.creux;
       const QT = this.qw[i.thorax].clone();
       const angles = b.elev != null;
       let d1, d2, coude, fFixe = null, paume, dirMain = b.dirMain ? unite(b.dirMain) : null;
@@ -561,8 +616,8 @@
           }
           return;
         }
-        // La barre est dans le creux de la main ; le poignet est en retrait, dans l'axe des doigts.
-        const creux = (dg ? b.prise.clone().add(dg) : b.prise.clone()).sub(paume.clone().multiplyScalar(L.creux));
+        // La barre est posée sur la peau de la paume ; le poignet est en retrait, dans l'axe des doigts.
+        const creux = (dg ? b.prise.clone().add(dg) : b.prise.clone()).sub(paume.clone().multiplyScalar(hPrise));
         const r = dirMain ? ik2(ep, creux.sub(dirMain.clone().multiplyScalar(L.main)), L.bras, L.avantBras, b.pole, L.coudeMin) : ik2(ep, creux, L.bras, L.prise, b.pole, L.coudeMin);
         coude = r.milieu; d1 = unite(coude.clone().sub(ep)); d2 = unite(r.fin.clone().sub(coude));
       };
@@ -598,18 +653,126 @@
       pron = Math.min(rad(175), Math.max(rad(-15), pron));
       this.poserMonde('radius' + x, qAxe(d2, s * pron).multiply(Q2));
       this.poserMonde('main' + x, QM);
-      // Doigts : refermés sur la barre, à plat, détendus, ou poing serré.
-      const PLIS = { barre: [1.05, 1.25, 0.85], plat: [0.03, 0.03, 0.02], detendu: [0.28, 0.42, 0.3], poing: [1.35, 1.5, 1.0] };
-      const plis = typeof b.doigts === 'number' ? PLIS.plat.map((x, n) => x + (PLIS.poing[n] - x) * b.doigts) : PLIS[b.doigts || 'detendu'];
-      for (let fg = 1; fg <= 5; fg++) for (let j = 1; j <= 3; j++) this.ql[i[`doigt${fg}-${j}` + x]].copy(qAxe(R.doigts[fg], plis[j - 1] * (fg === 1 ? 0.7 : 1)));
+      // Doigts : refermés sur la barre (voir prise), poing serré (refermés jusqu'à la paume, sur une barre très fine),
+      // posés à plat (voir aPlat), ou détendus.
+      if (barre || b.doigts === 'poing' || b.doigts === 'plat') {
+        const g = b.doigts === 'plat' ? this.aPlat(c) : this.prise(c, barre ? rayon : RAYON_POING);
+        for (let fg = 1; fg <= 5; fg++) for (let j = 1; j <= 3; j++) this.ql[i[`doigt${fg}-${j}` + x]].copy(g.q[fg][j - 1]);
+      } else {
+        const PLIS = { plat: [0.03, 0.03, 0.02], detendu: [0.28, 0.42, 0.3], poing: [1.35, 1.5, 1.0] };
+        const plis = typeof b.doigts === 'number' ? PLIS.plat.map((x, n) => x + (PLIS.poing[n] - x) * b.doigts) : PLIS[b.doigts || 'detendu'];
+        // Main détendue : les doigts se plient un peu plus de l'index vers le petit doigt, comme une main au repos.
+        const cascade = !b.doigts || b.doigts === 'detendu' ? [0.7, 0.85, 1, 1.1, 1.2] : [0.7, 1, 1, 1, 1];
+        for (let fg = 1; fg <= 5; fg++) for (let j = 1; j <= 3; j++) this.ql[i[`doigt${fg}-${j}` + x]].copy(qAxe(R.doigts[fg], plis[j - 1] * cascade[fg - 1]));
+      }
       this.majMonde();
       const poignet = this.pw[i['main' + x]].clone();
       info.poignets[c] = poignet;
       info.coudes[c] = coude.clone();
       info.paumes[c] = paume.clone(); info.dirMains[c] = dMain.clone();
-      info.prises[c] = poignet.clone().add(dMain.clone().multiplyScalar(L.main)).add(paume.clone().multiplyScalar(L.creux));
+      info.prises[c] = poignet.clone().add(dMain.clone().multiplyScalar(L.main)).add(paume.clone().multiplyScalar(hPrise));
       info.axes[c] = paume.clone().cross(dMain).normalize();
+      // Ce que la main serre, pour le moteur : la peau de la main s'écrase à sa surface au lieu d'y entrer (voir tenus).
+      if (barre) info.tenus.push({ c: info.prises[c].clone(), a: info.axes[c].clone(), r: rayon, h: 0.065 });
       info.angles[c] = { pronation: pron * 180 / Math.PI, coude: theta * 180 / Math.PI };
+    }
+    /* La main refermée sur une barre de rayon r : les rotations des os des doigts (q[doigt][0 à 2], par rapport à leur
+       parent). Tout se calcule dans le repère de la main au repos, une fois par côté et par rayon : la prise ne dépend pas
+       du reste de la pose. La barre est en travers de la paume, son axe à L.main du poignet le long de la main et à
+       PEAU_PAUME + r au-dessus du plan de la main : posée sur la peau de la paume. Les doigts s'y enroulent : chaque
+       phalange, de la première à la dernière, tourne jusqu'à être tangente à la barre (sa pulpe écrasée de SERRE). Le
+       pouce en fait le tour par l'autre côté, à côté de l'index : levé devant la paume, tourné pour présenter sa pulpe
+       à la barre, il s'abaisse puis plie jusqu'à toucher la barre, ou le dos de l'index et du majeur déjà refermés. Les
+       phalanges sont des capsules (PHALANGES). */
+    prise(c, r) {
+      const cle = c + Math.round(r * 1e4);
+      if (this.prisesFaites[cle]) return this.prisesFaites[cle];
+      const x = c === 'G' ? '.G' : '.D', R = this.R[c], L = this.L, T = n => this.tete[this.i[n + x]];
+      const d = R.main.d, pm = R.main.paume, flex = unite(d.clone().cross(pm));   // les doigts plient de d vers pm
+      const centre = T('main').clone().add(d.clone().multiplyScalar(L.main)).add(pm.clone().multiplyScalar(PEAU_PAUME + r));
+      // Un doigt au repos : ses trois os, et sa dernière phalange jusqu'au centre de sa pulpe au bout du doigt.
+      const os = f => {
+        const P = PHALANGES[f], t1 = T(`doigt${f}-1`), t2 = T(`doigt${f}-2`), t3 = T(`doigt${f}-3`);
+        const bout = unite(t3.clone().sub(t2)).applyQuaternion(qAxe(R.doigts[f], P.angle)).multiplyScalar(P.bout - P.pulpe[2]);
+        return { P, t1, d12: t2.clone().sub(t1), d23: t3.clone().sub(t2), bout };
+      };
+      // Les points d'un doigt (base, deux articulations, bout) pour les rotations q1, q2, q3 de ses os.
+      const points = (o, q1, q2, q3) => {
+        const Q2 = q1.clone().multiply(q2), Q3 = Q2.clone().multiply(q3);
+        const p2 = o.d12.clone().applyQuaternion(q1).add(o.t1), p3 = o.d23.clone().applyQuaternion(Q2).add(p2);
+        return [o.t1, p2, p3, o.bout.clone().applyQuaternion(Q3).add(p3)];
+      };
+      // L'os j (sa capsule, côté pulpe) entre dans la barre ; ou, s'il n'est pas le premier, dans la paume (au-dessus
+      // de la paume, entre le poignet et la base des doigts, la peau est à PEAU_PAUME du plan de la main).
+      const poignet = T('main');
+      const dansPaume = (p, ep) => { const v = p.clone().sub(poignet), u = v.dot(d); return u > 0.01 && u < L.main + 0.01 && v.dot(pm) < PEAU_PAUME + ep - ECRASE; };
+      const contreBarre = (pts, ep, j) => distSegDroite(pts[j], pts[j + 1], centre, flex) < r + ep[j] - SERRE;
+      const contre = (pts, ep, j) => contreBarre(pts, ep, j) || (j > 0 && (dansPaume(pts[j + 1], ep[j]) || dansPaume(pts[j].clone().add(pts[j + 1]).multiplyScalar(0.5), ep[j])));
+      // Chaque phalange, de la première à la dernière, s'enroule jusqu'à être tangente à la barre : le doigt en fait
+      // le tour, de la base au bout, comme sur une vraie prise.
+      const q = {}, angles = {}, pts = {};
+      for (let f = 2; f <= 5; f++) {
+        const o = os(f), A = R.doigts[f], de = a => points(o, qAxe(A, a[0]), qAxe(A, a[1]), qAxe(A, a[2])), a = [0, 0, 0];
+        [1.6, 1.9, 1.4].forEach((max, k) => jusquAuContact(a, k, -0.4, max, b => contre(de(b), o.P.pulpe, k)));
+        q[f] = a.map(t => qAxe(A, t)); angles[f] = a; pts[f] = de(a);
+      }
+      // Le pouce. Repère de sa première phalange au repos : direction et pulpe ; il plie vers sa pulpe (axe ap).
+      const o = os(1), P = o.P, tp = unite(o.d23);
+      const auric = unite(perp(perp(T('doigt5-1').clone().sub(T('doigt2-1')), d), pm));   // vers le petit doigt
+      const pulpe = unite(perp(d.clone().multiplyScalar(PULPE_POUCE[0]).add(auric.clone().multiplyScalar(PULPE_POUCE[1])).add(pm.clone().multiplyScalar(PULPE_POUCE[2])), tp));
+      const ap = unite(tp.clone().cross(pulpe));
+      // Le pouce passe à côté de l'index, pas dessus : le long de la main, un peu écarté vers son côté, sa pulpe tournée
+      // vers le dos de la main ; levé de LEVE devant la paume (autour de levage), la pulpe regarde la barre. Il se
+      // referme de là : il s'abaisse (a[0]) et plie (a[1], a[2]).
+      const dirPouce = unite(d.clone().sub(auric.clone().multiplyScalar(0.3))), levage = unite(dirPouce.clone().cross(pm)), LEVE = 1.5;
+      const aligne = qVers(tp, pulpe, dirPouce, pm.clone().multiplyScalar(-1));
+      const qs = a => [qAxe(levage, LEVE - a[0]).multiply(aligne), qAxe(ap, a[1]), qAxe(ap, a[2])];
+      const pouce = a => points(o, ...qs(a));
+      // L'os k ou un suivant touche la barre, l'index ou le majeur (leur dos).
+      const touchePouce = (a, k) => {
+        const pp = pouce(a);
+        for (let j = k; j < 3; j++) {
+          if (contreBarre(pp, P.pulpe, j)) return true;
+          if (j > 0) for (const f of [2, 3]) for (let n = 0; n < 3; n++)
+            if (distSegSeg(pp[j], pp[j + 1], pts[f][n], pts[f][n + 1]) < P.pulpe[j] + PHALANGES[f].dos[n] - ECRASE) return true;
+        }
+        return false;
+      };
+      const a = [0, 0, 0];
+      [LEVE + 0.3, 1.0, 1.4].forEach((max, k) => jusquAuContact(a, k, 0, max, b => touchePouce(b, k)));
+      q[1] = qs(a); angles[1] = a; pts[1] = pouce(a);
+      return (this.prisesFaites[cle] = { q, angles, points: pts, centre, axe: flex });
+    }
+    /* La main posée à plat (doigts 'plat') : sur le sol, un banc, un mur. La surface est sous la paume, à L.creux + 6 mm
+       du plan de la main (le point visé est à L.creux ; les postures le posent quelques millimètres au-dessus du sol).
+       Chaque phalange s'y pose : celle qui y entrerait au repos (les doigts du modèle sont un peu pliés) se redresse,
+       celle qui s'en écarte plie jusqu'à la toucher ; le pouce, levé devant la paume au repos, s'abaisse ou se relève
+       de même autour de sa base. Calculé une fois par côté, dans le repère de la main au repos. */
+    aPlat(c) {
+      const cle = c + 'plat';
+      if (this.prisesFaites[cle]) return this.prisesFaites[cle];
+      const x = c === 'G' ? '.G' : '.D', R = this.R[c], L = this.L, T = n => this.tete[this.i[n + x]];
+      const d = R.main.d, pm = R.main.paume, poignet = T('main'), plan = L.creux + 0.006;
+      // L'os j entre dans la surface : la pulpe de sa capsule, à son bout ou en son milieu.
+      const dessous = (pts, ep, j) => [pts[j + 1], pts[j].clone().add(pts[j + 1]).multiplyScalar(0.5)].some(p => p.clone().sub(poignet).dot(pm) > plan - ep[j] + ECRASE);
+      const points = (f, q1, q2, q3) => {
+        const P = PHALANGES[f], t1 = T(`doigt${f}-1`), t2 = T(`doigt${f}-2`), t3 = T(`doigt${f}-3`);
+        const bout = unite(t3.clone().sub(t2)).applyQuaternion(qAxe(R.doigts[f], P.angle)).multiplyScalar(P.bout - P.pulpe[2]);
+        const Q2 = q1.clone().multiply(q2), Q3 = Q2.clone().multiply(q3);
+        const p2 = t2.clone().sub(t1).applyQuaternion(q1).add(t1), p3 = t3.clone().sub(t2).applyQuaternion(Q2).add(p2);
+        return [t1, p2, p3, bout.applyQuaternion(Q3).add(p3)];
+      };
+      const q = {}, angles = {}, I = new Quat();
+      for (let f = 2; f <= 5; f++) {
+        const A = R.doigts[f], de = a => points(f, qAxe(A, a[0]), qAxe(A, a[1]), qAxe(A, a[2])), a = [0, 0, 0];
+        [0.5, 0.5, 0.4].forEach((max, k) => jusquAuContact(a, k, -0.7, max, b => dessous(de(b), PHALANGES[f].pulpe, k)));
+        q[f] = a.map(t => qAxe(A, t)); angles[f] = a;
+      }
+      // Le pouce tourne d'un bloc autour de sa base, vers la surface ou vers le dos de la main.
+      const tp = unite(T('doigt1-3').clone().sub(T('doigt1-2'))), A1 = unite(tp.clone().cross(pm)), a1 = [0];
+      jusquAuContact(a1, 0, -0.9, 0.4, b => [0, 1, 2].some(j => dessous(points(1, qAxe(A1, b[0]), I, I), PHALANGES[1].pulpe, j)));
+      q[1] = [qAxe(A1, a1[0]), I.clone(), I.clone()]; angles[1] = [a1[0], 0, 0];
+      return (this.prisesFaites[cle] = { q, angles });
     }
     /* Une jambe : cible (cheville, pôle du genou, direction et dessus du pied) ou angles anatomiques. */
     jambe(c, s, x, j, info) {
@@ -1651,7 +1814,7 @@
   function degagerTenu(c, d, C) {
     if (!c.sourcePeau || !d.tenu.some(e => TENUS.test(e.t))) return;
     const cycle = d.rythme === 'continu' || d.rythme === 'boucle';
-    const instants = []; for (let i = 0, n = cycle ? 16 : 8; i < (cycle ? n : n + 1); i++) instants.push(i / n);
+    const instants = []; for (let i = 0, n = cycle ? 16 : 12; i < (cycle ? n : n + 1); i++) instants.push(i / n);
     const table = { G: [], D: [] }, utile = { G: false, D: false }, modeles = {};
     for (const u of instants) {
       const g = degagerInstant(c, d, C, d.rythme === 'alt' ? { uG: u, uD: 0, u } : { u }, u, modeles);
@@ -3033,7 +3196,7 @@
     if (o.blocs) for (const s of [1, -1]) fixe.push(pret(boite(0.3, 0.5 - 0.225, 0.4, s * 0.6, (0.5 - 0.225) / 2, 0.2, C.banc, 0)));
     // La prise : barre et haltères paumes vers l'arrière ; barre hexagonale et corde paumes face à face.
     const neutre = !!(o.trapbar || o.poulie), xMain = o.trapbar ? 0.32 : o.kb ? 0.05 : o.poulie ? 0.05 : o.hal ? 0.2 : sumo ? 0.2 : 0.27;
-    const xP = xMain + (neutre ? L.creux : 0), zP = neutre ? 0 : L.creux;   // du centre de la prise au poignet
+    const xP = xMain + (neutre ? L.creuxBarre : 0), zP = neutre ? 0 : L.creuxBarre;   // du centre de la prise au poignet
     const prises = (p, y, z) => { for (const [kk, s] of COTES) p.bras[kk] = { prise: V(s * xMain, y, z), pole: V(s * 0.3, 0, -1), paume: neutre ? V(-s, 0, 0) : V(0, 0, -1), dirMain: V(0, -1, 0), doigts: 'barre' }; return p; };
     // La charge contre les jambes : la barre les longe, les haltères passent devant de la largeur d'une tête.
     const marge = o.hal ? 0.067 : rayon + 0.004;
@@ -3377,7 +3540,16 @@
     }
     if (o.assis) {
       // Assis, genoux à angle droit, la charge sur les genoux : seuls les talons montent.
-      const cle = u => { const p = assis(c, { h: H_SIEGE, zPieds: 0.42, yPieds: 0.08, pointe: 36 * u, ecart: 0.11, ouv: 4 }); const t = c.tronc(p); if (o.uni) p.jambes.D = pied(c, -1, { x: -0.2, z: p.bassin.pos.z + 0.6, ouv: 10 }); for (const [k, s] of COTES) p.bras[k] = { prise: V(s * 0.16, p.jambes.G.cheville.y + L.jambe + 0.1, p.bassin.pos.z + 0.4), pole: V(s * 1, 0, -0.5), paume: V(0, -1, 0), doigts: 'barre' }; return p; };
+      // Les mains tiennent ce qui charge les genoux, là où d.objets le pose : la barre, ou le coussin de la machine (une
+      // main sur un rouleau de 5 cm de rayon, pas dedans).
+      const tenue = o.barre || o.smith ? { h: 0.085, r: 0.0135 } : o.hal ? { h: 0.1, r: 0 } : { h: 0.118, r: 0.05 };
+      const cle = u => {
+        const p = assis(c, { h: H_SIEGE, zPieds: 0.42, yPieds: 0.08, pointe: 36 * u, ecart: 0.11, ouv: 4 });
+        if (o.uni) p.jambes.D = pied(c, -1, { x: -0.2, z: p.bassin.pos.z + 0.6, ouv: 10 });
+        const gn = c.jambesDe(p).genoux, g = gn.G.clone().add(o.uni ? gn.G : gn.D).multiplyScalar(0.5);
+        for (const [k, s] of COTES) p.bras[k] = Object.assign({ prise: tenue.r ? V(s * 0.16, g.y + tenue.h, g.z - 0.05) : V(s * 0.16, p.jambes.G.cheville.y + L.jambe + 0.1, p.bassin.pos.z + 0.4), pole: V(s * 1, 0, -0.5), paume: V(0, -1, 0), doigts: 'barre' }, tenue.r ? { rayon: tenue.r } : {});
+        return p;
+      };
       d.pose = cle; fixe.push(...poseFixe(MAT.siege(C, H_SIEGE)), pret(boite(0.46, 0.08, 0.24, 0, 0.04, 0.63, C.fonte, 0.3, null, 0.012)), pret(tube(V(0, 0.03, 0.2), V(0, 0.03, 0.95), 0.05, C.cadre)), pret(tube(V(0, 0.03, 0.95), V(0, 0.62, 0.95), 0.055, C.cadre)));
       d.objets = (info, u, sortie) => { const g = info.genoux.G.clone().add(o.uni ? info.genoux.G : info.genoux.D).multiplyScalar(0.5); if (o.hal) poserObjet(MAT.haltere(C, 1.2), g.clone().add(V(0, 0.138, -0.05)), null, sortie); else if (o.barre || o.smith) poserObjet(MAT.barre(C, 1.6, 0.18), g.clone().add(V(0, 0.085, -0.05)), null, sortie); else sortie.push(pret(cyl(0.05, 0.42, g.x, g.y + 0.118, g.z - 0.05, C.banc, 0))); };
       if (o.smith) fixe.push(...poseFixe(MAT.smith(C, 0.37)));
@@ -5752,6 +5924,7 @@
     function rendre(t, uFixe) {
       const { info, formes } = placer(t, uFixe);
       atlas.poser(corps.matrices());
+      if (atlas.tenus) atlas.tenus(info.tenus);
       atlas.objets(formes);
       const b = corps.pw[0];
       atlas.ombre({ centre: [(mini[0] + maxi[0]) / 2, (mini[2] + maxi[2]) / 2], taille: [Math.max(0.45, (maxi[0] - mini[0]) * 0.5), Math.max(0.45, (maxi[2] - mini[2]) * 0.5)], pieds: false, force: b.y > 1.4 ? 0.5 : 1 });
@@ -5765,7 +5938,7 @@
       demarrer() { if (!actif) { actif = true; t0 = 0; atlas.animer(pas); } },
       arreter() { actif = false; atlas.animer(null); },
       // Retour à la position anatomique, sans matériel.
-      quitter() { actif = false; atlas.animer(null); atlas.poser(null); atlas.objets([]); atlas.ombre(null); if (atlas.appuis) atlas.appuis(null); }
+      quitter() { actif = false; atlas.animer(null); atlas.poser(null); atlas.objets([]); atlas.ombre(null); if (atlas.appuis) atlas.appuis(null); if (atlas.tenus) atlas.tenus(null); }
     };
   }
 

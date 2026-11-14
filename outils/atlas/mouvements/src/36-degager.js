@@ -37,7 +37,7 @@
   function degagerTenu(c, d, C) {
     if (!c.sourcePeau || !d.tenu.some(e => TENUS.test(e.t))) return;
     const cycle = d.rythme === 'continu' || d.rythme === 'boucle';
-    const instants = []; for (let i = 0, n = cycle ? 16 : 8; i < (cycle ? n : n + 1); i++) instants.push(i / n);
+    const instants = []; for (let i = 0, n = cycle ? 16 : 12; i < (cycle ? n : n + 1); i++) instants.push(i / n);
     const table = { G: [], D: [] }, utile = { G: false, D: false }, modeles = {};
     for (const u of instants) {
       const g = degagerInstant(c, d, C, d.rythme === 'alt' ? { uG: u, uD: 0, u } : { u }, u, modeles);
