@@ -522,7 +522,8 @@ void main() {
      changent, et les attaches à ajouter au squelette. Le bloc suit les indices, à l'adresse que donne l'en-tête :
      un bit par sommet (son ombre change), ces ombres ; un bit par sommet (ses poids changent), ces poids (4 articulations,
      4 poids). Un test vérifie qu'il est exactement ce que le moteur calculerait. Rend vrai s'il a été appliqué. */
-  const PREPARATION_VERSION = 1;
+  // 2 : la cuisse ne suit plus le bassin loin de la hanche (voir reponderer) ; un bloc de la version 1 est ignoré.
+  const PREPARATION_VERSION = 2;
   function appliquerPreparation(sommets, pas, E, tampon) {
     const P = E.preparation;
     if (!P || P.version !== PREPARATION_VERSION || !(P.debut + P.octets <= tampon.byteLength) || !E.squelette || E.squelette.some(a => a.virtuel)) return false;
@@ -665,6 +666,12 @@ void main() {
        qui s'y attachent (trapèzes, rhomboïdes, dentelé antérieur…), réduit pour le grand dorsal qui glisse dessous
        (sauf là où le trapèze le tient), nul pour les autres ;
      – muscles du bras (long triceps, biceps) : au-delà de 5 cm de l'épaule ils suivent l'humérus, pas l'omoplate ;
+     – muscles de la cuisse (ischio-jambiers, gracile, adducteurs…) : le bassin ne les tient que près de la hanche.
+       Les poids du fichier lui laissaient encore un quart à un tiers du milieu de la cuisse jusqu'au-dessus du genou ;
+       cuisse pliée (fond du squat), la règle de la hanche (par la corde) tirait alors cette chair vers sa place au
+       repos sous la fesse : le demi-tendineux, le gracile, le grand adducteur pendaient de 5 à 6,5 cm sous la cuisse.
+       Le poids du bassin reste entier jusqu'à 22 % de la longueur du fémur (≈ 9 cm sous la hanche), s'éteint à 50 %
+       (≈ 20 cm) ; ce qui est retiré revient au fémur. La fesse et le haut des ischio-jambiers ne changent pas ;
      – puis les poids sont lissés de proche en proche sur le maillage de chaque muscle concerné (les sommets confondus
        restent identiques : pas de fente), pour que la transition soit progressive.
      sommets : rangement de atlas.bin ; indices : ceux du fichier (locaux, 16 bits) ; garder(v, o) : vrai pour un os. */
@@ -677,6 +684,10 @@ void main() {
     const X = v => bo.min[0] + vue.getUint16(v * pas, true) / 65535 * bo.etendue[0], Y = v => bo.min[1] + vue.getUint16(v * pas + 2, true) / 65535 * bo.etendue[1], Z = v => bo.min[2] + vue.getUint16(v * pas + 4, true) / 65535 * bo.etendue[2];
     const estBras = noms.map(n => /^(humerus|ulna|radius|main|doigt).*\.G$/.test(n));
     const cH = SQ[jHu].centre, cU = SQ[jUl].centre, cR = SQ[jRa].centre, cM = SQ[jMa].centre;
+    // La cuisse : du centre de la hanche (tête du fémur) au genou (tête du tibia).
+    const jBa = num('bassin'), jFe = num('femur.G'), jTi = num('tibia.G'), jambe = jBa >= 0 && jFe >= 0 && jTi >= 0;
+    const cFe = jambe ? SQ[jFe].centre : null, axeF = jambe ? [SQ[jTi].centre[0] - cFe[0], SQ[jTi].centre[1] - cFe[1], SQ[jTi].centre[2] - cFe[2]] : null;
+    const LF2 = jambe ? axeF[0] * axeF[0] + axeF[1] * axeF[1] + axeF[2] * axeF[2] : 1;
     const coude = [(cU[0] + cR[0]) / 2, (cU[1] + cR[1]) / 2, (cU[2] + cR[2]) / 2], axe = [cM[0] - coude[0], cM[1] - coude[1], cM[2] - coude[2]], L2 = axe[0] * axe[0] + axe[1] * axe[1] + axe[2] * axe[2];
     const TRONC = { dos: 1, thorax: 1, abdomen: 1 }, OMOPLATE = /^(trapeze|grand_rhomboide|petit_rhomboide|elevateur_scapula|petit_pectoral|subclavier|pectoral_claviculaire|dentele_anterieur)/, GLISSE = /^grand_dorsal$/;
     const J = [0, 0, 0, 0], W = [0, 0, 0, 0];
@@ -848,8 +859,8 @@ void main() {
     }
     const aLisser = [];
     for (const st of S) {
-      const tronc = TRONC[st.region] === 1, avant = st.region === 'avant_bras', bras = st.region === 'bras', epaule = st.region === 'epaule';
-      if (!(tronc || avant || bras || epaule)) continue;
+      const tronc = TRONC[st.region] === 1, avant = st.region === 'avant_bras', bras = st.region === 'bras', epaule = st.region === 'epaule', cuisse = jambe && st.region === 'cuisse';
+      if (!(tronc || avant || bras || epaule || cuisse)) continue;
       const att = attacheDe.get(st) || null, jAt = att ? att.j : -1;
       const fCl = tronc ? (OMOPLATE.test(st.id) ? 1 : GLISSE.test(st.id) ? 0.3 : 0) : 1;
       let touche = false;
@@ -883,6 +894,12 @@ void main() {
           // (Là où un muscle de l'omoplate le tient, le muscle garde son poids d'omoplate.)
           const f = att ? fCl + (1 - fCl) * att.tenu[att.m.uid[v - st.sommets]] : fCl;
           if (f < 1) for (let i = 0; i < n; i++) if (js[i] === jCl && ws[i] > 0) { const rendu = ws[i] * (1 - f); ws[i] -= rendu; n = plus(jTh, rendu, n); change = true; break; }
+        }
+        if (cuisse) {
+          // Le bassin ne tient la chair de la cuisse que près de la hanche (t : la place le long du fémur, 0 à la
+          // hanche, 1 au genou) ; ce qui est retiré revient au fémur.
+          const t = ((x - cFe[0]) * axeF[0] + (y - cFe[1]) * axeF[1] + (z - cFe[2]) * axeF[2]) / LF2, garde = 1 - lisse((t - 0.22) / 0.28);
+          if (garde < 1) for (let i = 0; i < n; i++) if (js[i] === jBa && ws[i] > 0) { const rendu = ws[i] * (1 - garde); if (rendu > 0.5) { ws[i] -= rendu; n = plus(jFe, rendu, n); change = true; } break; }
         }
         if (bras) {
           // Long triceps, biceps : au-delà de 5 cm de l'épaule, ils suivent l'humérus.
