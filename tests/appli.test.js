@@ -7849,6 +7849,44 @@ test('atlas 3D : pupitre et machines à bras — ni coussin dans la poitrine, ni
   }
 });
 
+/* Au fond d'un squat, l'arrière de la cuisse pendait de 5 à 6,5 cm sous la cuisse, juste au-dessus du genou (vu sur
+   iPhone, build 69) : les poids du fichier laissaient au bassin un quart à un tiers du milieu des ischio-jambiers, du
+   gracile et du grand adducteur, et la règle de la hanche (par la corde) tirait cette chair vers sa place au repos.
+   Le moteur ne laisse plus le bassin tenir la cuisse qu'à moins de ~20 cm de la hanche (reponderer). */
+// Squat, presse à cuisses, fente, rameur : avant la règle, la cuisse gonflait de 4,7 à 5,8 cm ; après, 2,4 au plus.
+const SPECS_CUISSE_PLIEE = ['squat barre', 'jambes presse', 'fente avant hal', 'cardio rameur'];
+test("atlas 3D : au fond du squat, l'arrière de la cuisse ne pend plus sous la cuisse (le bassin ne tient la cuisse que près de la hanche)", async () => {
+  const { pathToFileURL } = require('url'), dossier = path.join(RACINE, 'outils', 'atlas', 'mouvements');
+  const { chargerAtlas, chargerMouvements, FICHIER_ATLAS, FICHIER_MOUVEMENTS } = await import(pathToFileURL(path.join(dossier, 'silhouettes.mjs')).href);
+  const { preparer, releverSpec } = await import(pathToFileURL(path.join(dossier, 'deformations.mjs')).href);
+  const atlas = chargerAtlas(FICHIER_ATLAS), M = chargerMouvements(FICHIER_MOUVEMENTS), C = M.TEINTES.clair;
+  const corps = new M.Corps(atlas.E.squelette, atlas.peau), K = preparer(atlas, corps);
+  for (const spec of SPECS_CUISSE_PLIEE) {
+    const r = releverSpec(M, corps, C, K, spec);
+    assert.ok(!r.erreur, spec + ' : ' + r.erreur);
+    for (const cote of ['G', 'D']) {
+      const c = r.bilan['cuisse ' + cote] || {}, b = r.bilan['bassin ' + cote] || {};
+      // La chair de la cuisse et du bassin ne s'écarte plus de l'os de plus de 3,5 cm (avant : jusqu'à 5,8 cm).
+      assert.ok(!(c.gonfle >= 0.035), `${spec} : la cuisse ${cote} gonfle de ${(c.gonfle * 100).toFixed(1)} cm (${c.gonfleMuscle}, u=${c.gonfleU})`);
+      assert.ok(!(b.gonfle >= 0.035), `${spec} : le bassin ${cote} gonfle de ${(b.gonfle * 100).toFixed(1)} cm (${b.gonfleMuscle}, u=${b.gonfleU})`);
+    }
+  }
+  // Les poids eux-mêmes : au milieu de la cuisse, plus rien du bassin ; tout près de la hanche, il en garde.
+  const E = atlas.E, jBa = E.squelette.findIndex(a => a.nom === 'bassin'), jFe = E.squelette.findIndex(a => a.nom === 'femur.G'), jTi = E.squelette.findIndex(a => a.nom === 'tibia.G');
+  const h = E.squelette[jFe].centre, g = E.squelette[jTi].centre, ax = [g[0] - h[0], g[1] - h[1], g[2] - h[2]], l2 = ax[0] * ax[0] + ax[1] * ax[1] + ax[2] * ax[2];
+  const pts = atlas.points(1);
+  let milieu = 0, haut = 0;
+  for (let v = 0; v < pts.n; v++) {
+    const st = E.structures[pts.structure[v]]; if (!st || st.region !== 'cuisse') continue;
+    const t = ((pts.P[v * 3] - h[0]) * ax[0] + (pts.P[v * 3 + 1] - h[1]) * ax[1] + (pts.P[v * 3 + 2] - h[2]) * ax[2]) / l2;
+    let wb = 0; for (let k = 0; k < 4; k++) if (pts.J[v * 4 + k] === jBa) wb += pts.W[v * 4 + k];
+    if (t > 0.5 && wb > 0.01) milieu++;
+    if (t < 0.15 && wb > 0.2) haut++;
+  }
+  assert.equal(milieu, 0, 'au-delà de la moitié du fémur, la cuisse ne suit plus le bassin');
+  assert.ok(haut > 100, 'près de la hanche, le bassin tient encore la cuisse (' + haut + ' points)');
+});
+
 test('atlas 3D : sans WebGL 2, aucun accès ; avec, la fenêtre s\'ouvre, anime un exercice et libère tout à la fermeture', async () => {
   // Sans WebGL 2 : pas de bouton, et l'ouverture forcée prévient sans rien casser.
   await avecAppli({}, async ({ page, dialogues }) => {

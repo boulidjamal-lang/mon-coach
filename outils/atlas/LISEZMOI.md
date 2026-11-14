@@ -119,7 +119,12 @@ autre membre passe devant.
   sur le muscle, dont les faisceaux séparés sont reliés à moins de 12 mm) : entière au bout du tendon, nulle à son
   origine le long de la colonne ; là où le trapèze le recouvre, il reste tenu (sinon il sortait à travers) ; (3) les
   autres muscles du tronc ne gardent le poids du bras qu'à moins de 8,5 cm de l'épaule, et celui de l'omoplate s'ils
-  s'y attachent (trapèzes, rhomboïdes, dentelé antérieur…) ; (4) les poids sont lissés sur chaque muscle concerné.
+  s'y attachent (trapèzes, rhomboïdes, dentelé antérieur…) ; (4) les poids sont lissés sur chaque muscle concerné ;
+  (5) la cuisse : le bassin ne tient ses muscles que près de la hanche — entier jusqu'à 22 % de la longueur du fémur
+  (≈ 9 cm sous la hanche), éteint à 50 % (≈ 20 cm), le reste revient au fémur. Les poids du fichier lui laissaient un
+  quart à un tiers du milieu des ischio-jambiers, du gracile et du grand adducteur, jusqu'au-dessus du genou : au fond
+  d'un squat, la règle de la hanche (par la corde) faisait pendre cette chair de 5 à 6,5 cm sous la cuisse, juste
+  au-dessus du genou (vu sur iPhone, build 69). La fesse et le haut des ischio-jambiers ne changent pas.
   Résultat bras levés : le dentelé et le bas du trapèze ne s'étirent plus que 3 à 5 fois au pire (15 à 22 avant), le
   grand dorsal 8 à 13 fois (au lieu de 22 à 44) — il s'étire vers son attache, voulu. Le grand pectoral garde les
   poids du fichier (essayé avec une attache : il remontait par-dessus la clavicule, bras au-dessus de la tête). Coût :
