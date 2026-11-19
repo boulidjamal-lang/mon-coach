@@ -8,8 +8,9 @@
   chacune avec son maillage propre, et le squelette. Seul le côté gauche est stocké : le droit en est le miroir.
 - `atlas-peau.bin` : la peau — la surface du corps (visage, oreilles, mains, pieds, ongles, sourcils, cils, cheveux),
   attachée au même squelette de mouvement que les muscles qu'elle recouvre. Facultative : sans elle, l'atlas reste
-  l'écorché. L'appli la montre sur la tête, les mains et les pieds ; le reste du corps est l'écorché. Sur les cartes
-  et pendant un exercice, elle prend la teinte grise du corps ; en mode « Anatomie », elle garde sa teinte naturelle.
+  l'écorché. L'appli la montre partout : la peau d'origine sur la tête, les mains et les pieds, et sur le corps un
+  film très fin posé sur les muscles, qui en garde le relief et les laisse deviner. Sur les cartes et pendant un
+  exercice, elle prend la teinte grise du corps ; en mode « Anatomie », elle garde sa teinte naturelle.
 
 Le moteur donne au corps une carrure d'athlète au chargement : les chairs sont étoffées autour des os, le squelette
 ne change pas, et les fichiers du modèle restent ceux décrits ici (option `carrure`, voir `outils/atlas/LISEZMOI.md`).
@@ -29,8 +30,9 @@ bornée à 0,5 mm), ouverture de la gaine du grand droit de l'abdomen, classemen
 relief calculé par sommet, noms français d'usage, articulation du corps (chaque sommet attaché à ses os ; centres
 d'articulation repris de Z-Biomechanics, même auteur, même licence). Pour la peau : régions de la surface du corps
 (collection « Regions of human body ») assemblées en une seule surface, fentes refermées, région uro-génitale adoucie
-(le corps porte un short), peau tenue au-dessus des muscles, attaches au squelette reprises des muscles recouverts,
-ombrage de relief ; les yeux sont deux globes placés au centre des sclères du modèle.
+et refermée, peau du corps refaite en un film de 1,5 mm posé sur les muscles (elle en prend la forme et les attaches
+au squelette), raccordée à la tête, aux mains et aux pieds, ombrage de relief ; les yeux sont deux globes placés au
+centre des sclères du modèle.
 
 **`atlas.bin` et `atlas-peau.bin` sont des œuvres dérivées : ils sont diffusés sous la même licence, Creative Commons
 Attribution - Partage dans les mêmes conditions 4.0 International** (<https://creativecommons.org/licenses/by-sa/4.0/deed.fr>). Chacun peut les

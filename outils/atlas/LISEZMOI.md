@@ -30,7 +30,7 @@ Contrôles : `appli/essai.html`, `appli/essai-ui.html` et `appli/essai-mouvement
 
 ## La peau
 
-`assets/atlas/atlas-peau.bin` se refait en deux temps, une fois `atlas.bin` prêt (elle s'y attache) :
+`assets/atlas/atlas-peau.bin` se refait en trois temps, une fois `atlas.bin` prêt (elle s'y attache) :
 
 1. `python outils/extraire_peau.py <Startup.blend> peau/regions.bin` : extrait de Z-Anatomy la surface du corps
    (collection « 9: Regions of human body » : la peau découpée en régions, les oreilles, les ongles, les poils),
@@ -40,7 +40,11 @@ Contrôles : `appli/essai.html`, `appli/essai-ui.html` et `appli/essai-mouvement
    main, pied, ongle, poil, cheveux, œil), adoucit la région uro-génitale, la tient au-dessus des muscles et des os,
    l'attache au squelette (chaque sommet reprend les attaches des muscles qu'il recouvre), calcule l'ombrage de
    relief et l'épaisseur sous la peau (ce dont elle doit reculer pour laisser voir un muscle), et écrit le fichier.
-   Copier ensuite le résultat dans `assets/atlas/`.
+   Ce fichier-là est la source de l'étape suivante : `donnees/peau-source.bin`.
+3. `node outils/peau-fine.mjs [donnees/peau-source.bin] [atlas.bin] [sortie]` : refait la peau du corps en un film
+   de 1,5 mm posé sur les muscles (voir « Le film » ci-dessous) et écrit `assets/atlas/atlas-peau.bin` (version 2).
+   À relancer dès que `atlas.bin` ou la carrure changent : le fichier porte l'empreinte du modèle préparé, et le
+   moteur refuse une peau faite pour un autre corps.
 
 Trois règles propres à la peau, trouvées en la regardant bouger :
 
@@ -74,10 +78,36 @@ Sur iPhone : les valeurs « flat » des programmes de dessin (la structure d'un 
 cher avec la convention par défaut de WebGL, où le dernier sommet du triangle fait foi — Metal ne connaît que le
 premier. Le moteur demande donc la convention du premier sommet (`WEBGL_provoking_vertex`) là où elle existe.
 L'image n'en dépend pas : aucun triangle n'est à cheval sur deux structures ni sur deux zones de peau (un test le
-vérifie sur les deux fichiers). `mesures().premierSommet` dit si elle est en place. Peau partielle : la tête, les mains et
-les pieds, dessinés un rien en avant. Peau entière : seuls les muscles colorés (ou choisi) sont dessinés, ils
-marquent le pochoir, et la peau du corps recule derrière eux à cet endroit — une fenêtre, qui ne s'ouvre pas si un
-autre membre passe devant.
+vérifie sur les deux fichiers). `mesures().premierSommet` dit si elle est en place.
+
+### Le film : une peau très fine qui prend la forme des muscles
+
+La peau de Z-Anatomy est celle d'un corps mince, lisse, à 5 ou 10 mm des muscles : posée sur le corps étoffé, elle
+gommait tout le relief. Sur le corps, elle est donc remplacée par un film, fabriqué par `outils/peau-fine.mjs` :
+
+- **Le maillage** part de la peau d'origine (zone « corps »), sans les organes de l'aine (retirés, l'ouverture
+  refermée par une membrane tendue), subdivisé une fois (38 600 triangles par côté) ;
+- **il est rétréci sur les muscles préparés** (étoffés, contacts éclaircis, attaches refaites : exactement ce que le
+  moteur fait au chargement) : soixante tours où chaque sommet avance d'au plus 2,5 mm vers le point de muscle le
+  plus proche, dans un cône de 85° autour de sa normale, s'arrête à 1,5 mm de lui, ressort s'il est entré dans la
+  chair, et se lisse avec ses voisins. Il ne plonge pas dans les fentes étroites (sillon des fesses, aine) : un sommet
+  ne descend pas à plus de 1,2 mm sous la moyenne de ses voisins ;
+- **il suit le muscle qu'il recouvre** : chaque sommet reprend les attaches du point de muscle sous lui (mêmes os,
+  mêmes poids, quaternions duaux, corde et appuis compris), au lieu des attaches de la peau d'origine. Le film bouge
+  donc comme les muscles, sans glisser sur eux ;
+- **il se raccorde** à la tête, aux mains et aux pieds, qui gardent la peau d'origine : sur 3 cm depuis leur bord, la
+  position, les attaches et l'opacité passent du film à la peau d'origine (les sommets du bord sont les mêmes des
+  deux côtés) ;
+- **la couture du milieu du corps** est trouvée par la topologie (arêtes libres sur le plan de symétrie), pas par
+  la position : l'intérieur des cuisses, tout proche du plan, n'en fait pas partie et ne se lie pas à l'autre jambe.
+
+Dans le moteur : les muscles sont dessinés à part, dans une image hors écran (couleur et profondeur) ; la peau est
+dessinée ensuite, opaque, et laisse voir cette image là où le muscle est juste sous elle (à moins de 1 à 3 cm le long
+du regard). Le relief des muscles se lit sous la peau, les muscles colorés d'une carte ou d'un exercice ressortent
+(`film: [0.2, 0.8]` : part visible d'un muscle neutre, d'un muscle coloré), et un membre qui passe devant un autre le
+cache normalement, puisque la peau est opaque. Le film ne montre que son endroit (faces arrière écartées : aux plis
+du coude et de l'aisselle, son envers se voyait en taches sombres). `&ecarts=1` sur la page d'essai colore l'écart
+entre la peau et le muscle.
 
 ## Ce que le corps devient au chargement, et comment il se déforme
 
@@ -155,9 +185,9 @@ autre membre passe devant.
   ensemble : les muscles gardent leur forme, leurs voisins et leurs tendons ; le squelette ne bouge pas. La peau
   reçoit la même transformation. Les outils de contrôle (`mouvements/silhouettes.mjs`) chargent le modèle par la même
   fonction : `CARRURE=0` pour s'en passer. Les fichiers `atlas.bin` et `atlas-peau.bin` ne sont pas modifiés.
-- **Une seule apparence.** L'appli montre toujours le corps écorché, la peau gardée sur la tête, les mains et les
-  pieds (plus de bouton « Peau »). La peau entière (`niveauPeau: 2`) existe encore dans le moteur, mais n'est plus
-  proposée ni contrôlée depuis la carrure et le nouveau mélange : la remettre demanderait de la revoir.
+- **Une seule apparence.** L'appli montre toujours le corps sous sa peau fine : le film sur le corps, la peau
+  d'origine sur la tête, les mains et les pieds (`niveauPeau: 1` ; pas de bouton « Peau »). `niveauPeau: 0` montre
+  l'écorché, pour les contrôles. L'ancienne peau entière, épaisse, avec ses fenêtres au pochoir, n'existe plus.
 - **La teinte de la peau.** Sur une carte comme pendant un exercice, le corps est gris et les muscles en couleur : la
   peau gardée prend la teinte du corps (un gris entre celui des muscles au repos et celui des tendons, voir
   `avecPeauAtlas` dans `index.html`), cheveux et sourcils dans la même teinte, plus sombre. La carte la donne au moteur
@@ -167,10 +197,10 @@ autre membre passe devant.
 - **Ce que chaque image soumet.** Le mouvement tourne dans la fiche de chaque exercice : le dessin de cette apparence
   ne soumet à la carte graphique que ce qui se voit. Le modèle une fois par côté ; la passe des structures translucides
   (fantômes, voiles) ne soumet que leurs plages d'indices — à la couche 1, un seul voile sur 178 structures — et retombe
-  sur le modèle entier au-delà de 24 plages ; la peau partielle ne soumet que les triangles de la tête, des mains et
-  des pieds, triés au chargement, sans rejet point par point dans le nuanceur (qui empêcherait les puces des
-  téléphones d'écarter d'avance les points cachés). Soit 495 000 triangles par image au lieu de 950 000, pour la même
-  image au pixel près (`mesures().trianglesSoumis`, vérifié par un test).
+  sur le modèle entier au-delà de 24 plages ; la peau ne soumet que ses triangles (tête, mains, pieds et film du
+  corps : 128 000), triés au chargement, sans rejet point par point dans le nuanceur (qui empêcherait les puces des
+  téléphones d'écarter d'avance les points cachés). Soit environ 570 000 triangles par image
+  (`mesures().trianglesSoumis`, vérifié par un test), en dix appels de dessin au plus.
   Les structures se dessinent de la surface vers la profondeur (couche 1, puis 2, 3, 4, et le squelette) : un muscle
   de surface dessiné d'abord masque d'avance ceux qu'il recouvre, que la carte graphique n'a plus à colorer pour
   rien ; les fantômes, eux, se posent du fond vers la surface. Même image (au plus 2/255 d'écart sur les fantômes).
@@ -408,7 +438,7 @@ Chaque exercice de la bibliothèque (`EXERCICES_BASE` dans `index.html`) a son m
   une vue donnés ; `node outils/gros-plans.cjs sortie.jpg liste.txt` : une articulation en gros plan pendant un
   mouvement (contrôle des déformations).
 - `node outils/video-planche.cjs sortie.mp4 "ex=e338" "ex=e20 | Traction"` : plusieurs exercices côte à côte, en
-  vidéo, tels que l'appli les montre (peau partielle, muscles de l'exercice en couleur) ; `node
+  vidéo, tels que l'appli les montre (peau fine, muscles de l'exercice en couleur) ; `node
   outils/apercu-exercice.cjs sortie.jpg e338` : un exercice à un instant donné. Les couleurs sont calculées par l'appli elle-même
   (`outils/exercices-appli.cjs` l'ouvre dans le navigateur de test).
 - `node mouvements/sonde.mjs "<mouvement>" [instant]` : hauteur du point le plus bas de chaque région du corps,
