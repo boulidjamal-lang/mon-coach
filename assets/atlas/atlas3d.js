@@ -48,7 +48,7 @@ layout(location=6) in float a_corde;   // la part « par la corde » du sommet, 
 uniform vec3 u_min, u_etendue;
 uniform mat4 u_vp;
 uniform vec3 u_cam;
-uniform float u_cote, u_passe, u_seuls, u_tire, u_corde;
+uniform float u_cote, u_passe, u_corde;
 uniform int u_nbAppuis;
 uniform int u_attaches;           // le numéro de la première attache (0 : le modèle n'en a pas)
 uniform vec4 u_appuis[24];        // les appuis (6 au plus), quatre lignes chacun : voir appuis()
@@ -77,8 +77,6 @@ void main() {
   bool voile = v_etat.g > 0.25 && v_etat.g < 0.75;
   bool plein = presence >= 0.99 && !voile;
   bool voir = u_passe == 1.0 ? (presence > 0.004 && !plein) : plein;
-  // Sous la peau, seuls comptent les muscles « vifs » : ceux qu'une carte colore, et celui qu'on a choisi.
-  if (u_seuls > 0.5 && !(v_etat.r > 0.02 || (v_etat.g > 0.06 && v_etat.g < 0.2))) voir = false;
   // Chaque sommet suit jusqu'à quatre articulations. Leurs déplacements se mélangent en quaternions duaux (une
   // rotation et un glissement), pas en matrices : entre deux os qui tournent beaucoup l'un par rapport à l'autre
   // (coude, genou, hanche), le muscle tourne alors d'une part de l'angle autour de l'articulation, à distance
@@ -153,28 +151,36 @@ void main() {
   gl_Position = voir ? u_vp * vec4(p, 1.0) : vec4(2.0, 2.0, 2.0, 1.0);
 }`;
 
-  /* La peau : même squelette de mouvement que les muscles (mêmes attaches, même texture de pose). Chaque sommet porte
-     sa zone (corps, tête, main, pied, ongle, poil, cheveux) ; le short est dessiné sur le tronc et les cuisses, entre
-     deux hauteurs du corps au repos. u_tire rapproche (ou éloigne) la peau de l'œil le long du regard, sans la déplacer
-     à l'écran : c'est ce qui la fait passer devant un muscle qui affleure, ou derrière un muscle qu'on veut montrer. */
+  /* La peau (atlas-peau.bin). Deux matières dans un même maillage :
+     – la tête, les mains et les pieds (ongles, poils, cheveux, yeux) : la peau de Z-Anatomy, opaque, qui suit ses
+       propres attaches (matrices, articulations intermédiaires) ;
+     – le corps : un film d'un millimètre et demi posé sur les muscles (outils/atlas/outils/peau-fine.mjs). Chaque
+       sommet porte les attaches du muscle qu'il recouvre et bouge par le même calcul que lui (quaternions duaux, corde,
+       attaches du grand dorsal, écrasement contre les coussins) : le film garde exactement la forme des muscles, à
+       toute pose. Il est translucide : derrière lui se voit l'image des muscles, dessinée à part (voir PIXELS_PEAU).
+     Entre les deux, sur quelques centimètres (cou, poignets, chevilles), le film revient en douceur à la peau
+     d'origine : place, attaches, opacité — d'après la distance au bord écrite dans chaque sommet. */
   const SOMMETS_PEAU = `#version 300 es
 precision highp float;
 layout(location=0) in vec3 a_pos;
-layout(location=1) in vec2 a_ombreShort;
+layout(location=1) in vec2 a_ombreBord;   // ombrage de relief ; pour le film, distance au bord (1 = 63,75 mm)
 layout(location=2) in vec2 a_nor;
 layout(location=3) in float a_zone;
-layout(location=4) in uvec4 a_os;
+layout(location=4) in uvec4 a_os;         // attaches de la peau d'origine (matrices, articulations intermédiaires comprises)
 layout(location=5) in vec4 a_poids;
-layout(location=6) in float a_epais;      // épaisseur sous la peau (distance au muscle recouvert), 1 = 127,5 mm
-uniform vec3 u_min, u_etendue, u_cam;
+layout(location=6) in float a_corde;      // le film : sa part « par la corde », calculée au chargement comme celle des muscles
+layout(location=7) in uvec4 a_osM;        // le film : attaches du muscle recouvert (quaternions duaux) ; aucune hors du corps
+layout(location=8) in vec4 a_poidsM;
+uniform vec3 u_min, u_etendue;
 uniform mat4 u_vp;
-uniform float u_cote, u_tire, u_fenetre;
-uniform vec2 u_short;
+uniform float u_cote, u_corde;
+uniform vec3 u_bande;                     // le raccord : distance au bord où le film suit pleinement les muscles, puis celles où il commence et finit de devenir translucide
+uniform int u_attaches, u_nbAppuis, u_nbTenus;
+uniform vec4 u_appuis[24];
 uniform highp sampler2D u_os;
 uniform vec4 u_tenuC[2], u_tenuA[2];   // ce que serrent les mains : centre et rayon, axe et demi-longueur
-uniform int u_nbTenus;
 out vec3 v_pos, v_nor, v_repos;
-out float v_ombre, v_short;
+out float v_ombre, v_film, v_prof;
 flat out float v_zone;
 vec3 octa(vec2 e) {
   vec3 v = vec3(e, 1.0 - abs(e.x) - abs(e.y));
@@ -184,18 +190,59 @@ vec3 octa(vec2 e) {
 }
 void main() {
   int cote = int(u_cote + 0.5);
-  vec4 r0 = vec4(0.0), r1 = vec4(0.0), r2 = vec4(0.0);
-  for (int k = 0; k < 4; k++) {
-    float w = a_poids[k];
-    if (w > 0.0) { int j = int(a_os[k]) * 3; r0 += w * texelFetch(u_os, ivec2(j, cote), 0); r1 += w * texelFetch(u_os, ivec2(j + 1, cote), 0); r2 += w * texelFetch(u_os, ivec2(j + 2, cote), 0); }
+  vec3 p0 = u_min + a_pos * u_etendue, n0 = octa(a_nor);
+  float wM = a_poidsM.x + a_poidsM.y + a_poidsM.z + a_poidsM.w, bord = a_ombreBord.y * 0.06375;
+  float suit = wM > 0.0 ? smoothstep(0.0, u_bande.x, bord) : 0.0;
+  vec3 p = vec3(0.0), n = vec3(0.0);
+  if (suit < 1.0) {
+    // La peau d'origine : ses matrices (le côté droit a les siennes, miroir compris).
+    vec4 r0 = vec4(0.0), r1 = vec4(0.0), r2 = vec4(0.0);
+    for (int k = 0; k < 4; k++) {
+      float w = a_poids[k];
+      if (w > 0.0) { int j = int(a_os[k]) * 3; r0 += w * texelFetch(u_os, ivec2(j, cote), 0); r1 += w * texelFetch(u_os, ivec2(j + 1, cote), 0); r2 += w * texelFetch(u_os, ivec2(j + 2, cote), 0); }
+    }
+    vec4 p4 = vec4(p0, 1.0);
+    p = vec3(dot(r0, p4), dot(r1, p4), dot(r2, p4));
+    n = vec3(dot(r0.xyz, n0), dot(r1.xyz, n0), dot(r2.xyz, n0));
   }
-  vec4 p4 = vec4(u_min + a_pos * u_etendue, 1.0);
-  vec3 n0 = octa(a_nor);
-  // Le tissu du short a un rien d'épaisseur.
-  float tissu = a_ombreShort.y * smoothstep(u_short.x - 0.006, u_short.x + 0.002, p4.y) * (1.0 - smoothstep(u_short.y - 0.002, u_short.y + 0.006, p4.y));
-  p4.xyz += n0 * 0.004 * tissu;
-  vec3 p = vec3(dot(r0, p4), dot(r1, p4), dot(r2, p4));
-  v_nor = normalize(vec3(dot(r0.xyz, n0), dot(r1.xyz, n0), dot(r2.xyz, n0)));
+  if (suit > 0.0) {
+    // Le film : le calcul des muscles, à l'identique (voir SOMMETS).
+    vec3 pm = p0, nm = n0;
+    if (cote == 1) { pm.x = -pm.x; nm.x = -nm.x; }
+    vec4 qr = vec4(0.0), qd = vec4(0.0);
+    for (int k = 0; k < 4; k++) {
+      float w = a_poidsM[k];
+      if (w > 0.0) { int j = int(a_osM[k]) * 3; qr += w * texelFetch(u_os, ivec2(j, 2 + cote), 0); qd += w * texelFetch(u_os, ivec2(j + 1, 2 + cote), 0); }
+    }
+    float l = 1.0 / max(length(qr), 1e-6); qr *= l; qd *= l;
+    vec3 q = pm + 2.0 * cross(qr.xyz, cross(qr.xyz, pm) + qr.w * pm) + 2.0 * (qr.w * qd.xyz - qd.w * qr.xyz + cross(qr.xyz, qd.xyz));
+    float corde = u_corde * a_corde;
+    if (corde > 0.0) {
+      vec3 pc = vec3(0.0);
+      for (int k = 0; k < 4; k++) {
+        float w = a_poidsM[k];
+        if (w > 0.0) {
+          int j = int(a_osM[k]) * 3;
+          vec4 r = texelFetch(u_os, ivec2(j, 2 + cote), 0), d = texelFetch(u_os, ivec2(j + 1, 2 + cote), 0);
+          pc += w * (pm + 2.0 * cross(r.xyz, cross(r.xyz, pm) + r.w * pm) + 2.0 * (r.w * d.xyz - d.w * r.xyz + cross(r.xyz, d.xyz)));
+        }
+      }
+      q = mix(q, pc / wM, corde);
+    }
+    if (u_attaches > 0) for (int k = 0; k < 4; k++) {
+      if (a_poidsM[k] > 0.0 && int(a_osM[k]) >= u_attaches) {
+        vec4 e = texelFetch(u_os, ivec2(int(a_osM[k]) * 3 + 2, 2 + cote), 0);
+        if (e.z > 0.0) {
+          float wa = a_poidsM[k] / wM;
+          vec2 rv = pm.xz - e.xy;
+          vec3 dv = vec3(rv.x, 0.0, rv.y) * (e.z * wa * min(1.0, 2.0 * (1.0 - wa)) / max(length(rv), 1e-4));
+          q += dv + 2.0 * cross(qr.xyz, cross(qr.xyz, dv) + qr.w * dv);
+        }
+      }
+    }
+    p = mix(p, q, suit); n = mix(n, nm + 2.0 * cross(qr.xyz, cross(qr.xyz, nm) + qr.w * nm), suit);
+  }
+  n = normalize(n);
   // Une main qui serre une barre : sa peau (paume, doigts, ongles) ne rentre pas dans la barre, elle s'écrase à sa
   // surface, comme la chair d'une vraie main ; sa normale suit en partie la surface de la barre.
   if (abs(a_zone - 2.0) < 0.5 || abs(a_zone - 4.0) < 0.5) for (int i = 0; i < 2; i++) {
@@ -203,27 +250,44 @@ void main() {
     vec3 w = p - u_tenuC[i].xyz, ax = u_tenuA[i].xyz;
     float t = dot(w, ax), r = u_tenuC[i].w;
     vec3 q = w - t * ax; float d = length(q);
-    if (abs(t) < u_tenuA[i].w && d < r && d > 1e-5) { p += q * (r / d - 1.0); v_nor = normalize(mix(v_nor, q / d, 0.5)); }
+    if (abs(t) < u_tenuA[i].w && d < r && d > 1e-5) { p += q * (r / d - 1.0); n = normalize(mix(n, q / d, 0.5)); }
   }
-  v_pos = p; v_repos = p4.xyz;
-  v_ombre = a_ombreShort.x; v_short = a_ombreShort.y; v_zone = a_zone;
-  // Fenêtre : la peau du corps recule derrière le muscle qu'elle recouvre (son épaisseur, plus une marge).
-  float tire = (u_fenetre > 0.5 && a_zone < 0.5) ? -(a_epais * 0.1275 + 0.016) : u_tire;
-  if (tire != 0.0) p += normalize(u_cam - p) * tire;
+  // Les appuis : la peau s'écrase contre les coussins comme la chair qu'elle recouvre (voir SOMMETS).
+  for (int i = 0; i < u_nbAppuis; i++) {
+    vec4 au = u_appuis[i * 4], at = u_appuis[i * 4 + 1], av = u_appuis[i * 4 + 2], ad = u_appuis[i * 4 + 3];
+    float h = dot(at.xyz, p) + at.w;
+    if (h < 0.0 && h > -ad.z) {
+      float b = (1.0 - smoothstep(ad.x, ad.x + 0.03, abs(dot(au.xyz, p) + au.w))) * (1.0 - smoothstep(ad.y, ad.y + 0.03, abs(dot(av.xyz, p) + av.w)));
+      p += at.xyz * ((-h - ad.w * (1.0 - exp(h / ad.w))) * b * smoothstep(-ad.z, -0.75 * ad.z, h));
+    }
+  }
+  v_pos = p; v_nor = n; v_repos = p0;
+  v_ombre = a_ombreBord.x; v_zone = a_zone;
+  v_film = wM > 0.0 ? smoothstep(u_bande.y, u_bande.z, bord) : 0.0;
   gl_Position = u_vp * vec4(p, 1.0);
+  v_prof = gl_Position.w;
 }`;
 
+  /* La peau, point par point. Le film du corps laisse voir les muscles : leur image (u_muscles : couleur déjà
+     multipliée par la part visible, et cette part) et sa profondeur (u_fond) ont été dessinées à part ; le film n'en
+     garde que ce qui est juste sous lui — à quelques millimètres devant ou derrière. Un muscle plus loin appartient à
+     un autre membre, qui a sa propre peau ; un muscle qui dépasserait du film n'est pas montré : la silhouette du
+     corps est toujours celle de la peau. */
   const PIXELS_PEAU = `#version 300 es
 precision highp float;
 in vec3 v_pos, v_nor, v_repos;
-in float v_ombre, v_short;
+in float v_ombre, v_film, v_prof;
 flat in float v_zone;
-uniform vec3 u_cam, u_teint, u_tissu, u_poil;
+uniform vec3 u_cam, u_teint, u_poil;
 uniform mat3 u_lum;
 uniform float u_clair;
 uniform float u_chair;        // 1 : une peau vivante (sang sous la surface, plis plus rouges, ongles rosés, iris bruns) ; 0 : une matière de la couleur u_teint, sans rien de la chair
-uniform vec2 u_short;
 uniform vec4 u_oeil;          // centre du globe de l'œil (corps au repos) et son rayon
+uniform sampler2D u_muscles;
+uniform highp sampler2D u_fond;
+uniform vec2 u_plans;         // plans proche et lointain de la vue (pour lire la profondeur des muscles en mètres)
+uniform vec2 u_point;         // la taille d'un point de l'image (1 / largeur, 1 / hauteur)
+uniform float u_ecarts;       // contrôle : 1 pour peindre l'écart entre le film et le muscle au lieu de l'image
 out vec4 o;
 vec3 neutre(vec3 c) {
   float x = min(c.r, min(c.g, c.b));
@@ -239,16 +303,12 @@ vec3 neutre(vec3 c) {
 float ggx(float nh, float r) { float a = r * r, a2 = a * a, d = nh * nh * (a2 - 1.0) + 1.0; return a2 / (3.14159 * d * d); }
 void main() {
   int zone = int(v_zone + 0.5);
-  float short_ = v_short > 0.5 ? smoothstep(u_short.x - 0.0012, u_short.x + 0.0012, v_repos.y) * (1.0 - smoothstep(u_short.y - 0.0012, u_short.y + 0.0012, v_repos.y)) : 0.0;
-  // Peau partielle (tête, mains, pieds) : le moteur ne soumet que ses triangles — rien n'est rejeté ici, point par
-  // point (un rejet dans le nuanceur coûte cher sur les puces des téléphones, qui ne peuvent plus écarter d'avance
-  // les points cachés). Le short va avec la peau entière.
   vec3 N = normalize(v_nor), V = normalize(u_cam - v_pos);
   // L'envers de la peau (vu par une ouverture) : le triangle tourne le dos ET la surface aussi. Un triangle vu par la
   // tranche, au bord d'un pli ou de la silhouette, peut être pris pour un envers : sa normale, elle, ne trompe pas.
   float dedans = (!gl_FrontFacing && dot(N, V) < -0.2) ? 1.0 : 0.0; if (dedans > 0.5) N = -N;
   float nv = max(dot(N, V), 0.0);
-  // Matière selon la zone : peau, ongle (plus clair, plus lisse), poils et cheveux, tissu du short.
+  // Matière selon la zone : peau, ongle (plus clair, plus lisse), poils et cheveux.
   vec3 base = u_teint; float rug = 0.52, f0 = 0.028, chair = 1.0;
   if (zone == 4) { base = mix(u_teint, vec3(0.78, 0.52, 0.47), 0.45 * u_chair) * mix(1.07, 1.15, u_chair); rug = 0.30; f0 = 0.045; }
   else if (zone == 7) {
@@ -262,7 +322,6 @@ void main() {
     rug = 0.16; f0 = 0.045; chair = 0.0;
   }
   else if (zone >= 5) { base = u_poil; rug = 0.45; f0 = 0.05; chair = 0.0; }
-  if (short_ > 0.5) { base = u_tissu; rug = 0.66; f0 = 0.03; chair = 0.0; }
   float creux = mix(0.22, 1.0, smoothstep(0.05, 0.95, v_ombre));
   float creuxDirect = mix(0.42, 1.0, smoothstep(0.05, 0.85, v_ombre));
   // Dans les plis, la peau est plus sombre, et plus rouge si elle est vivante.
@@ -288,9 +347,23 @@ void main() {
   }
   float bord = pow(1.0 - nv, 3.0);
   vec3 c = base * lumiere + reflets + bord * mix(vec3(0.050, 0.046, 0.052), vec3(0.03), u_clair) * creux;
-  if (dedans > 0.5) c *= 0.30;      // l'envers de la peau, vu par une ouverture (poignet, cheville, bas du short)
-  c = neutre(c);
-  o = vec4(pow(c, vec3(1.0 / 2.2)), 1.0);
+  if (dedans > 0.5) c *= 0.30;      // l'envers de la peau, vu par une ouverture (narine, bord d'une paupière)
+  vec3 g = pow(neutre(c), vec3(1.0 / 2.2));
+  if (v_film > 0.0 && dedans < 0.5) {
+    ivec2 px = ivec2(gl_FragCoord.xy);
+    // La profondeur des muscles en ce point, en mètres depuis l'œil ; l'écart est compté positif quand le muscle est
+    // derrière le film.
+    float z = texelFetch(u_fond, px, 0).r;
+    float ecart = 2.0 * u_plans.x * u_plans.y / (u_plans.x + u_plans.y - (2.0 * z - 1.0) * (u_plans.y - u_plans.x)) - v_prof;
+    float sous = v_film * smoothstep(-0.024, -0.010, ecart) * (1.0 - smoothstep(0.014, 0.034, ecart));
+    // L'image des muscles, lue en quatre points autour de celui-ci : la peau diffuse un peu ce qu'elle recouvre (et
+    // l'image, dessinée sans lissage des bords, n'a plus de crénelage).
+    vec2 uv = gl_FragCoord.xy * u_point, e = 0.75 * u_point;
+    vec4 m = 0.25 * (texture(u_muscles, uv + e) + texture(u_muscles, uv - e) + texture(u_muscles, uv + vec2(e.x, -e.y)) + texture(u_muscles, uv + vec2(-e.x, e.y)));
+    g = g * (1.0 - m.a * sous) + m.rgb * sous;
+    if (u_ecarts > 0.5) g = z >= 1.0 ? vec3(0.25, 0.25, 0.9) : ecart < -0.003 ? mix(vec3(1.0, 0.85, 0.0), vec3(1.0, 0.0, 0.0), smoothstep(-0.003, -0.012, ecart)) : mix(vec3(0.1, 0.75, 0.2), vec3(0.2, 0.3, 1.0), smoothstep(0.004, 0.02, ecart));
+  }
+  o = vec4(g, 1.0);
 }`;
 
   const PIXELS = `#version 300 es
@@ -302,6 +375,7 @@ flat in float v_num;
 uniform vec3 u_cam, u_tendon, u_accent;
 uniform mat3 u_lum;          // repère des projecteurs : il suit l'azimut de la caméra, pas son élévation
 uniform float u_passe, u_cote, u_clair, u_estompe;
+uniform vec2 u_film;          // sous la peau fine : la part du muscle qui se voit à travers elle (au repos ; coloré ou choisi) — 0 : pas de peau
 out vec4 o;
 vec3 versLin(vec3 c) { return pow(c, vec3(2.2)); }
 // Courbe de rendu « neutre » (Khronos) : garde les teintes justes dans les hautes lumières.
@@ -327,8 +401,9 @@ void main() {
   float brille = v_etat.r, estompe = v_etat.b * u_estompe;
   vec3 teinte = versLin(v_teinte.rgb);
   vec3 base = mix(teinte, u_tendon, ten * mix(1.0, 0.55, v_etat.a));   // v_etat.a : part de la couleur de carte gardée sur les tendons
-  // Ombrage de relief (calculé une fois pour toutes sur le modèle) : creux entre les muscles, plis, dessous.
-  float ombre = v_ombre;
+  // Ombrage de relief (calculé une fois pour toutes sur le modèle) : creux entre les muscles, plis, dessous. Sous la
+  // peau, les sillons s'adoucissent : elle montre des formes, pas des traits noirs.
+  float ombre = u_film.x > 0.0 ? mix(v_ombre, 1.0, 0.6) : v_ombre;
   float creux = mix(0.06, 1.0, smoothstep(0.02, 0.96, ombre));
   float creuxDirect = mix(0.30, 1.0, smoothstep(0.05, 0.80, ombre));
   // La chair est plus sombre et plus rouge au fond des sillons, un rien plus claire sur les reliefs exposés.
@@ -370,14 +445,17 @@ void main() {
       // Voile : une lame fibreuse fine, éclairée comme le reste, qui laisse voir le muscle qu'elle recouvre.
       float av = 0.40 + 0.45 * pow(1.0 - nv, 2.0);
       c = neutre(c);
-      o = vec4(pow(c, vec3(1.0 / 2.2)) * av, av); return;
+      o = vec4(pow(c, vec3(1.0 / 2.2)) * av * (u_film.x > 0.0 ? u_film.x : 1.0), av); return;
     }
     float a = v_teinte.a * (0.10 + 0.90 * pow(1.0 - nv, 1.6));
     vec3 f = mix(vec3(0.80, 0.84, 0.92), vec3(0.34, 0.37, 0.44), u_clair);
     o = vec4(f * a, a); return;
   }
   c = neutre(c);
-  o = vec4(pow(c, vec3(1.0 / 2.2)), 1.0);
+  // Sous la peau fine, l'image des muscles n'est pas montrée telle quelle : la peau la laisse voir en partie (voir
+  // PIXELS_PEAU). Chaque point porte cette part — plus forte pour un muscle qu'une carte colore ou qu'on a choisi.
+  float part = u_film.x > 0.0 ? mix(u_film.x, u_film.y, max(smoothstep(0.0, 0.4, v_etat.r), step(0.06, v_etat.g) * step(v_etat.g, 0.2))) : 1.0;
+  o = vec4(pow(c, vec3(1.0 / 2.2)) * part, part);
 }`;
 
   // Repérage : chaque structure écrit son numéro et son côté (valeurs entières exactes).
@@ -577,15 +655,32 @@ void main() {
     return { entete, sommets, indices, indicesLocaux: () => new Uint16Array(tampon, debut + octets, entete.triangles * 3), nbIndices: entete.triangles * 3 };
   }
 
-  /* La peau (atlas-peau.bin) : en-tête, sommets (même rangement que le modèle), puis les triangles — d'abord ceux du
-     côté gauche, dessinés aussi en miroir, puis ceux du milieu (les cheveux), dessinés une fois. */
+  /* La peau (atlas-peau.bin, version 2). Après l'en-tête, deux blocs dont il donne les adresses :
+     – le reste (tête, mains, pieds, ongles, poils, cheveux, yeux) : sommets de 20 octets, rangés comme ceux du modèle,
+       puis leurs triangles — ceux du côté gauche, dessinés aussi en miroir, puis ceux du milieu (les cheveux) ;
+     – le corps (le film posé sur les muscles) : sommets de 28 octets — les mêmes 20, la distance au bord à la place
+       de l'octet 7, puis les attaches du muscle recouvert (4 articulations, 4 poids) — et leurs triangles, tous
+       dessinés des deux côtés.
+     Les sommets portent déjà la carrure (entete.carrure). Rend un seul tableau de sommets de 28 octets (le reste
+     d'abord, complété de zéros) et un seul tableau d'indices : côté gauche du reste, corps, puis milieu. */
+  const PAS_PEAU = 28;
   function lirePeau(tampon) {
     const vue = new DataView(tampon);
     if (vue.getUint32(0, true) !== 0x50514e41) throw new Error("atlas : ce fichier n'est pas une peau Anqā");
+    if (vue.getUint32(4, true) !== 2) throw new Error('atlas : cette peau est d\'une autre version');
     const lg = vue.getUint32(8, true);
     const entete = JSON.parse(new TextDecoder().decode(new Uint8Array(tampon, 12, lg)));
-    const debut = 12 + lg, octets = entete.sommets * entete.octetsParSommet, nb = (entete.trianglesPairs + entete.trianglesImpairs) * 3;
-    return { entete, sommets: new Uint8Array(tampon, debut, octets), indices: entete.indicesSur === 32 ? new Uint32Array(tampon, debut + octets, nb) : new Uint16Array(tampon, debut + octets, nb) };
+    const d = 12 + lg, R = entete.reste, C = entete.corps;
+    if (R.octetsParSommet !== 20 || C.octetsParSommet !== PAS_PEAU || R.sommets + C.sommets > 65535) throw new Error('atlas : rangement de la peau inattendu');
+    const sommets = new Uint8Array((R.sommets + C.sommets) * PAS_PEAU), sr = new Uint8Array(tampon, d + R.debut, R.sommets * 20);
+    for (let v = 0; v < R.sommets; v++) sommets.set(sr.subarray(v * 20, v * 20 + 20), v * PAS_PEAU);
+    sommets.set(new Uint8Array(tampon, d + C.debut, C.sommets * PAS_PEAU), R.sommets * PAS_PEAU);
+    const ir = new Uint16Array(tampon, d + R.indices, (R.trianglesPairs + R.trianglesImpairs) * 3), ic = new Uint16Array(tampon, d + C.indices, C.triangles * 3);
+    const indices = new Uint16Array(ir.length + ic.length);
+    indices.set(ir.subarray(0, R.trianglesPairs * 3), 0);
+    for (let k = 0; k < ic.length; k++) indices[R.trianglesPairs * 3 + k] = R.sommets + ic[k];
+    indices.set(ir.subarray(R.trianglesPairs * 3), R.trianglesPairs * 3 + ic.length);
+    return { entete, sommets, indices, pairsReste: R.trianglesPairs, corps: C.triangles, impairs: R.trianglesImpairs, premierDuCorps: R.sommets };
   }
 
   /* ---------- La carrure ----------
@@ -651,12 +746,14 @@ void main() {
       return c;
     };
   }
-  function marquerCorde(sommets, pas, boite, SQ, reglage, garder) {
-    const part = corde(SQ, reglage), vue = new DataView(sommets.buffer, sommets.byteOffset, sommets.byteLength), nb = Math.floor(sommets.byteLength / pas), J = [0, 0, 0, 0], W = [0, 0, 0, 0];
+  /* (attaches : où commencent, dans chaque sommet, ses quatre articulations — les poids les suivent ; 12 pour le
+     modèle, 20 pour le film de la peau, qui porte là les attaches du muscle qu'il recouvre.) */
+  function marquerCorde(sommets, pas, boite, SQ, reglage, garder, attaches) {
+    const part = corde(SQ, reglage), vue = new DataView(sommets.buffer, sommets.byteOffset, sommets.byteLength), nb = Math.floor(sommets.byteLength / pas), J = [0, 0, 0, 0], W = [0, 0, 0, 0], oa = attaches || 12;
     for (let v = 0; v < nb; v++) {
       const o = v * pas;
       if (garder && garder(v, o)) { sommets[o + 11] = 0; continue; }
-      for (let k = 0; k < 4; k++) { J[k] = sommets[o + 12 + k]; W[k] = sommets[o + 16 + k] / 255; }
+      for (let k = 0; k < 4; k++) { J[k] = sommets[o + oa + k]; W[k] = sommets[o + oa + 4 + k] / 255; }
       const c = part(J, W, 0, boite.min[0] + vue.getUint16(o, true) / 65535 * boite.etendue[0], boite.min[1] + vue.getUint16(o + 2, true) / 65535 * boite.etendue[1], boite.min[2] + vue.getUint16(o + 4, true) / 65535 * boite.etendue[2]);
       sommets[o + 11] = Math.round(255 * Math.max(0, Math.min(1, c)));
     }
@@ -1085,8 +1182,9 @@ void main() {
     ppMax: 2,                // densité de pixels maximale (au-delà, le gain ne se voit plus sur un corps entier)
     champ: 24,               // angle de champ vertical, en degrés (longue focale : peu de déformation)
     peau: null,              // le fichier de la peau (atlas-peau.bin), s'il est là
-    niveauPeau: 0,           // 0 : écorché ; 1 : peau sur la tête, les mains et les pieds ; 2 : peau entière, avec un short
-    teint: '#c89b80', tissu: '#1d1e23', poil: '#1b1512',
+    niveauPeau: 0,           // 0 : écorché ; 1 : la peau — un film fin sur le corps, qui laisse voir les muscles ; pleine sur la tête, les mains et les pieds
+    film: [0.2, 0.8],        // ce que le film laisse voir d'un muscle : au repos, puis coloré par une carte ou choisi
+    teint: '#c89b80', poil: '#1b1512',
     chair: 1,                // la peau : 1, vivante (teint de chair, sang sous la surface) ; 0, une matière de la couleur « teint », accordée au corps
     carrure: 1               // carrure d'athlète : 0, le corps mince de Z-Anatomy ; 1, les chairs étoffées autour des os
   };
@@ -1109,14 +1207,10 @@ void main() {
     toile.setAttribute('role', 'img');
     toile.setAttribute('aria-label', 'Corps en trois dimensions : fais-le tourner du doigt, touche un muscle pour le nommer');
     conteneur.appendChild(toile);
-    const gl = toile.getContext('webgl2', { antialias: true, alpha: true, stencil: true, premultipliedAlpha: true, powerPreference: 'high-performance', preserveDrawingBuffer: false });
+    const gl = toile.getContext('webgl2', { antialias: true, alpha: true, stencil: false, premultipliedAlpha: true, powerPreference: 'high-performance', preserveDrawingBuffer: false });
     if (!gl) { toile.remove(); throw new Error('atlas : WebGL 2 indisponible'); }
 
     const M = lireModele(tampon), E = M.entete, S = E.structures;
-    // La peau est facultative : sans son fichier (ou s'il est illisible), l'atlas reste l'écorché.
-    let PE = null;
-    try { if (opt.peau) PE = lirePeau(opt.peau); } catch (e) { PE = null; }
-    let niveauPeau = PE ? Math.max(0, Math.min(2, opt.niveauPeau | 0)) : 0;
     const NB = S.length, NUM_OS = [E.os.pair, E.os.impair];
     // La préparation du modèle (carrure, ombres de contact, poids repris, part « par la corde ») ne dépend que du
     // fichier et des options : faite à la première ouverture, elle est gardée pour les suivantes (l'appli garde les
@@ -1129,7 +1223,7 @@ void main() {
       M.sommets = deja.sommets; E.boite = deja.boite; E.squelette = deja.squelette;
       if (deja.articulationsFichier != null) E.articulationsFichier = deja.articulationsFichier;
     } else {
-      // La carrure : les sommets du modèle (hors os) sont étoffés (la peau de même, plus bas), une fois pour toutes.
+      // La carrure : les sommets du modèle (hors os) sont étoffés, une fois pour toutes (la peau du fichier la porte déjà).
       if (opt.carrure > 0 && E.squelette && E.squelette.length) {
         const r = etoffer(M.sommets, E.octetsParSommet, E.boite, E.squelette, opt.carrure, (v, o) => M.sommets[o + 10] === NUM_OS[0] || M.sommets[o + 10] === NUM_OS[1]);
         M.sommets = r.sommets; E.boite = r.boite;
@@ -1148,32 +1242,23 @@ void main() {
       }
       prepares[clePrep] = { sommets: M.sommets, boite: E.boite, squelette: E.squelette, articulationsFichier: E.articulationsFichier };
     }
-    // La peau, étoffée comme le modèle. Elle connaît les articulations du fichier (pas les attaches ajoutées).
+    // La peau est facultative : sans son fichier (ou s'il est illisible, ou posé sur une autre carrure ou un autre
+    // squelette), l'atlas reste l'écorché. Elle porte déjà la carrure ; il lui manque la part « par la corde » de son
+    // film, qui dépend du réglage : calculée une fois par fichier et par réglage, comme la préparation du modèle.
     const njFichier = E.articulationsFichier != null ? E.articulationsFichier : (E.squelette || []).length;
-    if (PE && opt.carrure > 0 && E.squelette && E.squelette.length && PE.entete.articulations === njFichier) {
-      let pp = opt.peau && typeof opt.peau === 'object' ? PREPARES.get(opt.peau) : null;
-      if (!pp && opt.peau && typeof opt.peau === 'object') PREPARES.set(opt.peau, pp = {});
-      const dp = pp ? pp['carrure ' + opt.carrure] : null;
-      if (dp) { PE.sommets = dp.sommets; PE.entete.boite = dp.boite; }
-      else {
-        const X = PE.entete.intermediaires || [], nj = njFichier, jum = E.squelette.map(a => a.jumeau);
-        // Une articulation intermédiaire de la peau compte pour celle qu'elle accompagne (côté gauche, puis côté droit).
-        const rp = etoffer(PE.sommets, PE.entete.octetsParSommet, PE.entete.boite, E.squelette, opt.carrure, null, j => (j < nj ? j : j < nj + X.length ? X[j - nj].vers : jum[X[j - nj - X.length].vers]));
-        PE.sommets = rp.sommets; PE.entete.boite = rp.boite;
-        if (pp) pp['carrure ' + opt.carrure] = { sommets: PE.sommets, boite: PE.entete.boite };
+    let PE = null;
+    try {
+      if (opt.peau && E.squelette && E.squelette.length) {
+        let pp = PREPARES.get(opt.peau); if (!pp) PREPARES.set(opt.peau, pp = {});
+        const lue = pp.lue || (pp.lue = lirePeau(opt.peau)), cle = 'corde ' + (opt.corde == null ? '' : JSON.stringify(opt.corde));
+        if (+lue.entete.carrure === +opt.carrure && lue.entete.articulations === njFichier) {
+          if (!pp[cle]) pp[cle] = marquerCorde(lue.sommets.slice(), PAS_PEAU, lue.entete.boite, E.squelette, opt.corde, v => v < lue.premierDuCorps, 20);
+          PE = { entete: lue.entete, sommets: pp[cle], indices: lue.indices, pairsReste: lue.pairsReste, corps: lue.corps, impairs: lue.impairs };
+        }
       }
-    }
+    } catch (e) { PE = null; }
+    let niveauPeau = PE ? Math.max(0, Math.min(1, opt.niveauPeau | 0)) : 0;
     const preparation = { reprise: !!deja, ms: typeof performance !== 'undefined' ? Math.round(performance.now() - t0Prep) : 0 };
-    // La peau partielle : les triangles de la tête, des mains et des pieds (ongles, poils, cheveux, yeux compris), mis
-    // à part une fois pour toutes — d'abord ceux des deux côtés, puis ceux du milieu, comme dans le fichier. Chaque
-    // triangle est d'une seule zone (un test le vérifie) : la zone de son premier sommet suffit.
-    if (PE) {
-      const H = PE.entete, pasP = H.octetsParSommet, src = PE.indices, garde = new src.constructor(src.length);
-      let n = 0;
-      const trier = (debut, fin) => { const n0 = n; for (let k = debut; k < fin; k += 3) if (PE.sommets[src[k] * pasP + 10] !== 0) { garde[n] = src[k]; garde[n + 1] = src[k + 1]; garde[n + 2] = src[k + 2]; n += 3; } return (n - n0) / 3; };
-      const pairs = trier(0, H.trianglesPairs * 3), impairs = trier(H.trianglesPairs * 3, (H.trianglesPairs + H.trianglesImpairs) * 3);
-      PE.partiel = { indices: garde.subarray(0, n), pairs, impairs };
-    }
     // L'ordre de dessin : de la surface vers la profondeur (couche 1, puis 2, 3, 4, et le squelette pour finir). Un
     // muscle de surface dessiné d'abord masque d'avance ceux qu'il recouvre : la carte graphique écarte leurs points
     // au lieu de les colorer pour rien (l'ordre du fichier, alphabétique, colorait souvent les muscles profonds avant
@@ -1318,7 +1403,7 @@ void main() {
     }
     ecrirePose(null);
 
-    let prog, progRep, progSol, progObj, progPeau = null, vaoPeau = null, vaoPeauPartielle = null, vaoObj = {}, vao, vaoSol, tex, texOs, tamponSommets, tamponIndices, tamponSol, cadreRep = null, texRep, profRep;
+    let prog, progRep, progSol, progObj, progPeau = null, vaoPeau = null, vaoObj = {}, vao, vaoSol, tex, texOs, tamponSommets, tamponIndices, tamponSol, cadreRep = null, texRep, profRep, cadreMuscles = null, texMuscles = null, texFond = null, tailleMuscles = [0, 0];
     let premierSommet = false;
     function installer() {
       // Sur les puces Apple (WebGL par Metal), une valeur « flat » coûte très cher avec la convention par défaut, où le
@@ -1331,25 +1416,21 @@ void main() {
       prog = programme(gl, SOMMETS, PIXELS); progRep = programme(gl, SOMMETS, PIXELS_REPERAGE); progSol = programme(gl, SOL_S, SOL_P); progObj = programme(gl, OBJ_S, OBJ_P);
       if (PE) {
         progPeau = programme(gl, SOMMETS_PEAU, PIXELS_PEAU);
-        // Mêmes sommets pour la peau entière et la peau partielle ; seuls les triangles soumis diffèrent.
+        vaoPeau = gl.createVertexArray(); gl.bindVertexArray(vaoPeau);
         const ts = gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER, ts); gl.bufferData(gl.ARRAY_BUFFER, PE.sommets, gl.STATIC_DRAW);
-        const pasP = PE.entete.octetsParSommet;
-        const tableau = indices => {
-          const v = gl.createVertexArray(); gl.bindVertexArray(v);
-          gl.bindBuffer(gl.ARRAY_BUFFER, ts);
-          gl.enableVertexAttribArray(0); gl.vertexAttribPointer(0, 3, gl.UNSIGNED_SHORT, true, pasP, 0);
-          gl.enableVertexAttribArray(1); gl.vertexAttribPointer(1, 2, gl.UNSIGNED_BYTE, true, pasP, 6);
-          gl.enableVertexAttribArray(2); gl.vertexAttribPointer(2, 2, gl.BYTE, true, pasP, 8);
-          gl.enableVertexAttribArray(3); gl.vertexAttribPointer(3, 1, gl.UNSIGNED_BYTE, false, pasP, 10);
-          gl.enableVertexAttribArray(4); gl.vertexAttribIPointer(4, 4, gl.UNSIGNED_BYTE, pasP, 12);
-          gl.enableVertexAttribArray(5); gl.vertexAttribPointer(5, 4, gl.UNSIGNED_BYTE, true, pasP, 16);
-          gl.enableVertexAttribArray(6); gl.vertexAttribPointer(6, 1, gl.UNSIGNED_BYTE, true, pasP, 11);
-          const ti = gl.createBuffer(); gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, ti); gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, indices, gl.STATIC_DRAW);
-          gl.bindVertexArray(null);
-          return v;
-        };
-        vaoPeau = tableau(PE.indices); vaoPeauPartielle = tableau(PE.partiel.indices);
+        gl.enableVertexAttribArray(0); gl.vertexAttribPointer(0, 3, gl.UNSIGNED_SHORT, true, PAS_PEAU, 0);
+        gl.enableVertexAttribArray(1); gl.vertexAttribPointer(1, 2, gl.UNSIGNED_BYTE, true, PAS_PEAU, 6);
+        gl.enableVertexAttribArray(2); gl.vertexAttribPointer(2, 2, gl.BYTE, true, PAS_PEAU, 8);
+        gl.enableVertexAttribArray(3); gl.vertexAttribPointer(3, 1, gl.UNSIGNED_BYTE, false, PAS_PEAU, 10);
+        gl.enableVertexAttribArray(4); gl.vertexAttribIPointer(4, 4, gl.UNSIGNED_BYTE, PAS_PEAU, 12);
+        gl.enableVertexAttribArray(5); gl.vertexAttribPointer(5, 4, gl.UNSIGNED_BYTE, true, PAS_PEAU, 16);
+        gl.enableVertexAttribArray(6); gl.vertexAttribPointer(6, 1, gl.UNSIGNED_BYTE, true, PAS_PEAU, 11);
+        gl.enableVertexAttribArray(7); gl.vertexAttribIPointer(7, 4, gl.UNSIGNED_BYTE, PAS_PEAU, 20);
+        gl.enableVertexAttribArray(8); gl.vertexAttribPointer(8, 4, gl.UNSIGNED_BYTE, true, PAS_PEAU, 24);
+        const ti = gl.createBuffer(); gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, ti); gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, PE.indices, gl.STATIC_DRAW);
+        gl.bindVertexArray(null);
       }
+      cadreMuscles = null;   // (l'image des muscles sous la peau se refait à la première image)
       const formes = formesDeBase(); vaoObj = {};
       for (const nom in formes) {
         const v = gl.createVertexArray(); gl.bindVertexArray(v);
@@ -1476,7 +1557,8 @@ void main() {
       const droite = norme(croix([0, 1, 0], arriere)), dessus = croix(arriere, droite);
       const vue = [droite[0], dessus[0], arriere[0], 0, droite[1], dessus[1], arriere[1], 0, droite[2], dessus[2], arriere[2], 0,
         -(droite[0] * oeil[0] + droite[1] * oeil[1] + droite[2] * oeil[2]), -(dessus[0] * oeil[0] + dessus[1] * oeil[1] + dessus[2] * oeil[2]), -(arriere[0] * oeil[0] + arriere[1] * oeil[1] + arriere[2] * oeil[2]), 1];
-      let proj = perspective(champ, larg / haut, Math.max(0.02, cam.dist - 1.6), cam.dist + 1.8);
+      const plans = [Math.max(0.02, cam.dist - 1.6), cam.dist + 1.8];
+      let proj = perspective(champ, larg / haut, plans[0], plans[1]);
       // L'image est remontée (ou descendue) pour se centrer dans la zone libre de l'interface.
       const dy = (margesVues.bas - margesVues.haut) * densite() / haut;
       if (dy) proj = produit([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, dy, 0, 1], proj);
@@ -1485,7 +1567,7 @@ void main() {
         const sx = larg / w, sy = haut / h, tx = (larg - 2 * x - w) / w, ty = (haut - 2 * y - h) / h;
         proj = produit([sx, 0, 0, 0, 0, sy, 0, 0, 0, 0, 1, 0, tx, ty, 0, 1], proj);
       }
-      return { vp: produit(proj, vue), oeil, droite, dessus, arriere, az };
+      return { vp: produit(proj, vue), oeil, droite, dessus, arriere, az, plans };
     }
 
     /* ----- Dessin ----- */
@@ -1503,17 +1585,13 @@ void main() {
       gl.frontFace(gl.CCW);
     }
     // Ce que chaque image soumet à la carte graphique, pour les mesures : la passe translucide (appels de dessin,
-    // triangles des deux côtés) et la peau (les deux côtés, plus le milieu ; deux fois pour la peau entière, qui se
-    // dessine hors des fenêtres puis dedans).
+    // triangles des deux côtés) et la peau (de chaque côté le reste puis le film, plus le milieu : cinq appels).
     function passeTranslucide() {
-      if (!transparents || niveauPeau === 2) return { appels: 0, triangles: 0 };
+      if (!transparents) return { appels: 0, triangles: 0 };
       if (plagesTranslucides.length > PLAGES_MAX) return { appels: 2, triangles: 2 * E.triangles };
       return { appels: 2 * plagesTranslucides.length, triangles: 2 * plagesTranslucides.reduce((t, x) => t + x[1], 0) / 3 };
     }
-    function trianglesPeau() {
-      if (!PE || !niveauPeau) return 0;
-      return niveauPeau === 2 ? 2 * (2 * PE.entete.trianglesPairs + PE.entete.trianglesImpairs) : 2 * PE.partiel.pairs + PE.partiel.impairs;
-    }
+    const trianglesPeau = () => (PE && niveauPeau ? 2 * (PE.pairsReste + PE.corps) + PE.impairs : 0);
     function preparer(m, reperage) {
       const pr = reperage ? progRep : prog;
       gl.useProgram(pr.p);
@@ -1522,7 +1600,7 @@ void main() {
       gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, tex); gl.uniform1i(pr.u.u_etats, 0);
       gl.uniformMatrix4fv(pr.u.u_vp, false, m.vp);
       gl.uniform3fv(pr.u.u_min, E.boite.min); gl.uniform3fv(pr.u.u_etendue, E.boite.etendue);
-      gl.uniform3fv(pr.u.u_cam, m.oeil); gl.uniform1f(pr.u.u_seuls, 0); gl.uniform1f(pr.u.u_tire, 0);
+      gl.uniform3fv(pr.u.u_cam, m.oeil);
       gl.uniform1f(pr.u.u_corde, 1);
       gl.uniform1i(pr.u.u_attaches, NQ > NJ ? NJ : 0);
       gl.uniform1i(pr.u.u_nbAppuis, nbAppuis); if (nbAppuis) gl.uniform4fv(pr.u.u_appuis, appuisU);
@@ -1534,47 +1612,64 @@ void main() {
       gl.uniform3fv(prog.u.u_accent, couleur(opt.accent).map(x => lin(x / 255)));
       gl.uniform1f(prog.u.u_clair, opt.clair ? 1 : 0);
       gl.uniform1f(prog.u.u_estompe, opt.estompe);
+      // Sous la peau, l'image des muscles porte la part que le film en laisse voir (voir PIXELS).
+      const sousPeau = PE && niveauPeau > 0;
+      gl.uniform2f(prog.u.u_film, sousPeau ? opt.film[0] : 0, sousPeau ? opt.film[1] : 0);
     }
-    /* La peau, par-dessus les muscles déjà dessinés.
-       Peau partielle (niveau 1) : la tête, les mains et les pieds, dessinés un rien en avant — un os ou un tendon qui
-       affleure en plein mouvement ne les traverse pas.
-       Peau entière (niveau 2) : seuls les muscles « vifs » ont été dessinés, et ils ont marqué le pochoir. Hors de ces
-       points, la peau est dessinée normalement. Sur ces points, la peau du corps s'efface devant le muscle (fenêtre) :
-       elle n'est dessinée que si elle est nettement plus près de l'œil que lui — un bras qui passe devant le torse cache
-       toujours le pectoral. La tête, les mains et les pieds, eux, ne s'ouvrent pas. */
-    const PEAU_AVANT = 0.006;
-    function dessinerPeau(m, entiere) {
-      const H = PE.entete, type = H.indicesSur === 32 ? gl.UNSIGNED_INT : gl.UNSIGNED_SHORT, oct = H.indicesSur === 32 ? 4 : 2;
-      const pr = progPeau;
-      // Peau partielle : seuls les triangles de la tête, des mains et des pieds sont soumis.
-      const nPairs = entiere ? H.trianglesPairs : PE.partiel.pairs, nImpairs = entiere ? H.trianglesImpairs : PE.partiel.impairs;
-      gl.useProgram(pr.p); gl.bindVertexArray(entiere ? vaoPeau : vaoPeauPartielle);
+    /* L'image des muscles sous la peau : dessinée à part, à la taille de la toile, avec sa profondeur. Le film de la
+       peau la lit point par point (voir PIXELS_PEAU). Sans lissage des bords : c'est la peau, dessinée sur la toile,
+       qui fait la silhouette. */
+    function cadreDesMuscles() {
+      if (!cadreMuscles) { cadreMuscles = gl.createFramebuffer(); texMuscles = gl.createTexture(); texFond = gl.createTexture(); tailleMuscles = [0, 0]; }
+      if (tailleMuscles[0] !== toile.width || tailleMuscles[1] !== toile.height) {
+        const reglerTexture = filtre => { gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, filtre); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, filtre); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE); };
+        gl.activeTexture(gl.TEXTURE2);
+        gl.bindTexture(gl.TEXTURE_2D, texMuscles); gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA8, toile.width, toile.height, 0, gl.RGBA, gl.UNSIGNED_BYTE, null); reglerTexture(gl.LINEAR);
+        gl.bindTexture(gl.TEXTURE_2D, texFond); gl.texImage2D(gl.TEXTURE_2D, 0, gl.DEPTH_COMPONENT24, toile.width, toile.height, 0, gl.DEPTH_COMPONENT, gl.UNSIGNED_INT, null); reglerTexture(gl.NEAREST);
+        gl.bindTexture(gl.TEXTURE_2D, null); gl.activeTexture(gl.TEXTURE0);
+        gl.bindFramebuffer(gl.FRAMEBUFFER, cadreMuscles);
+        gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, texMuscles, 0);
+        gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.DEPTH_ATTACHMENT, gl.TEXTURE_2D, texFond, 0);
+        tailleMuscles = [toile.width, toile.height];
+      }
+      return cadreMuscles;
+    }
+    /* La peau : le reste (tête, mains, pieds) plein, le film du corps translucide sur l'image des muscles. */
+    function dessinerPeau(m) {
+      const H = PE.entete, pr = progPeau;
+      gl.useProgram(pr.p); gl.bindVertexArray(vaoPeau);
+      gl.activeTexture(gl.TEXTURE2); gl.bindTexture(gl.TEXTURE_2D, texMuscles); gl.uniform1i(pr.u.u_muscles, 2);
+      gl.activeTexture(gl.TEXTURE3); gl.bindTexture(gl.TEXTURE_2D, texFond); gl.uniform1i(pr.u.u_fond, 3);
       gl.activeTexture(gl.TEXTURE1); gl.bindTexture(gl.TEXTURE_2D, texOs); gl.uniform1i(pr.u.u_os, 1); gl.activeTexture(gl.TEXTURE0);
       gl.uniformMatrix4fv(pr.u.u_vp, false, m.vp);
       gl.uniform3fv(pr.u.u_min, H.boite.min); gl.uniform3fv(pr.u.u_etendue, H.boite.etendue);
-      gl.uniform3fv(pr.u.u_cam, m.oeil);
+      gl.uniform3fv(pr.u.u_cam, m.oeil); gl.uniform2f(pr.u.u_plans, m.plans[0], m.plans[1]); gl.uniform2f(pr.u.u_point, 1 / toile.width, 1 / toile.height);
       const c = Math.cos(m.az), s = Math.sin(m.az);
       gl.uniformMatrix3fv(pr.u.u_lum, false, [c, 0, -s, 0, 1, 0, s, 0, c]);
       gl.uniform1f(pr.u.u_clair, opt.clair ? 1 : 0); gl.uniform1f(pr.u.u_chair, Math.max(0, Math.min(1, +opt.chair)));
-      gl.uniform2f(pr.u.u_short, H.short.bas, H.short.haut);
       if (H.oeil) gl.uniform4f(pr.u.u_oeil, H.oeil.centre[0], H.oeil.centre[1], H.oeil.centre[2], H.oeil.rayon);
-      gl.uniform3fv(pr.u.u_teint, couleur(opt.teint).map(x => lin(x / 255))); gl.uniform3fv(pr.u.u_tissu, couleur(opt.tissu).map(x => lin(x / 255))); gl.uniform3fv(pr.u.u_poil, couleur(opt.poil).map(x => lin(x / 255)));
-      gl.uniform1f(pr.u.u_tire, PEAU_AVANT);
+      gl.uniform3fv(pr.u.u_teint, couleur(opt.teint).map(x => lin(x / 255))); gl.uniform3fv(pr.u.u_poil, couleur(opt.poil).map(x => lin(x / 255)));
+      gl.uniform1f(pr.u.u_corde, 1); gl.uniform1i(pr.u.u_attaches, NQ > NJ ? NJ : 0);
+      // Le raccord (voir SOMMETS_PEAU) : le film suit pleinement les muscles à partir de la bande écrite dans le fichier ;
+      // il commence à laisser voir les muscles un peu après le bord, et pleinement une bande et demie plus loin.
+      gl.uniform3f(pr.u.u_bande, H.corps.bande, 0.4 * H.corps.bande, 1.5 * H.corps.bande);
+      gl.uniform1i(pr.u.u_nbAppuis, nbAppuis); if (nbAppuis) gl.uniform4fv(pr.u.u_appuis, appuisU);
       gl.uniform4fv(pr.u.u_tenuC, tenusU.subarray(0, 8)); gl.uniform4fv(pr.u.u_tenuA, tenusU.subarray(8, 16)); gl.uniform1i(pr.u.u_nbTenus, nbTenus);
-      const tracer = () => {
-        for (let cote = 0; cote < 2; cote++) {
-          gl.uniform1f(pr.u.u_cote, cote); gl.frontFace(cote ? gl.CW : gl.CCW);
-          gl.drawElements(gl.TRIANGLES, nPairs * 3, type, 0);
-        }
-        gl.frontFace(gl.CCW); gl.uniform1f(pr.u.u_cote, 0);
-        if (nImpairs) gl.drawElements(gl.TRIANGLES, nImpairs * 3, type, nPairs * 3 * oct);
-      };
-      gl.uniform1f(pr.u.u_fenetre, 0);
-      if (!entiere) { tracer(); return; }
-      gl.enable(gl.STENCIL_TEST); gl.stencilMask(0); gl.stencilOp(gl.KEEP, gl.KEEP, gl.KEEP);
-      gl.stencilFunc(gl.EQUAL, 0, 0xff); tracer();
-      gl.stencilFunc(gl.EQUAL, 1, 0xff); gl.uniform1f(pr.u.u_fenetre, 1); tracer();
-      gl.disable(gl.STENCIL_TEST); gl.stencilMask(0xff);
+      gl.uniform1f(pr.u.u_ecarts, opt.ecarts ? 1 : 0);
+      // Chaque côté : le reste, des deux faces (l'envers se voit par les narines, le bord des paupières), puis le film,
+      // de face seulement — c'est une surface fermée, et là où un membre plié entre dans un autre (le pli du coude,
+      // l'aisselle) on ne doit voir que le dehors des deux.
+      gl.cullFace(gl.BACK);
+      for (let cote = 0; cote < 2; cote++) {
+        gl.uniform1f(pr.u.u_cote, cote); gl.frontFace(cote ? gl.CW : gl.CCW);
+        gl.drawElements(gl.TRIANGLES, PE.pairsReste * 3, gl.UNSIGNED_SHORT, 0);
+        gl.enable(gl.CULL_FACE);
+        gl.drawElements(gl.TRIANGLES, PE.corps * 3, gl.UNSIGNED_SHORT, PE.pairsReste * 3 * 2);
+        gl.disable(gl.CULL_FACE);
+      }
+      gl.frontFace(gl.CCW); gl.uniform1f(pr.u.u_cote, 0);
+      if (PE.impairs) gl.drawElements(gl.TRIANGLES, PE.impairs * 3, gl.UNSIGNED_SHORT, (PE.pairsReste + PE.corps) * 3 * 2);
+      gl.activeTexture(gl.TEXTURE2); gl.bindTexture(gl.TEXTURE_2D, null); gl.activeTexture(gl.TEXTURE3); gl.bindTexture(gl.TEXTURE_2D, null); gl.activeTexture(gl.TEXTURE0);
     }
     let nbImages = 0, dernierTemps = 0;
     let objets = [], ombreSol = null, animation = null, scene = null;
@@ -1585,11 +1680,25 @@ void main() {
       const t0 = performance.now();
       if (texSale) ecrireTexture();
       if (poseSale) envoyerPose();
-      const m = matrices();
+      const m = matrices(), sousPeau = !!PE && niveauPeau > 0;
+      if (sousPeau) {
+        // Sous la peau : les muscles (structures pleines, puis voiles et fantômes) sont dessinés à part ; la peau les
+        // laissera voir. Les voiles se fondent dans la couleur sans toucher à la part visible du muscle qu'ils recouvrent.
+        gl.bindFramebuffer(gl.FRAMEBUFFER, cadreDesMuscles());
+        gl.viewport(0, 0, toile.width, toile.height);
+        gl.clearColor(0, 0, 0, 0); gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+        preparer(m);
+        gl.enable(gl.DEPTH_TEST); gl.depthFunc(gl.LEQUAL); gl.depthMask(true); gl.disable(gl.BLEND); gl.disable(gl.CULL_FACE);
+        passe(m, 0);
+        if (transparents) {
+          gl.enable(gl.BLEND); gl.blendFuncSeparate(gl.ONE, gl.ONE_MINUS_SRC_ALPHA, gl.ZERO, gl.ONE); gl.depthMask(false); gl.enable(gl.CULL_FACE); gl.cullFace(gl.BACK);
+          passe(m, 1);
+          gl.depthMask(true); gl.disable(gl.BLEND); gl.disable(gl.CULL_FACE);
+        }
+      }
       gl.bindFramebuffer(gl.FRAMEBUFFER, null);
       gl.viewport(0, 0, toile.width, toile.height);
-      gl.stencilMask(0xff); gl.clearStencil(0);
-      gl.clearColor(0, 0, 0, 0); gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT | gl.STENCIL_BUFFER_BIT);
+      gl.clearColor(0, 0, 0, 0); gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
       // L'ombre au sol, d'abord (elle ne masque rien).
       gl.disable(gl.DEPTH_TEST); gl.enable(gl.BLEND); gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
       gl.useProgram(progSol.p); gl.bindVertexArray(vaoSol);
@@ -1605,19 +1714,9 @@ void main() {
       }
       gl.uniform1f(progSol.u.u_clair, opt.clair ? 1 : 0);
       if (cam.el > -2) gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
-      // Les structures pleines, puis les fantômes par-dessus (sans écrire la profondeur).
-      preparer(m);
       gl.enable(gl.DEPTH_TEST); gl.depthFunc(gl.LEQUAL); gl.depthMask(true); gl.disable(gl.BLEND); gl.disable(gl.CULL_FACE);
-      const peauEntiere = !!PE && niveauPeau === 2;
-      if (peauEntiere) {
-        // Sous la peau entière, seuls les muscles « vifs » (colorés par une carte, ou choisi) sont dessinés : ce sont eux
-        // qu'on verra à travers elle. Ils marquent le pochoir au passage.
-        gl.enable(gl.STENCIL_TEST); gl.stencilFunc(gl.ALWAYS, 1, 0xff); gl.stencilOp(gl.KEEP, gl.KEEP, gl.REPLACE);
-        gl.uniform1f(prog.u.u_seuls, 1);
-        passe(m, 0);
-        gl.uniform1f(prog.u.u_seuls, 0);
-        gl.disable(gl.STENCIL_TEST);
-      } else passe(m, 0);
+      // Sans peau : les structures pleines, sur la toile.
+      if (!sousPeau) { preparer(m); passe(m, 0); }
       if (objets.length) {
         // Le matériel de l'exercice.
         gl.useProgram(progObj.p); gl.enable(gl.CULL_FACE); gl.cullFace(gl.BACK);
@@ -1637,10 +1736,11 @@ void main() {
           gl.drawArrays(gl.TRIANGLES, 0, v.n);
         }
         gl.disable(gl.CULL_FACE);
-        preparer(m);
       }
-      if (PE && niveauPeau > 0) { dessinerPeau(m, peauEntiere); preparer(m); }
-      if (transparents && !peauEntiere) {
+      if (sousPeau) dessinerPeau(m);
+      else if (transparents) {
+        // Les fantômes et les voiles par-dessus (sans écrire la profondeur).
+        preparer(m);
         gl.enable(gl.BLEND); gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA); gl.depthMask(false); gl.enable(gl.CULL_FACE); gl.cullFace(gl.BACK);
         passe(m, 1);
         gl.depthMask(true); gl.disable(gl.BLEND); gl.disable(gl.CULL_FACE);
@@ -1808,10 +1908,11 @@ void main() {
     }
     const api = {
       toile, structures: S, entete: E, regions: E.regions,
-      // La peau : 0, écorché ; 1, peau sur la tête, les mains et les pieds ; 2, peau entière, avec un short (les muscles
-      // colorés ou choisis se voient au travers). Sans fichier de peau, reste à 0.
+      // La peau : 0, écorché ; 1, la peau — un film fin sur le corps, à travers lequel les muscles se voient (ceux
+      // qu'une carte colore ou qu'on a choisi, davantage), pleine sur la tête, les mains et les pieds. Sans fichier de
+      // peau, reste à 0.
       aPeau: !!PE,
-      niveauPeau(n) { if (n != null && PE) { const v = Math.max(0, Math.min(2, n | 0)); if (v !== niveauPeau) { niveauPeau = v; demander(); } } return niveauPeau; },
+      niveauPeau(n) { if (n != null && PE) { const v = Math.max(0, Math.min(1, n | 0)); if (v !== niveauPeau) { niveauPeau = v; demander(); } } return niveauPeau; },
       surImage: null,
       indice: id => parId.has(id) ? parId.get(id) : -1,
       vue(nom, duree) { if (nom in VUES) allerA({ az: VUES[nom], el: 4 }, duree); },
@@ -1950,7 +2051,7 @@ void main() {
       },
       redessiner: demander,
       tailler,
-      mesures: () => ({ preparationReprise: preparation.reprise, preparationMs: preparation.ms, enCours: !!demande || !!transition, images: nbImages, dernierTempsMs: dernierTemps, largeur: larg, hauteur: haut, pixels: pp, echelleMouvement, triangles: E.triangles, sommets: E.sommets, appelsDeDessin: 1 + 2 + passeTranslucide().appels + 3 * niveauPeau, trianglesSoumis: 2 * E.triangles + passeTranslucide().triangles + trianglesPeau(), peau: niveauPeau, premierSommet }),
+      mesures: () => ({ preparationReprise: preparation.reprise, preparationMs: preparation.ms, enCours: !!demande || !!transition, images: nbImages, dernierTempsMs: dernierTemps, largeur: larg, hauteur: haut, pixels: pp, echelleMouvement, triangles: E.triangles, sommets: E.sommets, appelsDeDessin: 1 + 2 + passeTranslucide().appels + 5 * niveauPeau, trianglesSoumis: 2 * E.triangles + passeTranslucide().triangles + trianglesPeau(), peau: niveauPeau, premierSommet }),
       detruire() {
         vivant = false; if (demande) cancelAnimationFrame(demande);
         clearTimeout(minuterieNet); document.removeEventListener('visibilitychange', visible);
@@ -2264,11 +2365,11 @@ void main() {
       majLecture();
     }
     const etat = () => ({ mode, choisi: choisi && choisi.id, couche: a.couche(), fantomes: a.fantomes(), isoles: a.isoles(), masques: a.masques(), peau: a.niveauPeau() });
-    /* La peau : une seule apparence — le corps écorché, la peau gardée sur la tête, les mains et les pieds
-       (o.niveauPeau pour en changer : 0, sans peau ; 2, peau entière — l'appli ne le propose pas). Dès qu'on retire
-       des couches, qu'on isole un muscle ou qu'on en choisit un sous cette peau, elle s'efface : on regarde en profondeur. */
-    const NIVEAU_PEAU = o.niveauPeau === 0 || o.niveauPeau === 2 ? o.niveauPeau : 1;
-    const SOUS_PEAU = new Set(['tete', 'main', 'pied']);   // régions dont les muscles sont cachés par la peau partielle
+    /* La peau : une seule apparence — le corps sous sa peau fine, qui laisse voir les muscles ; pleine sur la tête,
+       les mains et les pieds (o.niveauPeau: 0 pour l'écorché). Dès qu'on retire des couches, qu'on isole un muscle
+       ou qu'on en choisit un sous la peau pleine, elle s'efface : on regarde en profondeur. */
+    const NIVEAU_PEAU = o.niveauPeau === 0 ? 0 : 1;
+    const SOUS_PEAU = new Set(['tete', 'main', 'pied']);   // régions dont les muscles sont cachés par la peau pleine
     function majPeau() {
       if (!a.aPeau) return;
       const enProfondeur = a.couche() > 1 || !!a.isoles() || (!!choisi && SOUS_PEAU.has(choisi.region));

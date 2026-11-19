@@ -7073,12 +7073,33 @@ function enteteAtlas() {
   assert.equal(b.toString('latin1', 0, 4), 'ANQA');
   return JSON.parse(b.subarray(12, 12 + b.readUInt32LE(8)).toString('utf8'));
 }
-/* La peau (assets/atlas/atlas-peau.bin) : en-tête et sommets (20 octets chacun, comme le modèle). */
+/* La peau (assets/atlas/atlas-peau.bin, version 2) : l'en-tête, puis deux blocs dont il donne les adresses — le reste
+   (tête, mains, pieds… : sommets de 20 octets, rangés comme ceux du modèle) et le corps (le film posé sur les muscles :
+   28 octets, les mêmes 20 puis les attaches du muscle recouvert). Chaque bloc : ses sommets, puis ses triangles. */
 function peauAtlas() {
   const b = fs.readFileSync(path.join(RACINE, 'assets', 'atlas', 'atlas-peau.bin'));
   assert.equal(b.toString('latin1', 0, 4), 'ANQP');
-  const lg = b.readUInt32LE(8), H = JSON.parse(b.subarray(12, 12 + lg).toString('utf8'));
-  return { H, octets: b.length, sommets: b.subarray(12 + lg, 12 + lg + H.sommets * H.octetsParSommet), indices: b.subarray(12 + lg + H.sommets * H.octetsParSommet) };
+  assert.equal(b.readUInt32LE(4), 2, 'peau de la version 2');
+  const lg = b.readUInt32LE(8), H = JSON.parse(b.subarray(12, 12 + lg).toString('utf8')), d = 12 + lg, R = H.reste, C = H.corps;
+  const bloc = (x, triangles) => ({ n: x.sommets, pas: x.octetsParSommet, sommets: b.subarray(d + x.debut, d + x.debut + x.sommets * x.octetsParSommet), indices: b.subarray(d + x.indices, d + x.indices + triangles * 6), triangles });
+  const place = (bl, v) => [0, 1, 2].map(k => H.boite.min[k] + bl.sommets.readUInt16LE(v * bl.pas + k * 2) / 65535 * H.boite.etendue[k]);
+  return { H, octets: b.length, reste: bloc(R, R.trianglesPairs + R.trianglesImpairs), corps: bloc(C, C.triangles), place };
+}
+/* Le modèle tel que le moteur le prépare (carrure, ombres de contact, poids repris, attaches), par ses propres
+   fonctions : { A (AnqaAtlas), E (en-tête, squelette complété des attaches), sommets, pas }. */
+function modelePrepare() {
+  const vm = require('vm'), dossier = path.join(RACINE, 'assets', 'atlas');
+  const ctx = { window: {}, Math, Float32Array, Uint8Array, Uint16Array, Uint32Array, Int32Array, DataView, JSON, Object, Array, Infinity, console, Map, WeakMap };
+  vm.createContext(ctx); vm.runInContext(fs.readFileSync(path.join(dossier, 'atlas3d.js'), 'utf8'), ctx);
+  const A = ctx.window.AnqaAtlas, brut = fs.readFileSync(path.join(dossier, 'atlas.bin')), lg = brut.readUInt32LE(8), E = JSON.parse(brut.subarray(12, 12 + lg).toString('utf8'));
+  delete E.preparation;
+  const pas = E.octetsParSommet, debut = 12 + lg, octI = E.triangles * 6;
+  let b = new Uint8Array(brut.subarray(debut, debut + E.sommets * pas));
+  const ind = new Uint16Array(brut.buffer.slice(brut.byteOffset + debut + E.sommets * pas, brut.byteOffset + debut + E.sommets * pas + octI));
+  const os = (v, o) => b[o + 10] === E.os.pair || b[o + 10] === E.os.impair;
+  const r = A.etoffer(b, pas, E.boite, E.squelette, 1, os); b = r.sommets; E.boite = r.boite;
+  A.eclaircirContacts(b, pas, E, os); A.reponderer(b, pas, E, ind, os);
+  return { A, E, sommets: b, pas };
 }
 /* Quatre semaines et plus de séances d'essai : pectoraux le jour même, dos il y a 2 jours, jambes il y a 4 jours,
    avec des charges qui montent un peu de semaine en semaine. */
@@ -7357,47 +7378,90 @@ test('atlas 3D : pendu ou bras levés, les bras sont tendus et les mains tiennen
 });
 
 test('atlas 3D : la peau va avec le modèle (zones, attaches au squelette, articulations intermédiaires)', () => {
-  const E = enteteAtlas(), { H, octets, sommets, indices } = peauAtlas();
+  const E = enteteAtlas(), { H, octets, reste, corps } = peauAtlas();
   assert.equal(H.format, 'anqa-peau');
   assert.match(H.source, /Z-Anatomy.*CC BY-SA 4\.0/, 'la peau vient de la même source que les muscles, sous la même licence');
   assert.deepEqual(H.zones, ['corps', 'tete', 'main', 'pied', 'ongle', 'poil', 'cheveux', 'oeil']);
   assert.equal(H.articulations, E.squelette.length, 'la peau est attachée au squelette de ce modèle');
-  assert.ok(octets < 1.2e6, 'la peau reste légère : ' + octets + ' octets');
+  assert.equal(H.carrure, 1, 'la peau porte la carrure que montre l\'appli');
+  assert.ok(octets < 1.6e6, 'la peau reste légère : ' + octets + ' octets');
+  assert.deepEqual([reste.pas, corps.pas], [20, 28]);
   // Les articulations intermédiaires relient deux articulations du squelette, pour une part de leur rotation.
   for (const d of H.intermediaires) assert.ok(E.squelette[d.vers].parent >= 0 && d.de >= 0 && d.de < E.squelette.length && d.part > 0 && d.part < 1, 'articulation intermédiaire valide');
   for (const d of H.intermediaires) assert.ok(d.retrait == null || (d.retrait > 0 && d.retrait <= 1), 'retrait d\'une articulation intermédiaire entre 0 et 1');
   // Chaque sommet : une zone connue, des attaches à des articulations qui existent, des poids dont la somme fait le tout.
-  const NT = E.squelette.length + 2 * H.intermediaires.length, pas = H.octetsParSommet, parZone = new Array(H.zones.length).fill(0);
+  // Le reste n'est jamais de la zone « corps » ; le corps (le film) n'est que d'elle.
+  const NT = E.squelette.length + 2 * H.intermediaires.length, NQ = E.squelette.length + ((E.preparation && E.preparation.attaches) || []).length, parZone = new Array(H.zones.length).fill(0);
   let defauts = 0;
-  for (let i = 0; i < H.sommets; i++) {
-    const o = i * pas, zone = sommets[o + 10]; let somme = 0;
-    if (zone >= H.zones.length) defauts++; else parZone[zone]++;
-    for (let k = 0; k < 4; k++) { const w = sommets[o + 16 + k]; somme += w; if (w && sommets[o + 12 + k] >= NT) defauts++; }
-    if (somme !== 255) defauts++;
-  }
+  const attaches = (bl, o, limite) => { let somme = 0; for (let k = 0; k < 4; k++) { const w = bl.sommets[o + 4 + k]; somme += w; if (w && bl.sommets[o + k] >= limite) defauts++; } if (somme !== 255) defauts++; };
+  for (let i = 0; i < reste.n; i++) { const o = i * 20, zone = reste.sommets[o + 10]; if (zone === 0 || zone >= H.zones.length) defauts++; else parZone[zone]++; attaches(reste, o + 12, NT); }
+  for (let i = 0; i < corps.n; i++) { const o = i * 28; if (corps.sommets[o + 10] !== 0) defauts++; else parZone[0]++; attaches(corps, o + 12, NT); attaches(corps, o + 20, NQ); }
   assert.equal(defauts, 0, 'sommets de la peau sans défaut');
   assert.ok(parZone.every(n => n > 0), 'chaque zone a ses sommets : ' + parZone.join(', '));
-  // Le flanc reste sur les côtes : sous l'aisselle, la peau du tronc ne suit ni le bras ni une articulation qui mène
-  // au bras (sinon elle part avec lui quand il se lève, et le torse s'élargit comme une cape).
-  const NJ = E.squelette.length, NX = H.intermediaires.length, duBras = n => /^(humerus|ulna|radius|main|doigt)/.test(n);
-  const versBras = j => (j < NJ ? duBras(E.squelette[j].nom) : duBras(E.squelette[H.intermediaires[(j - NJ) % NX].vers].nom));
-  let flanc = 0, flancBras = 0;
-  for (let i = 0; i < H.sommets; i++) {
-    const o = i * pas; if (sommets[o + 10] !== 0) continue;
-    const x = H.boite.min[0] + sommets.readUInt16LE(o) / 65535 * H.boite.etendue[0], y = H.boite.min[1] + sommets.readUInt16LE(o + 2) / 65535 * H.boite.etendue[1];
-    if (x > 0.15 || y < 1.05 || y > 1.24) continue;
-    flanc++;
-    let part = 0; for (let k = 0; k < 4; k++) if (versBras(sommets[o + 12 + k])) part += sommets[o + 16 + k];
-    if (part > 2) flancBras++;
-  }
-  assert.ok(flanc > 300, 'le contrôle porte bien sur la peau du tronc : ' + flanc + ' sommets');
-  assert.equal(flancBras, 0, 'sommets du flanc attachés au bras');
-  // Les triangles ne nomment que des sommets qui existent.
-  const nb = (H.trianglesPairs + H.trianglesImpairs) * 3, lire = H.indicesSur === 32 ? k => indices.readUInt32LE(k * 4) : k => indices.readUInt16LE(k * 2);
-  let hors = 0; for (let k = 0; k < nb; k++) if (lire(k) >= H.sommets) hors++;
+  // Les triangles ne nomment que des sommets qui existent ; l'œil est à hauteur de tête.
+  let hors = 0;
+  for (const bl of [reste, corps]) for (let k = 0; k < bl.triangles * 3; k++) if (bl.indices.readUInt16LE(k * 2) >= bl.n) hors++;
   assert.equal(hors, 0);
-  // Le short tient entre le haut des cuisses et la taille ; l'œil est à hauteur de tête.
-  assert.ok(H.short.bas > 0.5 && H.short.haut > H.short.bas && H.short.haut < 1.1 && H.oeil.centre[1] > 1.5 && H.oeil.rayon > 0.008 && H.oeil.rayon < 0.02);
+  assert.ok(H.oeil.centre[1] > 1.5 && H.oeil.rayon > 0.008 && H.oeil.rayon < 0.02);
+});
+
+// La peau du corps est un film posé sur les muscles (outils/atlas/outils/peau-fine.mjs) : il en prend exactement la
+// forme et bouge avec eux. Vérifié sur le fichier, face au modèle tel que le moteur le prépare.
+test('atlas 3D : la peau du corps est un film posé sur les muscles — à 1,5 mm d\'eux, avec leurs attaches, raccordé à la tête, aux mains et aux pieds', () => {
+  const { H, reste, corps, place } = peauAtlas(), { A, E, sommets: M, pas } = modelePrepare(), SQ = E.squelette;
+  // Le fichier a été fait pour ce modèle-ci, préparé ainsi : sinon, relancer outils/atlas/outils/peau-fine.mjs.
+  const empreinte = require('crypto').createHash('sha256').update(M).update(JSON.stringify(SQ)).digest('hex').slice(0, 16);
+  assert.deepEqual([H.modele.preparation, H.modele.empreinte], [A.PREPARATION_VERSION, empreinte], 'le film doit être reposé sur le modèle (node outils/atlas/outils/peau-fine.mjs)');
+  assert.ok(H.corps.epaisseur > 0.0005 && H.corps.epaisseur <= 0.002, 'un film très fin : ' + H.corps.epaisseur);
+  // Le film affiné : un sommet tous les 6 mm environ, plus serré que la peau d'origine.
+  assert.ok(corps.n > 15000 && corps.triangles > 30000, corps.n + ' sommets, ' + corps.triangles + ' triangles');
+  // 1. Le bord. Un sommet du film à distance nulle du bord est posé exactement sur un sommet de la tête, d'une main ou
+  //    d'un pied, avec la même normale et les mêmes attaches de peau : rien ne s'ouvre au cou, au poignet, à la cheville.
+  const cle = (bl, v) => bl.sommets.readUInt16LE(v * bl.pas) + ',' + bl.sommets.readUInt16LE(v * bl.pas + 2) + ',' + bl.sommets.readUInt16LE(v * bl.pas + 4);
+  const enFace = new Map(); for (let v = 0; v < reste.n; v++) { const k = cle(reste, v); if (!enFace.has(k)) enFace.set(k, []); enFace.get(k).push(v); }
+  let bord = 0, seuls = 0;
+  for (let v = 0; v < corps.n; v++) {
+    if (corps.sommets[v * 28 + 7] !== 0) continue;
+    bord++;
+    const o = v * 28, memes = (enFace.get(cle(corps, v)) || []).some(r => { const q = r * 20; for (let k = 8; k < 10; k++) if (reste.sommets[q + k] !== corps.sommets[o + k]) return false; for (let k = 12; k < 20; k++) if (reste.sommets[q + k] !== corps.sommets[o + k]) return false; return true; });
+    if (!memes) seuls++;
+  }
+  assert.ok(bord > 60, 'le film touche la tête, les mains et les pieds : ' + bord + ' sommets au bord');
+  assert.equal(seuls, 0, 'sommets du bord sans vis-à-vis identique');
+  // 2. La forme. Loin du bord, le film est à EPAISSEUR de la surface des muscles : mesuré ici au sommet de muscle le
+  //    plus proche (des deux côtés du corps), sur un sommet du film sur quarante. Presque tous sont à quelques
+  //    millimètres ; le reste est tendu au-dessus d'un creux (l'entrejambe, l'aisselle), jamais loin.
+  const vueM = new DataView(M.buffer, M.byteOffset, M.byteLength), nM = E.sommets, P = new Float32Array(nM * 3);
+  for (let i = 0; i < nM; i++) for (let k = 0; k < 3; k++) P[i * 3 + k] = E.boite.min[k] + vueM.getUint16(i * pas + k * 2, true) / 65535 * E.boite.etendue[k];
+  const ecarts = [];
+  for (let v = 0; v < corps.n; v += 40) {
+    if (corps.sommets[v * 28 + 7] < 255) continue;   // (à moins de 6 cm du bord, le film revient vers la peau d'origine)
+    const [x, y, z] = place(corps, v); let m = Infinity;
+    for (let i = 0; i < nM; i++) { const dy = P[i * 3 + 1] - y; if (dy > 0.03 || dy < -0.03) continue; const dz = P[i * 3 + 2] - z, dx = P[i * 3] - x, dx2 = -P[i * 3] - x, d = dy * dy + dz * dz + Math.min(dx * dx, dx2 * dx2); if (d < m) m = d; }
+    ecarts.push(Math.sqrt(m));
+  }
+  ecarts.sort((a, b) => a - b);
+  const q = p => ecarts[Math.floor(p * (ecarts.length - 1))];
+  assert.ok(ecarts.length > 300, ecarts.length + ' sommets mesurés');
+  assert.ok(q(0.5) < 0.004 && q(0.9) < 0.008 && q(1) < 0.06, `écart du film aux muscles : médiane ${(q(0.5) * 1000).toFixed(1)} mm, 9 sur 10 sous ${(q(0.9) * 1000).toFixed(1)} mm, au plus ${(q(1) * 1000).toFixed(1)} mm`);
+  // 3. Les attaches. Le film de la cuisse gauche ne tient jamais à la jambe droite (les cuisses étoffées se touchent :
+  //    il partirait avec l'autre jambe), ni celui du bras gauche au bras droit ; sur la couture du milieu, les attaches
+  //    sont symétriques (sinon elle s'ouvrirait quand le corps se tord).
+  const droit = SQ.map(a => /^(femur|tibia|pied|orteils|humerus|ulna|radius|main|doigt).*\.D$/.test(a.nom || ''));
+  let aDroite = 0, asym = 0, couture = 0;
+  const libres = new Map(); for (let t = 0; t < corps.triangles; t++) for (let k = 0; k < 3; k++) { const a = corps.indices.readUInt16LE((t * 3 + k) * 2), b = corps.indices.readUInt16LE((t * 3 + (k + 1) % 3) * 2), c = a < b ? a * 65536 + b : b * 65536 + a; libres.set(c, (libres.get(c) || 0) + 1); }
+  const surCouture = new Set(); for (const [c, nb] of libres) if (nb === 1) for (const v of [Math.floor(c / 65536), c % 65536]) if (Math.abs(place(corps, v)[0]) < 1e-4) surCouture.add(v);
+  for (let v = 0; v < corps.n; v++) {
+    const o = v * 28 + 20, w = {}; for (let k = 0; k < 4; k++) if (corps.sommets[o + 4 + k]) w[corps.sommets[o + k]] = corps.sommets[o + 4 + k];
+    if (surCouture.has(v)) { couture++; for (const j in w) if (Math.abs((w[SQ[j].jumeau] || 0) - w[j]) > 1) { asym++; break; } }
+    else for (const j in w) if (droit[j] && w[j] > 12) { aDroite++; break; }
+  }
+  assert.ok(couture > 200, 'la couture du milieu : ' + couture + ' sommets');
+  assert.deepEqual([aDroite, asym], [0, 0], 'sommets du film gauche tenus par un membre droit, sommets de la couture aux attaches dissymétriques');
+  // 4. Fermé : hors de la couture et du bord, chaque arête du film a ses deux triangles (l'entrejambe de la peau
+  //    d'origine, ouvert, est refermé par une pièce lisse).
+  let ouvertes = 0; for (const [c, nb] of libres) { if (nb === 2) continue; const a = Math.floor(c / 65536), b = c % 65536; if (nb > 2 || !((surCouture.has(a) && surCouture.has(b)) || (corps.sommets[a * 28 + 7] === 0 && corps.sommets[b * 28 + 7] === 0))) ouvertes++; }
+  assert.equal(ouvertes, 0, 'arêtes ouvertes dans le film');
 });
 
 test('atlas 3D : aucun triangle à cheval sur deux structures ni sur deux zones de peau (le moteur compte dessus)', () => {
@@ -7413,9 +7477,12 @@ test('atlas 3D : aucun triangle à cheval sur deux structures ni sur deux zones 
   }
   assert.equal(k, E.triangles * 3, 'tous les triangles du modèle sont parcourus');
   assert.equal(mixtes, 0, 'triangles du modèle à cheval sur deux structures');
-  const { H, sommets, indices } = peauAtlas(), lire = H.indicesSur === 32 ? q => indices.readUInt32LE(q * 4) : q => indices.readUInt16LE(q * 2), zone = v => sommets[v * H.octetsParSommet + 10];
+  const { reste, corps } = peauAtlas();
   let mixtesPeau = 0;
-  for (let t = 0; t < H.trianglesPairs + H.trianglesImpairs; t++) { const z = zone(lire(t * 3)); if (zone(lire(t * 3 + 1)) !== z || zone(lire(t * 3 + 2)) !== z) mixtesPeau++; }
+  for (const bl of [reste, corps]) {
+    const zone = v => bl.sommets[v * bl.pas + 10], lire = q => bl.indices.readUInt16LE(q * 2);
+    for (let t = 0; t < bl.triangles; t++) { const z = zone(lire(t * 3)); if (zone(lire(t * 3 + 1)) !== z || zone(lire(t * 3 + 2)) !== z) mixtesPeau++; }
+  }
   assert.equal(mixtesPeau, 0, 'triangles de la peau à cheval sur deux zones');
 });
 
@@ -7898,8 +7965,8 @@ test("atlas 3D : la main se referme sur la barre — chaque phalange et le pouce
   const brut = fs.readFileSync(path.join(RACINE, 'assets', 'atlas', 'atlas-peau.bin')), lg = brut.readUInt32LE(8), EP = JSON.parse(brut.slice(12, 12 + lg).toString());
   const zones = [EP.zones.indexOf('main'), EP.zones.indexOf('ongle')], jReel = j => (j < nb ? j : EP.intermediaires[j - nb].de);
   const peau = [];
-  for (let v = 0; v < EP.sommets; v++) {
-    const o = 12 + lg + v * EP.octetsParSommet; if (!zones.includes(brut[o + 10])) continue;
+  for (let v = 0; v < EP.reste.sommets; v++) {
+    const o = 12 + lg + EP.reste.debut + v * EP.reste.octetsParSommet; if (!zones.includes(brut[o + 10])) continue;
     const js = [0, 1, 2, 3].map(k => jReel(brut[o + 12 + k])), ws = [0, 1, 2, 3].map(k => brut[o + 16 + k] / 255), s = ws.reduce((a, b) => a + b, 0) || 1;
     let km = 0; for (let k = 1; k < 4; k++) if (ws[k] > ws[km]) km = k;
     peau.push({ p: [0, 1, 2].map(k => EP.boite.min[k] + brut.readUInt16LE(o + k * 2) / 65535 * EP.boite.etendue[k]), js, ws: ws.map(w => w / s), os: SQ[js[km]].nom });
@@ -7988,25 +8055,18 @@ test('atlas 3D : sans WebGL 2, aucun accès ; avec, la fenêtre s\'ouvre, anime 
     assert.deepEqual(a.scripts, ['assets/atlas/atlas3d.js'], 'les mouvements ne se chargent que pour un exercice');
     assert.deepEqual(a.modes, ['Semaine', 'Dernière séance', 'Fréquence', 'Progression', 'Équilibre', 'Anatomie']);
     assert.equal(a.actif, 'Semaine');
-    // Tout le corps en 5 appels de dessin (sol, muscles et voiles des deux côtés), 3 de plus pour la peau partielle.
-    assert.ok(a.structures > 170 && a.appels <= 8 && a.legende === 5 && a.lecture, JSON.stringify([a.structures, a.appels, a.legende, a.lecture]));
+    // Tout le corps en 5 appels de dessin (sol, muscles et voiles des deux côtés), 5 de plus pour la peau (de chaque
+    // côté la tête, la main et le pied, puis le film du corps ; et les cheveux).
+    assert.ok(a.structures > 170 && a.appels <= 10 && a.legende === 5 && a.lecture, JSON.stringify([a.structures, a.appels, a.legende, a.lecture]));
     // Chaque image ne soumet à la carte graphique que ce qui se voit : le modèle une fois par côté, les seuls triangles
-    // du voile (et non tout le modèle une seconde fois), et de la peau les seuls triangles de la tête, des mains et des
-    // pieds. Le décompte attendu est refait ici d'après les fichiers.
+    // du voile (et non tout le modèle une seconde fois), et la peau une seule fois. Le décompte attendu est refait ici
+    // d'après les fichiers.
     const soumis = await page.evaluate(() => { const m = atlasMonte.atlas.mesures(); return [m.trianglesSoumis, m.triangles]; });
-    const enTete = f => { const b = fs.readFileSync(path.join(__dirname, '..', 'assets', 'atlas', f)), lg = b.readUInt32LE(8); return { b, debut: 12 + lg, e: JSON.parse(b.subarray(12, 12 + lg).toString('utf8')) }; };
-    const modele = enTete('atlas.bin'), peauF = enTete('atlas-peau.bin'), ep = peauF.e;
-    const voiles = modele.e.structures.filter(x => x.type === 'aponevrose').reduce((t, x) => t + x.nbIndices / 3, 0);
-    const debutIndices = peauF.debut + ep.sommets * ep.octetsParSommet, gardes = [0, 0];
-    for (let t = 0; t < ep.trianglesPairs + ep.trianglesImpairs; t++) {
-      const sommet = ep.indicesSur === 32 ? peauF.b.readUInt32LE(debutIndices + t * 12) : peauF.b.readUInt16LE(debutIndices + t * 6);
-      if (peauF.b[peauF.debut + sommet * ep.octetsParSommet + 10] !== 0) gardes[t < ep.trianglesPairs ? 0 : 1]++;
-    }
-    // (La tête, les mains et les pieds sont finement maillés : ils font plus de la moitié des triangles de la peau,
-    // mais une petite part de sa surface ; ce qui n'est plus soumis, c'est toute la peau du tronc et des membres.)
-    assert.ok(voiles > 0 && gardes[0] > 5000 && gardes[0] < ep.trianglesPairs - 5000, 'la peau gardée laisse de côté celle du tronc et des membres : ' + gardes + ' sur ' + [ep.trianglesPairs, ep.trianglesImpairs]);
-    assert.deepEqual(soumis, [2 * modele.e.triangles + 2 * voiles + 2 * gardes[0] + gardes[1], modele.e.triangles]);
-    assert.deepEqual(a.peau, [true, 1], 'sur une carte, la peau couvre la tête, les mains et les pieds');
+    const modele = enteteAtlas(), ep = peauAtlas().H;
+    const voiles = modele.structures.filter(x => x.type === 'aponevrose').reduce((t, x) => t + x.nbIndices / 3, 0);
+    assert.ok(voiles > 0 && ep.corps.triangles > 30000 && ep.reste.trianglesPairs > 5000, [voiles, ep.corps.triangles, ep.reste.trianglesPairs].join(', '));
+    assert.deepEqual(soumis, [2 * modele.triangles + 2 * voiles + 2 * (ep.reste.trianglesPairs + ep.corps.triangles) + ep.reste.trianglesImpairs, modele.triangles]);
+    assert.deepEqual(a.peau, [true, 1], 'sur une carte, le corps est sous sa peau');
     // Cette peau a la teinte du corps (un gris entre celui des muscles au repos et celui des tendons, sans rien de la
     // chair) ; en mode « Anatomie », aux couleurs naturelles, elle garde sa teinte naturelle. Vérifié sur les réglages
     // du moteur, puis sur l'image elle-même : la couleur du nez, vu de près.
@@ -8034,6 +8094,31 @@ test('atlas 3D : sans WebGL 2, aucun accès ; avec, la fenêtre s\'ouvre, anime 
     assert.ok(naturelle.px[0] - naturelle.px[2] > 35, 'en mode Anatomie, le visage a une teinte de chair : ' + naturelle.px);
     await page.evaluate(() => { atlasMonte.choisirMode('semaine'); atlasMonte.atlas.reinitialiser(0); });
     assert.equal(await page.evaluate(() => atlasMonte.atlas.apparence().chair), 0);
+    // La peau du corps est un film fin : le muscle se voit au travers. Sur l'image, au milieu du grand pectoral
+    // (travaillé aujourd'hui : la carte le colore) puis de la cuisse (au repos cette semaine : gris), avec la peau puis
+    // sans elle. Le point est toujours plein (la silhouette est celle de la peau, jamais un fond vu au travers).
+    const point = (id, peau) => page.evaluate(([id, peau]) => new Promise(fin => {
+      const at = atlasMonte.atlas, toile = at.toile, avant = at.surImage;
+      at.niveauPeau(peau); at.placer({ az: 0, el: 0, cible: at.structures.find(s => s.id === id).centre, dist: 0.9 });
+      at.surImage = cam => {
+        if (avant) avant(cam);
+        const c = document.createElement('canvas'); c.width = toile.width; c.height = toile.height;
+        const x = c.getContext('2d'); x.drawImage(toile, 0, 0);
+        const d = x.getImageData(Math.round(toile.width / 2) - 4, Math.round(toile.height / 2) - 4, 9, 9).data, m = [0, 0, 0, 0];
+        for (let i = 0; i < d.length; i += 4) for (let k = 0; k < 4; k++) m[k] += d[i + k] / 81;
+        at.surImage = avant;
+        fin(m.map(Math.round));
+      };
+      at.redessiner();
+    }), [id, peau]);
+    const vif = px => Math.max(px[0], px[1], px[2]) - Math.min(px[0], px[1], px[2]);
+    const pecNu = await point('pectoral_sternal', 0), pecPeau = await point('pectoral_sternal', 1), cuisseNue = await point('vaste_lateral', 0), cuissePeau = await point('vaste_lateral', 1);
+    assert.deepEqual([pecNu[3], pecPeau[3], cuisseNue[3], cuissePeau[3]], [255, 255, 255, 255], 'le corps est plein, avec ou sans peau');
+    assert.ok(vif(pecNu) > 40, 'sans peau, le pectoral porte la couleur de la carte : ' + pecNu);
+    assert.ok(vif(pecPeau) > 0.55 * vif(pecNu) && vif(pecPeau) < 0.97 * vif(pecNu), `sous la peau, la couleur du pectoral se voit, un peu adoucie : ${pecPeau} (sans peau : ${pecNu})`);
+    assert.ok(vif(cuissePeau) < 26 && vif(cuisseNue) < 26, 'la cuisse, au repos, reste grise : ' + cuissePeau);
+    assert.ok(Math.abs(cuissePeau[0] - cuisseNue[0]) + Math.abs(cuissePeau[1] - cuisseNue[1]) + Math.abs(cuissePeau[2] - cuisseNue[2]) > 6, `la peau change bien l'image du muscle au repos : ${cuissePeau} (sans peau : ${cuisseNue})`);
+    await page.evaluate(() => { atlasMonte.atlas.niveauPeau(1); atlasMonte.atlas.reinitialiser(0); });
     // Le thème d'une carte, côté moteur : sans indication, une peau naturelle ; avec une teinte, les poils la suivent.
     assert.deepEqual(await page.evaluate(() => { const n = AnqaAtlas.themeDeCarte({}), g = AnqaAtlas.themeDeCarte({ peau: '#808080' }); return [n.chair, n.teint, g.chair, g.teint, g.poil]; }), [1, '#c89b80', 0, '#808080', [64, 64, 64]]);
     // Toucher un muscle pour de vrai (un clic au cœur de sa tache à l'écran) : sa fiche dit la zone de la semaine.
@@ -8054,8 +8139,8 @@ test('atlas 3D : sans WebGL 2, aucun accès ; avec, la fenêtre s\'ouvre, anime 
     const e = await page.evaluate(() => ({ titre: document.getElementById('titre-atlas').textContent, mode: atlasMonte.etat().mode, anim: !!atlasMonte.animation(), scripts: [...document.scripts].map(s => s.getAttribute('src')).filter(s => s && s.startsWith('assets/atlas/')).length,
       pose: atlasMonte.animation().corps.monde('bassin').y < 0.93, colores: Object.keys(carteAtlas('exercice', atlasMonte.atlas.structures).couleurs).length }));
     assert.deepEqual([e.titre, e.mode, e.anim, e.scripts], ['Squat avec barre', 'exercice', true, 2]);
-    // Une seule apparence, pendant un exercice comme sur une carte : le corps écorché, la peau gardée sur la tête, les
-    // mains et les pieds. Plus de bouton « Peau », plus de réglage retenu ; en profondeur, la peau s'efface.
+    // Une seule apparence, pendant un exercice comme sur une carte : le corps sous sa peau fine, qui laisse voir les
+    // muscles. Plus de bouton « Peau », plus de réglage retenu ; en profondeur, la peau s'efface.
     const peau = await page.evaluate(() => {
       const r = [atlasMonte.etat().peau, document.querySelectorAll('.atlas-peau').length, localStorage.getItem('anqa-atlas-peau')];
       atlasMonte.couche(2); r.push(atlasMonte.etat().peau); atlasMonte.couche(1); r.push(atlasMonte.etat().peau);
