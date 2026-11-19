@@ -1,6 +1,7 @@
 // Grille de contrôle : des mouvements (spec ou identifiant d'exercice) à un instant et sous une vue donnés.
 // Usage : node outils/grille.cjs <sortie.jpg> <liste.txt>     une ligne : « spec ou identifiant | u | az,el | zoom (champ en m, facultatif) | x,y,z du centre (facultatif) »
-// Variables : L, H (vignette), COLS, PEAU (1), DEPOT, CLAIR=1, COULEURS=1 (couleurs de l'appli pour les identifiants).
+// Variables : L, H (vignette), COLS, PEAU (1), DEPOT, CLAIR=1, COULEURS=1 (couleurs de l'appli pour les identifiants),
+// PARAMS (suite de l'adresse de la page d'essai : « &ecarts=1 », « &film=0.3,0.8 »…).
 const { ouvrir } = require('./photo.cjs');
 const { bibliotheque, couleursExercices } = require('./exercices-appli.cjs');
 const { execFileSync } = require('child_process');
@@ -15,7 +16,7 @@ const fs = require('fs'), path = require('path');
   const { nav, ctx } = await ouvrir({ viewport: { width: L, height: H }, deviceScaleFactor: 1 });
   const p = await ctx.newPage();
   const erreurs = []; p.on('pageerror', e => erreurs.push(e.message));
-  await p.goto(`http://atlas.local/appli/essai-mouvement.html?spec=repos&pp=1${PEAU ? '&peau=' + PEAU : ''}${clair ? '&clair=1' : ''}`);
+  await p.goto(`http://atlas.local/appli/essai-mouvement.html?spec=repos&pp=1${PEAU ? '&peau=' + PEAU : ''}${clair ? '&clair=1' : ''}${process.env.PARAMS || ''}`);
   await p.waitForFunction(() => window.pret, null, { timeout: 180000 });
   const ff = a => execFileSync('ffmpeg', ['-y', '-loglevel', 'error', ...a]);
   const dossier = path.dirname(sortie), f = [];
