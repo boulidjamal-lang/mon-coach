@@ -1669,6 +1669,10 @@ img.vignette-3d { background: radial-gradient(ellipse 75% 60% at 50% 42%, #1b1e2
 .serie-entete { display: grid; gap: 6px; padding: 0 3px 2px; }
 .serie-entete span { font-size: 0.6rem; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-muted); text-align: center; font-weight: 700; }    .serie-entete--3col, .serie-ligne--3col { grid-template-columns: 34px 1fr 1fr; }
 .serie-entete--5col, .serie-ligne--5col { grid-template-columns: 30px minmax(0, 0.95fr) minmax(0, 1fr) minmax(0, 1fr) 38px; }
+/* Sans charge (poids du corps, tenue) : pas de colonne de kilos. */
+.serie-entete--4col, .serie-ligne--4col { grid-template-columns: 30px minmax(0, 1.5fr) minmax(0, 1fr) 38px; }
+.serie-entete--2col, .serie-ligne--2col { grid-template-columns: 34px 1fr; }
+.btn-ajouter-lest { margin-top: 6px; background: none; box-shadow: none; color: var(--text-muted); }
 /* Performance de la même série la dernière fois (tap = la reprendre). */
 .serie-prec {
   border: 0; background: none; padding: 0; font-family: inherit; cursor: pointer;
@@ -3068,6 +3072,16 @@ html:root #opt-cardio .ic { background: linear-gradient(135deg, #22d3ee, #6366f1
   font: inherit; font-family: 'Manrope', 'Inter', sans-serif; font-size: 1rem; font-weight: 800; color: #fff; background: linear-gradient(135deg, #10b981, #06b6d4);
   box-shadow: 0 14px 26px -12px rgba(6,182,212,.8); transition: transform .12s; }
 .pave-valider:active { transform: scale(.97); }
+/* Exercice sans charge : un seul réglage, au milieu ; chronomètre d'une tenue ; lest à la demande. */
+.pave-champ--seul { grid-column: 1 / -1; width: min(100%, 250px); justify-self: center; }
+.pave-chrono, .pave-lest { grid-column: 1 / -1; justify-self: center; display: inline-flex; align-items: center; justify-content: center; gap: 8px; margin-top: 16px; padding: 0 16px; height: 42px;
+  border: 0; border-radius: 14px; cursor: pointer; touch-action: manipulation; font: inherit; font-weight: 700; font-size: .88rem; color: var(--text); background: var(--carte-plein);
+  box-shadow: inset 0 0 0 1px var(--trait); }
+.pave-chrono .icone-v, .pave-chrono svg { width: 18px; height: 18px; flex: none; }
+.pave-chrono span { font-variant-numeric: tabular-nums; }
+.pave-chrono--marche { color: #fff; background: #e11d48; box-shadow: none; }
+.pave-lest { height: 36px; font-size: .8rem; color: var(--text-muted); background: none; }
+.pave-chrono:active, .pave-lest:active { transform: scale(.97); }
 .pave-valider .icone-ui { width: 20px; height: 20px; color: #fff; }
 
 
