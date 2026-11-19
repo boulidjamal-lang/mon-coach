@@ -3720,6 +3720,146 @@ test('séance : pavé de saisie à la salle (− / +, pas selon le matériel, va
   assert.deepEqual(r, { technique: 'degressif', titre: 'Série 2 · Dégressif' });
 }));
 
+test('séance : au poids du corps aucune charge n\'est demandée ; une tenue se note en secondes, au chronomètre', () => avecAppli({}, async ({ page }) => {
+  const r0 = await page.evaluate(async () => {
+    allerA('seance'); await demarrerSeanceLibre();
+    ['e115', 'e13', 'e1'].forEach(id => ajouterExerciceASession(id));   // Planche, Pompe, Développé couché avec barre
+    musculationSessionActive.exercices.forEach(e => { e.replie = false; });
+    renderSessionModal();
+    const bloc = i => document.querySelectorAll('.session-exo-bloc')[i];
+    const entete = i => [...bloc(i).querySelectorAll('.serie-entete span')].map(x => x.textContent.trim()).filter(Boolean);
+    return {
+      planche: { charge: !!document.getElementById('pave-poids-0_0'), duree: document.getElementById('pave-reps-0_0').value, libelle: bloc(0).querySelector('.pave-champ small').textContent,
+        unite: document.getElementById('pave-unite-reps-0_0').textContent, chrono: bloc(0).querySelector('.pave-chrono span').textContent, lest: !!bloc(0).querySelector('.pave-lest'),
+        entete: entete(0), tempo: !!document.getElementById('tempo-seance-0'), objectif: document.getElementById('objectif-seance-0').placeholder, ligneCharge: !!document.getElementById('serie-poids-0_1') },
+      pompe: { charge: !!document.getElementById('pave-poids-1_0'), libelle: bloc(1).querySelector('.pave-champ small').textContent, lest: bloc(1).querySelector('.pave-lest').textContent, entete: entete(1), tempo: !!document.getElementById('tempo-seance-1') },
+      couche: { charge: !!document.getElementById('pave-poids-2_0'), libelles: [...bloc(2).querySelectorAll('.pave-champ small')].map(x => x.textContent), entete: entete(2), ligneCharge: !!document.getElementById('serie-poids-2_1') }
+    };
+  });
+  assert.deepEqual(r0.planche, { charge: false, duree: '30', libelle: 'Durée', unite: 's', chrono: 'Chronomètre', lest: false, entete: ['Série', 'Préc.', 'Sec.'], tempo: false, objectif: '30-60', ligneCharge: false });
+  assert.deepEqual(r0.pompe, { charge: false, libelle: 'Répétitions', lest: '+ Ajouter un lest', entete: ['Série', 'Préc.', 'Reps'], tempo: true });
+  // Un exercice chargé ne change pas : charge et répétitions.
+  assert.deepEqual(r0.couche, { charge: true, libelles: ['Charge', 'Répétitions'], entete: ['Série', 'Préc.', 'Kg', 'Reps'], ligneCharge: true });
+
+  // La durée se règle de 5 s en 5 s, ou se tape : « 1:30 » vaut 90 secondes, dites en clair sous le chiffre.
+  await page.click('#pave-0_0 .pave-champ:has(#pave-reps-0_0) .pave-btn:last-of-type');
+  let r = await page.evaluate(() => ({ valeur: musculationSessionActive.exercices[0].series[0].reps, affiche: document.getElementById('pave-reps-0_0').value }));
+  assert.deepEqual(r, { valeur: 35, affiche: '35' });
+  await page.fill('#pave-reps-0_0', '1:30');
+  await page.locator('#pave-reps-0_0').evaluate(el => el.blur());
+  r = await page.evaluate(() => ({ valeur: musculationSessionActive.exercices[0].series[0].reps, affiche: document.getElementById('pave-reps-0_0').value, unite: document.getElementById('pave-unite-reps-0_0').textContent }));
+  assert.deepEqual(r, { valeur: 90, affiche: '90', unite: 's · 1 min 30' });
+
+  // Le chronomètre part au toucher ; à l'arrêt, la durée écoulée devient celle de la série.
+  await page.click('#pave-chrono-0_0');
+  r = await page.evaluate(() => {
+    const set = musculationSessionActive.exercices[0].series[0];
+    const marche = !!set.chrono && document.getElementById('pave-chrono-0_0').classList.contains('pave-chrono--marche');
+    set.chrono = Date.now() - 42400;   // 42 secondes ont passé
+    document.getElementById('pave-chrono-0_0').dataset.chrono = set.chrono;
+    majChronosTenue();
+    return { marche, texte: document.querySelector('#pave-chrono-0_0 span').textContent };
+  });
+  assert.deepEqual(r, { marche: true, texte: '0:42 · Arrêter' });
+  await page.click('#pave-chrono-0_0');
+  r = await page.evaluate(() => ({ reps: musculationSessionActive.exercices[0].series[0].reps, chrono: musculationSessionActive.exercices[0].series[0].chrono, affiche: document.getElementById('pave-reps-0_0').value }));
+  assert.deepEqual(r, { reps: 42, chrono: undefined, affiche: '42' });
+  // Valider pendant que le chronomètre tourne l'arrête et note la durée ; pas de « reps en réserve » pour une tenue.
+  await page.click('#pave-chrono-0_0');
+  await page.evaluate(() => { musculationSessionActive.exercices[0].series[0].chrono = Date.now() - 65300; });
+  await page.click('#pave-0_0 .pave-valider');
+  r = await page.evaluate(() => {
+    const s = musculationSessionActive.exercices[0].series[0];
+    return { fait: s.fait, poids: s.poids, reps: s.reps, chrono: 'chrono' in s, rir: !!document.querySelector('.rir-bande'), ligne: document.getElementById('serie-reps-0_0').value, suivant: document.getElementById('pave-reps-0_1').value };
+  });
+  assert.deepEqual(r, { fait: true, poids: 0, reps: 65, chrono: false, rir: false, ligne: '65', suivant: '65' });
+
+  // Pompes : « Ajouter un lest » fait apparaître la charge, appelée lest ; sans lui, la série ne note que les répétitions.
+  await page.evaluate(() => document.querySelectorAll('.session-exo-bloc')[1].querySelector('.pave-lest').click());
+  r = await page.evaluate(() => {
+    const bloc = document.querySelectorAll('.session-exo-bloc')[1];
+    return { libelles: [...bloc.querySelectorAll('.pave-champ small')].map(x => x.textContent), entete: [...bloc.querySelectorAll('.serie-entete span')].map(x => x.textContent.trim()).filter(Boolean), bouton: !!bloc.querySelector('.pave-lest') };
+  });
+  assert.deepEqual(r, { libelles: ['Lest', 'Répétitions'], entete: ['Série', 'Préc.', 'Lest', 'Reps'], bouton: false });
+}));
+
+test('exercices sans charge : la série se dit en répétitions ou en durée, et un record se bat sans kilos', () => avecAppli({}, async ({ page }) => {
+  const r = await page.evaluate(async () => {
+    const jour = n => shiftDate(todayStr(), -n);
+    const seance = (id, n, exoId, series) => ({ id, date: jour(n), debut: Date.now() - n * 86400000, exercices: [{ exerciceId: exoId, nom: trouverExercice(exoId).nom, series: series.map(([poids, reps]) => ({ poids, reps, fait: true })) }] });
+    musculationHistorique.push(
+      seance('p2', 2, 'e115', [[0, 75], [0, 60]]), seance('p9', 9, 'e115', [[0, 60], [0, 45]]),
+      seance('q2', 2, 'e13', [[0, 15], [0, 12]]), seance('q9', 9, 'e13', [[0, 12], [0, 12]]),
+      seance('t2', 2, 'e20', [[0, 14]]), seance('t9', 9, 'e20', [[10, 6]]),
+      seance('c2', 2, 'e1', [[80, 8]]), seance('c9', 9, 'e1', [[75, 8]]));
+    musculationHistorique.sort((a, b) => b.date.localeCompare(a.date));
+    const planche = trouverExercice('e115'), pompe = trouverExercice('e13'), traction = trouverExercice('e20'), couche = trouverExercice('e1');
+    const b = meilleur1RM('e115'), c = meilleur1RM('e1');
+    const h = id => musculationHistorique.find(x => x.id === id);
+    // En séance : une planche plus longue que jamais est un record, dit en durée.
+    allerA('seance'); await demarrerSeanceLibre(); ajouterExerciceASession('e115');
+    const set = musculationSessionActive.exercices[0].series[0];
+    set.reps = 80; set.poids = 0; basculerSerieSession(0, 0);
+    return {
+      mesures: [mesureExercice(planche), mesureExercice(pompe), mesureExercice(couche), mesureExercice(trouverExercice('e153')), mesureExercice(trouverExercice('e211')), mesureExercice(null)].map(m => [m.sansCharge, m.temps, m.aPart].map(Number).join('')),
+      textes: [texteSerie(planche, 0, 45), texteSerie(planche, 0, 90), texteSerie(pompe, 0, 12), texteSerie(traction, 10, 6), texteSerie(couche, 80, 8), texteSerie(trouverExercice('sw-planche-avec-poids'), 20, 45), texteSerie(pompe, null, null)],
+      durees: [texteDuree(59), texteDuree(60), texteDuree(125), texteDuree(3900), lireDuree('90'), lireDuree('1:30'), lireDuree('2 min'), lireDuree('1 min 05'), lireDuree('abc')],
+      meilleure: [b.reps, b.poids, c.poids, c.reps, c.valeur === unRmEstime(80, 8)],
+      // Tractions : 14 au poids du corps valent mieux que 6 avec 10 kg de lest ; plus de répétitions vaut toujours plus.
+      ordre: [valeurSerie(traction, 0, 14) > valeurSerie(traction, 10, 6), valeurSerie(pompe, 0, 40) > valeurSerie(pompe, 0, 30), valeurSerie(planche, 0, 0), valeurSerie(couche, 0, 10)],
+      pastilles: [recordsExerciceSeance(musculationHistorique, h('p2'), h('p2').exercices[0]), recordsExerciceSeance(musculationHistorique, h('q2'), h('q2').exercices[0]), recordsExerciceSeance(musculationHistorique, h('c2'), h('c2').exercices[0])],
+      tableau: tableSeriesHTML(h('p2').exercices[0]).replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim(),
+      tableauCharge: tableSeriesHTML(h('c2').exercices[0]).includes('1RM est.'),
+      detail: renderListeExercicesDetail(h('q2').exercices).replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim(),
+      record: { fait: set.fait, record: set.record === true, ligne: document.querySelector('.serie-record').textContent.trim() },
+      fiche: resumeFicheHTML('e115', musculationHistorique).replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' '),
+      ficheCharge: resumeFicheHTML('e1', musculationHistorique).includes('1RM estimé')
+    };
+  });
+  // sansCharge, temps, à part : planche, pompe, développé couché, tractions lestées, vélo, exercice inconnu.
+  assert.deepEqual(r.mesures, ['111', '101', '000', '000', '111', '000']);
+  assert.deepEqual(r.textes, ['45 s', '1 min 30', '12 reps', '+10 kg × 6', '80 kg × 8', '20 kg · 45 s', '— reps']);
+  assert.deepEqual(r.durees, ['59 s', '1 min', '2 min 05', '1 h 05', 90, 90, 120, 65, null]);
+  assert.deepEqual(r.meilleure, [75, 0, 80, 8, true], 'la meilleure planche est la plus longue ; avec une charge, le 1RM estimé ne change pas');
+  assert.deepEqual(r.ordre, [true, true, 0, 0]);
+  assert.deepEqual(r.pastilles, [['DURÉE'], ['RÉPS'], ['1RM', 'POIDS', 'VOL']]);
+  assert.equal(r.tableau, 'Série Durée 1 1 min 15 2 1 min');
+  assert.equal(r.tableauCharge, true);
+  assert.ok(r.detail.includes('15 reps') && !r.detail.includes('kg'), r.detail);
+  assert.deepEqual(r.record, { fait: true, record: true, ligne: 'Nouveau record · 1 min 20' });
+  assert.ok(r.fiche.includes('Tenue la plus longue 1 min 15') && r.fiche.includes('Meilleure séance (temps total) 2 min 15') && !r.fiche.includes('1RM estimé') && !r.fiche.includes('Charge la plus lourde'), r.fiche);
+  assert.equal(r.ficheCharge, true);
+}));
+
+test('bibliothèque : chaque exercice dit s\'il se charge et s\'il se chronomètre ; le programme suit', () => avecAppli({}, async ({ page }) => {
+  const r = await page.evaluate(() => {
+    const tous = toutesLesExercices(), nom = n => tous.find(e => e.nom === n), m = n => { const x = mesureExercice(nom(n)); return (x.sansCharge ? 'sans charge' : 'charge') + (x.temps ? ', temps' : ''); };
+    ouvrirCreationProgramme();
+    programmeEnEdition.exercices = [{ exerciceId: 'e115', series: [{ poids: null, reps: 45 }] }, { exerciceId: 'e13', series: [{ poids: null, reps: 12 }] }, { exerciceId: 'e1', series: [{ poids: 60, reps: 8 }] }];
+    renderProgrammeExercicesEnEdition();
+    const blocs = [...document.querySelectorAll('#programme-exercices-container .exo-en-programme')];
+    const lire = b => ({ entete: [...b.querySelectorAll('.serie-entete span')].map(x => x.textContent), champs: b.querySelectorAll('.serie-ligne input').length, tempo: !!b.querySelector('input[id^="tempo-prog-"]'), lest: !!b.querySelector('.btn-ajouter-lest') });
+    return {
+      classes: ['Planche', 'Planche latérale', 'Gainage en position creuse', 'Chaise contre le mur', 'Suspension passive', 'Posture de l\'enfant', 'Pompe', 'Traction', 'Dips', 'Burpee', 'Tractions lestées', 'Dips avec poids',
+        'Vélo', 'Rameur', 'Corde à sauter', 'Planche avec poids', 'Roulade avec roue abdominale', 'Développé couché avec barre', 'Curl biceps avec élastique', 'Squat gobelet avec kettlebell'].map(n => n + ' : ' + m(n)),
+      // Cohérence des indications : « charge: false » seulement hors poids du corps, « charge: true » seulement au poids du corps.
+      incoherents: EXERCICES_BASE.filter(e => (e.charge === false && e.materiel === 'poids_corps') || (e.charge === true && e.materiel !== 'poids_corps') || ('temps' in e && e.temps !== true)).map(e => e.id),
+      auTemps: tous.filter(e => e.temps).length, sansCharge: tous.filter(e => mesureExercice(e).sansCharge).length, total: tous.length,
+      programme: blocs.map(lire)
+    };
+  });
+  assert.deepEqual(r.classes, ['Planche : sans charge, temps', 'Planche latérale : sans charge, temps', 'Gainage en position creuse : sans charge, temps', 'Chaise contre le mur : sans charge, temps',
+    'Suspension passive : sans charge, temps', 'Posture de l\'enfant : sans charge, temps', 'Pompe : sans charge', 'Traction : sans charge', 'Dips : sans charge', 'Burpee : sans charge', 'Tractions lestées : charge', 'Dips avec poids : charge',
+    'Vélo : sans charge, temps', 'Rameur : sans charge, temps', 'Corde à sauter : sans charge, temps', 'Planche avec poids : charge, temps', 'Roulade avec roue abdominale : sans charge', 'Développé couché avec barre : charge',
+    'Curl biceps avec élastique : charge', 'Squat gobelet avec kettlebell : charge']);
+  assert.deepEqual(r.incoherents, []);
+  assert.ok(r.auTemps >= 65 && r.auTemps <= 80 && r.sansCharge >= 230 && r.sansCharge <= 260, `${r.auTemps} au temps, ${r.sansCharge} sans charge sur ${r.total}`);
+  assert.deepEqual(r.programme, [
+    { entete: ['Série', 'Durée (s)'], champs: 1, tempo: false, lest: false },
+    { entete: ['Série', 'Répétitions'], champs: 1, tempo: true, lest: true },
+    { entete: ['Série', 'Poids (kg)', 'Répétitions'], champs: 2, tempo: true, lest: false }]);
+}));
+
 test('Bibliothèque : chaque exercice compté pour le bon muscle, le cardio hors du volume, aucun nom en double', () => avecAppli({}, async ({ page }) => {
   const r = await page.evaluate(() => {
     const g = nom => (EXERCICES_BASE.find(e => e.nom === nom) || {}).groupe;
@@ -7252,7 +7392,8 @@ test('atlas 3D : les cartes viennent de l\'historique réel, et restent neutres 
   assert.equal(r.jours.pectoraux, 4, 'une séance de pectoraux par semaine sur 28 jours');
   // Le dos : quatre jours de tractions et de rowing, et quatre jours de soulevé de terre (3 séries où il est secondaire : 1,5 série).
   assert.equal(r.jours.dos, 8);
-  assert.deepEqual(r.progression.dos, [1, true], 'rowing : mêmes exercices sur les deux périodes, charge en hausse');
+  // Les tractions au poids du corps comptent aussi (stables : mêmes répétitions), à côté du rowing dont la charge monte.
+  assert.deepEqual(r.progression.dos, [2, true], 'tractions et rowing : mêmes exercices sur les deux périodes, rowing en hausse');
   assert.deepEqual(r.progression.pectoraux, [1, true]);
   assert.ok(r.retards.includes('pec_haut'), 'haut des pectoraux en retard (que du développé couché à plat)');
   assert.equal(r.pecSternal[0], r.pecSternal[1]);
@@ -7265,7 +7406,9 @@ test('atlas 3D : les cartes viennent de l\'historique réel, et restent neutres 
   assert.deepEqual(r.equilibre, [true]);
   assert.equal(r.anatomie, 0, 'en mode anatomie, les couleurs naturelles');
   assert.match(r.ficheSemaine, /^Pectoraux muscle moteur · Milieu Pectoraux .* 4 séries/);
-  assert.match(r.ficheProgression, /^Dos muscle moteur · .*Force estimée : \+\d+(,\d)? % en 28 jours \(1 exercice comparé\)/);
+  assert.match(r.ficheProgression, /^Dos muscle moteur · .*Force estimée : \+\d+(,\d)? % en 28 jours \(2 exercices comparés\)/);
+  // Au poids du corps, la série se dit en répétitions ; avec une charge, en kilos estimés.
+  assert.ok(r.ficheProgression.includes('Traction 8 reps → 8 reps') && /Rowing barre buste penché \d+ → \d+ kg/.test(r.ficheProgression), r.ficheProgression);
   assert.match(r.ficheSansSuivi, /n'a pas de suivi dédié/);
   assert.deepEqual(r.exercice.slice(0, 3), [true, true, null]);
   assert.deepEqual(r.exercice[3], ['Muscle principal', 'Travaille aussi']);
