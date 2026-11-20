@@ -8,7 +8,7 @@
      table (d.degage) et ajoutés à la pose à chaque image, mélangés d'un instant au suivant.
      Ce qui se touche de près reste admis (TOL_TENU) : la barre posée sur les cuisses, le disque contre la poitrine. */
   const TENUS = /^(haltere|kb|barre|disque|balle|poignee)$/, TOL_TENU = 0.006, DEGAGE_MAX = 0.16;
-  const REG_CORPS = ['tete', 'cou', 'thorax', 'dos', 'abdomen', 'bassin', 'cuisse', 'jambe', 'pied'], REG_BRAS = ['epaule', 'bras', 'avant_bras'];
+  const REG_BRAS = ['epaule', 'bras', 'avant_bras'];
   /* Distance signée d'un point à une forme prête (p, q en tableaux) : négative dedans. */
   function distanceForme(f, x, y, z) {
     const vx = x - f.p[0], vy = y - f.p[1], vz = z - f.p[2], qx = -f.q[0], qy = -f.q[1], qz = -f.q[2], qw = f.q[3], s = f.s;

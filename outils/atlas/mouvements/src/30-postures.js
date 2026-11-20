@@ -7,7 +7,6 @@
   const J = (flex, abd, rot, genou, pointe, plus) => Object.assign({ flex, abd: abd || 0, rot: rot || 0, genou: genou || 0, pointe: pointe || 0 }, plus);
   const brasRepos = () => ({ plan: 90, elev: 7, rot: 0, coude: 12, pron: 90, doigts: 'detendu' });
   const pareil = spec => ({ G: Object.assign({}, spec), D: Object.assign({}, spec) });
-  const deux = f => ({ G: f(1, 'G'), D: f(-1, 'D') });
   function cloner(a) {
     if (a instanceof V3 || a instanceof Quat) return a.clone();
     if (Array.isArray(a)) return a.map(cloner);

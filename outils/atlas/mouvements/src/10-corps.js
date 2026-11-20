@@ -12,6 +12,18 @@
                hanche, rotation externe, flexion du genou, extension de la cheville (pointe du pied).
      Options communes aux bras : hausse (épaule haussée) et avance (épaule portée en avant), en degrés ; ceinture
      (part du mouvement du bras reprise par la ceinture scapulaire, à la place de la part ordinaire) ; doigts.
+     Bras posé par une cible, main refermée (doigts 'barre') : la main tourne autour de ce qu'elle tient pour rester
+     dans l'axe de l'avant-bras, le poignet ne casse pas. autour : l'axe d'une barre fixe (par défaut celui de la main
+     telle qu'elle est décrite), 'libre' quand ce qui est tenu tourne avec la main (poignée au bout d'un câble : la
+     main reste dans le prolongement de l'avant-bras), ou false pour garder la main comme elle est décrite ; casse :
+     extension gardée au poignet, en degrés (la barre d'un développé posée sur le talon de la main) ; aplomb = false
+     (ou un nombre : l'inclinaison tolérée au poignet, en degrés, au lieu de 20) :
+     le coude reste où le pôle le met, même si le poignet s'incline (mains jointes sur le bout d'une barre) ; cote
+     (avec autour, un vecteur) : 1 prise par-dessus, −1 par-dessous — la main n'a alors pas à être décrite ; libre
+     (avec cote) : ce qui est tenu d'une seule main s'incline avec elle, le poignet reste droit ; pivot : la main à
+     plat pivote sur sa paume pour suivre l'avant-bras (sur un ballon tenu entre les mains).
+     Le poignet ne se tord pas non plus : quand la main demande plus de pronation ou de supination que l'avant-bras
+     n'en a, le coude tourne autour de l'axe épaule–poignet (voir bras).
      Options des jambes : orteils (flexion des orteils quand le pied est sur la pointe). */
 
   /* La main sur une barre (voir Corps.prise). Les phalanges y sont des capsules, mesurées sur la peau de la main gauche
@@ -27,6 +39,14 @@
   };
   // La pulpe du pouce au repos (à l'opposé de son ongle) : vers les doigts, vers le petit doigt, hors de la paume.
   const PULPE_POUCE = [0.18, 0.97, -0.17];
+  // Pronation de l'avant-bras : ses limites, la torsion laissée au poignet avant que le coude ne tourne, et de combien
+  // le coude peut tourner autour de l'axe épaule–poignet pour l'éviter (voir Corps.bras).
+  const PRON_MIN = -15 * Math.PI / 180, PRON_MAX = 175 * Math.PI / 180, PRON_TOLEREE = 15 * Math.PI / 180, TOUR_COUDE_MAX = 85 * Math.PI / 180;
+  const INCL_TOLEREE = 20 * Math.PI / 180;   // inclinaison du poignet (vers le pouce ou le petit doigt) laissée telle quelle
+  const EXT_TOLEREE = 95 * Math.PI / 180;    // extension du poignet d'une main à plat (90° : l'avant-bras dressé sur la main)
+  const SOL_COUDE = 0.075;
+  // Bras dégagé (voir degagerTenu) : la portée du bras s'atteint en douceur sur ses deux derniers centimètres.
+  const PORTEE_DOUCE = 0.02;     // le coude à cette hauteur, la chair de l'avant-bras touche le sol
   const PEAU_PAUME = 0.0175;   // du plan de la main à la peau de la paume, sous la barre (un demi-millimètre écrasé)
   const RAYON_PRISE = 0.0145;  // ce que tient la main, par défaut : barre 13,5 mm, haltère 14,5 à 16 mm de rayon
   const RAYON_POING = 0.004;   // le poing : les doigts refermés jusqu'à la paume, comme sur une barre très fine
@@ -348,7 +368,7 @@
     /* Place tout le corps ; renvoie où sont les mains et les pieds (pour le matériel). */
     poser(p) {
       this.tronc(p);
-      const info = { prises: {}, axes: {}, poignets: {}, coudes: {}, paumes: {}, dirMains: {}, chevilles: {}, genoux: {}, orteils: {}, pieds: {}, angles: {}, tenus: [] };
+      const info = { prises: {}, axes: {}, poignets: {}, coudes: {}, flexions: {}, paumes: {}, dirMains: {}, chevilles: {}, genoux: {}, orteils: {}, pieds: {}, angles: {}, tenus: [] };
       for (const [c, s, x] of COTES) this.bras(c, s, x, p.bras[c], info);
       for (const [c, s, x] of COTES) this.jambe(c, s, x, p.jambes[c], info);
       info.epaules = { G: this.monde('humerus.G'), D: this.monde('humerus.D') };
@@ -386,12 +406,17 @@
     }
     /* Un bras (voir en tête de classe les trois façons de le décrire) ; doigts : 'barre', 'plat', 'detendu', 'poing'. */
     bras(c, s, x, b, info) {
+      // Entre deux poses clés écrites en angles (converties en cibles parce qu'une autre pose du mouvement en est
+      // une) : le bras se pose par ses angles (voir unifier).
+      if (b.parAngles) b = b.dg ? Object.assign({}, b.parAngles, { dg: b.dg }) : b.parAngles;
       const L = this.L, R = this.R[c], i = this.i;
       // Du plan de la main au point visé : l'axe de la barre tenue (voir prise), ou la peau de la paume, main ouverte.
       const barre = b.doigts === 'barre', rayon = b.rayon || RAYON_PRISE, hPrise = barre ? PEAU_PAUME + rayon : L.creux;
       const QT = this.qw[i.thorax].clone();
       const angles = b.elev != null;
-      let d1, d2, coude, fFixe = null, paume, dirMain = b.dirMain ? unite(b.dirMain) : null;
+      // autour = 'libre' : ce que la main tient tourne librement avec elle (poignée au bout d'un câble, d'un élastique) —
+      // la main reste dans le prolongement de l'avant-bras, comme si son sens n'était pas donné.
+      let d1, d2, coude, fFixe = null, paume, dirMain = b.dirMain && b.autour !== 'libre' ? unite(b.dirMain) : null;
       // Dégagement (voir degagerTenu) : le poignet est déplacé de b.dg (un vecteur, dans le monde) pour que ce que la
       // main tient s'écarte de la cuisse ou du buste ; la main garde son orientation, le coude suit.
       if (angles) {
@@ -416,8 +441,40 @@
         d1 = a1.applyQuaternion(QT); d2 = a2.applyQuaternion(QT); fFixe = f.applyQuaternion(QT);
         paume = pm.applyQuaternion(QT).normalize(); dirMain = dm.applyQuaternion(QT).normalize();
       } else paume = unite(b.paume || AZ);
+      // Une barre dont on donne l'axe (autour, un vecteur) et le côté de la prise (cote : 1 par-dessus, en pronation,
+      // −1 par-dessous, pour un axe qui va de la droite du corps vers sa gauche) : la main n'a pas à être décrite. Elle
+      // part dans le prolongement de la ligne épaule–barre, puis suit l'avant-bras autour de la barre (voir plus bas) —
+      // d'une pose clé à l'autre elle tourne ainsi d'un seul tenant, même d'un demi-tour (l'épaulé : de la barre qui
+      // pend à la barre sur les épaules), ce que le mélange de deux paumes ne sait pas faire.
+      // Avec libre = true, ce qui est tenu est à une seule main et s'incline avec elle (un haltère, un kettlebell) : la
+      // main reste dans le prolongement de l'avant-bras et sa poignée aussi près de l'axe donné que l'avant-bras le
+      // permet (elle lui reste perpendiculaire).
+      let axeLibre = null;
+      if (!angles && !b.dirBras && b.cote && b.autour instanceof V3) {
+        const axe = unite(b.autour);
+        let dm = perp(b.dirMain || b.prise.clone().sub(this.pw[i['humerus' + x]]), axe);
+        if (dm.length() < 1e-3) dm = perp(AY, axe);
+        dirMain = dm.normalize(); paume = axe.clone().cross(dirMain).multiplyScalar(b.cote);
+        if (b.libre) { axeLibre = axe; dirMain = null; }
+      }
       const dg = b.dg && b.dg.lengthSq() > 1e-10 ? b.dg : null, d1o = d1, d2o = d2;
-      if (dg) fFixe = null;   // le coude plie où le déplacement le mène
+      // Entre une pose où la main a un sens et une pose où elle prolonge l'avant-bras (kMain, voir mel) : le sens donné
+      // se mêle à celui de l'avant-bras, mesuré sur le bras posé sans lui.
+      const kMain = !angles && !b.dirBras && dirMain && b.kMain != null && b.kMain < 1 ? Math.max(0, b.kMain) : null;
+      const dirDonnee = kMain != null ? dirMain : null, paumeDonnee = kMain != null ? paume : null;
+      const meler = () => {
+        if (kMain == null) return;
+        const k = lisse(kMain);
+        dirMain = null; paume = paumeDonnee; resoudre();
+        // (La main qui prolonge l'avant-bras a sa paume telle qu'elle est décrite, redressée sur l'avant-bras.)
+        const dm = d2.clone().lerp(dirDonnee, k);
+        if (dm.length() < 1e-3) { dirMain = dirDonnee; return; }
+        dirMain = dm.normalize(); const pa = perp(paumeDonnee, dirMain); paume = pa.length() > 1e-3 ? pa.normalize() : paumeDonnee;
+      };
+      // Dégagé, le coude plie où le déplacement le mène ; presque tendu, il garde le sens de flexion des angles (fAnat).
+      const fAnat = dg ? fFixe : null;
+      if (dg) fFixe = null;
+      let vise = null;   // le poignet visé, quand le coude est libre de tourner autour de l'axe épaule–poignet
       const resoudre = () => {
         const ep = this.pw[i['humerus' + x]];
         if (angles || b.dirBras) {
@@ -425,47 +482,164 @@
           else { d1 = d1o; d2 = d2o; }
           coude = ep.clone().add(d1.clone().multiplyScalar(L.bras));
           if (dg) {
-            // Par angles : le poignet où les angles le mettent, déplacé ; le coude garde son côté.
-            const r = ik2(ep, coude.clone().add(d2.clone().multiplyScalar(L.avantBras)).add(dg), L.bras, L.avantBras, d1, L.coudeMin);
-            coude = r.milieu; d1 = unite(coude.clone().sub(ep)); d2 = unite(r.fin.clone().sub(coude));
+            // Par angles : le poignet où les angles le mettent, déplacé ; le coude garde son côté (bras tendu : celui
+            // où il plie d'ordinaire, à l'opposé de son sens de flexion).
+            // (Le poignet déplacé hors de portée, le bras se tend — puis se replie d'un coup dès que le poignet revient à
+            // portée : aux deux derniers centimètres, la portée s'atteint donc en douceur, le coude garde un reste de
+            // flexion qui s'efface à mesure que le poignet s'éloigne.)
+            const vers = coude.clone().add(d2.clone().multiplyScalar(L.avantBras)).add(dg).sub(ep), loin = vers.length(), seuil = L.bras + L.avantBras - PORTEE_DOUCE;
+            if (loin > seuil) vers.multiplyScalar((seuil + PORTEE_DOUCE * (1 - Math.exp(-(loin - seuil) / PORTEE_DOUCE))) / loin);
+            const r = ik2(ep, ep.clone().add(vers), L.bras, L.avantBras, fAnat ? d1.clone().addScaledVector(fAnat, -0.15) : d1, L.coudeMin);
+            coude = r.milieu; d1 = unite(coude.clone().sub(ep)); d2 = unite(r.fin.clone().sub(coude)); vise = r.fin;
           }
           return;
         }
         // La barre est posée sur la peau de la paume ; le poignet est en retrait, dans l'axe des doigts.
         const creux = (dg ? b.prise.clone().add(dg) : b.prise.clone()).sub(paume.clone().multiplyScalar(hPrise));
         const r = dirMain ? ik2(ep, creux.sub(dirMain.clone().multiplyScalar(L.main)), L.bras, L.avantBras, b.pole, L.coudeMin) : ik2(ep, creux, L.bras, L.prise, b.pole, L.coudeMin);
-        coude = r.milieu; d1 = unite(coude.clone().sub(ep)); d2 = unite(r.fin.clone().sub(coude));
+        coude = r.milieu; d1 = unite(coude.clone().sub(ep)); d2 = unite(r.fin.clone().sub(coude)); vise = r.fin;
       };
       // 1. La ceinture scapulaire (clavicule et omoplate) accompagne le bras, mesuré depuis le thorax ;
       //    elle peut en plus se hausser (haussement d'épaules) ou s'avancer.
+      meler();
       resoudre();
       const libre0 = arc(R.bras.d1.clone().applyQuaternion(QT), d1).multiply(QT);
       let qc = QT.clone().slerp(libre0, b.ceinture != null ? b.ceinture : K_CEINTURE);
       if (b.hausse || b.avance) qc = qAxe(AZ.clone().applyQuaternion(QT), s * rad(b.hausse || 0)).multiply(qAxe(AY.clone().applyQuaternion(QT), -s * rad(b.avance || 0))).multiply(qc);
       qc = this.sansRoulis(x, qc, QT);
       this.poserMonde('clavicule' + x, qc);
-      // 2. Le bras, depuis l'épaule ainsi déplacée.
-      resoudre();
-      const libre = arc(R.bras.d1.clone().applyQuaternion(QT), d1).multiply(QT);   // bras orienté, sans rotation sur son axe
-      // Sens où plie le coude ; bras tendu : à l'opposé du pôle (ou sans rotation sur l'axe).
-      let f = fFixe ? perp(fFixe, d1) : perp(d2, d1);
-      if (f.length() < 0.03) f = b.pole ? perp(b.pole.clone().multiplyScalar(-1), d1) : perp(R.bras.f.clone().applyQuaternion(libre), d1);
-      f.normalize();
-      const Q1 = qVers(R.bras.d1, R.bras.f, d1, f);
-      // Le coude : une charnière.
-      const theta = Math.atan2(d2.dot(f), d2.dot(d1));
-      let Q2 = qAxe(R.bras.h.clone().applyQuaternion(Q1), theta - R.bras.theta0).multiply(Q1);
-      Q2 = arc(R.bras.d2.clone().applyQuaternion(Q2), d2).multiply(Q2);
-      // L'humérus tourne sur son axe à l'épaule ; l'ulna suit le coude.
+      // 2. Le bras, depuis l'épaule ainsi déplacée. Le coude peut ensuite tourner autour de l'axe épaule–poignet
+      //    (tour, voir plus bas) : placer() pose le bras pour le tour courant et rend le sens où plie le coude.
+      let tour = 0, yCoude = 0;
+      meler();   // l'épaule a bougé avec la ceinture : le sens de la main se règle sur le bras d'à présent
+      const placer = () => {
+        resoudre();
+        yCoude = coude.y;
+        const libre = arc(R.bras.d1.clone().applyQuaternion(QT), d1).multiply(QT);   // bras orienté, sans rotation sur son axe
+        // Sens où plie le coude ; bras tendu : à l'opposé du pôle (ou sans rotation sur l'axe).
+        let f = fFixe ? perp(fFixe, d1) : perp(d2, d1);
+        if (fAnat) {
+          // Dégagé : à moins de 12° de flexion, le coude garde le sens de flexion des angles (le déplacement ne dit rien
+          // d'un bras tendu) ; il prend celui où le déplacement l'a plié à partir de 25°.
+          const k = borne((f.length() - 0.2) / 0.22, 0, 1), fa = perp(fAnat, d1).normalize();
+          f = k > 0 ? fa.multiplyScalar(1 - k).add(f.normalize().multiplyScalar(k)) : fa;
+        }
+        if (f.length() < 0.03) f = b.pole ? perp(b.pole.clone().multiplyScalar(-1), d1) : perp(R.bras.f.clone().applyQuaternion(libre), d1);
+        f.normalize();
+        if (tour) {
+          const ep = this.pw[i['humerus' + x]], q = qAxe(unite(vise.clone().sub(ep)), tour);
+          coude = ep.clone().add(coude.sub(ep).applyQuaternion(q)); d1 = unite(coude.clone().sub(ep)); d2 = unite(vise.clone().sub(coude));
+          f = perp(f.applyQuaternion(q), d1).normalize();
+        }
+        return f;
+      };
+      let f = placer();
+      // La main refermée sur une barre ou une poignée tourne autour d'elle pour rester dans l'axe de l'avant-bras : le
+      // poignet ne casse pas, sous quelque angle que le bras arrive, et ce qui est tenu ne bouge pas (son axe et sa
+      // place sont ceux de la prise). L'axe est celui de la main telle qu'elle est décrite (paume × doigts), ou
+      // b.autour (un vecteur : l'axe d'une barre fixe) ; b.autour = false garde la main comme elle est décrite.
+      // (Le poignet visé se déplace avec la main : trois passes suffisent.)
+      const suivre = b.autour == null ? barre : b.autour;
+      const axeBarre = suivre && vise && dirMain ? (suivre === true ? unite(paume.clone().cross(dirMain)) : unite(suivre)) : null;
+      const coteBarre = b.cote || (axeBarre && paume.dot(axeBarre.clone().cross(dirMain)) < 0 ? -1 : 1);
+      // b.casse : le poignet reste en extension de tant de degrés (la barre d'un développé, posée sur le talon de la main).
+      const casse = rad(b.casse || 0);
+      // (Le poignet visé se déplace avec la main, et l'avant-bras avec lui : on avance à pas amortis jusqu'à ce que la
+      // main ne tourne plus — sans amortissement, bras très plié, la recherche oscillait entre deux poses.)
+      const dirMain0 = dirMain ? dirMain.clone() : null;
+      const aligner = () => {
+        // Poignée libre : la paume se règle sur l'avant-bras (elle le suit autour de l'axe donné).
+        for (let essai = 0; axeLibre && essai < 4; essai++) {
+          const pa = axeLibre.clone().cross(d2).multiplyScalar(b.cote);
+          if (pa.length() < 0.1) break;   // l'avant-bras le long de la poignée : rien à régler
+          pa.normalize();
+          if (pa.dot(paume) > 0.99999) break;
+          paume = pa; f = placer();
+        }
+        // Main à plat qui pivote sur sa paume (pivot : posée sur un ballon, un disque tenu entre les deux mains) : les
+        // doigts suivent l'avant-bras, le poignet ne s'incline pas.
+        // (Quand l'avant-bras arrive droit dans la paume, il n'y a rien à suivre : la main garde le sens décrit, et
+        // passe de l'un à l'autre sans à-coup.)
+        for (let essai = 0; b.pivot && vise && dirMain && essai < 6; essai++) {
+          const dm = perp(d2, paume), k = borne((dm.length() - 0.15) / 0.3, 0, 1);
+          if (k <= 0) break;
+          dm.normalize().multiplyScalar(k).addScaledVector(dirMain0, 1 - k).normalize();
+          if (dm.dot(dirMain) > 0.99999) break;
+          if (essai) dm.lerp(dirMain, 0.4).normalize();
+          dirMain = dm; f = placer();
+        }
+        for (let essai = 0; axeBarre && essai < 8; essai++) {
+          const dm = perp(d2, axeBarre);
+          if (dm.length() < 0.2) break;   // l'avant-bras le long de la barre : rien à suivre
+          dm.normalize();
+          if (casse) dm.multiplyScalar(Math.cos(casse)).addScaledVector(axeBarre.clone().cross(dm), -coteBarre * Math.sin(casse)).normalize();
+          if (dm.dot(dirMain) > 0.99999) break;   // la main ne tourne plus (moins d'un quart de degré)
+          if (essai) dm.lerp(dirMain, 0.4).normalize();
+          dirMain = dm; paume = axeBarre.clone().cross(dirMain).multiplyScalar(coteBarre);
+          f = placer();
+        }
+      };
+      aligner();
+      // Monte le bras sur son sens de flexion : l'humérus tourne sur son axe à l'épaule, le coude est une charnière,
+      // la main prend son orientation. Sa rotation autour de l'avant-bras est la pronation : c'est le radius qui
+      // tourne autour de l'ulna. Rend la pronation que la main demande (non bornée, au plus près des limites).
+      const monter = () => {
+        const Q1 = qVers(R.bras.d1, R.bras.f, d1, f), theta = Math.atan2(d2.dot(f), d2.dot(d1));
+        let Q2 = qAxe(R.bras.h.clone().applyQuaternion(Q1), theta - R.bras.theta0).multiply(Q1);
+        Q2 = arc(R.bras.d2.clone().applyQuaternion(Q2), d2).multiply(Q2);
+        const dMain = dirMain || d2.clone(), QM = qVers(R.main.d, R.main.paume, dMain, paume);
+        let pron = s * torsion(QM.clone().multiply(Q2.clone().invert()), d2);
+        if (pron < (PRON_MIN + PRON_MAX) / 2 - Math.PI) pron += 2 * Math.PI;
+        return { Q1, Q2, QM, theta, dMain, pron };
+      };
+      let m = monter();
+      // Le poignet ne se tord pas et ne s'incline pas : c'est le coude qui se place.
+      //  — La pronation va de −15° à 175° (0° : paume en avant, position anatomique). Quand la main demande davantage,
+      //    le bras entier tourne autour de l'axe épaule–poignet, comme un vrai bras : le coude s'écarte ou se rentre.
+      //    Bras tendu, l'humérus tourne simplement sur son axe.
+      //  — L'avant-bras arrive droit sur ce que la main tient ou sur son appui : le coude vient dans le plan des doigts
+      //    (sous la barre d'un développé, à l'aplomb des mains d'une traction) ; sur une main à plat, il ne se couche
+      //    pas vers les doigts (le poignet ne se casse pas à plus de 95°).
+      // Ne vaut que si le coude est libre (bras posé par une cible, ou dégagé). Une torsion de moins de 15° et une
+      // inclinaison de moins de 20° restent au poignet ; le coude ne tourne pas de plus de 85°, et le tour cherché est
+      // le plus proche de la pose décrite (descente depuis elle : le mouvement reste continu).
+      const horsLimites = p => p - Math.min(PRON_MAX + PRON_TOLEREE, Math.max(PRON_MIN - PRON_TOLEREE, p));
+      const incline = b.aplomb !== false && (barre || b.doigts === 'plat'), inclToleree = typeof b.aplomb === 'number' ? rad(b.aplomb) : INCL_TOLEREE;
+      const cout = t => {
+        tour = t; f = placer();
+        const bas = coude.y < SOL_COUDE && coude.y < yCoude - 1e-4;   // pas vers le sol (les pompes, la poitrine près du sol)
+        aligner(); m = monter();
+        const ep = horsLimites(m.pron), cote = incline && dirMain ? Math.asin(borne(d2.dot(unite(paume.clone().cross(dirMain))), -1, 1)) : 0;
+        const ei = Math.max(0, Math.abs(cote) - inclToleree);
+        // Main à plat sur un appui : le poignet ne se casse pas au-delà de 95° (l'avant-bras ne se couche pas vers les doigts).
+        const ee = incline && dirMain && b.doigts === 'plat' ? Math.max(0, Math.atan2(d2.dot(paume), d2.dot(dirMain)) - EXT_TOLEREE) : 0;
+        return ep * ep + ei * ei + ee * ee + (bas ? 10 : 0);
+      };
+      if (vise) {
+        const c0 = cout(0), pas = rad(6);
+        if (c0 > 1e-5) {
+          const cp = cout(pas), cm = cout(-pas), sens = cp < cm ? 1 : -1;
+          // Le coude tourne du côté qui soulage le poignet. Quand les deux côtés se valent (le coude décrit est juste à
+          // l'opposé de l'aplomb), rien ne dit lequel prendre : le tour permis se réduit alors jusqu'à rien, pour que
+          // le coude ne saute pas d'un côté à l'autre d'une image à la suivante — c'est la pose décrite qu'il faut revoir
+          // (le crible des poignets le dit). La mesure est la pente de l'excès (degré d'excès par degré de tour : elle
+          // ne dépend pas de la taille de l'excès) ; à partir d'un quart, le coude a tout son tour.
+          const permis = TOUR_COUDE_MAX * borne(Math.abs(Math.sqrt(cp) - Math.sqrt(cm)) / (2 * pas) / 0.25, 0, 1);
+          let t = 0, mieux = c0;
+          if (Math.min(cp, cm) < c0 && permis > 1e-3) {
+            t = sens * Math.min(pas, permis); mieux = Math.min(cp, cm);
+            for (let n = 2; n * pas <= permis + 1e-9; n++) { const c2 = cout(sens * pas * n); if (c2 >= mieux) break; t = sens * pas * n; mieux = c2; }
+            let g = t - pas, h = t + pas;
+            // À coût égal (les deux dans les tolérances), le plus petit tour.
+            for (let n = 0; n < 5; n++) { const x1 = g + (h - g) / 3, x2 = h - (h - g) / 3, c1 = cout(x1), c2 = cout(x2); if (c1 < c2 || (c1 === c2 && sens > 0)) h = x2; else g = x1; }
+            t = borne((g + h) / 2, -permis, permis);
+          }
+          cout(t);
+        }
+      }
+      const { Q1, Q2, QM, theta, dMain } = m, pron = Math.min(PRON_MAX, Math.max(PRON_MIN, m.pron));
       this.poserMonde('humerus' + x, Q1);
       this.poserMonde('ulna' + x, Q2, coude);
-      // La main. Sa rotation autour de l'avant-bras est la pronation : c'est le radius qui tourne autour de l'ulna,
-      // de 0° (paume en avant, position anatomique) à 175° environ ; le poignet prend le reste.
-      const dMain = dirMain || d2.clone();
-      const QM = qVers(R.main.d, R.main.paume, dMain, paume);
-      let pron = s * torsion(QM.clone().multiply(Q2.clone().invert()), d2);
-      if (pron < -Math.PI / 3) pron += 2 * Math.PI;
-      pron = Math.min(rad(175), Math.max(rad(-15), pron));
       this.poserMonde('radius' + x, qAxe(d2, s * pron).multiply(Q2));
       this.poserMonde('main' + x, QM);
       // Doigts : refermés sur la barre (voir prise), poing serré (refermés jusqu'à la paume, sur une barre très fine),
@@ -484,12 +658,15 @@
       const poignet = this.pw[i['main' + x]].clone();
       info.poignets[c] = poignet;
       info.coudes[c] = coude.clone();
-      info.paumes[c] = paume.clone(); info.dirMains[c] = dMain.clone();
+      info.flexions[c] = f.clone();   // le sens où plie le coude (défini même bras tendu) : la pointe du coude est à l'opposé
+      // (La paume telle qu'elle est posée : d'équerre avec le sens de la main — celle qu'on a décrite ne l'est pas toujours.)
+      const paumePosee = perp(paume, dMain);
+      info.paumes[c] = paumePosee.lengthSq() > 1e-8 ? paumePosee.normalize() : paume.clone(); info.dirMains[c] = dMain.clone();
       info.prises[c] = poignet.clone().add(dMain.clone().multiplyScalar(L.main)).add(paume.clone().multiplyScalar(hPrise));
       info.axes[c] = paume.clone().cross(dMain).normalize();
       // Ce que la main serre, pour le moteur : la peau de la main s'écrase à sa surface au lieu d'y entrer (voir tenus).
       if (barre) info.tenus.push({ c: info.prises[c].clone(), a: info.axes[c].clone(), r: rayon, h: 0.065 });
-      info.angles[c] = { pronation: pron * 180 / Math.PI, coude: theta * 180 / Math.PI };
+      info.angles[c] = { pronation: pron * 180 / Math.PI, coude: theta * 180 / Math.PI, torsion: (m.pron - pron) * 180 / Math.PI, tour: tour * 180 / Math.PI };
     }
     /* La main refermée sur une barre de rayon r : les rotations des os des doigts (q[doigt][0 à 2], par rapport à leur
        parent). Tout se calcule dans le repère de la main au repos, une fois par côté et par rayon : la prise ne dépend pas
@@ -567,7 +744,7 @@
       const cle = c + 'plat';
       if (this.prisesFaites[cle]) return this.prisesFaites[cle];
       const x = c === 'G' ? '.G' : '.D', R = this.R[c], L = this.L, T = n => this.tete[this.i[n + x]];
-      const d = R.main.d, pm = R.main.paume, poignet = T('main'), plan = L.creux + 0.006;
+      const pm = R.main.paume, poignet = T('main'), plan = L.creux + 0.006;
       // L'os j entre dans la surface : la pulpe de sa capsule, à son bout ou en son milieu.
       const dessous = (pts, ep, j) => [pts[j + 1], pts[j].clone().add(pts[j + 1]).multiplyScalar(0.5)].some(p => p.clone().sub(poignet).dot(pm) > plan - ep[j] + ECRASE);
       const points = (f, q1, q2, q3) => {

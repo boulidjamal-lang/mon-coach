@@ -53,7 +53,10 @@
         const coude = d.tenu.some(e => e.t === 'levier' && e.bati === 'devant'), devant = coude || zP - zC > 0.6;
         const zF = devant ? zP + (coude ? 0.45 : 0.14) : Math.min(zC, zP) - 0.6, H = Math.max(1.5, yP + 0.12), f = deplacer(bati(C, H, 0), V(0, 0, zF), devant ? qY(180) : null);
         for (const p of pivots) { f.push(tube(V(Math.sign(p.x || 1) * Math.max(0.2, Math.abs(p.x)), H, zF), p, 0.045, C.cadre), cyl(0.042, 0.05, p.x, p.y, p.z, C.cadre, 0.5, null, 0.01)); }
-        if (pivots.length > 1 && !coude) f.push(tube(pivots[0], pivots[1], 0.045, C.cadre));   // (aux coudes, la traverse passerait dans les bras)
+        // La traverse d'un pivot à l'autre : pas aux coudes (elle passerait dans les bras), ni quand les pivots sont dans
+        // l'axe des épaules ou des hanches (elle passerait dans le buste) — chaque pivot tient alors par son seul bras.
+        const milieu = pivots[0].clone().add(pivots[1] || pivots[0]).multiplyScalar(0.5), dansLeCorps = surSegment(info.bassin, info.cou, milieu.x, milieu.y, milieu.z);
+        if (pivots.length > 1 && !coude && Math.hypot(dansLeCorps[0] - milieu.x, dansLeCorps[1] - milieu.y, dansLeCorps[2] - milieu.z) > 0.2) f.push(tube(pivots[0], pivots[1], 0.045, C.cadre));
         f.push(tube(V(0, 0.03, zF), V(0, 0.03, zC), 0.05, C.cadre));
         poserObjet(horsCadre(f), V(), null, d.fixe);
         if (!d.levee) d.levee = (i2, u) => 0.26 * Math.max(0, Math.min(1, u));
@@ -113,9 +116,18 @@
   }
   /* Deux poses clés ne se mélangent que si elles décrivent chaque membre de la même façon. Quand l'une donne des angles
      et l'autre une cible (main posée, pied au sol), celle qui est en angles est convertie : on pose le corps, et on
-     note où arrivent la main ou le pied. */
+     note où arrivent la main ou le pied. Le bras converti garde ses angles ou ses directions (parAngles) : entre deux
+     poses clés qui les ont toutes deux, il va de l'une à l'autre par eux — la main décrit un arc autour de l'épaule, au lieu
+     d'une ligne droite qui la ferait passer contre l'épaule, le bras replié (du saut bras en l'air à la station
+     debout, dans un burpee). */
+  /* Le pôle d'un bras déjà posé : où pointe son coude, vu de la ligne de l'épaule au poignet. Bras tendu, le coude est
+     sur cette ligne et sa place ne dit plus rien : c'est alors l'opposé du sens où il plie (2 cm de ce sens suffisent à
+     trancher, sans peser quand le coude est plié). De longueur 1, comme les pôles écrits à la main : mêlé à un autre
+     d'une pose à la suivante, il pèse autant que lui (le pôle d'un bras tendu, long de 2 cm, ne pesait rien : le
+     coude gardait le côté de l'autre pose jusqu'au dernier instant, puis basculait). */
+  const poleDe = (info, k) => perp(info.coudes[k].clone().sub(info.epaules[k]), unite(info.poignets[k].clone().sub(info.epaules[k]))).addScaledVector(info.flexions[k], -0.02).normalize();
   const enCible = {
-    bras: (info, k, b) => ({ prise: info.prises[k].clone(), pole: info.coudes[k].clone().sub(info.epaules[k]), paume: info.paumes[k].clone(), dirMain: info.dirMains[k].clone(), doigts: b.doigts, hausse: b.hausse, avance: b.avance, ceinture: b.ceinture }),
+    bras: (info, k, b) => ({ prise: info.prises[k].clone(), pole: poleDe(info, k), paume: info.paumes[k].clone(), dirMain: info.dirMains[k].clone(), doigts: b.doigts, hausse: b.hausse, avance: b.avance, ceinture: b.ceinture }),
     jambes: (info, k, j) => ({ cheville: info.chevilles[k].clone(), pole: info.genoux[k].clone().sub(info.hanches[k]), pied: info.pieds[k].pied.clone(), hautPied: info.pieds[k].hautPied.clone(), orteils: j.orteils })
   };
   const parCible = { bras: b => b.elev == null && !b.dirBras, jambes: j => j.flex == null };
@@ -123,7 +135,11 @@
     for (const m of ['bras', 'jambes']) for (const k of ['G', 'D']) {
       const n = poses.filter(p => parCible[m](p[m][k])).length;
       if (!n || n === poses.length) continue;
-      for (const p of poses) if (!parCible[m](p[m][k])) { const info = c.poser(p); p[m] = Object.assign({}, p[m], { [k]: enCible[m](info, k, p[m][k]) }); }
+      for (const p of poses) if (!parCible[m](p[m][k])) {
+        const info = c.poser(p), cible = enCible[m](info, k, p[m][k]);
+        if (m === 'bras') cible.parAngles = p[m][k];
+        p[m] = Object.assign({}, p[m], { [k]: cible });
+      }
     }
     return poses;
   }
@@ -232,7 +248,6 @@
     for (const e of d.tenu) {
       if (eAvant) marquer();
       eAvant = e;
-      const mod = cle => modeles[cle] || (modeles[cle] = null);
       if (e.t === 'barre') {
         const axe = info.prises.G.clone().sub(info.prises.D);
         const cle = e.ez ? 'ez' : 'barre' + (e.l || '') + (e.d == null ? '' : e.d);

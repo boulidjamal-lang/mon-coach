@@ -7350,6 +7350,119 @@ test('atlas 3D : debout, les gestes tiennent en équilibre sur leurs pieds', asy
   assert.ok(releve.length > 0 && /derrière les talons/.test(releve.join(' ')), 'un soulevé au bassin assis 30 cm en arrière est relevé : ' + releve.length + ' instant(s)');
 });
 
+/* Une main refermée tient quelque chose. Le contrôle (outils/atlas/mouvements/mains-vides.mjs) mesure, à cinq instants de
+   chaque mouvement qui a du matériel, la distance du creux de chaque main fermée à la forme de matériel la plus proche :
+   au-delà de 6 cm, la main serre le vide. C'est ce qui a montré un développé landmine décrit comme un développé couché
+   (les mains écartées, la barre au milieu), un haltère tenu d'une main et l'autre poing fermé à côté, des mains qui
+   quittaient une barre fixe en cours de geste, des machines sans poignées. */
+test('atlas 3D : une main refermée tient toujours quelque chose', async () => {
+  const { pathToFileURL } = require('url'), dossier = path.join(RACINE, 'outils', 'atlas', 'mouvements');
+  const { mainsVides, ADMIS } = await import(pathToFileURL(path.join(dossier, 'mains-vides.mjs')).href);
+  const { chargerAtlas, chargerMouvements, FICHIER_ATLAS, FICHIER_MOUVEMENTS } = await import(pathToFileURL(path.join(dossier, 'silhouettes.mjs')).href);
+  const atlas = chargerAtlas(FICHIER_ATLAS), M = chargerMouvements(FICHIER_MOUVEMENTS), corps = new M.Corps(atlas.E.squelette, atlas.peau);
+  const defauts = []; let juges = 0;
+  for (const spec of Object.keys(M.EXERCICES)) {
+    const r = mainsVides(M, corps, M.TEINTES.clair, spec);
+    assert.ok(!r.erreur, spec + ' : ' + r.erreur);
+    if (!r.materiel || ADMIS.test(spec)) continue;
+    juges++;
+    if (r.fautes.length) { const f = r.fautes.reduce((a, b) => b.d > a.d ? b : a); defauts.push(spec + ' : main ' + f.k + ' à ' + (f.d * 100).toFixed(0) + ' cm de tout (u=' + f.u + ')'); }
+  }
+  assert.ok(juges > 600, 'les mouvements avec matériel sont bien jugés : ' + juges);
+  assert.deepEqual(defauts, [], 'mains fermées sur rien');
+  // Le contrôle voit bien une main vide : la même barre de curl, dessinée 30 cm plus haut que les mains.
+  const faux = Object.assign({}, M, { materielDe: (...a) => M.materielDe(...a).map(f => Object.assign({}, f, { p: [f.p[0], f.p[1] + 0.3, f.p[2]] })) });
+  const releve = mainsVides(faux, corps, M.TEINTES.clair, 'curl barre').fautes;
+  assert.ok(releve.length === 10 && releve.every(f => f.d > 0.2), 'une barre dessinée 30 cm au-dessus des mains est relevée aux cinq instants, des deux mains : ' + releve.length);
+});
+
+/* Les poignets restent dans leurs limites. Le solveur du bras place le coude pour que le poignet ne se torde pas, ne
+   s'incline pas et ne se casse pas au-delà de l'équerre ; le contrôle (outils/atlas/mouvements/poignets.mjs) mesure,
+   à neuf instants de chaque mouvement, la flexion, l'extension, l'inclinaison et la torsion de chaque poignet. Avant
+   lui, 134 mouvements tenaient leur prise le poignet plié de plus de 30°. Les gestes qui dépassent pour de bon ces
+   limites (pompes mains sous le corps, mains derrière la tête…) sont nommés, avec ce qu'on leur accorde. */
+test('atlas 3D : les poignets restent dans leurs limites (le coude se place pour eux)', async () => {
+  const { pathToFileURL } = require('url'), dossier = path.join(RACINE, 'outils', 'atlas', 'mouvements');
+  const { poignets, depassements, ADMIS, LIMITES } = await import(pathToFileURL(path.join(dossier, 'poignets.mjs')).href);
+  const { chargerAtlas, chargerMouvements, FICHIER_ATLAS, FICHIER_MOUVEMENTS } = await import(pathToFileURL(path.join(dossier, 'silhouettes.mjs')).href);
+  const atlas = chargerAtlas(FICHIER_ATLAS), M = chargerMouvements(FICHIER_MOUVEMENTS), corps = new M.Corps(atlas.E.squelette, atlas.peau), C = M.TEINTES.clair;
+  const specs = Object.keys(M.EXERCICES), defauts = []; let admis = 0;
+  for (const spec of specs) {
+    const r = poignets(M, corps, C, spec);
+    assert.ok(!r.erreur, spec + ' : ' + r.erreur);
+    const hors = depassements(spec, r.pire);
+    if (hors.length) defauts.push(spec + ' : ' + hors.map(([c, v, l]) => `${c} ${v.toFixed(0)}° (limite ${l}°)`).join(', '));
+    else if (Object.keys(LIMITES).some(c => r.pire[c] > LIMITES[c])) admis++;
+  }
+  assert.deepEqual(defauts, [], 'poignets hors limites');
+  assert.ok(admis > 0 && admis <= 25, 'peu de gestes sont admis au-delà des limites : ' + admis);
+  for (const [motif] of ADMIS) assert.ok(specs.some(sp => motif.test(sp)), 'chaque exception sert encore : ' + motif);
+  // Le contrôle voit bien un poignet cassé : une élévation latérale, le poignet gauche fléchi de 100°.
+  const casse = Object.assign({}, M, { poseA: (...a) => { const p = M.poseA(...a); return Object.assign({}, p, { bras: Object.assign({}, p.bras, { G: Object.assign({}, p.bras.G, { poignet: 100 }) }) }); } });
+  const r = poignets(casse, corps, C, 'elevation lat hal');
+  assert.ok(Math.abs(r.pire.flex - 100) < 1 && /main G/.test(r.ou.flex), 'la flexion imposée est mesurée : ' + r.pire.flex.toFixed(1) + '°');
+  assert.deepEqual(depassements('elevation lat hal', r.pire).map(h => h[0]), ['flex'], 'et relevée comme un dépassement');
+  assert.deepEqual(depassements('elevation lat hal', poignets(M, corps, C, 'elevation lat hal').pire), [], 'le geste tel quel n\'en a pas');
+});
+
+/* Rien ne saute d'une image à la suivante. Les contrôles à quelques instants ne voient pas ce qui se passe entre deux :
+   le contrôle des à-coups (outils/atlas/mouvements/sauts.mjs) joue chaque mouvement à sa vraie cadence, trente images
+   par seconde, et relève un coude ou un poignet qui se déplacent d'un coup, une main qui pivote d'un coup, un coude
+   qui file plus vite qu'aucun bras. Il a montré des coudes téléportés de 40 à 50 cm (épaulé), des mains menées en
+   ligne droite à travers l'épaule (burpee, étirements), des bras qui basculaient d'un côté à l'autre du poignet
+   (développé Arnold, traction), des haltères qui sautaient de côté au passage du genou. */
+test("atlas 3D : aucun coude, aucun poignet ne saute et aucune main ne pivote d'un coup, d'une image à la suivante", async () => {
+  const { pathToFileURL } = require('url'), dossier = path.join(RACINE, 'outils', 'atlas', 'mouvements');
+  const { sauts } = await import(pathToFileURL(path.join(dossier, 'sauts.mjs')).href);
+  const { chargerAtlas, chargerMouvements, FICHIER_ATLAS, FICHIER_MOUVEMENTS } = await import(pathToFileURL(path.join(dossier, 'silhouettes.mjs')).href);
+  const atlas = chargerAtlas(FICHIER_ATLAS), M = chargerMouvements(FICHIER_MOUVEMENTS), corps = new M.Corps(atlas.E.squelette, atlas.peau), C = M.TEINTES.clair;
+  const defauts = [], pc = t => (t * 100).toFixed(0) + ' % de la période';
+  for (const spec of Object.keys(M.EXERCICES)) {
+    const r = sauts(M, corps, C, spec);
+    assert.ok(!r.erreur, spec + ' : ' + r.erreur);
+    if (r.coude.saut) defauts.push(`${spec} : le coude ${r.coude.cote} saute de ${(r.coude.d * 100).toFixed(1)} cm à ${pc(r.coude.t)}`);
+    if (r.poignet.saut) defauts.push(`${spec} : le poignet ${r.poignet.cote} saute de ${(r.poignet.d * 100).toFixed(1)} cm à ${pc(r.poignet.t)}`);
+    if (r.main.saut) defauts.push(`${spec} : la main ${r.main.cote} pivote de ${r.main.a.toFixed(0)}° d'un coup à ${pc(r.main.t)}`);
+    if (r.coude.vite) defauts.push(`${spec} : le coude ${r.coude.cote} file à ${r.coude.v.toFixed(1)} m/s à ${pc(r.coude.t)}`);
+  }
+  assert.deepEqual(defauts, [], 'à-coups');
+  // Le contrôle voit bien un à-coup : la même élévation latérale, où le bras gauche change d'un coup au tiers du geste
+  // (relevé de 30° ; puis seulement retourné de 60°, sans que rien d'autre ne bouge).
+  const aCoup = plus => Object.assign({}, M, { poseA: (d, t, u) => { const p = M.poseA(d, t, u); if (u != null || (((t % d.periode) + d.periode) % d.periode) / d.periode < 0.3) return p; return Object.assign({}, p, { bras: Object.assign({}, p.bras, { G: Object.assign({}, p.bras.G, plus(p.bras.G)) }) }); } });
+  const leve = sauts(aCoup(b => ({ elev: b.elev + 30 })), corps, C, 'elevation lat hal');
+  assert.ok(leve.poignet.saut && leve.poignet.cote === 'G' && leve.poignet.d > 0.2, 'un bras relevé de 30° d\'un coup : le poignet saute de ' + (leve.poignet.d * 100).toFixed(0) + ' cm');
+  assert.ok(leve.main.saut && leve.main.a > 25, 'et la main pivote de ' + leve.main.a.toFixed(0) + '°');
+  const tourne = sauts(aCoup(b => ({ pron: b.pron + 60 })), corps, C, 'elevation lat hal');
+  assert.ok(tourne.main.saut && tourne.main.a > 50 && !tourne.poignet.saut && !tourne.coude.saut, 'une main retournée de 60° d\'un coup est relevée, elle seule : ' + tourne.main.a.toFixed(0) + '°');
+  const telle = sauts(M, corps, C, 'elevation lat hal');
+  assert.ok(!telle.coude.saut && !telle.poignet.saut && !telle.main.saut && !telle.coude.vite, 'le geste tel quel n\'a pas d\'à-coup');
+});
+
+/* D'une pose clé à la suivante, tout se mélange — y compris ce qu'une seule des deux poses donne. Un haussement
+   d'épaules ne donnait sa hausse que dans la pose du haut : gardée telle quelle d'un bout à l'autre, les épaules
+   restaient levées et les neuf haussements d'épaules ne bougeaient pas. De même une main dont le sens n'est décrit
+   que dans une pose, un bras écrit en angles entre deux poses écrites en cibles, la torsion du buste d'un relevé turc. */
+test("atlas 3D : ce qu'une seule pose clé décrit se mélange aussi (les haussements d'épaules montent)", async () => {
+  const { pathToFileURL } = require('url'), dossier = path.join(RACINE, 'outils', 'atlas', 'mouvements');
+  const { chargerAtlas, chargerMouvements, FICHIER_ATLAS, FICHIER_MOUVEMENTS } = await import(pathToFileURL(path.join(dossier, 'silhouettes.mjs')).href);
+  const atlas = chargerAtlas(FICHIER_ATLAS), M = chargerMouvements(FICHIER_MOUVEMENTS), corps = new M.Corps(atlas.E.squelette, atlas.peau), C = M.TEINTES.clair;
+  const haussements = Object.keys(M.EXERCICES).filter(sp => /^elevation shrug\b/.test(sp));
+  assert.ok(haussements.length >= 9, 'les haussements d\'épaules de la table : ' + haussements.length);
+  for (const spec of haussements) {
+    const d = M.definir(spec, corps, C), y = [0, 0.5, 1].map(u => corps.poser(M.poseA(d, 0, u)).epaules.G.y);
+    assert.ok(y[2] - y[0] > 0.02 && y[1] > y[0] + 0.008 && y[1] < y[2] - 0.008, `${spec} : l'épaule monte peu à peu (${y.map(v => (v * 100).toFixed(1)).join(' → ')} cm)`);
+  }
+  // Le mélange lui-même : un réglage absent d'une pose y vaut sa valeur ordinaire ; un sens de main absent s'efface.
+  const V = (x, y, z) => new M.V3(x, y, z), cible = plus => Object.assign({ prise: V(0.3, 1, 0.2), pole: V(1, 0, 0), paume: V(0, -1, 0), doigts: 'barre' }, plus);
+  const a = M.mel(cible({}), cible({ hausse: 20, casse: 40 }), 0.25);
+  assert.ok(Math.abs(a.hausse - 5) < 1e-9 && Math.abs(a.casse - 10) < 1e-9, 'hausse et casse partent de zéro : ' + a.hausse + ', ' + a.casse);
+  const b = M.mel(cible({ dirMain: V(0, 0, 1) }), cible({}), 0.25);
+  assert.ok(b.dirMain && Math.abs(b.kMain - 0.75) < 1e-9, 'le sens de la main pèse de moins en moins : ' + b.kMain);
+  assert.equal(M.mel(cible({ dirMain: V(0, 0, 1) }), cible({ dirMain: V(1, 0, 0) }), 0.5).kMain, undefined, 'deux mains décrites : rien à effacer');
+  const tronc = u => M.mel({ bassin: { pos: V(0, 1, 0) }, bras: {}, jambes: {} }, { bassin: { pos: V(0, 1, 0) }, torsion: 40, bras: {}, jambes: {} }, u);
+  assert.ok(Math.abs(tronc(0.5).torsion - 20) < 1e-9 && tronc(0).torsion === 0, 'une torsion donnée dans une seule pose part de zéro');
+});
+
 /* Le déroulé des soulevés de terre et du squat, lu sur le squelette (sans navigateur) : angles des genoux, du buste et
    des tibias, place de la barre. Ce sont les repères d'un geste juste, vérifiés à onze instants. */
 test('atlas 3D : soulevés de terre et squat se déroulent comme le geste réel', async () => {

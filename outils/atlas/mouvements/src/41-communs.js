@@ -36,6 +36,48 @@
     }
     return { a: A, b: Z };
   }
+  /* Deux mains sur un même objet. Les bras restent décrits par angles ; on en reprend le milieu des mains, le côté des
+     coudes et le sens des mains, et l'on pose les deux mains de part et d'autre de ce milieu, à `demi` de chaque côté
+     le long de la ligne des épaules. Paumes face à face (à plat sur l'objet, ou refermées sur son bord), ou — `memeSens`
+     — tournées comme les angles le disaient (deux mains côte à côte sur une même poignée). */
+  function mainsEnsemble(c, p, demi, doigts, memeSens, rayon) {
+    const i = c.poser(p), M = i.prises.G.clone().add(i.prises.D).multiplyScalar(0.5), X = AX.clone().applyQuaternion(i.qThorax);
+    for (const [k, s] of COTES) {
+      const paume = memeSens ? perp(i.paumes[k], X).normalize() : X.clone().multiplyScalar(-s);
+      p.bras[k] = { prise: M.clone().addScaledVector(X, s * demi), pole: poleDe(i, k), paume, dirMain: perp(i.dirMains[k], memeSens ? paume : X).normalize(), doigts: doigts || 'plat' };
+      if (rayon) p.bras[k].rayon = rayon;
+    }
+    return p;
+  }
+  /* Un haltère tenu à deux mains par une de ses têtes (pull-over, extension des triceps au-dessus de la tête) : il
+     pend à la verticale sous les mains, les deux paumes en coupe sous la tête du haut, de part et d'autre de la
+     poignée, les doigts vers l'arrière et un peu l'un vers l'autre. Les poignets restent là où les angles les
+     mettaient, rapprochés à `ecart` de part et d'autre de leur milieu. L'haltère se dessine avec haltereEnCoupe. */
+  function mainsEnCoupe(c, p, ecart) {
+    const i = c.poser(p), W = i.poignets.G.clone().add(i.poignets.D).multiplyScalar(0.5), L = c.L, e = ecart || 0.085;
+    for (const [k, s] of COTES) {
+      const doigts = unite(V(-s * 0.5, 0, -0.87)), poignet = W.clone().add(V(s * e, 0, 0));
+      p.bras[k] = { prise: poignet.addScaledVector(doigts, L.main).add(V(0, L.creux, 0)), pole: poleDe(i, k), paume: V(0, 1, 0), dirMain: doigts, doigts: 'plat' };
+    }
+    return p;
+  }
+  function haltereEnCoupe(C, k) {
+    const f = MAT.haltere(C, k);
+    return (info, u, sortie) => poserObjet(f, info.prises.G.clone().add(info.prises.D).multiplyScalar(0.5).add(V(0, -0.068, 0)), arc(AX, AY), sortie);
+  }
+  /* Une poignée dans la main k (machines : de part et d'autre du siège, au bout des épaulières…) : un manchon dans
+     l'axe de la prise, au bout d'une tige qui vient du point `depuis` du bâti. Une main refermée tient quelque chose. */
+  function poigneeEnMain(C, info, k, depuis, sortie) {
+    const pr = info.prises[k], ax = unite(info.axes[k].clone()), a = pr.clone().addScaledVector(ax, -0.06), b = pr.clone().addScaledVector(ax, 0.06);
+    sortie.push(pret(seg(a, b, 0.0145, C.gomme, 0)), pret(seg(a.distanceTo(depuis) < b.distanceTo(depuis) ? a : b, depuis, 0.012, C.cadre, 0.5)));
+  }
+  /* Un haltère tenu entre les pieds : debout entre les deux avant-pieds (son axe dans celui des tibias), une tête
+     au-dessus des cous-de-pied, l'autre sous les semelles — couché en travers, ses têtes entraient dans les pieds. */
+  function haltereEntrePieds(C, info, sortie) {
+    const ch = info.chevilles.G.clone().add(info.chevilles.D).multiplyScalar(0.5), tibia = unite(ch.clone().sub(info.genoux.G.clone().add(info.genoux.D).multiplyScalar(0.5)));
+    const avant = perp(info.orteils.G.clone().add(info.orteils.D).multiplyScalar(0.5).sub(ch), tibia).normalize();
+    poserObjet(MAT.haltere(C, 1), ch.addScaledVector(tibia, 0.035).addScaledVector(avant, 0.095), arc(AX, tibia), sortie);
+  }
   /* Barre hexagonale (trap bar) : un cadre autour du corps, une poignée de chaque côté, les disques au bout.
      Elle suit les mains : les poignées passent par elles, quel que soit leur écart. */
   function barreHexagonale(C) {

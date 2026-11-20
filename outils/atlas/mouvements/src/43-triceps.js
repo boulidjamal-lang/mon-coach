@@ -25,18 +25,21 @@
         p.jambes.G = pied(c, 1, { z: 0.3 }); p.jambes.D = pied(c, -1, { z: -0.3, pointe: 25 });
         a = B(0, 150, 0, 128, pron); b = B(0, 150, 0, 8, pron); ancre = V(0, 2.0, -0.75); vue = { az: 110, el: 8 };
       } else { a = B(m === 'GD' ? 6 : 20, 168, 0, 132, pron); b = B(m === 'GD' ? 6 : 20, 174, 0, 8, pron); ancre = o.katana ? (s => V(s * 0.55, 0.1, -0.2)) : V(0, 0.15, -0.7); }
+      // Katana : la poulie est sur le côté du bras qui travaille ; vu de trois quarts arrière par l'autre côté, elle ne cache pas le corps.
+      if (o.katana && !o.haute) vue = { az: m === 'D' ? 145 : 215, el: 8 };
       if (o.hal1) {
         // Un seul haltère tenu à deux mains, à la verticale.
         a = B(4, 168, -8, 128, 90); b = B(4, 174, -6, 8, 90);
-        tenu = [{ t: 'haltere', m: 'G', k: 1.2 }];
+        tenu = [];
       }
     } else if (o.kickback) {
       if (!o.tabouret && !o.penche) o.penche = 72;
       if (o.tabouret) o.penche = 48;
       P = postureDe(c, o, C); p = P.p; fixe = P.fixe; vue = { az: 110, el: 8 };
-      a = B(0, -6, 0, 96, pron === 180 ? 90 : pron); b = B(0, -12, 0, 4, pron === 180 ? 90 : pron);
+      // (Le coude un peu écarté du corps : la poignée ne frôle plus la cuisse au départ.)
+      a = B(-50, -8, 0, 96, pron === 180 ? 90 : pron); b = B(-50, -14, 0, 4, pron === 180 ? 90 : pron);
       ancre = V(0, 0.15, 0.95);
-      if (m !== 'GD' && !o.tabouret) { const t = c.tronc(p); autre = { prise: t.hanches.D.clone().add(V(-0.06, -0.2, 0.3)), pole: V(-1, 0.3, -0.4), paume: V(0, -1, 0), dirMain: V(0.3, -0.2, 1), doigts: 'detendu' }; }
+      if (m !== 'GD' && !o.tabouret) { const t = c.tronc(p); autre = { prise: t.hanches.D.clone().add(V(-0.06, -0.2, 0.3)), pole: V(-1, 0.3, -0.4), paume: V(0.15, -0.3, -1), doigts: 'detendu' }; }   // la main d'appui sur la cuisse, dans le prolongement de l'avant-bras (tournée vers l'avant, le poignet cassait à angle droit)
     } else if (o.croise) {
       // Deux poulies hautes : chaque main tient le câble d'en face ; les bras s'ouvrent vers le bas.
       P = postureDe(c, o, C); p = P.p; fixe = P.fixe; vue = { az: 12, el: 8 };
@@ -73,6 +76,7 @@
     if (o.elas && ancre) r.deElas = ancre;
     const ancres = !ancre ? null : typeof ancre === 'function' ? [ancre(1), ancre(-1)].slice(0, m === 'GD' ? 2 : 1) : ancre;
     const d = Object.assign(parLesBras(p, a, b, m, autre), { fixe: colonneSi(o, C, ancres, fixe || []), vue, tenu: tenu || tenuDe(o, m, r) }, rythmeDe(o));
+    if (o.hal1) { const A = d.a, Z = d.b; d.pose = u => mainsEnCoupe(c, mel(A, Z, u)); d.objets = haltereEnCoupe(C, 1.2); }   // tenu par sa tête du haut, à deux mains
     // Smith machine (développé JM) : la barre coulisse entre deux rails.
     if (o.smith) { const info = c.poser(d.a); d.tenu = [{ t: 'barre', l: 1.6, d: 0.18 }]; d.fixe = d.fixe.concat(poseFixe(MAT.smith(C, (info.prises.G.z + info.prises.D.z) / 2))); }
     return d;

@@ -8,9 +8,10 @@
      À la poulie ou à l'élastique : poulie genoux (défaut) / debout / assis ; machine (assis) ; vacuum (debout). */
   FAM.abdos = (c, o, C) => {
     const L = c.L, fixe = [], d = { vue: { az: 68, el: 16 }, tenu: [], fixe };
-    const mainsDe = (p, ou) => { const t = c.tronc(p); if (ou === 'tendus') return pareil(B(0, 96, -6, 6, 90)); if (ou === 'long') return pareil(B(90, 18, 0, 6, 180, { doigts: 'plat' })); if (ou === 'haut') return pareil(B(10, 168, 0, 6, 180, { doigts: 'detendu' })); return mains(c, t, ou); };
+    // (Bras tendus : le disque est tenu par son bord, une main de chaque côté.)
+    const mainsDe = (p, ou) => { const t = c.tronc(p); if (ou === 'tendus') { p.bras = pareil(B(0, 96, -6, 6, 90)); return mainsEnsemble(c, p, 0.13, 'barre', false, 0.018).bras; } if (ou === 'long') return pareil(B(90, 18, 0, 6, 180, { doigts: 'plat' })); if (ou === 'haut') return pareil(B(10, 168, 0, 6, 180, { doigts: 'detendu' })); return mains(c, t, ou); };
     const ou = o.tendus ? 'tendus' : o.leste || o.poitrine ? 'poitrine' : 'oreilles';
-    const poids = () => { if (o.leste || o.tendus) d.tenu = [{ t: 'disque', m: 'GD', r: 0.13, axe: o.tendus ? AX : 'buste' }]; };
+    const poids = () => { if (o.tendus) d.tenu = [{ t: 'disque', m: 'GD', r: 0.13, bord: true }]; else if (o.leste) d.tenu = [{ t: 'disque', m: 'GD', r: 0.13, axe: 'buste' }]; };
     if (o.vacuum) {
       const cle = u => { const p = debout(c, { penche: 6, ecart: 0.1 }); p.lombaires = 4 + 6 * u; p.thorax = 3 * u; p.bras = mains(c, c.tronc(p), 'hanches'); return p; };
       d.a = cle(0); d.b = cle(1); d.rythme = 'tenue'; d.vue = { az: 60, el: 8 }; return d;
@@ -30,7 +31,8 @@
       const dos = o.debout || o.assis;                          // dos à la poulie (debout, assis) ou face à elle (à genoux)
       const cle = u => { const p = cloner(base); p.lombaires = (sorte === 'genoux' ? 44 : 34) * u; p.thorax = 24 * u; p.cou = 8 * u; if (o.lateral) { p.lombaires = 6 * u; p.thorax = 0; p.inclinaison = 30 * u; } if (o.torsion) p.torsion = 34 * u; if (sorte === 'genoux' && !o.lateral) { p.bassin.rot = qX(8 + 16 * u); p.jambes = pareil(J(8 + 16 * u + 14 * u, 6, 0, 90 + 14 * u, 62)); } const t = c.tronc(p), dT = (x, y, z) => V(x, y, z).applyQuaternion(t.qThorax), dC = (x, y, z) => V(x, y, z).applyQuaternion(t.qTete); /* les poings de part et d'autre du front, à hauteur des tempes : ils suivent la tête, les épaules restent basses */ for (const [k, s] of COTES) p.bras[k] = { prise: t.tete.clone().add(dC(s * 0.12, 0.105, dos ? 0.0 : 0.075)), pole: dT(s * 1, -0.6, 0.3), paume: dC(-s, 0, 0), dirMain: dC(0, 1, dos ? -0.2 : 0.25), doigts: 'barre', ceinture: 0.1 }; return p; };
       d.cles = [[0, cle(0)], [0.5, cle(0.5)], [1, cle(1)]]; if (sorte === 'genoux') for (const [, p] of d.cles) c.poserSur(p, V(), AY, ['jambe', 'pied']);
-      const anc = dos ? V(0, sorte === 'assis' ? 1.75 : 2.05, -0.55) : V(0, 2.0, 0.55);
+      // À genoux, la colonne est assez loin pour que la tête passe devant elle en s'enroulant.
+      const anc = dos ? V(0, sorte === 'assis' ? 1.75 : 2.05, -0.55) : V(0, 2.0, 0.86);
       d.tenu = [{ t: o.elas ? 'elastique' : 'cable', de: anc, bout: 'corde' }]; fixe.push(...poseFixe(MAT.colonne(C, anc))); d.vue = { az: 68, el: 8 }; return d;
     }
     if (o.lateral) {
@@ -41,7 +43,7 @@
     }
     if (o.genoux || o.inout || o.vsit || o.assisJambes || o.cercles || (o.battements && o.assis)) {
       // Assis par terre, buste incliné vers l'arrière, mains posées derrière : les genoux viennent à la poitrine, repartent.
-      const cle = u => { const recul = o.vsit ? lerp(62, 32, u) : o.genoux ? lerp(48, 28, u) : 40, p = assisSol(c, { recul, jambes: J(lerp(o.vsit ? 30 + 62 : 50 + recul - 10, o.vsit ? 78 + 32 : 96 + recul, u) - 0, 4, 0, lerp(o.vsit ? 4 : 14, o.vsit ? 4 : 110, u), 25), lomb: 10 + 10 * u, thor: 6 }); if (o.assisJambes) p.jambes = pareil(J(lerp(50, 96, u) + 40, 4, 0, 4, 25)); c.poserSur(p, V(), AY, ['bassin']); const t = c.tronc(p); for (const [k, s] of COTES) p.bras[k] = o.vsit ? B(4, 60, 0, 8, 90, { doigts: 'detendu' }) : { prise: V(s * 0.2, 0, p.bassin.pos.z - 0.17), pole: V(s * 0.5, 0.2, -1), paume: V(0, -1, 0), dirMain: V(0, 0, 1), doigts: 'plat' }; return p; };
+      const cle = u => { const recul = o.vsit ? lerp(62, 32, u) : o.genoux ? lerp(48, 28, u) : 40, p = assisSol(c, { recul, jambes: J(lerp(o.vsit ? 30 + 62 : 50 + recul - 10, o.vsit ? 78 + 32 : 96 + recul, u) - 0, 4, 0, lerp(o.vsit ? 4 : 14, o.vsit ? 4 : 110, u), 25), lomb: 10 + 10 * u, thor: 6 }); if (o.assisJambes) p.jambes = pareil(J(lerp(50, 96, u) + 40, 4, 0, 4, 25)); c.poserSur(p, V(), AY, ['bassin']); for (const [k, s] of COTES) p.bras[k] = o.vsit ? B(4, 60, 0, 8, 90, { doigts: 'detendu' }) : { prise: V(s * 0.2, 0, p.bassin.pos.z - 0.17), pole: V(s * 0.5, 0.2, -1), paume: V(0, -1, 0), dirMain: V(0, 0, 1), doigts: 'plat' }; return p; };
       d.cles = [[0, cle(0)], [0.5, cle(0.5)], [1, cle(1)]]; d.vue = { az: 112, el: 14 };
       if (o.alt) { d.rythme = 'alt'; d.alterne = ['jambes']; d.a = cle(0); d.b = cle(1); delete d.cles; }   // une jambe puis l'autre
       if (o.battements) { d.rythme = 'continu'; d.periode = 1.3; const P0 = cle(0.5); delete d.cles; d.pose = ph => { const p = cloner(P0), sn = Math.sin(ph * 2 * Math.PI); p.jambes = { G: J(94 + 10 * sn, 4, 0, 6, 25), D: J(94 - 10 * sn, 4, 0, 6, 25) }; return p; }; }
@@ -55,7 +57,7 @@
     if (o.ballon) {
       // Sur un ballon, le bas du dos appuyé : le buste part en extension puis s'enroule.
       const base = { bassin: { pos: V(0, 0.62, 0), rot: qX(-74) }, lombaires: -14, thorax: -8, cou: 6, bras: pareil(brasRepos()), jambes: { G: pied(c, 1, { x: 0.2, ouv: 14, z: 0.52, pole: V(0.2, 1, 0.3) }), D: pied(c, -1, { x: -0.2, ouv: 14, z: 0.52, pole: V(-0.2, 1, 0.3) }) } };
-      const cle = u => { const p = cloner(base); p.lombaires = lerp(-14, 22, u); p.thorax = lerp(-8, 20, u); p.cou = lerp(0, 12, u); p.bras = mainsDe(p, ou); return p; };
+      const cle = u => { const p = cloner(base); p.lombaires = lerp(-13, 22, u); p.thorax = lerp(2, 20, u); p.cou = lerp(0, 12, u); p.bras = mainsDe(p, ou); return p; };
       d.a = cle(0); d.b = cle(1); fixe.push(pret(sphere(0.3, 0, 0.3, -0.16, C.ballon, 0))); poids(); return d;
     }
     if (o.situp) {
@@ -73,13 +75,27 @@
       const base = coucher(o.inverse ? J(96, 3, 0, 86, 20) : 'tendues');
       if (o.dragon || o.chandelle) {
         // Le corps, tendu, pivote autour des épaules (les mains tiennent le banc derrière la tête, ou soutiennent le dos).
-        const cle = u => { const phi = o.chandelle ? 80 + 3 * u : lerp(8, 68, u), p = { bassin: { pos: V(0, 0.4, 0), rot: qX(-90 - phi) }, lombaires: o.chandelle ? 6 : 0, thorax: o.chandelle ? 18 : 4, cou: o.chandelle ? 52 : 24, bras: {}, jambes: pareil(J(o.chandelle ? 6 : 2, 3, 0, 3, 30)) }; ancrer(c, p, 'cou1', V(0, (o.chandelle ? 0 : 0.44) + 0.09, -0.4)); const t = c.tronc(p); for (const [k, s] of COTES) p.bras[k] = o.chandelle ? { prise: t.duBassin(V(s * 0.12, 0.12, -L.dos - 0.02)), pole: V(s * 0.6, -1, 0), paume: V(0, 0, 1).applyQuaternion(t.qBassin), doigts: 'plat' } : { prise: V(s * 0.16, 0.4, -0.72), pole: V(s * 1, 0.3, -0.3), paume: V(-s, 0, 0), doigts: 'barre' }; return p; };
+        // Drapeau : la tête reste posée sur le banc — le cou fléchit d'autant que le corps monte.
+        const cle = u => { const phi = o.chandelle ? 80 + 3 * u : lerp(8, 68, u), p = { bassin: { pos: V(0, 0.4, 0), rot: qX(-90 - phi) }, lombaires: o.chandelle ? 6 : 0, thorax: o.chandelle ? 18 : 4, cou: o.chandelle ? 52 : 8 + 0.8 * phi, bras: {}, jambes: pareil(J(o.chandelle ? 6 : 2, 3, 0, 3, 30)) }; ancrer(c, p, 'cou1', V(0, (o.chandelle ? 0 : 0.44) + 0.09, -0.4)); const t = c.tronc(p); for (const [k, s] of COTES) p.bras[k] = o.chandelle ? { prise: t.duBassin(V(s * 0.12, 0.12, -L.dos - 0.02)), pole: V(s * 0.6, -1, 0), paume: V(0, 0, 1).applyQuaternion(t.qBassin), doigts: 'plat' } : { prise: V(s * 0.16, 0.4, -0.72), pole: V(s * 1, 0.3, -0.3), paume: V(-s, 0, 0), doigts: 'barre' }; return p; };
         d.cles = [[0, cle(0)], [0.5, cle(0.5)], [1, cle(1)]]; if (o.chandelle) d.rythme = 'tenue'; else fixe.push(...poseFixe(MAT.banc(C, 0))); d.vue = { az: 112, el: 12 }; return d;
       }
-      const cle = u => { const p = cloner(base); if (o.inverse) { p.bassin.rot = qX(-90 + ang - 30 * u); p.lombaires = 16 * u; p.jambes = pareil(J(lerp(96, 112, u), 3, 0, 86, 20)); ancrer(c, p, 'thorax', c.tronc(base) && c.monde('thorax')); } else p.jambes = pareil(J(lerp(ang > 0 ? 8 : 6, 92, u) - ang * 0, 3, 0, 4, 25)); p.bras = ang > 0 ? pareil(B(0, 170, 0, 30, 90)) : mainsDe(p, 'long'); return p; };
       const tA = c.tronc(base), ancreT = c.monde('thorax');
-      const cle2 = u => { const p = cloner(base); if (o.inverse) { p.bassin.rot = qX(-90 + ang - 30 * u); p.lombaires = 30 * u; p.jambes = pareil(J(lerp(96, 112, u), 3, 0, 86, 20)); ancrer(c, p, 'thorax', ancreT); } else p.jambes = pareil(J(lerp(6, 92, u), 3, 0, 4, 25)); p.bras = ang > 0 ? pareil(B(0, 170, 0, 30, 90)) : mainsDe(p, 'long'); return p; };
-      d.cles = [[0, cle2(0)], [0.5, cle2(0.5)], [1, cle2(1)]]; if (o.leste) d.objets = (info, u, sortie) => poserObjet(MAT.haltere(C, 1), info.chevilles.G.clone().add(info.chevilles.D).multiplyScalar(0.5), null, sortie); return d;
+      // Banc incliné : les mains tiennent le haut du dossier, de part et d'autre de la tête.
+      const tenirBanc = () => {
+        const dos = fixe.filter(f => f.appui && f.forme === 'boite').sort((x, y) => y.s[2] - x.s[2])[0];
+        if (!dos) return pareil(B(0, 170, 0, 30, 90));
+        const ctr = V(dos.p[0], dos.p[1], dos.p[2]), long = AZ.clone().applyQuaternion(new Quat(dos.q[0], dos.q[1], dos.q[2], dos.q[3])), r = {};
+        if (long.dot(tA.tete.clone().sub(ctr)) < 0) long.multiplyScalar(-1);
+        const haut = ctr.clone().addScaledVector(long, dos.s[2] / 2 - 0.07);
+        // La main enveloppe le bord du dossier, près de la tête : elle tourne autour de lui avec l'avant-bras (cote),
+        // qui n'est donc pas tordu ; les coudes pointent devant soi, ouverts. (Paume plaquée contre le chant du banc,
+        // l'avant-bras était tordu de 38° de trop et l'aisselle se déchirait.)
+        const devant = perp(AY, long).normalize();
+        for (const [k, s] of COTES) r[k] = { prise: haut.clone().add(V(s * dos.s[0] / 2, 0, 0)), pole: devant.clone().add(V(s * 0.45, 0, 0)), autour: long.clone(), cote: s, casse: 0, aplomb: 40, doigts: 'barre', rayon: 0.03 };
+        return r;
+      };
+      const cle2 = u => { const p = cloner(base); if (o.inverse) { p.bassin.rot = qX(-90 + ang - 30 * u); p.lombaires = 30 * u; p.jambes = pareil(J(lerp(96, 112, u), 3, 0, 86, 20)); ancrer(c, p, 'thorax', ancreT); } else p.jambes = pareil(J(lerp(6, 92, u), 3, 0, 4, 25)); p.bras = ang > 0 ? tenirBanc() : mainsDe(p, 'long'); return p; };
+      d.cles = [[0, cle2(0)], [0.5, cle2(0.5)], [1, cle2(1)]]; if (o.leste) d.objets = (info, u, sortie) => haltereEntrePieds(C, info, sortie); return d;
     }
     if (o.velo || o.battements || o.ciseaux || o.deadbug) {
       const base = coucher('levees'); d.rythme = 'continu'; d.periode = o.deadbug ? 3.6 : o.velo ? 2 : 1.3;

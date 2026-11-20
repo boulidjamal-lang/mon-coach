@@ -19,7 +19,6 @@
       d.vue = { az: 35, el: 20 }; return deux(cle(0), cle(1));
     }
     if (o.papillon) {
-      const jb = () => pareil(J(66, 40, 62, 128, 20));
       if (o.couche) { const cle = u => { const p = allonge(c, { h: 0, angle: 0, jambes: J(lerp(40, 58, u), lerp(8, 44, u), lerp(10, 62, u), lerp(70, 118, u), 20) }); p.bras = pareil(B(90, 40, 0, 10, 0, { doigts: 'detendu' })); auSol(p, ['bassin', 'dos', 'cuisse', 'jambe', 'pied', 'thorax']); return p; }; d.vue = { az: 50, el: 26 }; return deux(cle(0), cle(1)); }
       const cle = u => { const pen = o.avant ? 34 * u : 4 * u, p = corps(qX(2 + pen), { lombaires: 6 + (o.avant ? 22 * u : 0), thorax: o.avant ? 10 * u : 0, cou: o.avant ? 10 * u : 0, jambes: pareil(J(66 + 0.9 * pen, lerp(30, 44, o.avant ? 0.6 : u), 62, 128, 20)) }); auSol(p); const info = c.poser(p); for (const k of ['G', 'D']) tenir(p, k, info.chevilles[k].clone().add(V(0, 0.04, 0.02)), V(k === 'G' ? 1 : -1, 0.2, -0.3), V(0, -1, 0)); return p; };
       d.vue = { az: 30, el: 20 }; return deux(cle(0), cle(1));
@@ -46,7 +45,9 @@
         const p = corps(qX(lerp(86, 80, u)), { lombaires: 24 * u, thorax: 10 * u, cou: lerp(-25, 8, u), jambes: pareil(J(lerp(86, 132, u), lerp(6, 12, u), 0, lerp(90, 150, u), 62)) });
         auSol(p, ['jambe', 'pied']);
         const info = c.poser(p); p.bassin.pos.z += -info.genoux.G.z;
-        const t = c.tronc(p); for (const [k, s] of COTES) p.bras[k] = { prise: V(s * 0.18, 0.008, Math.min(zM + 0.36, t.epaules.G.z + lerp(0.03, 0.5, u))), pole: V(s * 0.5, 0.5, -0.6), paume: V(0, -1, 0), dirMain: V(0, 0, 1), doigts: 'plat' };
+        // Les mains glissent vers l'avant à mesure que les fesses reculent : à la fin les bras sont allongés au sol devant
+        // les épaules, coudes à peine pliés tournés vers le dehors (ils restaient pliés à angle droit, dressés en l'air).
+        const t = c.tronc(p); for (const [k, s] of COTES) p.bras[k] = { prise: V(s * 0.18, 0.008, t.epaules.G.z + lerp(0.03, 0.7, u)), pole: V(s * lerp(0.5, 1, u), lerp(0.5, 0.2, u), lerp(-0.6, -0.1, u)), paume: V(0, -1, 0), dirMain: V(0, 0, 1), doigts: 'plat' };
         return p;
       };
       d.cles = [0, 0.33, 0.66, 1].map(u => [u, cle(u)]); d.vue = { az: 70, el: 14 }; return d;
@@ -64,7 +65,7 @@
     if (o.chienbas) {
       if (o.debout) {
         // Mains sur un appui à hauteur de hanches, buste à l'horizontale, bras dans le prolongement du dos.
-        const cle = u => { const p = debout(c, { ecart: 0.12, ouv: 6, penche: lerp(48, 88, u), dz: lerp(-0.15, -0.28, u), dy: -0.03, lomb: -2, cou: -lerp(10, 20, u) }); const t = c.tronc(p); for (const [k, s] of COTES) p.bras[k] = { prise: V(s * 0.2, 0.96, 0.62), pole: V(s * 0.5, -1, 0), paume: V(0, -1, 0), dirMain: V(0, 0, 1), doigts: 'plat' }; return p; };
+        const cle = u => { const p = debout(c, { ecart: 0.12, ouv: 6, penche: lerp(48, 88, u), dz: lerp(-0.15, -0.28, u), dy: -0.03, lomb: -2, cou: -lerp(10, 20, u) }); for (const [k, s] of COTES) p.bras[k] = { prise: V(s * 0.2, 0.96, 0.62), pole: V(s * 0.5, -1, 0), paume: V(0, -1, 0), dirMain: V(0, 0, 1), doigts: 'plat' }; return p; };
         fixe.push(pret(boite(0.9, 0.04, 0.3, 0, 0.93, 0.7, C.banc, 0)), pret(boite(0.05, 0.92, 0.05, -0.4, 0.46, 0.75, C.cadre, 0.5)), pret(boite(0.05, 0.92, 0.05, 0.4, 0.46, 0.75, C.cadre, 0.5)));
         d.vue = { az: 70, el: 8 }; return deux(cle(0), cle(1));
       }
@@ -93,7 +94,15 @@
           // Le plus grand étirement du monde : main droite au sol, le bras gauche s'ouvre vers le plafond, le buste tourne.
           p.torsion = 62 * u; p.couRot = 34 * u;
           p.bras.D = { prise: V(-0.2, 0.008, t.epaules.G.z + 0.02), pole: V(-0.5, 0.4, -0.6), paume: V(0, -1, 0), dirMain: V(0, 0, 1), doigts: 'plat' };
-          p.bras.G = u < 0.02 ? { prise: V(-0.02, 0.06, t.epaules.G.z + 0.08), pole: V(0.6, 0.6, -0.3), paume: V(0, -1, 0), doigts: 'detendu' } : { dirBras: unite(V(0.25, lerp(-1, 1, u), 0.1)), dirAvantBras: unite(V(0.3, lerp(-1, 1, u), 0.1)), paume: V(0, 0, 1), doigts: 'plat' };
+          // (La paume du bras qui s'ouvre regarde du même côté que la poitrine. Le coude, à peine plié, plie du même
+          // côté qu'au départ : d'une pose à l'autre le bras ne tourne pas sur lui-même.)
+          const devant = V(0, 0, 1).applyQuaternion(c.tronc(p).qThorax), haut = unite(V(0.25, lerp(-1, 1, u), 0.1));
+          const b0 = u < 0.02 ? null : cle(0).bras.G, pli = b0 ? perp(b0.dirAvantBras.clone().sub(b0.dirBras), haut).normalize() : null;
+          p.bras.G = u < 0.02 ? { prise: V(-0.02, 0.06, t.epaules.G.z + 0.08), pole: V(0.6, 0.6, -0.3), paume: V(0, 0, -1), doigts: 'detendu' } : { dirBras: haut, dirAvantBras: unite(haut.clone().addScaledVector(pli, 0.06)), paume: devant, doigts: 'plat' };
+          // Au départ la main pend jusqu'au sol, coude plié : ce bras est noté par ses directions, comme les poses
+          // suivantes — de l'une à l'autre il s'ouvre en tournant autour de l'épaule (la main, menée en ligne droite
+          // du sol à sa place bras tendu, passerait contre l'épaule, le bras replié).
+          if (u < 0.02) { const i0 = c.poser(p); p.bras.G = { dirBras: unite(i0.coudes.G.clone().sub(i0.epaules.G)), dirAvantBras: unite(i0.poignets.G.clone().sub(i0.coudes.G)), paume: i0.paumes.G.clone(), doigts: 'detendu' }; }
         }
         if (o.lezard) p.bassin.pos.y = lerp(0.34, 0.29, u);
         return p;
@@ -121,7 +130,7 @@
         const cle = u => { const p = allonge(c, { h: 0, angle: 0, jambes: { G: J(lerp(62, 104, u), 4, 0, lerp(100, 96, u), 10), D: J(lerp(70, 104, u), 34, 72, 92, 10) } }); auSol(p, ['bassin', 'dos', 'thorax', 'jambe', 'pied']); const info = c.poser(p); for (const k of ['G', 'D']) tenir(p, k, info.genoux.G.clone().add(V(k === 'G' ? 0.05 : -0.05, -0.02, -0.08)), V(k === 'G' ? 1 : -1, -0.3, 0.3), V(0, -0.3, -1)); return p; };
         d.vue = { az: 60, el: 22 }; return deux(cle(0), cle(1));
       }
-      const cle = u => { const p = assis(c, { h: H_BANC, penche: lerp(2, 32, u), ecart: 0.12 }); p.lombaires = 12 * u; p.jambes.D = J(lerp(80, 84, u) + lerp(2, 32, u), 22, 74, 96, 10); const info = c.poser(p); p.bras.D = B(20, 30, 0, 60, 150, { doigts: 'detendu' }); p.bras.G = B(20, 30, 0, 60, 150, { doigts: 'detendu' }); return p; };
+      const cle = u => { const p = assis(c, { h: H_BANC, penche: lerp(2, 32, u), ecart: 0.12 }); p.lombaires = 12 * u; p.jambes.D = J(lerp(80, 84, u) + lerp(2, 32, u), 22, 74, 96, 10); p.bras.D = B(20, 30, 0, 60, 150, { doigts: 'detendu' }); p.bras.G = B(20, 30, 0, 60, 150, { doigts: 'detendu' }); return p; };
       fixe.push(...bancAssis(C));
       d.vue = { az: 38, el: 12 }; return deux(cle(0), cle(1));
     }
@@ -146,9 +155,12 @@
         const cle = u => {
           const p = o.cote ? surLeCote(c, { cote: 'D', jambes: { D: J(14, 0, 0, 20, 20), G: J(lerp(10, -16, u), 2, 0, lerp(30, 140, u), 30) } }) : aPlatVentre(c, { h: 0, angle: 0, jambes: { D: J(0, 5, 0, 3, 55), G: J(lerp(0, -4, u), 5, 0, lerp(10, 138, u), 40) }, cou: -10 });
           const info = c.poser(p);
-          if (u > 0.3) tenir(p, 'G', info.chevilles.G.clone().add(V(0, 0.02, 0)), o.cote ? V(0, 1, -1) : V(1, 1, -0.5), V(0, 0, 1));
+          // (À plat ventre, la main qui va au pied a la paume tournée vers le haut : elle le prend par-dessous.)
+          if (u > 0.3) tenir(p, 'G', info.chevilles.G.clone().add(V(0, 0.02, 0)), o.cote ? V(0, 1, -1) : V(1, 1, -0.5), o.cote ? V(0, 0, 1) : V(-0.3, 1, 0.2));
           const front = k => ({ prise: V((k === 'G' ? 1 : -1) * 0.07, 0.03, info.tete.z + 0.06), pole: V(k === 'G' ? 1 : -1, 0.15, -0.1), paume: V(0, -1, 0), dirMain: V(k === 'G' ? -1 : 1, 0, 0.3), doigts: 'plat' });
-          if (u <= 0.3) p.bras.G = o.cote ? B(40, 20, 0, 30, 150) : front('G');
+          // À plat ventre, le front repose sur la main droite ; le bras gauche attend le long du corps, le dos de la
+          // main au sol : de là, la main va droit au pied (partie de sous le front, elle traverserait l'épaule).
+          if (u <= 0.3) p.bras.G = o.cote ? B(40, 20, 0, 30, 150) : { prise: V(info.epaules.G.x + 0.1, 0.055, info.epaules.G.z - 0.52), pole: V(1, 0.6, 0), paume: V(-0.3, 1, 0.2), doigts: 'detendu' };
           p.bras.D = o.cote ? B(10, 160, 0, 24, 90, { doigts: 'plat' }) : front('D');
           if (o.cote) c.poserSur(p, V(), AY);
           return p;
@@ -168,7 +180,7 @@
       d.cles = [0, 0.5, 1].map(u => [u, cle(u)]); d.vue = { az: 150, el: 8 }; return d;
     }
     if (o.pectoraux) {
-      if (o.coudes) { const cle = u => { const p = debout(c, { ecart: 0.11, ouv: 8 }); p.thorax = -10 * u; p.lombaires = -4 * u; const t = c.tronc(p); p.bras = mains(c, t, 'nuque'); for (const [k, s] of COTES) p.bras[k].pole = V(s * 1, 0, lerp(0.5, -0.5, u)).applyQuaternion(t.qThorax); return p; }; d.vue = { az: 30, el: 8 }; return deux(cle(0), cle(1)); }
+      if (o.coudes) { if (o.assis) fixe.push(...bancAssis(C)); const cle = u => { const p = o.assis ? assis(c, { h: H_BANC }) : debout(c, { ecart: 0.11, ouv: 8 }); p.thorax = -10 * u; p.lombaires = -4 * u; const t = c.tronc(p); p.bras = mains(c, t, 'nuque'); for (const [k, s] of COTES) p.bras[k].pole = V(s * 1, 0, lerp(0.5, -0.5, u)).applyQuaternion(t.qThorax); return p; }; d.vue = { az: 30, el: 8 }; return deux(cle(0), cle(1)); }
       if (o.porte) {
         // Dans l'encadrement d'une porte : les avant-bras sur les montants, le corps avance.
         const cle = u => { const p = debout(c, { ecart: 0.1, ouv: 6, dz: 0.11 * u, penche: 4 * u }); p.jambes.G = pied(c, 1, { x: 0.1, z: 0.22 }); p.jambes.D = pied(c, -1, { x: -0.1, z: -0.2, pointe: 16 * u }); const t = c.tronc(debout(c, {})); for (const [k, s] of COTES) p.bras[k] = { prise: V(s * 0.46, t.epaules.G.y + 0.26, 0.05), pole: V(s * 0.6, -1, -0.2), paume: V(0, 0, 1), dirMain: V(0, 1, 0), doigts: 'plat' }; return p; };

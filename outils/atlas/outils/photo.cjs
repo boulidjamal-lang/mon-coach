@@ -1,5 +1,6 @@
 // Photo d'une page de l'atlas (fichiers servis directement, sans serveur).
 // Usage : node photo.cjs <sortie.png> <page et paramètres> [largeur] [hauteur]
+// Variable : MOUVEMENTS=fichier (un autre atlas-mouvements.js, pour comparer avant et après ; vaut pour tous les outils).
 const { chromium } = require('playwright');
 const path = require('path'), fs = require('fs');
 const RACINE = path.join(__dirname, '..');
@@ -11,6 +12,8 @@ async function ouvrir(options = {}) {
     let f = path.join(RACINE, decodeURIComponent(new URL(route.request().url()).pathname));
     // Dans le dépôt, le moteur, les mouvements et le modèle sont ceux que sert l'appli (assets/atlas).
     if (!fs.existsSync(f) && ['atlas3d.js', 'atlas-mouvements.js', 'atlas.bin', 'atlas-peau.bin'].includes(path.basename(f))) f = path.join(RACINE, '..', '..', 'assets', 'atlas', path.basename(f));
+    // MOUVEMENTS=fichier : un autre fichier de mouvements à la place de celui du dépôt (comparer avant et après).
+    if (process.env.MOUVEMENTS && path.basename(f) === 'atlas-mouvements.js') f = process.env.MOUVEMENTS;
     if (!fs.existsSync(f) || fs.statSync(f).isDirectory()) return route.fulfill({ status: 404, body: 'introuvable' });
     return route.fulfill({ status: 200, contentType: TYPES[path.extname(f)] || 'application/octet-stream', body: fs.readFileSync(f) });
   });

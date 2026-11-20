@@ -5,7 +5,7 @@
      rouleau (enrouleur de poignets : bras tendus devant, la charge monte au bout d'une cordelette) ; pince (poignées
      de musculation de la main). Charge : barre, ez, hal, poulie, machine. uni : un seul bras. */
   FAM.poignet = (c, o, C) => {
-    const L = c.L, fixe = [], d = { vue: { az: 40, el: 14 }, tenu: [], fixe }, m = coteDe(o);
+    const fixe = [], d = { vue: { az: 40, el: 14 }, tenu: [], fixe }, m = coteDe(o);
     if (!(o.barre || o.ez || o.poulie || o.machine || o.rouleau || o.pince)) o.hal = true;
     if (o.rouleau) {
       // Bras tendus devant soi, une barrette dans les mains : les poignets tournent tour à tour, la charge monte puis redescend.

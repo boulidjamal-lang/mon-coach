@@ -10,8 +10,6 @@
     const fixe = [], d = { vue: { az: 128, el: 10 }, tenu: [], fixe };
     if (o.extension) {
       // Banc à lombaires : hanches calées, jambes tenues ; le buste descend puis remonte à l'alignement.
-      const ang = o.machine ? 0 : 42;
-      const cle = u => { const p = { bassin: { pos: V(0, 0.9, 0), rot: qX(ang + 10) }, lombaires: lerp(16, -4, u), thorax: lerp(6, -2, u), cou: lerp(8, -10, u), bras: {}, jambes: pareil(J(lerp(52, 8, u) * 0 + 10 + (ang ? 0 : 0), 4, 0, 4, 25)) }; p.bassin.rot = qX(lerp(ang + 62, ang + 6, u)); p.jambes = pareil(J(lerp(62, 6, u), 4, 0, 4, 25)); const t = c.tronc(p); p.bras = o.hal ? { G: { prise: t.duThorax(V(0.05, -0.12, 0.2)), pole: V(0.6, -1, 0).applyQuaternion(t.qThorax), paume: V(-1, 0, 0).applyQuaternion(t.qThorax), doigts: 'barre' }, D: { prise: t.duThorax(V(-0.05, -0.12, 0.2)), pole: V(-0.6, -1, 0).applyQuaternion(t.qThorax), paume: V(1, 0, 0).applyQuaternion(t.qThorax), doigts: 'barre' } } : mains(c, t, 'poitrine'); return p; };
       if (o.machine) {
         // À la machine, assis : le buste part penché en avant et pousse le coussin vers l'arrière.
         const base = assis(c, { h: H_SIEGE, zPieds: 0.34 });
@@ -28,10 +26,23 @@
         d.levee = (info, u) => 0.25 * u;
         d.vue = { az: 70, el: 10 }; return d;
       }
-      // Les pieds sont tenus au sol derrière, les cuisses appuyées sur le coussin incliné.
+      // Banc à lombaires incliné : les pieds calés en bas, jambes tendues, le haut des cuisses sur le coussin. Les
+      // hanches restent en place, juste au-dessus du bord du coussin, et le buste pivote autour d'elles : il descend
+      // devant le coussin, puis remonte dans l'alignement des jambes.
+      const INCL = 40, lJ = (L.cuisse + L.jambe) * 0.997;
       const piedsF = { G: pied(c, 1, { x: 0.12, z: -0.62, ouv: 0, pointe: 0 }), D: pied(c, -1, { x: -0.12, z: -0.62, ouv: 0, pointe: 0 }) };
-      d.pose = u => { const p = cle(u); p.bassin.pos = V(0, 0.93, 0); p.jambes = cloner(piedsF); for (const k of ['G', 'D']) p.jambes[k].pole = V(0, 0.2, 1); return p; };
-      fixe.push(pret(boite(0.4, 0.07, 0.36, 0, 0.78, 0.16, C.banc, 0, qX(-42))), pret(seg(V(0, 0, -0.1), V(0, 0.72, 0.16), 0.03, C.cadre, 0.5)), pret(cyl(0.045, 0.4, 0, 0.2, -0.72, C.banc, 0)), pret(seg(V(0, 0, -0.1), V(0, 0.2, -0.72), 0.03, C.cadre, 0.5)), pret(boite(0.5, 0.03, 1.0, 0, 0.015, -0.3, C.cadre, 0.5)));
+      const axe = V(0, Math.cos(rad(INCL)), Math.sin(rad(INCL))), devant = V(0, -Math.sin(rad(INCL)), Math.cos(rad(INCL)));   // le long des jambes ; vers le coussin
+      const hanches0 = V(0, piedsF.G.cheville.y, piedsF.G.cheville.z).addScaledVector(axe, lJ);
+      d.pose = u => {
+        const rot = qX(lerp(INCL + 58, INCL + 2, u));
+        const p = { bassin: { pos: hanches0.clone().sub(V(0, L.hanche.y, L.hanche.z).applyQuaternion(rot)), rot }, lombaires: lerp(16, -4, u), thorax: lerp(6, -2, u), cou: lerp(8, -10, u), bras: {}, jambes: cloner(piedsF) };
+        for (const k of ['G', 'D']) p.jambes[k].pole = V(0, 0.2, 1);
+        const t = c.tronc(p);
+        p.bras = o.hal ? { G: { prise: t.duThorax(V(0.05, -0.12, 0.2)), pole: V(0.6, -1, 0).applyQuaternion(t.qThorax), paume: V(-1, 0, 0).applyQuaternion(t.qThorax), doigts: 'barre' }, D: { prise: t.duThorax(V(-0.05, -0.12, 0.2)), pole: V(-0.6, -1, 0).applyQuaternion(t.qThorax), paume: V(1, 0, 0).applyQuaternion(t.qThorax), doigts: 'barre' } } : mains(c, t, 'poitrine');
+        return p;
+      };
+      const R_CUISSE = 0.085, coussin = hanches0.clone().addScaledVector(axe, -0.2).addScaledVector(devant, R_CUISSE + 0.035), rouleau = V(0, piedsF.G.cheville.y, piedsF.G.cheville.z).addScaledVector(axe, 0.14).addScaledVector(devant, -0.095);
+      fixe.push(pret(boite(0.4, 0.07, 0.32, coussin.x, coussin.y, coussin.z, C.banc, 0, qX(INCL - 90))), pret(seg(V(0, 0, coussin.z - 0.12), coussin.clone().addScaledVector(devant, 0.03), 0.03, C.cadre, 0.5)), pret(cyl(0.045, 0.4, 0, rouleau.y, rouleau.z, C.banc, 0)), pret(seg(V(0, 0, coussin.z - 0.12), V(0, rouleau.y, rouleau.z), 0.03, C.cadre, 0.5)), pret(boite(0.5, 0.03, 1.0, 0, 0.015, -0.3, C.cadre, 0.5)));
       if (o.hal) d.tenu = [{ t: 'disque', m: 'GD', r: 0.13, axe: 'buste' }];
       d.vue = { az: 70, el: 10 }; return d;
     }
@@ -70,9 +81,11 @@
       const cle = u => {
         const k = 1 - u, p = caler(debout(c, { penche: 3 + 55 * k, lomb: 2 * k, cou: -28 * k, ecart, ouv }), lerp(jHaut.tibia, -4, k), lerp(jHaut.genou, 38, k));
         p.bras = pareil(B(-4, lerp(-70 + 62, 90, u), -16, 6, 180));
+        if (m === 'GD') mainsEnsemble(c, p, 0.036, 'barre', true);   // les deux mains serrées sur la même poignée
         if (m !== 'GD') {
-          // À une main : elle suit le même arc, mais au milieu du corps — le kettlebell passe entre les jambes.
-          const t = c.tronc(p), e = t.epaules.G, el = rad(lerp(-8, 90, u)), dx = 0.02 - e.x, l = (L.bras + L.prise) * 0.985, r = Math.sqrt(Math.max(0.01, l * l - dx * dx));
+          // À une main : elle suit le même arc, mais au milieu du corps — le kettlebell passe entre les jambes. La main
+          // en pronation arrive 3 cm plus en dehors que sa cible (le radius tourne autour de l'ulna) : la cible est décalée d'autant.
+          const t = c.tronc(p), e = t.epaules.G, el = rad(lerp(-8, 90, u)), dx = -0.028 - e.x, l = (L.bras + L.prise) * 0.985, r = Math.sqrt(Math.max(0.01, l * l - dx * dx));
           const dir = V(0, -Math.cos(el), Math.sin(el)).applyQuaternion(t.qThorax);
           p.bras.G = { prise: e.clone().add(V(dx, 0, 0).applyQuaternion(t.qThorax)).addScaledVector(dir, r), pole: V(1, 0.2, -0.6).applyQuaternion(t.qThorax), paume: V(0, -Math.sin(el), -Math.cos(el)).applyQuaternion(t.qThorax), dirMain: dir, doigts: 'barre' };
           p.bras.D = B(70, 30, 0, 20, 90, { doigts: 'detendu' });
