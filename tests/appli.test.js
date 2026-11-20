@@ -434,7 +434,7 @@ test("historique d'un programme : toucher un exercice ouvre sa courbe", () => av
         exercices: [{ exerciceId: exo.id, nom: exo.nom, series: [{ poids: 20 + k, reps: 10, fait: true }, { poids: 22 + k, reps: 8, fait: true }] }] });
     }
     sauvegarderHistorique();
-    allerA('stats'); choisirOngletStats('muscu'); choisirSousOngletMuscu('programmes');
+    allerA('stats'); choisirOngletStats('muscu'); ouvrirRepliMuscu('seances');
   });
   await page.click('#muscu-stats-programmes [onclick^="voirDetailProgramme"]');
   await page.waitForSelector('#programme-detail-modal.show');
@@ -4095,7 +4095,6 @@ test('exercices sans charge : la série se dit en répétitions ou en durée, et
       pastilles: [recordsExerciceSeance(musculationHistorique, h('p2'), h('p2').exercices[0]), recordsExerciceSeance(musculationHistorique, h('q2'), h('q2').exercices[0]), recordsExerciceSeance(musculationHistorique, h('c2'), h('c2').exercices[0])],
       tableau: tableSeriesHTML(h('p2').exercices[0]).replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim(),
       tableauCharge: tableSeriesHTML(h('c2').exercices[0]).includes('1RM est.'),
-      detail: renderListeExercicesDetail(h('q2').exercices).replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim(),
       record: { fait: set.fait, record: set.record === true, ligne: document.querySelector('.serie-record').textContent.trim() },
       fiche: resumeFicheHTML('e115', musculationHistorique).replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' '),
       ficheCharge: resumeFicheHTML('e1', musculationHistorique).includes('1RM estimé')
@@ -4110,7 +4109,6 @@ test('exercices sans charge : la série se dit en répétitions ou en durée, et
   assert.deepEqual(r.pastilles, [['DURÉE'], ['RÉPS'], ['1RM', 'POIDS', 'VOL']]);
   assert.equal(r.tableau, 'Série Durée 1 1 min 15 2 1 min');
   assert.equal(r.tableauCharge, true);
-  assert.ok(r.detail.includes('15 reps') && !r.detail.includes('kg'), r.detail);
   assert.deepEqual(r.record, { fait: true, record: true, ligne: 'Nouveau record · 1 min 20' });
   assert.ok(r.fiche.includes('Tenue la plus longue 1 min 15') && r.fiche.includes('Meilleure séance (temps total) 2 min 15') && !r.fiche.includes('1RM estimé') && !r.fiche.includes('Charge la plus lourde'), r.fiche);
   assert.equal(r.ficheCharge, true);

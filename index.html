@@ -941,16 +941,6 @@
   </div>
 </div>
 
-<!-- ============ FEUILLE : pour quel repas ? (après un bouton d'ajout rapide) ============ -->
-<div class="feuille" id="feuille-choix-repas" role="dialog" aria-modal="true" aria-labelledby="feuille-choix-repas-titre">
-  <div class="feuille-contenu">
-    <div class="feuille-poignee"></div>
-    <div class="feuille-titre" id="feuille-choix-repas-titre">Pour quel repas ?</div>
-    <div id="choix-repas-liste"></div>
-    <button class="btn btn-secondaire" style="margin-top:6px;" onclick="fermerFeuilles()">Annuler</button>
-  </div>
-</div>
-
 <!-- ============ FEUILLE : choix d'une recette enregistrée à ajouter ============ -->
 <div class="feuille" id="feuille-choix-recette" role="dialog" aria-modal="true" aria-labelledby="feuille-choix-recette-titre">
   <div class="feuille-contenu">
@@ -3682,7 +3672,6 @@ function kcalSeance(type, minutes, poids, seriesFaites, intensite, options) {
   return net(met, Number(minutes) || 0);
 }
 const SPORT_LABELS = { musculation: 'Musculation', course: 'Course', natation: 'Natation', cyclisme: 'Vélo', hiit: 'HIIT', foot: 'Sport co', marche_rapide: 'Marche', rameur: 'Rameur' };
-const SPORT_COLORS = { musculation: '#ff5252', course: '#2979ff', natation: '#00e5ff', cyclisme: '#00ff66', hiit: '#ffab40', foot: '#d500f9', marche_rapide: '#9e9e9e', rameur: '#ffd60a' };
 
 let currentDate = todayStr();
 // Date ciblée par la modale Mesures (poids/composition) — d'ordinaire le
@@ -4442,16 +4431,6 @@ function mealKcal(day, mealId) {
    téléphone, sans attendre l'écran de statistiques.
    ===================================================================== */
 function fmtUneDecimale(v) { return String(Math.round(v * 10) / 10).replace('.', ','); }
-function courbeMiniSVG(valeurs, couleur) {
-  const W = 110, H = 40;
-  const connues = valeurs.filter(v => v != null);
-  if (connues.length < 2) return '';
-  let min = Math.min(...connues), max = Math.max(...connues);
-  if (max - min < 0.4) { const m = (max + min) / 2; min = m - 0.2; max = m + 0.2; }
-  const y = v => (H - (v - min) / (max - min) * H).toFixed(1);
-  const pts = valeurs.map((v, i) => v == null ? null : `${(i / (valeurs.length - 1) * W).toFixed(1)},${y(v)}`).filter(Boolean).join(' ');
-  return `<svg class="carte-stats-graph" width="${W}" height="${H}" viewBox="-2 -2 ${W + 4} ${H + 4}" aria-hidden="true"><polyline points="${pts}" fill="none" stroke="${couleur}" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
-}
 /* Tuile de Repas du jour (Pas, Poids) : icône, valeur, tendance et un
    graphique bord à bord. Le toucher note la valeur du jour (pas, pesée). */
 const ICONES_TUILE = {
@@ -5563,10 +5542,6 @@ function bilanSemaineCardio(lundi) {
   });
   return { equiv, parInt, total: parInt[1] + parInt[2] + parInt[3] };
 }
-function cleZoneCardio(v) {
-  return v >= OBJECTIF_CARDIO.haut ? 'mav' : v >= OBJECTIF_CARDIO.cible ? 'mev' : v >= OBJECTIF_CARDIO.min ? 'mv' : 'sous';
-}
-const NOMS_ZONE_CARDIO = { sous: 'Trop peu', mv: 'Un début', mev: 'Objectif atteint', mav: 'Au top' };
 /* Même jauge que les zones de volume des muscles (barreZoneHTML), en 4
    tronçons sans « trop » (gris, bleu, vert-jaune, vert) : seuils = les 3
    frontières, fin = le bout de la barre. Sert au cardio et aux pas. */
@@ -5585,10 +5560,6 @@ function barreSeuilsHTML(v, seuils, fin, texteEchelle) {
   const cle = val >= seuils[2] ? 'mav' : val >= seuils[1] ? 'mev' : val >= seuils[0] ? 'mv' : 'sous';
   const ech = seuils.map(x => `<span style="left:${(x / fin * 100).toFixed(2)}%">${texteEchelle ? texteEchelle(x) : x}</span>`).join('');
   return `<div class="zone-barre" aria-hidden="true">${segs}<span class="zone-curseur${val > 0 ? '' : ' zone-curseur--vide'}" style="--c:${ZONES_INFO[cle].couleur};left:clamp(8px, ${gauche}, calc(100% - 8px));"></span></div><div class="cardio-echelle" aria-hidden="true">${ech}</div>`;
-}
-function barreCardioHTML(v) {
-  const O = OBJECTIF_CARDIO;
-  return barreSeuilsHTML(v, [O.min, O.cible, O.haut], O.fin);
 }
 
 /* Jauge des pas du jour (carte « Pas du jour », écran Repas) : les études relient
@@ -6346,21 +6317,6 @@ function majAnneau(cle, valeur, cible) {
   if (cle === 'kcal') c.setAttribute('stroke', valeur > cible * 1.02 ? 'url(#grad-kcal-trop)' : 'url(#grad-kcal)');
 }
 
-/* Chaque macro a sa barre : la comparaison « 118 / 180 g » demandait un
-   calcul mental a chaque coup d'oeil. Au-dela de 100 %, la barre se raye. */
-function majMacro(cle, valeur, cible) {
-  const barre = document.getElementById('jauge-' + cle);
-  const piste = document.getElementById('piste-' + cle);
-  const pct = document.getElementById('pct-' + cle);
-  if (!barre) return;
-  const p = cible > 0 ? (valeur / cible) * 100 : 0;
-  barre.style.width = Math.max(0, Math.min(100, p)) + '%';
-  if (piste) piste.classList.toggle('depasse', p > 100.5);
-  if (pct) {
-    pct.textContent = Math.round(p) + ' %';
-    pct.style.color = p > 110 ? 'var(--danger)' : 'var(--text-muted)';
-  }
-}
 
 /* Eau bue : comparée à un objectif calculé automatiquement (quotaEauSuggere),
    jamais réglé à la main — sans lien avec l'hydratation en % de la balance à
@@ -8479,7 +8435,7 @@ function ouvrirFicheRecette(id, repas) {
   const r = trouverRecette(id);
   if (!r) return;
   ficheRecette = { id, repas: repas || repasFeuille || repasDuMoment(), nb: 1 };
-  const t = totauxRecettePerso(r), fr = n => Math.round(n).toLocaleString('fr-FR');
+  const fr = n => Math.round(n).toLocaleString('fr-FR');
   document.getElementById('fiche-recette-titre').textContent = r.nom;
   const lignes = r.lignes && r.lignes.length ? r.lignes : (r.ingredients || []).map(i => `${fr(i.grammes)} g ${String(i.nom || '').toLowerCase()}`);
   // « en-… » : traduite du Cookbook anglais de Wikibooks ; sinon du Livre de cuisine de Wikilivres.
@@ -10652,12 +10608,6 @@ function ouvrirMacro(cle) {
 function ouvrirDepense() {
   ouvrirModal('depense-modal');
 }
-// Deuxième niveau d'onglets, à l'intérieur de l'onglet Musculation (voir
-// commentaire sur .stats-soustab dans le CSS) : classe différente de
-// .stats-tab pour ne pas être recapturée par choisirOngletStats ci-dessus.
-function choisirSousOngletMuscu(nom) {
-  ouvrirRepliMuscu(nom === 'programmes' ? 'seances' : nom);
-}
 
 /* Les curseurs émettent « input » à chaque pixel. Sans temporisation, glisser
    le doigt détruisait et recréait les 4 graphiques des centaines de fois :
@@ -10744,7 +10694,6 @@ function dateIsoPourIndexStats(idx) {
   return shiftDate(todayStr(), -((globalMasterLabels.length || JOURS_STATS) - 1 - idx));
 }
 // Corps, Nutrition, Activité et Musculation partagent la même période.
-function bornesPlageMuscu() { return bornesPlage(); }
 function bornesPlageNutrition() { return bornesPlage(); }
 let statsMuscuTimer = null;
 function mettreAJourStatsMuscu() {
@@ -10955,8 +10904,7 @@ function renderChartsPoids(s, e) {
      la fabrique commune (voir plus haut), plutôt que de refaire cette
      lecture à la main pour chaque graphique. */
   const p = paletteGraphique();
-  const cPrimaire = p.primaire, cAccent = p.accent, cProt = p.protein, cGluc = p.carbs, cLip = p.fat;
-  const baseOpts = optionsGraphiqueBase(p, { avecLegende: false });
+  const cPrimaire = p.primaire, cAccent = p.accent, cLip = p.fat;
   /* --- POIDS : les pesées brutes en points, la tendance en ligne pleine ---
      `spanGaps` relie la tendance par-dessus les jours sans pesée : sans cela,
      un jour manqué coupait la courbe en tronçons illisibles. */
@@ -12147,28 +12095,6 @@ function renderChoixRecette() {
    utilisateur, admin aliments). fermerFeuilles() est défini plus bas ;
    les déclarations de fonction étant remontées, l'appel est sûr. */
 function fermerFeuilleRepas() { fermerFeuilles(); }
-/* Boutons d'ajout rapide de l'écran Repas : on choisit d'abord COMMENT
-   ajouter (recette, aliment, photo, code-barres), puis le repas visé — le
-   repas du moment est mis en avant mais tous restent proposés. */
-let modeAjoutEnAttente = null;
-function choisirModeAjout(mode) {
-  modeAjoutEnAttente = mode;
-  const libelles = { recette: 'Ajouter une recette', manuel: 'Ajouter un aliment', photo: 'Ajouter par photo', barcode: 'Scanner un code-barres' };
-  document.getElementById('feuille-choix-repas-titre').textContent = (libelles[mode] || 'Ajouter') + ' — pour quel repas ?';
-  const actuel = repasDuMoment();
-  const day = getDay(currentDate);
-  document.getElementById('choix-repas-liste').innerHTML = MEALS.map(m => `
-    <button class="feuille-action${m === actuel ? ' feuille-action--suggere' : ''}" onclick="choisirRepasAjout(${argJs(m)})">
-      <span class="ic" aria-hidden="true">${MEAL_ICONS[m]}</span>
-      <span>${MEAL_LABELS[m]}<span class="sous">${mealKcal(day, m)} kcal${m === actuel ? ' · repas du moment' : ''}</span></span>
-    </button>`).join('');
-  ouvrirFeuille('feuille-choix-repas');
-}
-function choisirRepasAjout(mealId) {
-  repasFeuille = mealId;
-  fermerFeuilles();
-  depuisFeuille(modeAjoutEnAttente || 'manuel');
-}
 function depuisFeuille(mode) {
   const mealId = repasFeuille || repasDuMoment();
   fermerFeuilleRepas();
@@ -19238,62 +19164,25 @@ function svgSilhouetteGroupe(groupe) {
 /* Photo/instructions d'un exercice : celles portées par l'exercice
    lui-même (cas d'un exercice personnalisé avec une image ajoutée à la
    main) sinon celles de EXERCICE_MEDIA (exercices de la base). */
-/* Vidéos de démonstration de la bibliothèque SmartWorkout, lues
-   directement depuis leurs serveurs (jamais copiées) et seulement à
-   l'ouverture d'une fiche ; la vignette sert d'image dans les listes.
-   [identifiant vidéo, identifiant vignette, page de l'exercice]. */
-const SW_ASSET = 'https://api.smartworkout.app/asset/';
 /* Site et app : ni vidéo ni image SmartWorkout (contenus d'un autre
    éditeur, sans licence), ni GIF ExerciseDB (usage non commercial
-   seulement), ni image wger (licence propre à chaque image). Jusqu'au
-   9 novembre 2026, seule l'app iPhone les écartait ; le site, qui vend le
-   même abonnement, les affichait encore (audit LEG-01). Les exercices
-   concernés montrent le schéma de leurs muscles, consignes comprises. Les
-   tables VIDEOS_SMARTWORKOUT et SW_IMAGE_VERS_VIDEO de donnees.js sont vides
-   et le dossier assets/miniatures a été retiré ; les branches qui en
-   dépendaient restent en place pour les vidéos ajoutées dans Administration. */
+   seulement), ni image wger (licence propre à chaque image) — audit LEG-01.
+   Les exercices concernés montrent leur mouvement en 3D ou le schéma de
+   leurs muscles, consignes comprises. Un lien de cette origine posé
+   autrefois dans Administration est ignoré. */
 function mediaTiersInterdit(url) {
   return /smart-?workout|exercisedb\.dev|wger\.de/i.test(url || '');
 }
-function videoSmartWorkout() {
-  return null;
-}
-/* Images SmartWorkout -> vidéo de la même page. Coller par erreur le lien
-   de l'image d'une page SmartWorkout (…/asset/image/<id>, celle qu'on
-   obtient en partageant ou en copiant l'image) à la place de sa vidéo
-   (…/asset/video/<id>.mp4) donnait un carré noir. Clé : les 13 premiers
-   caractères de l'identifiant de l'image (image de partage de chaque page,
-   et aperçu des vidéos déjà connues), valeur : l'identifiant de la vidéo.
-   Relevé sur les 1 012 pages de la bibliothèque SmartWorkout. */
 function estLienImage(url) {
   return /\/asset\/image\//i.test(url || '') || /\.(jpe?g|png|webp|gif|avif)(\?|#|$)/i.test(url || '');
 }
-// Lien d'image SmartWorkout -> lien de la vidéo correspondante (ou null).
-function videoDepuisLienImageSW(url) {
-  const m = /\/asset\/image\/([a-f0-9-]{13})/i.exec(url || '');
-  const id = m && SW_IMAGE_VERS_VIDEO[m[1].toLowerCase()];
-  return id ? SW_ASSET + 'video/' + id + '.mp4' : null;
-}
+/* La vidéo d'un exercice : le lien saisi dans Administration (exercice
+   personnalisé, ou correction d'un exercice de la base) ; sans lien, pas de
+   vidéo. Une image collée à la place de la vidéo s'affiche comme image. */
 function videoExercice(exo) {
-  // Lien saisi dans Administration (exercice perso, ou correction d'un
-  // exercice de la base) : prioritaire ; vide = pas de vidéo du tout.
-  if (exo && typeof exo.video === 'string') {
-    if (!exo.video || mediaTiersInterdit(exo.video)) return null;
-    // Une image collée à la place de la vidéo : on retrouve la vidéo de la
-    // même page SmartWorkout si possible, sinon on l'affiche comme image.
-    if (estLienImage(exo.video)) {
-      const v = videoDepuisLienImageSW(exo.video);
-      return { video: v, poster: exo.video, page: v || exo.video };
-    }
-    return { video: exo.video, poster: exo.videoPoster && !mediaTiersInterdit(exo.videoPoster) ? exo.videoPoster : null, page: exo.video };
-  }
-  const v = exo && videoSmartWorkout(exo.id);
-  if (!v) return null;
-  return {
-    video: SW_ASSET + 'video/' + v[0] + '.mp4',
-    poster: v[1] ? SW_ASSET + 'image/' + v[1] : null,
-    page: 'https://smartworkout.app/fr/bibliotheque-d-exercices/' + v[2]
-  };
+  if (!exo || typeof exo.video !== 'string' || !exo.video || mediaTiersInterdit(exo.video)) return null;
+  if (estLienImage(exo.video)) return { video: null, poster: exo.video, page: exo.video };
+  return { video: exo.video, poster: exo.videoPoster && !mediaTiersInterdit(exo.videoPoster) ? exo.videoPoster : null, page: exo.video };
 }
 function mediaExercice(exo) {
   const m = exo.img && exo.img.length ? { img: exo.img, ins: exo.ins || [] } : EXERCICE_MEDIA[exo.id];
@@ -19329,14 +19218,8 @@ function vignettes3DAnimees() {
    bibliothèque) : sa vidéo ou ses photos d'Administration, la photo de
    EXERCICE_MEDIA s'il y est reconnu, à défaut le schéma corps. */
 function medaillonExercice(exo, anime) {
-  // Exercice de la bibliothèque avec une vidéo SmartWorkout : sa vignette
-  // passe avant les anciennes photos, pour que la liste montre la même
-  // démonstration que la fiche. Un exercice personnalisé garde sa photo.
   // « anime » (séance, aperçu d'un programme : quelques exercices à la
-  // fois) : la vignette joue en boucle, sans son, une version miniature de
-  // la vidéo (120 px, ~10 Ko, dans assets/miniatures) au lieu de l'originale
-  // Full HD de ~1 Mo, trop lente à charger pour une vignette. Ailleurs
-  // (bibliothèque, sélecteurs : des centaines de lignes) elle reste une image.
+  // fois) : une vidéo ajoutée dans Administration joue en boucle, sans son.
   // Un exercice de la bibliothèque qui a son mouvement montre toujours sa miniature 3D, même si une vidéo ou des
   // photos lui ont été posées autrefois dans Administration (c'étaient des copies de SmartWorkout, sans licence) :
   // chargée près de l'écran seulement, la bibliothèque en affiche des centaines.
@@ -19346,18 +19229,6 @@ function medaillonExercice(exo, anime) {
     return `<img class="vignette-3d${boucle ? ' vignette-differee' : ''}" src="${v3d}" alt="" decoding="async" loading="lazy"${boucle} data-repli="${escapeHtml(exo.groupe || '')}">`;
   }
   const sw = !exo.perso && videoExercice(exo);
-  const swBase = !exo.perso && typeof exo.video !== 'string' && videoSmartWorkout(exo.id);
-  if (swBase) {
-    const mini = 'assets/miniatures/' + swBase[0];
-    if (anime) return `<video src="${mini}.mp4" poster="${mini}.jpg" autoplay muted loop playsinline disablepictureinpicture disableremoteplayback preload="auto" aria-hidden="true" style="background:#2b2c30;"></video>`;
-    // Listes (bibliothèque, sélecteurs : des centaines de lignes) : une
-    // simple image (chargée seulement près de l'écran), remplacée par la
-    // mini-vidéo uniquement quand la ligne reste visible un instant, et
-    // jamais plus de quelques vidéos à la fois (voir observerVignettesVideo).
-    // Des centaines de balises <video> faisaient ramer le défilement sur
-    // iPhone et téléchargeaient toutes leurs images d'aperçu d'un coup.
-    return `<img class="vignette-differee" src="${mini}.jpg" data-video="${mini}.mp4" alt="" loading="lazy" decoding="async" style="background:#2b2c30;">`;
-  }
   // Vidéo ajoutée dans Administration : en séance, elle joue en boucle.
   if (anime && sw && sw.video && typeof exo.video === 'string') return videoVignetteHTML(sw.video, sw.poster, true);
   // data-repli : image distante introuvable (hors ligne, lien mort) → la
@@ -19376,8 +19247,7 @@ function medaillonExercice(exo, anime) {
     // confirme que l'image est bien visible) sans aucun bénéfice de perf.
     return `<img src="${escapeHtml(media.img[0])}" alt="" decoding="async"${repli}${fondSombre}>`;
   }
-  // Pas de photo à nous : vignette SmartWorkout (lazy, la bibliothèque en
-  // affiche plusieurs centaines).
+  // Pas de photo à nous : l'aperçu de la vidéo ajoutée dans Administration.
   const v = videoExercice(exo);
   if (v && v.poster) return `<img src="${escapeHtml(v.poster)}" alt="" decoding="async" loading="lazy"${repli} style="background:#fff;">`;
   // Une vidéo mais ni aperçu ni photo (lien ajouté dans Administration) :
@@ -19416,7 +19286,7 @@ function vignetteEnVideo(img) {
   v.setAttribute('aria-hidden', 'true');
   v.addEventListener('playing', () => v.classList.add('prete'), { once: true });
   // Miniature 3D : la boucle du thème affiché (son fond est celui de la case).
-  v.src = img.dataset.video || animationVignette3D(img.dataset.anim3d);
+  v.src = animationVignette3D(img.dataset.anim3d);
   img.after(v);
   img._video = v;
   vignettesActives.add(img);
@@ -19505,9 +19375,6 @@ function corpsExerciceHTML(e) {
 }
 function estIllustrationVectorielle(url) {
   return url.includes('/workout-guide/');
-}
-function estGifExerciseDb(url) {
-  return url.includes('static.exercisedb.dev');
 }
 /* Mention de la source sous l'image d'une fiche, exigée par leurs
    licences (CC BY-SA 4.0 pour les illustrations, attribution pour
@@ -20848,30 +20715,6 @@ function voirDetailProgramme(cle) {
   ouvrirModal('programme-detail-modal');
 }
 
-/* Rendu partagé de la liste d'exercices d'une séance (en cours, ou déjà
-   enregistrée dans l'historique) : regroupe les supersets et affiche
-   l'éventuelle technique (dégressif/pyramidal) de chaque série — elle
-   s'applique à une série précise, pas à tout l'exercice (une série de
-   dégressif est en général suivie de séries normales). Réutilisé par le
-   détail d'une séance de l'historique et le détail d'un programme. */
-function renderListeExercicesDetail(liste) {
-  return grouperBlocsExercices(liste).map(indices => {
-    const contenu = indices.map(i => {
-      const e = liste[i];
-      const exoRef = trouverExercice(e.exerciceId);
-      const label = exoRef ? libelleExercice(exoRef) : e.nom;
-      const series = e.series.map((s, si) => `<div style="display:flex; align-items:center; gap:8px; justify-content:space-between; font-size:0.82rem; padding:4px 0; border-bottom:1px solid var(--verre-brd);">
-        <span style="display:flex; align-items:center; gap:8px;">${boutonNumeroSerie(si, s.technique)}</span><span>${mesureExercice(exoRef).aPart ? escapeHtml(texteSerie(exoRef, s.poids, s.reps)) : `${s.poids != null && s.poids !== '' ? nombreFr(s.poids) : '—'} kg × ${escapeHtml(s.reps ?? '—')}`}${s.fait ? ' <svg class="icone-ui" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10" /><path d="m16 9-5.5 5.5L8 12" /></svg>' : ''}</span></div>`).join('');
-      const note = e.notes ? `<p class="note" style="margin:6px 0 0; font-style:italic;">Note : ${escapeHtml(e.notes)}</p>` : '';
-      // Toucher l'exercice ouvre sa fiche sur le résumé : courbe de progression
-      // et historique de toutes ses séances.
-      return `<div style="margin-bottom:14px;"><button type="button" class="detail-exo-titre" onclick="ouvrirHistoriqueExercice(${argJs(e.exerciceId)})" aria-label="Historique et courbe de ${escapeHtml(label)}"><span>${escapeHtml(label)}</span>${ICONE_COURBE}</button>${series}${note}</div>`;
-    }).join('');
-    return indices.length > 1
-      ? `<div class="session-superset-bloc"><div class="session-superset-titre"><svg class="icone-ui" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" /><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" /></svg> Superset</div>${contenu}</div>`
-      : contenu;
-  }).join('');
-}
 
 function renderStatsRecordsMuscu(historique, idCible) {
   const c = document.getElementById(idCible);
@@ -21377,17 +21220,11 @@ function resumeTempo(t) {
   const p = phasesTempo(t);
   return `Descente ${p.descente} · pause ${p.basse} · montée ${p.montee} · pause ${p.haute}`;
 }
-function tempoBadgeHTML(tempo) {
-  if (!tempo) return '';
-  const t = escapeHtml(tempo);
-  return `<button type="button" class="tempo-badge" onclick="ouvrirAideTempo(${argJs(t)})" title="${escapeHtml(resumeTempo(tempo))}">Tempo <b>${t}</b></button>`;
-}
 function ouvrirAideTempo(tempo) {
   const zone = document.getElementById('tempo-decodage');
   if (zone) {
     const t = normaliserTempo(tempo);
     if (t) {
-      const p = phasesTempo(t);
       const d = dureeRepTempo(t);
       zone.innerHTML = `<p class="note" style="margin:0;">Ton tempo <b style="letter-spacing:2px;">${escapeHtml(t)}</b> :</p>
         <div class="tempo-phases">
@@ -22280,7 +22117,6 @@ function exercicesSimilaires(exerciceId, combien) {
     (c.secondaires || []).forEach(g => { if (secA.has(g)) score += 1.5; });
     if (pratiques.has(c.id)) score += 2;
     if (c.materiel === a.materiel) score += 1;
-    if (videoSmartWorkout(c.id)) score += 0.5;
     return { c, score };
   }).sort((x, y) => y.score - x.score).slice(0, combien || 6).map(x => x.c);
 }
@@ -22511,14 +22347,7 @@ function afficherFicheExerciceBiblio(id, options) {
   if (mouvement3d) {
     html += `<div id="fiche-exo-media">${mouvementFicheHTML(e, media)}</div>`;
   } else if (video) {
-    // Comme l'agrandissement (agrandirVideoExercice) : la mini-vidéo locale
-    // (~10 Ko) joue tout de suite, la vidéo HD distante (~1 Mo) la recouvre
-    // en fondu dès qu'elle peut jouer. Avant, la fiche restait sur une image
-    // fixe distante pendant tout le téléchargement.
-    const brutFiche = !e.perso && typeof e.video !== 'string' && videoSmartWorkout(e.id);
-    const miniFiche = brutFiche ? 'assets/miniatures/' + brutFiche[0] : null;
-    html += `<div class="fiche-exo-video${miniFiche ? ' fiche-exo-video--mini' : ''}">${miniFiche ? `<video class="mini" src="${miniFiche}.mp4" poster="${miniFiche}.jpg" autoplay muted loop playsinline disablepictureinpicture aria-hidden="true"></video>` : ''}<span class="hd-place" data-url="${escapeHtml(video.video)}"${video.poster && !miniFiche ? ` data-poster="${escapeHtml(video.poster)}"` : ''} data-label="Démonstration : ${escapeHtml(libelleExercice(e))}"></span></div>
-    ${/smartworkout\.app/i.test(video.page) ? `<p class="note fiche-exo-note-source">Vidéo : <a href="${escapeHtml(video.page)}" target="_blank" rel="noopener" style="color:var(--accent);">SmartWorkout</a></p>` : ''}`;
+    html += `<div class="fiche-exo-video"><span class="hd-place" data-url="${escapeHtml(video.video)}"${video.poster ? ` data-poster="${escapeHtml(video.poster)}"` : ''} data-label="Démonstration : ${escapeHtml(libelleExercice(e))}"></span></div>`;
   } else {
     html += `<div id="fiche-exo-media">${mediaStatiqueFicheHTML(e, media)}</div>`;
   }
@@ -22748,11 +22577,10 @@ function basculerMetriqueFiche(m) {
   rendreHistoriqueFiche();
   rendreCourbePleinEcran();
 }
-/* Vidéos HD (SmartWorkout) gardées prêtes. Leur serveur met ~0,8 s à
-   répondre et n'envoie aucun en-tête de cache : chaque nouvelle balise
-   <video> retéléchargeait tout (~1 Mo), d'où ~1 s de mini-vidéo floue avant
-   la HD. On garde donc les balises déjà chargées, et on précharge celles de
-   la séance en cours et du programme ouvert : la fiche et l'agrandissement
+/* Vidéos de démonstration (ajoutées dans Administration) gardées prêtes :
+   un serveur distant peut mettre près d'une seconde à répondre, sans cache.
+   On garde donc les balises déjà chargées, et on précharge celles de la
+   séance en cours et du programme ouvert : la fiche et l'agrandissement
    reprennent la balise, déjà prête, au lieu d'en créer une nouvelle. */
 const videosHD = new Map();          // lien -> <video> (la plus récente en dernier)
 const VIDEOS_HD_MAX = 16;
@@ -22851,13 +22679,10 @@ function agrandirVideoExercice(exerciceId) {
   // dessiné restent pour un appareil sans 3D et pour les exercices sans miniature (créés par l'utilisateur).
   if (atlasDisponible() && vignette3DExercice(exo)) { ouvrirAtlas('exercice', { exercice: exo.id }); return; }
   const v = videoExercice(exo);
-  const brut = !exo.perso && typeof exo.video !== 'string' && videoSmartWorkout(exo.id);
   if (v && v.video) {
-    const mini = brut ? 'assets/miniatures/' + brut[0] : null;
-    zone.innerHTML = (mini ? `<video src="${mini}.mp4" poster="${mini}.jpg" autoplay muted loop playsinline disablepictureinpicture aria-hidden="true" style="filter:blur(1px);"></video>` : '')
-      + `<span class="hd-place" data-url="${escapeHtml(v.video)}"${v.poster && !mini ? ` data-poster="${escapeHtml(v.poster)}"` : ''} data-label="Démonstration : ${escapeHtml(libelleExercice(exo))}"></span>`;
+    zone.innerHTML = `<span class="hd-place" data-url="${escapeHtml(v.video)}"${v.poster ? ` data-poster="${escapeHtml(v.poster)}"` : ''} data-label="Démonstration : ${escapeHtml(libelleExercice(exo))}"></span>`;
     const hd = brancherVideosHD(zone, true)[0];
-    if (hd && !mini) hd.classList.add('prete');
+    if (hd) hd.classList.add('prete');
   } else {
     const media = mediaExercice(exo);
     const img = (media && media.img && media.img[0]) || (v && v.poster);
@@ -24323,7 +24148,7 @@ function carteAtlas(mode, structures) {
     if (mieux) couleurs[s.id] = melangerCouleurs(N.muscle, mieux.c, Math.max(0.18, Math.min(1, mieux.k)));
   });
   const carte = { couleurs, muscle: N.muscle, tendon: N.tendon, os: N.os, peau: N.peau, tendons: 0.3, estompe: 0.5 };
-  const rose = couleurCssAtlas('--corps-cible', '#f472b6'), date = iso => formatDateDisplay(iso).toLowerCase();
+  const rose = couleurCssAtlas('--corps-cible', '#f472b6');
   if (mode === 'semaine') {
     carte.legende = ['sous', 'mv', 'mev', 'mav', 'mrv'].map(k => ({ c: ZONES_INFO[k].couleur, t: ZONES_INFO[k].court }));
     carte.note = Object.keys(couleurs).length ? '' : 'Aucune série de travail cette semaine pour l\'instant.';
@@ -24550,11 +24375,6 @@ function libelleSemaine(iso) {
   const d = new Date(l); d.setDate(d.getDate() + 6);
   const mois = x => x.toLocaleDateString('fr-FR', { month: 'short' });
   return l.getMonth() === d.getMonth() ? `${l.getDate()} – ${d.getDate()} ${mois(d)}` : `${l.getDate()} ${mois(l)} – ${d.getDate()} ${mois(d)}`;
-}
-function numeroSemaine(iso) {
-  const d = dateLocale(iso); d.setDate(d.getDate() + 3 - ((d.getDay() + 6) % 7));
-  const j1 = new Date(d.getFullYear(), 0, 4);
-  return 1 + Math.round(((d - j1) / 864e5 - 3 + ((j1.getDay() + 6) % 7)) / 7);
 }
 
 /* ---------- Cardio ---------- */
@@ -27239,7 +27059,6 @@ function renderResumeProgres() {
   const f = evolutionForce(m.seances, m.avant);
   const pr = projectionPoids(b);
   const objectif = dernierObjectifConnu(todayStr());
-  const vert = 'var(--pg-bon)', rouge = 'var(--pg-mauvais)';
 
   // Héros
   const courbe = b.pesees >= 2 ? courbePoidsHeros(s, e, pr) : '';
@@ -27422,7 +27241,6 @@ function avecWeekEnds(opts, s, e) {
   return opts;
 }
 function renderExtrasNutrition(s, e) {
-  const b = bilanPeriode(s, e);
   const cst = document.getElementById('pg-constat-nutrition');
   if (cst) {
     const we = ecartWeekEnd(s, e);
@@ -28689,11 +28507,6 @@ function modifierSerieSession(ei, si, champ, valeur) {
 /* Pavé de saisie à la salle : la série à faire en grand, charge et
    répétitions au pouce (− / +, appui long pour défiler), sans clavier.
    Le pas de charge suit le matériel (Réglages › Incréments de charge). */
-function pasChargeSession(ei) {
-  const exo = musculationSessionActive && musculationSessionActive.exercices[ei];
-  const complet = exo && trouverExercice(exo.exerciceId);
-  return incrementCharge(complet ? complet.materiel : 'autre') || 1;
-}
 function valeurDepartSerie(ei, si, champ) {
   const exo = musculationSessionActive.exercices[ei], set = exo.series[si];
   if (set[champ] != null && set[champ] !== '') return Number(set[champ]);
@@ -31684,7 +31497,7 @@ function rendreExercicesAdmin(exercices, totalReel) {
     if (vid && !vid.video) {
       const alerte = document.createElement('small');
       alerte.style.color = 'var(--danger)';
-      alerte.textContent = "Lien d'image, pas de vidéo : remplace-le par le lien de la vidéo (…/asset/video/….mp4)";
+      alerte.textContent = "Lien d'image, pas de vidéo : remplace-le par le lien de la vidéo (il finit par .mp4)";
       info.appendChild(alerte);
     } else if (vid) {
       const lien = document.createElement('a');
@@ -31817,25 +31630,16 @@ async function sauvegarderEditionExerciceAdmin() {
   const materiel = document.getElementById('edit-exo-materiel').value;
   let video = document.getElementById('edit-exo-video').value.trim();
   if (video && !urlImageValide(video)) { alert("Le lien de la vidéo doit commencer par http:// ou https://."); return; }
-  // Lien d'une IMAGE collé dans le champ vidéo : on le remplace par la
-  // vidéo de la même page SmartWorkout ; introuvable, on le range dans
-  // l'image d'aperçu et on demande le bon lien.
+  // Lien d'une IMAGE collé dans le champ vidéo : on le range dans l'image
+  // d'aperçu et on demande le bon lien.
   if (video && estLienImage(video)) {
-    const v = videoDepuisLienImageSW(video);
-    if (v) {
-      if (!image) document.getElementById('edit-exo-image').value = video;
-      video = v;
-      document.getElementById('edit-exo-video').value = v;
-    } else {
-      if (!image) { document.getElementById('edit-exo-image').value = video; afficherChampImageExercice(true); }
-      document.getElementById('edit-exo-video').value = '';
-      alert("Ce lien est celui d'une image, pas d'une vidéo : je l'ai placé dans « Image d'aperçu ».\n\nPour la vidéo, colle le lien qui finit par .mp4 (sur SmartWorkout : …/asset/video/….mp4), puis enregistre.");
-      return;
-    }
+    if (!image) { document.getElementById('edit-exo-image').value = video; afficherChampImageExercice(true); }
+    document.getElementById('edit-exo-video').value = '';
+    alert("Ce lien est celui d'une image, pas d'une vidéo : je l'ai placé dans « Image d'aperçu ».\n\nPour la vidéo, colle le lien qui finit par .mp4, puis enregistre.");
+    return;
   }
   image = document.getElementById('edit-exo-image').value.trim();
-  // On n'enregistre la vidéo que si elle a été modifiée : sinon l'exercice
-  // continue de suivre la vidéo SmartWorkout d'origine.
+  // On n'enregistre la vidéo que si elle a été modifiée.
   const videoModifiee = video !== (modal.dataset.videoInitiale || '');
   const faisceaux = faisceauxAEnregistrer(groupe);
 
