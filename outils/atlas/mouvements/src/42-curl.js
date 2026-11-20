@@ -31,7 +31,8 @@
       // Sur le dos : banc incliné, les bras pendent derrière le buste ; par terre (câble), le long du corps.
       const ang = o.sol ? 0 : (o.banc === true ? 55 : o.banc);
       a = B(90, 5, 0, 10, pron); b = B(60, 10, 0, 138, pron);
-      if (!o.sol) { a = B(0, -(90 - ang) * 0.85, 0, 8, pron); b = B(0, -(90 - ang) * 0.8, 0, 132, pron); }
+      // Banc incliné : les bras pendent en arrière du buste et un peu en dehors — l'haltère passe à côté de la hanche.
+      if (!o.sol) { a = B(-22, -(90 - ang) * 0.85, 0, 8, pron); b = B(-22, -(90 - ang) * 0.8, 0, 132, pron); }
       ancre = V(0, 0.25, 1.35);
     } else if (o.concentre) {
       // Assis, buste penché : le bras pend entre les cuisses, le coude contre l'intérieur de la cuisse.

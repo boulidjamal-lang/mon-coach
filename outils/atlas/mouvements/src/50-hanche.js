@@ -18,14 +18,14 @@
     if (o.balancement || o.cercles) {
       d.rythme = 'continu'; d.periode = o.cercles ? 2.4 : 1.6;
       const base = debout(c, { ecart: 0.07, ouv: 6 }); appui(base, o.lateral ? 0.42 : null);
-      if (!o.lateral && !o.cercles) { fixe.length = 0; for (const [k, s] of COTES) base.bras[k] = k === 'D' ? { prise: V(-0.45, 1.05, 0), pole: V(-1, -0.6, -0.2), paume: V(0, -1, 0), doigts: 'barre' } : B(90, 40, 0, 15, 90, { doigts: 'detendu' }); fixe.push(pret(seg(V(-0.47, 0, 0), V(-0.47, 1.03, 0), 0.025, C.cadre, 0.5))); }
+      if (!o.lateral && !o.cercles) { fixe.length = 0; for (const [k] of COTES) base.bras[k] = k === 'D' ? { prise: V(-0.45, 1.05, 0), pole: V(-1, -0.6, -0.2), paume: V(0, -1, 0), doigts: 'barre' } : B(90, 40, 0, 15, 90, { doigts: 'detendu' }); fixe.push(pret(seg(V(-0.47, 0, 0), V(-0.47, 1.03, 0), 0.025, C.cadre, 0.5))); }
       d.pose = ph => { const p = cloner(base), w = ph * 2 * Math.PI; p.jambes.G = o.cercles ? J(62 + 16 * Math.cos(w), 22 + 22 * Math.sin(w), 0, 80, 20) : o.lateral ? J(0, 14 + 30 * Math.sin(w), 0, 4, 15) : J(42 * Math.sin(w) + 6, 3, 0, 8 + 24 * (1 - Math.abs(Math.sin(w))) + 10 * Math.max(0, -Math.sin(w)), 4); return p; };
       d.vue = o.lateral || o.cercles ? { az: 15, el: 8 } : { az: 70, el: 8 }; return d;
     }
     if (o.hyperinverse) {
       // À plat ventre sur un banc haut, hanches au bord : les jambes pendent puis montent à l'horizontale.
       const base = aPlatVentre(c, { h: 0.85, angle: 0, d: 0.1, jambes: J(60, 4, 0, 10, 20), regions: ['thorax', 'abdomen'] });
-      const cle = u => { const p = cloner(base); p.jambes = pareil(J(lerp(62, -10, u), 4, 0, lerp(14, 4, u), 20)); for (const [k, s] of COTES) p.bras[k] = { prise: V(s * 0.2, 0.72, p.bassin.pos.z + 0.6), pole: V(s * 1, -0.3, -0.2), paume: V(-s, 0, 0), doigts: 'barre' }; return p; };
+      const cle = u => { const p = cloner(base); p.jambes = pareil(J(lerp(62, -10, u), 4, 0, lerp(14, 4, u), 20)); for (const [k, s] of COTES) p.bras[k] = { prise: V(s * 0.15, 0.85 - 0.0325, p.bassin.pos.z + 0.6), pole: V(s * 1, -0.3, -0.2), paume: V(-s, 0, 0), doigts: 'barre', rayon: 0.03 }; return p; };   // les mains sur le bord du coussin
       d.a = cle(0); d.b = cle(1); fixe.push(...poseFixe(MAT.banc(C, 0, 0.85, 0.8, 0.1), V(0, 0, 0.1), qY(180)));
       if (o.elas) d.objets = (info, u, sortie) => sortie.push(pret(seg(V(0, 0.1, base.bassin.pos.z + 0.3), info.chevilles.G.clone().setX(0), 0.008, C.elastique, 0)));
       d.vue = { az: 62, el: 10 }; return d;
@@ -59,9 +59,18 @@
       const ouvert = 36, ferme = 5;
       const base = allonge(c, { h: 0.5, angle: 76, jambes: J(74, ferme, 0, 88, 0), lomb: 0, thor: 0, cou: 0 });
       fixe.push(...poseFixe(MAT.banc(C, 76, 0.5)));
-      const cle = k => { const p = cloner(base); p.jambes = pareil(J(74, k, 0, 88, 0)); p.bras = pareil(B(80, 14, 0, 35, 90)); return p; };
+      const cle = k => { const p = cloner(base); p.jambes = pareil(J(74, k, 0, 88, 0)); p.bras = pareil(o.elas ? B(80, 14, 0, 35, 90, { doigts: 'detendu' }) : B(108, 18, 0, 26, 90)); return p; };   // machine : les mains sur les poignées, en arrière des cuisses
       d.a = cle(o.adduction ? ouvert : ferme); d.b = cle(o.adduction ? ferme : ouvert); d.vue = { az: 20, el: 14 };
-      d.objets = (info, u, sortie) => { for (const [k, s] of COTES) { const g = info.genoux[k]; if (o.elas) continue; sortie.push(pret(boite(0.05, 0.16, 0.2, g.x + s * (o.adduction ? -0.075 : 0.075), g.y, g.z - 0.08, C.banc, 0))); } if (o.elas) sortie.push(pret(seg(info.genoux.G.clone().add(V(0, 0.05, -0.04)), info.genoux.D.clone().add(V(0, 0.05, -0.04)), 0.012, C.elastique, 0))); };
+      // Les coussins suivent les cuisses : à plat contre leur face interne (adducteurs) ou externe (abducteurs), près du genou.
+      d.objets = (info, u, sortie) => {
+        for (const [k, s] of COTES) {
+          if (o.elas) continue;
+          const g = info.genoux[k], t = unite(g.clone().sub(info.hanches[k])), n = perp(V(o.adduction ? -s : s, 0, 0), t).normalize(), ctr = g.clone().addScaledVector(t, -0.09).addScaledVector(n, 0.095);
+          poigneeEnMain(C, info, k, V(s * 0.2, 0.47, info.prises[k].z), sortie);
+          sortie.push(pret(boite(0.05, 0.16, 0.2, ctr.x, ctr.y, ctr.z, C.banc, 0, new Quat().setFromBasis(n, t.clone().cross(n), t))));
+        }
+        if (o.elas) sortie.push(pret(seg(info.genoux.G.clone().add(V(0, 0.05, -0.04)), info.genoux.D.clone().add(V(0, 0.05, -0.04)), 0.012, C.elastique, 0)));
+      };
       return d;
     }
     // Debout, en appui sur une jambe, mains sur un support : l'autre jambe s'écarte, se rapproche ou part en arrière.

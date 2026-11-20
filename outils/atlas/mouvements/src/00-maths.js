@@ -123,9 +123,18 @@
   const K_CEINTURE = 0.24;
 
 
+  /* Réglages d'un bras, et ce qu'ils valent quand la pose ne les donne pas (voir Corps.bras). */
+  const REGLAGES_BRAS = { casse: 0, hausse: 0, avance: 0, ceinture: K_CEINTURE };
+  const ANGLES_TRONC = ['lombaires', 'thorax', 'cou', 'inclinaison', 'torsion', 'couIncl', 'couRot', 'tete'];
+
   /* ---------- Poses : mélange de deux poses, valeur par valeur ----------
      Nombres et vecteurs : interpolation droite ; rotations : au plus court ; le reste (textes) : celui de la pose
-     la plus proche. Les deux poses doivent décrire chaque membre de la même façon (cible, ou angles). */
+     la plus proche. Les deux poses doivent décrire chaque membre de la même façon (cible, ou angles).
+     parAngles (les angles ou les directions d'un bras converti en cible, voir unifier) ne se garde que si les deux
+     poses l'ont, sous la même forme : le bras va alors de l'une à l'autre par ses angles.
+     Une main posée par une cible a un sens (dirMain) ou n'en a pas (elle prolonge alors l'avant-bras) : de l'une à
+     l'autre, le sens donné pèse de plus en plus, ou de moins en moins (kMain, de 0 à 1 — voir Corps.bras), au lieu
+     d'apparaître ou de disparaître d'un coup. */
   function mel(a, b, u) {
     if (a === b || b === undefined) return a;
     if (a === undefined) return b;
@@ -134,8 +143,18 @@
     if (a instanceof Quat && b instanceof Quat) return a.clone().slerp(b, u);
     if (a && b && typeof a === 'object' && typeof b === 'object' && !Array.isArray(a)) {
       const r = {};
-      for (const k in a) r[k] = mel(a[k], b[k], u);
-      for (const k in b) if (!(k in a)) r[k] = b[k];
+      for (const k in a) { if (k === 'parAngles' && !(b.parAngles && (a.parAngles.elev != null) === (b.parAngles.elev != null))) continue; r[k] = mel(a[k], b[k], u); }
+      for (const k in b) if (!(k in a) && k !== 'parAngles') r[k] = b[k];
+      if (a.prise && b.prise) {
+        const ka = a.dirMain ? (a.kMain != null ? a.kMain : 1) : 0, kb = b.dirMain ? (b.kMain != null ? b.kMain : 1) : 0;
+        if (ka !== 1 || kb !== 1) { r.kMain = ka + (kb - ka) * u; if (!r.dirMain) delete r.kMain; }
+        else delete r.kMain;
+      }
+      // Un réglage de bras donné dans une seule des deux poses vaut, dans l'autre, sa valeur ordinaire : il y va peu à
+      // peu (gardé tel quel jusqu'à la pose suivante, il tombait d'un coup en y arrivant).
+      for (const k in REGLAGES_BRAS) { const va = a[k], vb = b[k]; if ((va == null) !== (vb == null) && typeof (va == null ? vb : va) === 'number') r[k] = mel(va == null ? REGLAGES_BRAS[k] : va, vb == null ? REGLAGES_BRAS[k] : vb, u); }
+      // De même pour les angles du tronc et du cou (une torsion donnée dans une seule pose part de zéro, ou y revient).
+      if (a.bassin && b.bassin) for (const k of ANGLES_TRONC) { const va = a[k], vb = b[k]; if ((va == null) !== (vb == null) && typeof (va == null ? vb : va) === 'number') r[k] = mel(va || 0, vb || 0, u); }
       return r;
     }
     return u < 0.5 ? a : b;
@@ -166,6 +185,5 @@
     }
     return x1;
   }
-  const sin = d => Math.sin(d * Math.PI / 180), cos = d => Math.cos(d * Math.PI / 180);
   /* Rotation « avant/arrière » (autour de X), « côté » (autour de Z), « lacet » (autour de Y), en degrés. */
   const qX = d => qAxe(AX, rad(d)), qY = d => qAxe(AY, rad(d)), qZ = d => qAxe(AZ, rad(d));

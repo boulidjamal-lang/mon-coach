@@ -346,7 +346,7 @@ e45 | elevation front barre | Barbell Front Raise
 sw-rowing-vertical-a-la-barre-avec-prise-serree | elevation menton barre serre | Barbell Narrow Grip Upright Row
 e39 | developpe epaules barre | Barbell Overhead Press
 e1129 | developpe epaules barre pousse | Barbell Push Press
-sw-elevation-arriere-des-deltoides-avec-barre | elevation arriere barre penche | Barbell Rear Delt Raise
+sw-elevation-arriere-des-deltoides-avec-barre | rowing barre haut large | Barbell Rear Delt Raise
 e258 | rowing barre haut large | Barbell Rear Delt Row
 sw-rowing-menton-a-la-barre-prise-largeur-d-epaules | elevation menton barre | Barbell Shoulder Grip Upright Row
 sw-tirage-vertical-a-la-barre-avec-prise-large | elevation menton barre large | Barbell Wide Grip Upright Row
@@ -385,7 +385,7 @@ e52 | pompe equilibre | Handstand Push-Up
 sw-elevation-de-powell-inclinee | elevation lat hal cote uni | Incline Powell Raise
 sw-rotation-autour-de-la-tete-avec-kettlebell | elevation tete kb | Kettlebell Around the Head Rotation
 e165 | elevation lat landmine uni | Landmine Lateral Raise
-e148 | developpe landmine debout | Landmine Press
+e148 | developpe epaules landmine debout | Landmine Press
 sw-elevation-laterale-a-frontale | elevation lat hal latfront | Lateral to Front Raise
 sw-planche-inclinee | gym planche penchee | Lean Planche
 sw-elevation-laterale-inclinee-a-la-poulie | elevation lat poulie uni penchecote | Lean-Away Cable Lateral Raise
@@ -404,8 +404,8 @@ sw-elevation-laterale-inclinee-avec-haltere-a-un-bras | elevation lat hal cote u
 sw-elevation-laterale-a-un-bras-avec-haltere | elevation lat hal uni | One-Arm Dumbbell Lateral Raise
 sw-elevation-laterale-avec-haltere-a-un-bras-en-appui-penche | elevation arriere hal penche uni | One-Arm Dumbbell Supported Bent Over Lateral Raise
 sw-developpe-avec-kettlebell-a-un-bras-au-dessus-de-la-tete | developpe epaules kb uni | One-Arm Kettlebell Overhead Press
-sw-presse-epaule-a-un-bras-en-demi-genou-avec-landmine | developpe landmine demigenou uni | One-Arm Landmine Half Kneeling Shoulder Press
-sw-developpe-epaules-a-un-bras-avec-landmine-en-position-debout | developpe landmine debout uni | One-Arm Landmine Standing Shoulder Press
+sw-presse-epaule-a-un-bras-en-demi-genou-avec-landmine | developpe epaules landmine demigenou uni | One-Arm Landmine Half Kneeling Shoulder Press
+sw-developpe-epaules-a-un-bras-avec-landmine-en-position-debout | developpe epaules landmine debout uni | One-Arm Landmine Standing Shoulder Press
 sw-elevation-posterieure-a-un-bras | elevation arriere machine uni | One-Arm Rear Delt Fly
 sw-developpe-epaules-a-un-bras-avec-haltere | developpe epaules hal uni | One-Arm Shoulder Press Dumbbell
 e53 | pompe pike | Pike Push-Up
@@ -436,7 +436,7 @@ sw-gainage-frontal-statique | elevation tenue disque | Static Front Hold
 sw-planche-ecartee | gym planche ecart | Straddle Planche
 sw-posture-sur-la-tete-avec-appui-sirsasana | gym tete | Supported Headstand
 sw-developpe-epaules-tsunami | developpe epaules barre | Tsunami Overhead Press
-sw-ange-mural | elevation ange | Wall Angel
+sw-ange-mural | elevation ange pc | Wall Angel
 # fessi
 e104 | hanche elas | Band Hip Abduction
 sw-coquilles-avec-bande-elastique-en-position-allongee | hanche coquille elas | Band Lying Clamshells
@@ -639,7 +639,7 @@ e145 | pompe anneaux | Ring Push-Up
 sw-pompes-scapulaires | pompe scapulaire | Scapula Push-Up
 e292 | developpe poulie assis | Seated Cable Chest Press
 sw-ecarte-a-la-poulie-assis | ecarte poulie assis | Seated Cable Fly
-sw-coquille-thoracique-assise | etire pectoraux coudes | Seated Chest Clam
+sw-coquille-thoracique-assise | etire pectoraux coudes assis | Seated Chest Clam
 sw-developpe-couche-a-la-smith-machine | developpe smith | Smith Bench Press
 sw-developpe-incline-a-la-machine-smith | developpe smith banc=30 | Smith Incline Chest Press
 e1160 | developpe barre partiel | Spoto Press

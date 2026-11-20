@@ -64,4 +64,4 @@
     };
   }
 
-  racine.AnqaMouvements = { creerAnimation, definir, poseA, avancee, poseDe, materielDe, specDe, lireSpec, FAM, EXERCICES, TEINTES, cycle, Corps, V3, Quat };
+  racine.AnqaMouvements = { creerAnimation, definir, poseA, avancee, poseDe, materielDe, specDe, lireSpec, FAM, EXERCICES, TEINTES, cycle, mel, Corps, V3, Quat };

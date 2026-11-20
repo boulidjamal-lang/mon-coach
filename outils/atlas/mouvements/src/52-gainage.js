@@ -14,6 +14,7 @@
       const i2 = c.poser(base);
       if (o.chaise) fixe.push(pret(boite(0.4, 0.75, 0.06, 0, i2.bassin.y + 0.3, i2.bassin.z - L.dos - 0.05, C.banc, 0)), pret(boite(0.09, 0.05, 0.32, 0.3, 1.24, i2.coudes.G.z + 0.14, C.banc, 0)), pret(boite(0.09, 0.05, 0.32, -0.3, 1.24, i2.coudes.G.z + 0.14, C.banc, 0)), pret(seg(V(0, 0, i2.bassin.z - 0.2), V(0, 1.9, i2.bassin.z - 0.2), 0.035, C.cadre, 0.5)), pret(boite(0.6, 0.03, 0.7, 0, 0.015, 0, C.cadre, 0.5)));
       else fixe.push(...poseFixe(MAT.paralleles(C, i2.prises.G.y - 0.01, Math.abs(i2.prises.G.x)), V(0, 0, i2.prises.G.z)));
+      if (o.chaise) for (const [k, s] of COTES) poigneeEnMain(C, i2, k, V(s * 0.3, 1.24, i2.prises[k].z - 0.07), fixe);   // une poignée au bout de chaque accoudoir
     } else { base = suspendu(c, { H, ecart: 0.3 }); fixe.push(...poseFixe(MAT.barreFixe(C, H))); }
     // Pendu à la barre, les mains ne bougent pas : quoi que fasse le bassin, les épaules restent sous la barre, bras
     // tendus, mains dessus. Le bassin bascule et le bas du dos s'enroule ; en vrille, ce sont le bassin et les jambes
@@ -27,7 +28,7 @@
       if (o.barre) { const p = curl(u); p.jambes = pareil(J(lerp(8, 128, u), 2, 0, 5, 20)); return p; }
       if (o.coudes) { const p = curl(u * 0.9); p.jambes = pareil(J(lerp(8, 128, u), 4, 0, lerp(12, 118, u), 20)); return p; }
       if (o.garhammer) { const p = curl(u * 0.7); p.jambes = pareil(J(lerp(88, 132, u), 3, 0, lerp(92, 110, u), 20)); return p; }
-      if (o.jambes) { const p = curl(u * 0.25); p.jambes = pareil(J(lerp(8, 94, u), 2, 0, 5, 25)); return p; }
+      if (o.jambes) { const p = curl(u * 0.25); p.jambes = pareil(J(lerp(8, 94, u), o.leste ? -1.7 : 2, 0, 5, 25)); return p; }   // lesté : pieds serrés sur l'haltère
       if (o.oblique) { const p = curl(u * 0.4); p.jambes = pareil(J(lerp(8, 100, u), 3, 0, lerp(12, 104, u), 25)); return vriller(p, -34 * u); }
       const p = curl(u * 0.35); p.jambes = pareil(J(lerp(8, o.poitrine ? 122 : 98, u), 3, 0, lerp(12, o.poitrine ? 118 : 100, u), 25)); return p;
     };
@@ -40,7 +41,7 @@
       const vrilles = vrille && pendu ? [-1, -0.5, 0, 0.5, 1].map(x => [x, vriller(cloner(P0), vrille * x)]) : null;
       d.pose = ph => { const w = ph * 2 * Math.PI, sn = Math.sin(w), cs = Math.cos(w), p = cloner(vrilles ? chemin(vrilles, sn) : P0); if (o.ciseaux) { p.jambes.G = J(40 + 26 * sn, 3, 0, 5, 25); p.jambes.D = J(40 - 26 * sn, 3, 0, 5, 25); } else if (o.cercles) { p.jambes = pareil(J(84 + 16 * cs, 3, 0, 96, 25)); if (!vrilles) p.torsion = 26 * sn; } else { p.jambes = pareil(J(80, 3, 0, 5, 25)); if (!vrilles) p.torsion = 40 * sn; p.jambes.G.abd = 3 + 22 * sn; p.jambes.D.abd = 3 - 22 * sn; } return p; };
     } else d.cles = [[0, cle(0)], [0.5, cle(0.5)], [1, cle(1)]];
-    if (o.leste) d.objets = (info, u, sortie) => poserObjet(MAT.haltere(C, 1), info.chevilles.G.clone().add(info.chevilles.D).multiplyScalar(0.5).add(V(0, -0.02, 0.04)), null, sortie);
+    if (o.leste) d.objets = (info, u, sortie) => haltereEntrePieds(C, info, sortie);
     return d;
   };
 
@@ -96,7 +97,7 @@
     if (o.crabe || o.chienHaut || o.superman || o.nageur) {
       if (o.crabe) {
         // Table inversée : assis, mains derrière, pieds à plat ; les hanches montent à l'horizontale.
-        const cle = u => { const p = { bassin: { pos: V(0, lerp(0.16, 0.5, u), 0), rot: qX(lerp(-28, -84, u)) }, lombaires: lerp(8, -4, u), thorax: 0, cou: lerp(-10, 20, u), bras: {}, jambes: {} }; const t = c.tronc(p); for (const [k, s] of COTES) { p.jambes[k] = pied(c, s, { x: s * 0.13, ouv: 6, z: 0.55, pole: V(0, 1, 0.2) }); p.bras[k] = { prise: V(s * 0.22, -0.008, -0.42), pole: V(s * 0.2, 0.2, -1), paume: V(0, -1, 0), dirMain: V(0, 0, 1), doigts: 'plat' }; } return p; };
+        const cle = u => { const p = { bassin: { pos: V(0, lerp(0.16, 0.5, u), 0), rot: qX(lerp(-28, -84, u)) }, lombaires: lerp(8, -4, u), thorax: 0, cou: lerp(-10, 20, u), bras: {}, jambes: {} }; for (const [k, s] of COTES) { p.jambes[k] = pied(c, s, { x: s * 0.13, ouv: 6, z: 0.55, pole: V(0, 1, 0.2) }); p.bras[k] = { prise: V(s * 0.22, -0.008, -0.42), pole: V(s * 0.2, 0.2, -1), paume: V(0, -1, 0), dirMain: V(0, 0, 1), doigts: 'plat' }; } return p; };
         d.a = cle(0.85); d.b = cle(1); d.rythme = 'tenue'; d.vue = { az: 110, el: 12 }; return d;
       }
       if (o.chienHaut) {
@@ -140,7 +141,7 @@
       const yP = o.pike ? (o.ballon ? 0.5 : 0.28) : 0;
       const pl = planche(c, { yPieds: yP, zPieds: -1.15 });
       const haut0 = pl(yP + 0.016 + 0.95 * (L.bras + L.avantBras) * (yP ? 0.75 : 1) + (yP ? 0.12 : 0)), zM = haut0.epaules.G.z + 0.03;
-      const cle = u => { const a = lerp(yP ? 6 : 12, 58, u), p = { bassin: { pos: V(), rot: qX(90 - a + (yP ? 0 : 0)) }, lombaires: 10 * u, thorax: 0, cou: lerp(-20, 20, u), bras: pareil(brasRepos()), jambes: {} }; p.bassin.rot = qX(lerp(88, 150, u)); const t0 = c.tronc(p); mainsSol(p, 0.22, zM); const portee = 0.95 * (L.bras + L.avantBras); const ep = t0.epaules.G; p.bassin.pos.add(V(0, Math.sqrt(Math.max(0.01, portee * portee - Math.pow(0.22 - 0.165, 2) - 0.0009)) - ep.y, zM - 0.03 - ep.z)); for (const [k, s] of COTES) p.jambes[k] = J(lerp(4, 96, u), 3, 0, 4, lerp(60, 30, u)); if (o.orteils && u > 0) {
+      const cle = u => { const a = lerp(yP ? 6 : 12, 58, u), p = { bassin: { pos: V(), rot: qX(90 - a + (yP ? 0 : 0)) }, lombaires: 10 * u, thorax: 0, cou: lerp(-20, 20, u), bras: pareil(brasRepos()), jambes: {} }; p.bassin.rot = qX(lerp(88, 150, u)); const t0 = c.tronc(p); mainsSol(p, 0.22, zM); const portee = 0.95 * (L.bras + L.avantBras); const ep = t0.epaules.G; p.bassin.pos.add(V(0, Math.sqrt(Math.max(0.01, portee * portee - Math.pow(0.22 - 0.165, 2) - 0.0009)) - ep.y, zM - 0.03 - ep.z)); for (const [k] of COTES) p.jambes[k] = J(lerp(4, 96, u), 3, 0, 4, lerp(60, 30, u)); if (o.orteils && u > 0) {
           // La main droite quitte le sol et va vers le pied gauche, aussi loin que le bras le permet.
           const info = c.poser(p), e = info.epaules.D, v = info.chevilles.G.clone().add(V(0, 0.05, 0.1)).sub(e), R = 0.93 * (L.bras + L.avantBras + L.main);
           if (v.length() > R) v.multiplyScalar(R / v.length());
@@ -170,7 +171,7 @@
       d.rythme = 'continu'; d.periode = 0.9;
       d.pose = ph => {
         const p = cloner(haut), sn = Math.sin(ph * 2 * Math.PI);
-        for (const [k, s] of COTES) {
+        for (const [k] of COTES) {
           const w = lisse(0.5 + 0.5 * (k === 'G' ? sn : -sn)), j0 = haut.jambes[k];
           p.jambes[k] = { cheville: V(j0.cheville.x, j0.cheville.y + 0.03 * w + 0.09 * Math.sin(Math.PI * w), lerp(j0.cheville.z, hz + 0.02, w)), pole: V(0, -0.3, 1), pied: j0.pied.clone(), hautPied: j0.hautPied.clone(), orteils: 60 };
         }
@@ -178,7 +179,12 @@
       };
       return d;
     }
-    if (o.epaule) { d.rythme = 'alt'; d.pose = (uG, uD) => { const p = cloner(base), t = c.tronc(p); if (uG > 0) p.bras.G = mel(base.bras.G, { prise: t.epaules.D.clone().add(V(0, -0.02, 0.07)), pole: V(1, 0.2, -0.6), paume: V(0, 0.4, -1), dirMain: V(-1, 0.3, 0), doigts: 'plat' }, uG); if (uD > 0) p.bras.D = mel(base.bras.D, { prise: t.epaules.G.clone().add(V(0, -0.02, 0.07)), pole: V(-1, 0.2, -0.6), paume: V(0, 0.4, -1), dirMain: V(1, 0.3, 0), doigts: 'plat' }, uD); return p; }; return d; }
+    // Touche d'épaule : la main passe sous la poitrine et se pose à plat sur le devant de l'épaule opposée, paume vers
+    // elle ; le coude pend sous le buste (vers le sol et le dehors), il ne remonte pas à travers lui.
+    // (La paume passe de « vers le sol » à « vers l'épaule » en se tournant vers le milieu du corps, les doigts restent
+    // vers l'avant : d'une pose à l'autre, la main ne se retourne pas d'un coup.)
+    const toucher = (t, s) => ({ prise: t.epaules[s > 0 ? 'D' : 'G'].clone().add(V(s * 0.03, -0.06, 0.03)), pole: V(s * 0.5, -1, -0.2), paume: V(-s * 0.6, 0.8, 0), dirMain: V(-s * 0.55, 0.15, 0.8), doigts: 'plat', aplomb: false });
+    if (o.epaule) { d.rythme = 'alt'; d.pose = (uG, uD) => { const p = cloner(base), t = c.tronc(p); if (uG > 0) p.bras.G = mel(base.bras.G, toucher(t, 1), uG); if (uD > 0) p.bras.D = mel(base.bras.D, toucher(t, -1), uD); return p; }; return d; }
     if (o.renegat) { d.rythme = 'alt'; d.tenu = [{ t: o.kb ? 'kb' : 'haltere', m: 'GD' }]; d.pose = (uG, uD) => { const p = cloner(base), t = c.tronc(p); for (const [k, s] of COTES) { const u = k === 'G' ? uG : uD; p.bras[k] = { prise: mel(V(s * 0.22, 0.1, zM), t.duThorax(V(s * 0.21, -0.3, 0.1)), u || 0), pole: V(s * 0.5, 0.6, -1), paume: V(-s, 0, 0), dirMain: undefined, doigts: 'barre' }; } return p; }; return d; }
     if (o.scie) { d.rythme = 'continu'; d.periode = 2.4; d.pose = ph => { const p = cloner(base), dz = 0.08 * Math.sin(ph * 2 * Math.PI); p.bassin.pos.z += dz; for (const k of ['G', 'D']) { p.jambes[k] = cloner(base.jambes[k]); p.jambes[k].cheville.z += dz * 0.92; } return p; }; return d; }
     if (o.birddog) { const Z = cloner(base); Z.jambes.D = J(-8, 4, 0, 4, 40); Z.bras.G = B(0, 172, 0, 6, 90, { doigts: 'detendu' }); d.a = base; d.b = Z; return d; }

@@ -9,7 +9,8 @@
   FAM.rotation = (c, o, C) => {
     // Posture par défaut, admise dans l'écriture : o.debout.
     const L = c.L, fixe = [], d = { vue: { az: 28, el: 10 }, tenu: [], fixe };
-    const mainsDevant = (p, loin, bas, ecart) => { const t = c.tronc(p); for (const [k, s] of COTES) p.bras[k] = { prise: t.duThorax(V(s * (ecart == null ? 0.02 : ecart), bas == null ? -0.1 : bas, loin)), pole: V(s * 0.6, -1, 0.1).applyQuaternion(t.qThorax), paume: V(-s, 0, 0).applyQuaternion(t.qThorax), dirMain: V(0, 0.25, 1).applyQuaternion(t.qThorax), doigts: 'barre' }; return t; };
+    // Les deux mains jointes devant soi sur une même poignée : les coudes restent bas (aplomb: false).
+    const mainsDevant = (p, loin, bas, ecart) => { const t = c.tronc(p); for (const [k, s] of COTES) p.bras[k] = { prise: t.duThorax(V(s * (ecart == null ? 0.02 : ecart), bas == null ? -0.1 : bas, loin)), pole: V(s * 0.6, -1, 0.1).applyQuaternion(t.qThorax), paume: V(-s, 0, 0).applyQuaternion(t.qThorax), dirMain: V(0, 0.25, 1).applyQuaternion(t.qThorax), doigts: 'barre', aplomb: false }; return t; };
     const charge = (ecart) => (o.hal ? [{ t: 'haltere', m: 'GD', entre: true }] : o.balle ? [{ t: 'balle', m: 'GD', r: 0.11 }] : o.disque ? [{ t: 'disque', m: 'GD', r: 0.15, bord: true }] : o.kb ? [{ t: 'kb', m: 'GD', entre: true }] : []);
 
     if (o.russe) {
@@ -41,8 +42,16 @@
       d.vue = { az: 20, el: 8 }; return d;
     }
     if (o.flexion) {
-      // Inclinaison latérale : la charge dans une main descend le long de la cuisse, puis le buste se redresse de l'autre côté.
-      const cle = u => { const p = debout(c, { ecart: 0.12, ouv: 8 }); p.inclinaison = lerp(-26, 20, u); p.couIncl = lerp(-6, 5, u); p.bras.D = B(90, 4, 0, 4, 90); const t = c.tronc(p); p.bras.G = o.elas ? B(90, 4, 0, 4, 90) : mains(c, t, 'nuque').G; if (o.elas) p.bras.D = mains(c, t, 'hanches').D; return p; };
+      // Inclinaison latérale : le buste s'incline du côté de la charge, qui descend le long de la cuisse, puis se redresse
+      // de l'autre côté. Le bras qui porte pend sous son épaule et garde la main contre la cuisse : il ne suit pas le buste
+      // (bras lié au thorax, l'haltère passait devant le bassin). Élastique : sous le pied, tendu en s'inclinant à l'opposé.
+      const pend = (t, k, s) => { const S = t.epaules[k], A = c.L.bras + c.L.avantBras, dx = borne(t.hanches[k].x + s * 0.17 - S.x, -0.6 * A, 0.6 * A), dir = unite(V(dx, -Math.sqrt(A * A - dx * dx), 0.03)); return { dirBras: dir, dirAvantBras: dir, paume: V(-s, 0, 0), doigts: 'barre' }; };
+      const cle = u => {
+        const p = debout(c, { ecart: 0.12, ouv: 8 }); p.inclinaison = o.elas ? lerp(-26, 20, u) : lerp(24, -18, u); p.couIncl = o.elas ? lerp(-6, 5, u) : lerp(5, -5, u);
+        const t = c.tronc(p);
+        if (o.elas) { p.bras.G = pend(t, 'G', 1); p.bras.D = mains(c, t, 'hanches').D; } else { p.bras.D = pend(t, 'D', -1); p.bras.G = mains(c, t, 'nuque').G; }
+        return p;
+      };
       d.a = cle(0); d.b = cle(1);
       if (o.hal) d.tenu = [{ t: 'haltere', m: 'D' }]; else if (o.kb) d.tenu = [{ t: 'kb', m: 'D' }]; else if (o.elas) d.tenu = [{ t: 'elastique', de: 'pied', m: 'G', bout: 'poignee' }];
       d.vue = { az: 6, el: 8 }; return d;
@@ -64,7 +73,6 @@
         d.vue = { az: 24, el: 8 }; return d;
       }
       // Bras en croix, jambes écartées : le buste se penche et tourne, une main va toucher le pied opposé.
-      const base = debout(c, { ecart: 0.3, ouv: 14 });
       d.rythme = 'alt'; d.periode = 3.6;
       d.pose = (uG, uD) => {
         const u = Math.max(uG, uD), sens = uG > 0 ? 1 : -1;      // uG : la main gauche descend vers le pied droit
@@ -83,7 +91,7 @@
         const p = cloner(base), sn = Math.sin(ph * 2 * Math.PI), t = c.tronc(p);
         p.torsion = 30 * sn; p.couRot = -8 * sn;
         const haut = t.epaules.G.y + 0.12, m = V(0.42 * sn, haut - 0.42 * sn * sn, 0.52 - 0.14 * sn * sn);
-        for (const [k, s] of COTES) p.bras[k] = { prise: m.clone().add(V(s * 0.035, 0, 0)), pole: V(s * 0.7, -0.6, -0.2), paume: V(-s, 0, 0), dirMain: V(0, 0.5, 0.85), doigts: 'barre' };
+        for (const [k, s] of COTES) p.bras[k] = { prise: m.clone().add(V(s * 0.035, 0, 0)), pole: V(s * 0.7, -0.6, -0.2), paume: V(-s, 0, 0), dirMain: V(0, 0.5, 0.85), doigts: 'barre', aplomb: false };
         return p;
       };
       d.objets = (info, u, sortie) => { const m = info.prises.G.clone().add(info.prises.D).multiplyScalar(0.5), dir = unite(m.clone().sub(piv)); sortie.push(pret(seg(piv, m.clone().add(dir.clone().multiplyScalar(0.12)), 0.025, C.metal, 1))); poserObjet([cyl(0.14, 0.04, 0, 0, 0, C.fonte, 0, DEBOUT_Q)], m.clone().sub(dir.clone().multiplyScalar(0.2)), arc(AY, dir), sortie); };
@@ -107,7 +115,7 @@
         const p = o.genoux ? aGenoux(c, { penche: 10 * v }) : o.demigenou ? demiGenou(c, { penche: 8 * v }) : debout(c, { ecart: 0.2, ouv: 12, dy: -0.02 - 0.1 * v, penche: 22 * v, dz: -0.05 * v });
         p.torsion = lerp(42, -44, v); p.couRot = lerp(14, -10, v); p.cou = -8 * v;
         const t = c.tronc(p), ep = t.epaules.G.y, m = V(lerp(0.4, -0.27, v), lerp(ep + 0.26, ep - 0.47 + (genoux ? 0.08 : 0), v), lerp(0.2, 0.3, v) + 0.12 * Math.sin(Math.PI * v));
-        for (const [k, s] of COTES) p.bras[k] = { prise: m.clone().add(V(s * 0.03, 0, 0).applyQuaternion(t.qThorax)), pole: V(s * 0.5, -0.6, -0.4).applyQuaternion(t.qThorax), paume: V(-s, 0, 0).applyQuaternion(t.qThorax), dirMain: unite(m.clone().sub(t.cou).add(V(0, 0.2, 0))), doigts: 'barre' };
+        for (const [k, s] of COTES) p.bras[k] = { prise: m.clone().add(V(s * 0.03, 0, 0).applyQuaternion(t.qThorax)), pole: V(s * 0.5, -0.6, -0.4).applyQuaternion(t.qThorax), paume: V(-s, 0, 0).applyQuaternion(t.qThorax), dirMain: unite(m.clone().sub(t.cou).add(V(0, 0.2, 0))), doigts: 'barre', aplomb: false };
         return p;
       };
       d.cles = (versHaut ? [1, 0.75, 0.5, 0.25, 0] : [0, 0.25, 0.5, 0.75, 1]).map((v, n) => [n / 4, cle(v)]);
@@ -126,7 +134,7 @@
       p.torsion = tw; p.couRot = -tw * 0.3;
       if (o.barre) porter(c, p, { barre: true }, C, 0);
       else if (o.poulie || o.elas) mainsDevant(p, 0.5, -0.08, 0.02);
-      else if (machine) { const t = c.tronc(p); for (const [k, s] of COTES) p.bras[k] = { prise: t.duThorax(V(s * 0.17, -0.14, 0.3)), pole: V(s * 0.5, -1, -0.1).applyQuaternion(t.qThorax), paume: V(-s, 0, 0).applyQuaternion(t.qThorax), dirMain: V(0, 0.6, 0.8).applyQuaternion(t.qThorax), doigts: 'barre' }; }
+      else if (machine) { const t = c.tronc(p); for (const [k, s] of COTES) p.bras[k] = { prise: t.duThorax(V(s * 0.17, -0.14, 0.3)), pole: V(s * 0.5, -1, -0.1).applyQuaternion(t.qThorax), paume: V(-s, 0, 0).applyQuaternion(t.qThorax), dirMain: V(0, 0.6, 0.8).applyQuaternion(t.qThorax), doigts: 'barre', aplomb: false }; }
       else mainsDevant(p, 0.24, -0.12, 0.03);
       return p;
     };
@@ -142,8 +150,9 @@
     d.pose = ph => poser(cloner(base), amp * Math.sin(ph * 2 * Math.PI));
     if (o.barre) d.tenu = [{ t: 'barre', l: 1.6, d: 0 }]; else d.tenu = charge();
     if (machine) d.objets = (info, u, sortie) => {
-      // Le bras de la machine tourne avec le buste : deux poignées reliées, au bout d'un bras qui vient de l'axe (derrière le siège).
-      const m = info.prises.G.clone().add(info.prises.D).multiplyScalar(0.5), axe = V(0, m.y + 0.42, -0.02);
+      // Le bras de la machine tourne avec le buste : deux poignées reliées, au bout d'un bras qui vient de l'axe (derrière
+      // le siège) en passant au-dessus de la tête.
+      const m = info.prises.G.clone().add(info.prises.D).multiplyScalar(0.5), axe = V(0, info.tete.y + 0.32, -0.02);
       sortie.push(pret(seg(info.prises.G, info.prises.D, 0.016, C.cadre, 0.5)), pret(seg(m, V(m.x, axe.y, m.z), 0.018, C.cadre, 0.5)), pret(seg(V(m.x, axe.y, m.z), axe, 0.018, C.cadre, 0.5)), pret(seg(axe, V(0, axe.y, -0.4), 0.022, C.cadre, 0.5)), pret(seg(V(0, axe.y, -0.4), V(0, 0, -0.4), 0.03, C.cadre, 0.5)));
     };
     d.vue = { az: 24, el: 10 }; return d;

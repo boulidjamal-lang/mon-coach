@@ -94,7 +94,8 @@
       // Le bassin repose sur la selle (sa chair touche le dessus, enfoncée d'un bon centimètre) : hauteur mesurée une
       // fois sur le corps posé — il y entrait d'une dizaine de centimètres.
       const ySelle = selle.y + 0.005 + 0.0325, assise = { bassin: { pos: selle.clone().add(V(0, 0.07, 0)), rot: qX(36) }, lombaires: 8, thorax: 6, cou: -30, bras: pareil(brasRepos()), jambes: pareil(J(70, 6, 0, 80, 0)) };
-      c.poserSur(assise, V(0, ySelle - 0.014, 0), AY, ['bassin'], (x, y, z) => Math.abs(x) < 0.08 && Math.abs(z - selle.z + 0.05) < 0.07);
+      // (Mesuré jambes immobiles ; en pédalant la fesse descend encore d'un à deux centimètres : la marge en tient compte.)
+      c.poserSur(assise, V(0, ySelle + 0.002, 0), AY, ['bassin'], (x, y, z) => Math.abs(x) < 0.065 && Math.abs(z - selle.z + 0.085) < 0.055);
       const yBassin = assise.bassin.pos.y;
       d.pose = ph => {
         const p = { bassin: { pos: V(selle.x, yBassin, selle.z), rot: qX(36) }, lombaires: 8, thorax: 6, cou: -30, bras: {}, jambes: {} };
@@ -113,7 +114,9 @@
       fixe.push(...poseFixe(patin(C, V(-0.27, 0.03, -0.46), V(0.27, 0.03, -0.46), 0.055)), ...poseFixe(patin(C, V(-0.27, 0.03, 0.98), V(0.27, 0.03, 0.98), 0.055)));
       P(V(0, 0.055, -0.46), V(0, 0.055, 0.98), 0.06);
       P(V(0, 0.07, -0.2), ax, 0.055); P(ax, V(0, 0.72, -0.105), 0.055); P(ax, roue, 0.05); P(V(0, 0.07, 0.86), tete, 0.055); P(V(0, 0.62, -0.05), V(0, 0.66, 0.66), 0.045);
-      fixe.push(pret(seg(V(0, 0.7, -0.095), V(0, selle.y - 0.02, selle.z + 0.01), 0.017, C.metal, 0.85)), pret(coussin(0.17, 0.065, 0.15, selle.x, selle.y + 0.005, selle.z - 0.05, C)), pret(boite(0.06, 0.05, 0.19, selle.x, selle.y + 0.012, selle.z + 0.11, C.banc, 0.12, null, 0.02)));
+      // La selle : large sous les ischions seulement, en arrière des hanches ; devant, un bec étroit entre les cuisses (une
+      // selle large jusqu'à l'avant, la cuisse la traversait à chaque tour de pédale).
+      fixe.push(pret(seg(V(0, 0.7, -0.095), V(0, selle.y - 0.02, selle.z - 0.05), 0.017, C.metal, 0.85)), pret(coussin(0.135, 0.065, 0.12, selle.x, selle.y + 0.005, selle.z - 0.085, C)), pret(boite(0.05, 0.04, 0.205, selle.x, selle.y + 0.014, selle.z + 0.0775, C.banc, 0.12, null, 0.018)));
       // La roue : un volant plein sous un carter (vélo), ou un ventilateur dans sa cage (air bike).
       if (o.airbike) {
         fixe.push(pret(cyl(0.27, 0.06, roue.x, roue.y, roue.z, C.gomme, 0.1, null, 0.01)), pret(cyl(0.05, 0.13, roue.x, roue.y, roue.z, C.metal, 0.8, null, 0.008)));
@@ -174,7 +177,7 @@
       // Assis sur le chariot : les jambes poussent, le buste bascule en arrière, les bras tirent la poignée au ventre.
       const hS = 0.3, cale = V(0, 0.34, 0.62);
       const cle = (jam, dos, tire) => {
-        const p = { bassin: { pos: V(0, hS + 0.11, lerp(0.09, -0.235, jam)), rot: qX(lerp(22, -14, dos)) }, lombaires: lerp(10, 2, dos), thorax: 6, cou: -4, bras: {}, jambes: {} };
+        const p = { bassin: { pos: V(0, hS + 0.142, lerp(0.09, -0.235, jam)), rot: qX(lerp(22, -14, dos)) }, lombaires: lerp(10, 2, dos), thorax: 6, cou: -4, bras: {}, jambes: {} };
         const t = c.tronc(p);
         for (const [k, s] of COTES) {
           p.jambes[k] = { cheville: cale.clone().add(V(s * 0.11, 0.07, -0.05)), pole: V(s * 0.1, 1, 0.1), pied: V(0, 0.75, 0.66), hautPied: V(0, 0.66, -0.75) };
@@ -267,7 +270,6 @@
     }
     if (o.burpee) {
       // Debout, accroupi mains au sol, planche, accroupi, saut bras en l'air.
-      const droit = debout(c, { ecart: 0.12, ouv: 8 });
       const pl = planche(c, { ecartPieds: 0.1 }), A = L.bras + L.avantBras, hE = 0.024 + 0.95 * A, plc = pl(hE), zM = plc.epaules.G.z + L.main;
       const mainsSol = p => { for (const [k, s] of COTES) p.bras[k] = { prise: V(s * 0.24, 0.008, zM), pole: V(s * 0.6, 0.5, -0.8), paume: V(0, -1, 0), dirMain: V(0, 0, 1), doigts: 'plat' }; return p; };
       mainsSol(plc);

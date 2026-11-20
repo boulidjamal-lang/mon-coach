@@ -395,6 +395,54 @@ perçait la peau en lames blanches aux jointures. Sans peau (`niveauPeau` 0), el
 (une ligne : `exercice | G|D | az,el | u1,u2,… [| champ]`). Le test « la main se referme sur la barre… » mesure chaque
 phalange et le pouce contre la barre, sur la peau réelle, des deux côtés (développé, soulevé de terre, curl, traction).
 
+### Le poignet : le coude se place pour lui
+
+Une main posée par une cible (prise, sens du coude, paume) arrivait sur sa prise sous l'angle où le bras la menait :
+134 mouvements tenaient leur barre ou leur poignée le poignet plié de plus de 30°, 44 le poignet tordu de plus de 20°.
+`Corps.bras` (`src/10-corps.js`) règle maintenant le bras sur le poignet :
+- **la main fermée suit l'avant-bras** : refermée sur une barre ou une poignée (doigts `'barre'`), elle tourne autour
+  de ce qu'elle tient pour rester dans l'axe de l'avant-bras — ce qui est tenu ne bouge pas, le poignet ne casse plus ;
+- **le coude tourne autour de la ligne épaule–poignet** (`tour`, 85° au plus) quand la main demande plus de pronation
+  que l'avant-bras n'en a (de −15° à 175°, 15° de torsion tolérés au poignet), quand l'avant-bras arrive en biais sur
+  la barre ou sur la main à plat (20° d'inclinaison tolérés), ou quand il se couche vers les doigts d'une main à plat
+  (le poignet ne casse pas au-delà de 95°). Le tour cherché est le plus proche de la pose décrite ; quand les deux
+  côtés se valent, il se réduit à rien plutôt que de sauter de l'un à l'autre (c'est alors la pose qu'il faut revoir) ;
+  le coude ne descend pas sous le sol.
+Ce que la description d'un bras peut préciser (en plus de `prise`, `pole`, `paume`, `dirMain`, `doigts`, `rayon`,
+`hausse`, `avance`, `ceinture`) :
+- `autour` : l'axe d'une barre fixe (un vecteur) ; `'libre'` : la poignée tourne librement avec la main (câble,
+  élastique), la main reste droite ; `false` : la main garde l'orientation décrite ;
+- `cote` (avec `autour`, un vecteur) : 1 prise par-dessus, −1 par-dessous — la main n'a alors pas à être décrite, et
+  elle tourne d'un seul tenant autour de la barre, même d'un demi-tour (l'épaulé : de la barre qui pend à la barre
+  sur les épaules) ; `libre: true` : ce qui est tenu d'une seule main s'incline avec elle (haltère, kettlebell) ;
+- `casse` : l'extension gardée au poignet, en degrés (la barre d'un développé, posée sur le talon de la main) ;
+- `aplomb` : `false` pour ne pas régler l'inclinaison, ou un nombre de degrés tolérés au lieu de 20 (barre sur la nuque
+  et prise large de l'arraché : l'avant-bras monte en biais, 40 à 45°) ;
+- `pivot` : la main à plat pivote sur sa paume pour suivre l'avant-bras (ballon tenu entre les mains).
+`info.angles[c]` donne, par bras posé, la pronation, la flexion du coude, la torsion laissée au poignet et le tour ;
+`info.flexions[c]` le sens où plie le coude (défini même bras tendu).
+
+### D'une pose clé à la suivante : tout se mélange
+
+`mel` (`src/00-maths.js`) mélange deux poses valeur par valeur. Ce qu'une seule des deux décrivait était gardé tel
+quel jusqu'à la pose suivante, puis tombait d'un coup — ou ne bougeait pas du tout : les neuf haussements d'épaules
+ne donnaient leur `hausse` que dans la pose du haut et restaient figés, épaules levées. Désormais :
+- un réglage de bras absent d'une pose y vaut sa valeur ordinaire (`casse`, `hausse`, `avance` : 0 ; `ceinture`), de
+  même les angles du tronc et du cou (`torsion`, `inclinaison`, `couRot`…) : on y va, ou on en revient, peu à peu ;
+- une main dont le sens (`dirMain`) n'est donné que dans une pose : ce sens pèse de plus en plus, ou de moins en
+  moins (`kMain`), mêlé à celui de l'avant-bras ;
+- un bras écrit en angles ou en directions, converti en cible parce qu'une autre pose du mouvement en est une
+  (`unifier`, `src/35-definition.js`), garde sa description (`parAngles`) : entre deux poses qui l'ont toutes deux, il
+  va de l'une à l'autre par ses angles — la main décrit un arc autour de l'épaule au lieu d'une ligne droite qui la
+  ferait passer contre l'épaule, bras replié (du saut bras en l'air à la station debout d'un burpee) ;
+- le pôle relevé sur un bras posé (`poleDe`) est de longueur 1, comme ceux qu'on écrit : celui d'un bras tendu, long
+  de 2 cm, ne pesait rien dans le mélange, et le coude basculait au dernier instant ;
+- un bras dégagé (voir `degagerTenu`) atteint sa portée en douceur sur ses deux derniers centimètres : tendu sur une
+  cible hors de portée, il se repliait d'un coup dès qu'elle y revenait.
+Écrire un mouvement : deux poses voisines décrivent le bras de la même façon autant que possible ; un pôle ne doit pas
+se confondre avec la ligne de l'épaule à la main (le coude y bascule) ; une main qui passerait contre l'épaule en
+ligne droite reçoit une pose de passage, ou s'écrit en angles.
+
 ## Les mouvements des exercices
 
 Chaque exercice de la bibliothèque (`EXERCICES_BASE` dans `index.html`) a son mouvement. Tout est dans `mouvements/` :
@@ -417,12 +465,23 @@ Chaque exercice de la bibliothèque (`EXERCICES_BASE` dans `index.html`) a son m
   où les deux pieds sont à plat et où rien d'autre ne porte le corps, le centre de gravité est comparé à l'appui des
   pieds (hors d'appui seulement s'il l'est quelle que soit la charge tenue, de rien à une fois le poids du corps), et
   les jambes verrouillées qui basculent en arrière sont relevées. `--tout` affiche aussi ce qui va bien ; un motif
-  après `--table` limite à une famille. 262 mouvements jugés ; le même contrôle tourne dans les tests de l'appli.
+  après `--table` limite à une famille. 264 mouvements jugés ; le même contrôle tourne dans les tests de l'appli.
+- `node mouvements/mains-vides.mjs --table` : une main refermée tient-elle quelque chose ? À cinq instants de chaque
+  mouvement qui a du matériel, la distance du creux de chaque main fermée à la forme la plus proche (au-delà de 6 cm,
+  elle serre le vide). 623 mouvements jugés ; dans les tests de l'appli.
+- `node mouvements/poignets.mjs --table` : flexion, extension, inclinaison et torsion de chaque poignet, à neuf
+  instants (limites : 85°, 95°, 45°, 20°). Les gestes qui les dépassent pour de bon sont nommés dans `ADMIS`, avec ce
+  qu'on leur accorde (pompes mains sous le corps, mains derrière la tête : 22 mouvements). `DETAIL=1` donne chaque
+  instant. Dans les tests de l'appli.
+- `node mouvements/sauts.mjs --table` : les à-coups. Chaque mouvement est joué à sa vraie cadence (30 images par
+  seconde) ; sont relevés un coude ou un poignet qui se déplacent d'un coup (plus de 3 et 4 cm d'une image à la
+  suivante, dont plus de la moitié en un huitième d'image), une main qui pivote d'un coup (20°), un coude qui file à
+  plus de 4 m/s. C'est le seul contrôle qui voit ce qui se passe entre deux instants. Dans les tests de l'appli.
 - `node mouvements/traversees.mjs --table [--json f]` : le corps traverse-t-il le matériel ? Chaque mouvement posé à
   sept instants, les points du corps cherchés dans chaque forme ; les contacts voulus ne sont pas des fautes (main
   sur sa poignée, pied sur son appui, chair enfoncée dans un coussin de moins de 2,2 cm, ou tirée dedans par
-  l'écrasement : elle y est cachée). Sur les 762 mouvements : 274 fautifs au départ, 90 aujourd'hui, de moins de 2 cm
-  pour la plupart (contacts de barre contre le buste, coussins de machines).
+  l'écrasement : elle y est cachée). Sur les 762 mouvements : 274 fautifs au départ, 39 aujourd'hui, de 3,5 cm au
+  plus et de moins de 2 cm pour la plupart (contacts de barre contre le buste, coussins de machines).
 - `node mouvements/deformations.mjs --table [--json f]` : l'épaisseur de chair au-dessus de l'os, comparée au repos
   (gonflements, creux), par partie du corps. À lire avec les images : le grand dorsal s'étire voulu vers son attache,
   l'avant-bras se tord voulu en pronation.
@@ -435,7 +494,8 @@ Chaque exercice de la bibliothèque (`EXERCICES_BASE` dans `index.html`) a son m
   contrôle dans le vrai rendu (début, milieu, fin de la répétition). `appli/essai-mouvement.html?spec=…` ou
   `?ex=<identifiant>` montre un mouvement seul (`&peau=1` pour la peau de l'appli, `&carrure=0` pour le corps
   d'origine). `node outils/grille.cjs sortie.jpg liste.txt` : une grille de mouvements, chacun à un instant et sous
-  une vue donnés ; `node outils/gros-plans.cjs sortie.jpg liste.txt` : une articulation en gros plan pendant un
+  une vue donnés (`MOUVEMENTS=fichier` la rend avec un autre `atlas-mouvements.js` : la même planche avant et après
+  une retouche ; les contrôles de `mouvements/` lisent la même variable) ; `node outils/gros-plans.cjs sortie.jpg liste.txt` : une articulation en gros plan pendant un
   mouvement (contrôle des déformations).
 - `node outils/video-planche.cjs sortie.mp4 "ex=e338" "ex=e20 | Traction"` : plusieurs exercices côte à côte, en
   vidéo, tels que l'appli les montre (peau fine, muscles de l'exercice en couleur) ; `node
@@ -450,8 +510,8 @@ Chaque exercice de la bibliothèque (`EXERCICES_BASE` dans `index.html`) a son m
   logiciel).
 
 Ajouter ou corriger le mouvement d'un exercice : modifier sa ligne dans `table.txt` (ou la famille dans `src/`),
-relancer `construire.mjs`, puis `controle.mjs --table`, regarder le résultat sur une planche, et refaire les
-miniatures (ci-dessous). Un exercice ajouté à la bibliothèque sans ligne dans la table fait échouer les tests de
+relancer `construire.mjs`, puis `controle.mjs --table` (et `mains-vides`, `poignets`, `sauts` pour ce qui touche
+aux bras), regarder le résultat sur une planche, et refaire les miniatures (ci-dessous). Un exercice ajouté à la bibliothèque sans ligne dans la table fait échouer les tests de
 l'appli.
 
 ## Les miniatures des exercices

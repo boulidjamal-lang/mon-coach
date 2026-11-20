@@ -49,7 +49,7 @@
       // Haussement d'épaules : bras tendus, seules les épaules montent.
       if (o.kelso) o.ventre = 40;
       pose();
-      const base = o.kelso ? B(4, 40, 0, 5, 90) : o.dos ? B(0, -12, 0, 6, 0) : o.barre ? B(0, 8, -25, 6, 180) : o.trapbar ? B(90, 11, 0, 6, 90) : B(90, 5, 0, 6, 90);
+      const base = o.kelso ? B(4, 40, 0, 5, 90) : o.dos ? B(0, -15, 0, 6, 0) : o.barre ? B(0, 8, -25, 6, 180) : o.trapbar ? B(90, 11, 0, 6, 90) : B(90, 5, 0, 6, 90);
       a = Object.assign({}, base, o.kelso ? { avance: 10 } : {}); b = Object.assign({}, base, o.kelso ? { avance: -14, hausse: 8 } : { hausse: 26 });
       ancre = s => V(s * 0.28, 0.05, 0.02); if (o.machine) r.pivot = s => V(s * 0.3, 0.3, -0.5);
     } else if (o.facepull) {
@@ -116,7 +116,37 @@
     }
     if (o.passage) d.tenu = [{ t: 'elastique', de: info => info.prises.D, m: 'G', bout: 'rien' }];
     if (plus.cercles) { d.rythme = 'continu'; d.periode = 1.6; const A = d.a; d.pose = ph => { const q = cloner(A), w = ph * 2 * Math.PI; for (const k of ['G', 'D']) { q.bras[k].elev = 88 + 9 * Math.sin(w); q.bras[k].plan = 90 + 9 * Math.cos(w); } return q; }; }
-    if (plus.halo) { d.rythme = 'continu'; d.periode = 3.2; const A = d.a; d.tenu = [{ t: 'kb', m: 'GD', entre: true, sens: 'renverse' }]; d.pose = ph => { const q = cloner(A), w = ph * 2 * Math.PI; q.bras.G = B(20 + 60 * Math.sin(w), 118 + 30 * Math.sin(w + 1.2), -20, 118, 90); q.bras.D = B(20 - 60 * Math.sin(w), 118 + 30 * Math.sin(w + 1.2), -20, 118, 90); return q; }; }
+    if (plus.halo) {
+      // Le kettlebell, tenu à deux mains par ses montants, fait le tour de la tête : devant le visage boule en l'air,
+      // par-dessus l'oreille, derrière la nuque boule en bas, puis l'autre côté. Les mains restent côte à côte, paumes
+      // face à face, refermées sur les montants ; le kettlebell bascule vers l'arrière à mesure qu'il passe derrière.
+      // Le bras qui croise doit passer par-dessus la tête : comme en vrai, la tête s'incline en avant (« passer la tête
+      // dans la fenêtre des bras ») et son épaule se hausse. Réglé sur mesures (distance de la peau de la tête et du
+      // cou à l'axe des bras, tout le tour) : il reste un frôlement d'un centimètre, un instant, au passage.
+      d.rythme = 'continu'; d.periode = 3.6; const A = d.a; d.tenu = [];
+      const RAYON = 0.23, Y_DEVANT = -0.02, Y_OREILLE = 0.26, FLEXION = [5, 35], HAUSSE = 18;
+      // Où va le coude du bras droit au fil du tour (le gauche fait de même, en miroir, un demi-tour plus tard) : le
+      // kettlebell part d'abord du côté gauche — le bras droit croise devant le visage, coude en avant, puis son
+      // coude monte et passe derrière la tête ; au retour par la droite, il redescend sur le côté.
+      const COUDE = [[0, V(-0.5, -0.9, 0.3)], [0.1, V(0, 0, 1)], [0.15, V(-0.25, 0.26, 0.93)], [0.165, V(0, 0.6, 0.7)], [0.19, V(-0.84, -0.26, -0.48)], [0.25, V(-0.87, 0, -0.5)], [0.275, V(-0.75, 0.5, -0.43)], [0.3, V(-0.43, 0.87, -0.25)], [0.35, V(-0.3, 0.87, 0)], [0.5, V(-0.25, 0.87, 0.43)], [0.625, V(-0.8, 0.6, 0.4)], [0.75, V(-0.8, -0.6, 0.3)], [0.875, V(-0.7, -0.9, 0.1)], [1, V(-0.5, -0.9, 0.3)]];
+      const coude = ph => { const x = ((ph % 1) + 1) % 1; let i = 0; while (i < COUDE.length - 2 && x > COUDE[i + 1][0]) i++; return COUDE[i][1].clone().lerp(COUDE[i + 1][1], (x - COUDE[i][0]) / (COUDE[i + 1][0] - COUDE[i][0])); };
+      d.pose = ph => {
+        const q = cloner(A), t = c.tronc(q), w = ph * 2 * Math.PI, sw = Math.sin(w), cw = Math.cos(w), k = (1 - cw) / 2, psi = Math.PI * k;
+        const sens = V(0, Math.sin(psi), Math.cos(psi));   // où pointent les mains : devant, puis en l'air, puis derrière
+        // Le milieu des mains : un tour de tête plus haut au passage des oreilles, plus carré derrière (le kettlebell
+        // longe la nuque d'une épaule à l'autre).
+        const H = t.tete.clone().add(V(RAYON * sw, Y_DEVANT + Y_OREILLE * sw * sw, 0.025 + cw * (0.275 + 0.02 * k) * (1 + 0.35 * sw * sw * k)));
+        q.cou = FLEXION[0] + FLEXION[1] * lisse(borne((k - 0.02) / 0.2, 0, 1));
+        for (const [cote, s] of COTES) {
+          const p = coude(s > 0 ? 1 - ph : ph);
+          q.bras[cote] = { prise: H.clone().add(V(s * 0.049, 0, 0)), paume: V(-s, 0, 0), dirMain: sens, pole: V(-s * p.x, p.y, p.z), doigts: 'barre', rayon: 0.0135, hausse: HAUSSE * Math.max(0, -s * sw) };
+        }
+        return q;
+      };
+      // Le kettlebell suit les mains : le haut de ses montants dans les poings (plus bas, les poings entreraient dans la
+      // boule), la boule dans leur axe.
+      d.objets = (info, u, sortie) => { const boule = unite(info.axes.G.clone().sub(info.axes.D)), m = info.prises.G.clone().add(info.prises.D).multiplyScalar(0.5); poserObjet(MAT.kettlebell(C), m.addScaledVector(boule, -0.045), qTenu(AX, boule.clone().multiplyScalar(-1)), sortie); };
+    }
     if (plus.cles) { const A = d.a, Zl = d.b, F = cloner(d.a); for (const k of ['G', 'D']) F.bras[k] = B(4, 90, 0, 10, 180); d.cles = [[0, A], [0.45, Zl], [1, F]]; }
     if (plus.pose) { const A = d.a, Z = d.b; d.rythme = 'continu'; d.periode = 4; d.pose = ph => { const u = ph < 0.2 ? lisse(ph / 0.2) : ph > 0.85 ? 1 - lisse((ph - 0.85) / 0.15) : 1, q = mel(A, Z, u), w = Math.sin((ph - 0.2) / 0.65 * 2 * Math.PI) * (u >= 1 ? 1 : 0); q.bras.G.elev += 10 * w; q.bras.D.elev -= 10 * w; return q; }; }
     return d;
