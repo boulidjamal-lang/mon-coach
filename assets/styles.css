@@ -567,8 +567,7 @@ body.sur-stats .date-nav, body.sur-reglages .date-nav, body.sur-admin .date-nav 
    :where() = aucune spécificité, les positions déjà posées gardent la main. */
 :where(.app-bar h2[onclick], #moi-entete, .macro-item, #ecran-repas .eau-boutons .btn-icone, .repas-ajouter, .food-info, .btn-delete, .segment > button,
   #pg-periode-btn, .titre-depliant, .pg-lien, .force-carte-titre, .btn-engrenage, .pf-modif, #reglages-puce-sync, .pilule) { position: relative; }
-:where(.app-bar h2[onclick], #moi-entete, .macro-item, #ecran-repas .eau-boutons .btn-icone, .repas-ajouter, .food-info, .btn-delete, .segment > button,
-  #pg-periode-btn, .titre-depliant, .pg-lien, .force-carte-titre, .btn-engrenage, .pf-modif, #reglages-puce-sync, .pilule, .tuile-plus, .pc-options)::after {
+:where(.app-bar h2[onclick], #moi-entete, .macro-item, #ecran-repas .eau-boutons .btn-icone, .repas-ajouter, .food-info, .btn-delete, .segment > button, #pg-periode-btn, .titre-depliant, .pg-lien, .force-carte-titre, .btn-engrenage, .pf-modif, #reglages-puce-sync, .pilule, .pc-options)::after {
   content: ''; position: absolute; left: 50%; top: 50%; width: max(100%, 44px); height: max(100%, 44px); transform: translate(-50%, -50%); }
 .summary-card span.libelle { color: var(--text-muted); font-size: 0.76rem; font-weight: 700; text-transform: uppercase; letter-spacing: 1.5px; }
 .summary-card h1 { margin: 8px 0 4px 0; font-size: var(--densite-h1-taille); font-weight: 900; color: var(--primary); letter-spacing: -1px; }    .reste-kcal { font-size: 0.8rem; font-weight: 700; margin-bottom: 16px; }
@@ -979,20 +978,6 @@ html:root #manual-modal .modal-entete { position: sticky; top: 0; z-index: 40; m
   display: grid; grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 7px; margin-bottom: 16px;
 }
-.apercu-case {
-  display: flex; flex-direction: column; align-items: center; gap: 3px;
-  padding: 11px 4px; min-height: 62px;
-  background: var(--verre-creux); border: 0;
-  border-radius: 14px; color: inherit; font-family: inherit;
-  cursor: pointer; transition: border-color 0.2s, background 0.2s;
-}
-.apercu-case:hover { background: var(--verre-fort); }
-.apercu-case.actif { border-color: var(--primary); background: var(--verre-fort); }
-.apercu-nb { font-size: 1.15rem; font-weight: 800; letter-spacing: -0.5px; }
-.apercu-lbl {
-  font-size: 0.58rem; text-transform: uppercase; letter-spacing: 0.6px;
-  color: var(--text-muted); font-weight: 700; text-align: center; line-height: 1.2;
-}
 @media (max-width: 360px) {
   .admin-apercu { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
@@ -1028,16 +1013,6 @@ html:root #manual-modal .modal-entete { position: sticky; top: 0; z-index: 40; m
 .journal-ligne:last-child { border-bottom: 0; }
 .journal-ligne span:first-child { color: var(--text-muted); }
 .journal-ligne span:last-child { word-break: break-word; }
-.admin-select-ligne { display: flex; gap: 8px; align-items: stretch; }
-.admin-select-ligne input[type="search"] {
-  flex: 1; min-width: 0;
-  padding: 12px 15px; min-height: 44px;
-  background: var(--verre-creux); border: 0;
-  color: var(--text); border-radius: 14px;
-  font-size: max(16px, 0.92rem); font-family: inherit; outline: none;
-}
-.admin-select-ligne select { flex: 1; min-width: 0; }
-.admin-select-ligne .btn { flex: none; width: 46px; padding: 0; font-size: 1rem; }
 .stats-grille {
   display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px;
 }
@@ -1335,16 +1310,10 @@ input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="
 .photos-avant-apres img { width: 100%; aspect-ratio: 3 / 4; object-fit: cover; border-radius: 12px; }
 .fiche-exo-video { border-radius: 14px; overflow: hidden; background: #282a2c; margin-bottom: 6px; }
 .fiche-exo-video video { display: block; width: 100%; max-height: 300px; object-fit: contain; background: #fff; }
-.fiche-exo-video--mini { position: relative; aspect-ratio: 16 / 9; max-height: 300px; }
-.fiche-exo-video--mini video { position: absolute; inset: 0; height: 100%; max-height: none; }
-.fiche-exo-video--mini video.mini { filter: blur(1px); }
-.fiche-exo-video--mini video.hd { opacity: 0; transition: opacity 0.25s; }
-.fiche-exo-video--mini video.hd.prete { opacity: 1; }
 .admin-lien-video { display: block; font-size: 0.66rem; color: var(--accent); word-break: break-all; margin-top: 2px; }
 .aide-routine-etapes { margin: 0; padding-left: 20px; display: grid; gap: 10px; }
 .aide-routine-etapes li { font-size: 0.84rem; }
 .aide-routine-etapes li span { display: block; color: var(--text-muted); font-size: 0.78rem; margin-top: 2px; line-height: 1.45; }
-.feuille-action--suggere { box-shadow: 0 0 0 2px var(--primary) inset; }
 .lien-depense { margin-top: 6px; font-size: 0.74rem; font-weight: 700; color: var(--primary); }
 .profil-entete { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 16px; }
 .btn-engrenage { width: 42px; height: 42px; padding: 0; display: inline-flex; align-items: center; justify-content: center; flex: none; }
@@ -1379,10 +1348,6 @@ input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="
    Nutrition/Muscu). Sans ça, 7 sections s'empilaient d'un coup sur cet
    onglet (chiffres clés, 3 graphiques, records, stats par programme,
    historique) : beaucoup trop à digérer en un seul écran. */
-.muscu-soustabs-nav { margin: 4px 0 16px; display: grid; grid-template-columns: repeat(4, 1fr); }
-.muscu-soustabs-nav button { padding-left: 2px; padding-right: 2px; }
-#ecran-stats .stats-soustab { max-height: 0; overflow: hidden; transition: max-height 0.28s ease; }
-#ecran-stats .stats-soustab.stats-soustab-actif { max-height: none; overflow: visible; }
 
 /* --- CHIFFRES CLÉS DE LA PÉRIODE --- */
 .grille-cles { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
@@ -1757,8 +1722,6 @@ img.vignette-3d { background: radial-gradient(ellipse 75% 60% at 50% 42%, #1b1e2
 .cardio-unite span { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); font-size: 0.78rem; font-weight: 700; color: var(--text-muted); pointer-events: none; }
 .cardio-unite input { padding-right: 40px; font-weight: 800; }
 #modal-cardio input { width: 100%; }
-.cardio-calc { display: flex; justify-content: space-between; gap: 10px; background: var(--verre-fort); border-radius: 12px; padding: 10px 12px; margin-top: 10px; font-size: 0.82rem; font-weight: 700; color: var(--text-muted); }
-.cardio-calc b { color: var(--text); }
 .cardio-ints { display: grid; grid-template-columns: repeat(3, 1fr); gap: 7px; margin-bottom: 2px; }
 .cardio-int { display: flex; flex-direction: column; align-items: center; gap: 3px; background: var(--verre-fort); border-radius: 12px; padding: 10px 6px; border: 1.5px solid transparent; color: var(--text); font: inherit; cursor: pointer; }
 .cardio-int b { font-size: 0.86rem; }
@@ -2182,7 +2145,6 @@ img.vignette-3d { background: radial-gradient(ellipse 75% 60% at 50% 42%, #1b1e2
   background: var(--danger); color: #fff; font-size: 0.66rem; font-weight: 800; line-height: 18px; text-align: center; pointer-events: none; z-index: 2; }
 .avatar { display: inline-flex; align-items: center; justify-content: center; flex: none; width: 34px; height: 34px; border-radius: 50%;
   background: color-mix(in srgb, var(--primary) 20%, transparent); color: var(--primary); font-weight: 800; object-fit: cover; overflow: hidden; }
-.avatar--mini { width: 22px; height: 22px; font-size: 0.66rem; margin-right: 6px; vertical-align: middle; }
 .avatar--grand { width: 64px; height: 64px; font-size: 1.5rem; }
 .profil-perso { display: flex; gap: 14px; align-items: flex-start; margin-bottom: 8px; }
 .profil-avatar-btn { position: relative; border: 0; padding: 0; background: none; border-radius: 50%; cursor: pointer; flex: none; }
@@ -2258,7 +2220,6 @@ html:root #carte-pas-seances { display: none !important; }
 .carte-stats--compacte { padding: 10px 14px; margin-bottom: 10px; }
 #ecran-repas .macro-item { cursor: pointer; border-radius: 10px; -webkit-tap-highlight-color: transparent; }
 #ecran-repas .macro-item:active { background: var(--verre-lo); }
-.macro-pastille { display: inline-block; width: 9px; height: 9px; border-radius: 3px; margin-right: 2px; }
 .macro-stat { border-radius: 16px; transition: box-shadow 0.3s; }
 .macro-stat--vise { animation: macroVise 1.8s ease-out; }
 @keyframes macroVise { 0%, 40% { box-shadow: 0 0 0 2px var(--primary); } 100% { box-shadow: 0 0 0 2px transparent; } }
@@ -2292,9 +2253,6 @@ html:root #carte-pas-seances { display: none !important; }
 .progression-bandeau--fait { background: var(--verre-creux); color: var(--text-muted); }
 .progression-ok { flex: none; border: 0; border-radius: 999px; padding: 7px 12px; font: inherit; font-size: 0.74rem; font-weight: 800; background: var(--primary); color: #fff; cursor: pointer; }
 .progression-non { flex: none; border: 0; background: none; color: var(--text-muted); font-size: 1.2rem; line-height: 1; cursor: pointer; padding: 2px 4px; }
-.tempo-badge { display: inline-flex; align-items: center; gap: 6px; margin: 6px 0 2px; padding: 4px 10px; border-radius: 999px; border: 0; cursor: pointer;
-  background: color-mix(in srgb, var(--accent) 14%, transparent); color: var(--text); font-family: inherit; font-size: 0.74rem; }
-.tempo-badge b { letter-spacing: 2px; }
 .tempo-phases { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin: 10px 0 4px; }
 .tempo-phases div { background: var(--verre-creux); border-radius: 12px; padding: 8px 4px; text-align: center; }
 .tempo-phases b { display: block; font-size: 1.3rem; }
@@ -2618,7 +2576,7 @@ body.mode-seance .seance-reduire-rang { display: flex; justify-content: flex-end
    illustrés, arc de cardio, niveau, badges, objectif en tuiles.
    ===================================================================== */
 .vitrine { --ombre-v: var(--ombre, 0 14px 30px -16px rgba(0,0,0,.35)); }
-.vitrine :is(.hx-titre, .hx-geant, .hx-puce b, .bt-n, .sdj h4, .pc b, .pf h3, .niveau-t b, .cg b, .vitrine-sec h3, .arc-c b, .cardio-seance-txt b, .cardio-seance-n) { font-family: 'Manrope', 'Inter', sans-serif; }
+.vitrine :is(.hx-titre, .hx-geant, .hx-puce b, .bt-n, .sdj h4, .pc b, .pf h3, .cg b, .vitrine-sec h3, .arc-c b, .cardio-seance-txt b) { font-family: 'Manrope', 'Inter', sans-serif; }
 .vitrine-sec { display: flex; justify-content: space-between; align-items: baseline; margin: 20px 4px 10px; }
 .vitrine-sec h3 { margin: 0; font-size: 1.12rem; font-weight: 800; letter-spacing: -.03em; }
 .vitrine-sec button { border: 0; background: none; padding: 4px 0; font: inherit; font-size: .8rem; font-weight: 800; color: var(--primary); cursor: pointer; }
@@ -2744,12 +2702,8 @@ html:root .bt-k { font-size: 12px; letter-spacing: .06em; }
 .pf-modif { margin-top: 12px; border: 0; border-radius: 99px; padding: 9px 18px; background: var(--piste); color: var(--text); font: inherit; font-size: .8rem; font-weight: 800; cursor: pointer; }
 .niveau, .cg, .carte-badges, .carte-objectifs { background: var(--verre); -webkit-backdrop-filter: blur(24px) saturate(1.8); backdrop-filter: blur(24px) saturate(1.8); box-shadow: var(--ombre-v), inset 0 0 0 1px var(--trait); }
 .niveau { margin: 16px 0 4px; padding: 14px 16px; border-radius: 22px; text-align: left; }
-.niveau-t { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; font-weight: 800; }
-.niveau-t b { font-size: 1.05rem; letter-spacing: -.02em; }
-.niveau-t span { font-size: .72rem; color: var(--text-muted); white-space: nowrap; font-variant-numeric: tabular-nums; }
 .xp { height: 10px; border-radius: 99px; background: var(--piste); margin-top: 10px; overflow: hidden; }
 .xp i { display: block; height: 100%; border-radius: 99px; background: linear-gradient(90deg, #34d399, #22d3ee, #a78bfa); box-shadow: 0 0 14px rgba(34,211,238,.6); transition: width 1s cubic-bezier(.3,.9,.2,1); }
-.niveau-s { margin-top: 8px; font-size: .66rem; font-weight: 600; color: var(--text-muted); }
 .chiffres-geants { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin: 12px 0; }
 .cg { padding: 14px 10px; border-radius: 22px; text-align: center; }
 .cg b { display: block; font-weight: 800; font-size: 1.7rem; letter-spacing: -.05em; line-height: 1; font-variant-numeric: tabular-nums;
@@ -3077,7 +3031,7 @@ html:root #opt-cardio .ic { background: linear-gradient(135deg, #22d3ee, #6366f1
 .pave-chrono, .pave-lest { grid-column: 1 / -1; justify-self: center; display: inline-flex; align-items: center; justify-content: center; gap: 8px; margin-top: 16px; padding: 0 16px; height: 42px;
   border: 0; border-radius: 14px; cursor: pointer; touch-action: manipulation; font: inherit; font-weight: 700; font-size: .88rem; color: var(--text); background: var(--carte-plein);
   box-shadow: inset 0 0 0 1px var(--trait); }
-.pave-chrono .icone-v, .pave-chrono svg { width: 18px; height: 18px; flex: none; }
+.pave-chrono svg { width: 18px; height: 18px; flex: none; }
 .pave-chrono span { font-variant-numeric: tabular-nums; }
 .pave-chrono--marche { color: #fff; background: #e11d48; box-shadow: none; }
 .pave-lest { height: 36px; font-size: .8rem; color: var(--text-muted); background: none; }
@@ -3182,12 +3136,6 @@ html:root .interet[aria-pressed="true"] .interet-case { background: #10b981; bor
 
 /* Administration */
 html:root .admin-apercu { grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 6px; }
-html:root .apercu-case { min-height: 74px; padding: 12px 2px; border-radius: 18px; background: var(--verre); box-shadow: var(--ombre), inset 0 0 0 1px var(--trait); }
-html:root .apercu-case.actif { box-shadow: 0 0 0 2px var(--c, #10b981), 0 10px 20px -12px var(--c, #10b981); }
-html:root .apercu-nb { font-family: 'Manrope', 'Inter', sans-serif; font-size: 1.35rem; letter-spacing: -.04em; color: var(--c, var(--text)); }
-html:root .apercu-lbl { font-size: .54rem; letter-spacing: .05em; }
-.apercu-case[data-filtre="actif"] { --c: #10b981; } .apercu-case[data-filtre="suspendu"] { --c: #f59e0b; }
-.apercu-case[data-filtre="inactif"] { --c: #64748b; } .apercu-case[data-filtre="supprime"] { --c: #ef4444; }
 #ecran-admin .ligne-txt small { font-weight: 600; }
 @media (max-width: 360px) { html:root .admin-apercu { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
 
@@ -3211,7 +3159,7 @@ html:root :is(.modal-content, .feuille-contenu) .input-group label { font-size: 
 html:root :is(.modal-content, .feuille-contenu) .btn { min-height: 50px; border-radius: 16px; }
 html:root :is(.modal-content, .feuille-contenu) .titre-section { font-size: .98rem; margin-top: 18px; }
 /* Teinte de l'icône d'en-tête selon la famille de la fenêtre */
-:is(#manual-modal, #barcode-modal, #ai-modal, #macros-popup-modal, #feuille-choix-recette, #feuille-recette-perso, #feuille-choix-repas) { --fen-g: linear-gradient(135deg, #34d399, #10b981); }
+:is(#manual-modal, #barcode-modal, #ai-modal, #macros-popup-modal, #feuille-choix-recette, #feuille-recette-perso) { --fen-g: linear-gradient(135deg, #34d399, #10b981); }
 :is(#fiche-exercice-modal, #picker-exercices-modal, #exercice-perso-modal, #apercu-programme-modal, #historique-detail-modal, #programme-detail-modal, #bilan-seance-modal, #ia-programme-modal, #muscu-reglages-modal, #aide-routine-modal, #modal-tempo, #modal-plage) { --fen-g: linear-gradient(135deg, #f472b6, #7c3aed); }
 :is(#mesures-modal, #photos-modal, #partage-stats-modal) { --fen-g: linear-gradient(135deg, #38bdf8, #6366f1); }
 :is(#gymbro-modal, #pseudo-modal) { --fen-g: linear-gradient(135deg, #34d399, #06b6d4); }
@@ -3342,9 +3290,6 @@ html:root .saisie-rapide-valeur input { width: 100%; max-width: 170px; height: a
 html[data-theme="dark"] .zones-case--sous { color: #fff; }
 .zones-grille-legende { display: flex; flex-wrap: wrap; gap: 6px 12px; margin-top: 10px; font-size: .7rem; font-weight: 700; color: var(--text-muted); }
 .zones-grille-legende i { display: inline-block; width: 10px; height: 10px; margin-right: 5px; border-radius: 3px; vertical-align: -1px; }
-html:root .titre-section--macro .macro-pastille { display: inline-block; flex: none; width: 26px; height: 26px; border-radius: 9px; box-shadow: 0 8px 16px -8px rgba(0,0,0,.5);
-  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'><path d='M3 3v16a2 2 0 0 0 2 2h16'/><path d='m19 9-5 5-4-4-3 3'/></svg>") !important;
-  background-size: 15px !important; background-position: center !important; background-repeat: no-repeat !important; }
 html:root .btn-analysis { min-height: 50px; border: 0; border-radius: 16px; font-weight: 800; color: #fff !important; background: linear-gradient(135deg, #a78bfa, #6366f1) !important; box-shadow: 0 12px 24px -12px rgba(99,102,241,.8) !important; }
 html:root .btn-analysis .icone-ui { color: #fff; }
 html:root .zones-legende-item { padding: 10px 12px; border-left-width: 4px; border-radius: 14px; background: var(--piste); }
@@ -3367,8 +3312,7 @@ html:root .pp-fait .pp-coche { color: #fff; border-color: transparent; backgroun
 :root[data-theme="light"] #ecran-repas .eau-boutons .btn-icone { color: #075985 !important; }
 :root[data-theme="light"] .faisceaux-alerte { color: #854d0e; }
 /* Plus aucune étiquette sous 11 px (elles descendaient jusqu'à 8,5 px). */
-html:root :is(.cle-lbl, .bt-k, .apercu-lbl, .cg small, .sdj small, .pc .tag, .cardio-pastille, .carte-stats-ligne, .hx-k, .niveau-s, .exo-groupe, .serie-entete span,
-  .anneaux-centre small, .meal-kcals small, .heros-puces div, .coach-carte small, .bilan-tuile span, .badge, .pave-unite, .prog-heros small, .zones-grille-tete > span) { font-size: 12px; }
+html:root :is(.cle-lbl, .bt-k, .cg small, .sdj small, .pc .tag, .cardio-pastille, .carte-stats-ligne, .hx-k, .exo-groupe, .serie-entete span, .anneaux-centre small, .meal-kcals small, .heros-puces div, .coach-carte small, .bilan-tuile span, .badge, .pave-unite, .prog-heros small, .zones-grille-tete > span) { font-size: 12px; }
 html:root :is(.stats-grille small, .faisceaux-figures figcaption, .zones-sigle) { font-size: 12px; }
 html:root .onglet { font-size: 0.66rem; }
 html:root .heros-droite .macro-item { min-height: 36px; }
@@ -3607,8 +3551,6 @@ html:root #modal-cardio .cardio-chip[aria-pressed="true"] { background: var(--ca
 #exercice-perso-modal .fen-heros b { max-width: 62%; font-size: 1.6rem; }
 /* Fiche d'un exercice : titre sur deux lignes au plus, démonstration plus grande. */
 html:root #titre-fiche-exercice { display: -webkit-box; overflow: hidden; font-size: 1.12rem; line-height: 1.25; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
-html:root #fiche-exercice-modal .fiche-exo-video--mini { aspect-ratio: 4 / 3; max-height: 320px; }
-html:root #fiche-exercice-modal .fiche-exo-video--mini video.mini { filter: none; }
 /* Bilan : le nom de l'exercice battu tient sur deux lignes. */
 html:root .bilan-records b { white-space: normal; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; line-height: 1.25; }
 /* =====================================================================
@@ -4256,14 +4198,7 @@ html:root body .titre-section > .icone-ui { display: none !important; }
 html:root body :is(.modal-entete h3, .feuille-entete .feuille-titre, .feuille-titre, .hd-titre, .sdj h4, .bilan-heros h4, .hx-titre, .pg-heros h3) { font-weight: 700 !important; }
 
 /* Petits libellés : en minuscules, gris, sans espacement de lettres. */
-html:root body :is(.summary-card span.libelle, .heros-droite .libelle, .macro-lbl, .anneaux-centre small, .heros-puces div, .coach-carte small, .carte-stats-titre,
-  #bloc-eau h3, .hx-k, .bt-k, .sdj small, .cg small, .cle-lbl, .pg-heros small, .pg-tuile small, .pg-maint small, #ecran-stats .cle-lbl, #muscu-stats-totaux small,
-  .input-group label, .profil-perso-titre, .fiche-kpis small, .fiche-bloc-titre, .fiche-faisceaux-titre, .hd-surtitre, .picker-titre-bloc, .cardio-champ-l,
-  .cardio-record span, .plage-bornes small, .tempo-ligne label, .tempo-phases small, .zones-reglage-entete, .pave-champ > small, .prog-heros small,
-  .onb-etapes-n, .bilan-heros small, .bilan-tuile span, .sh-etat, .ia-prog-tete, .ia-prog-recap-bloc small, .faisceaux-figures figcaption, .serie-entete span,
-  .apercu-lbl, .niveau-s, .exo-groupe, .carte-stats-ligne, .cardio-pastille, .pc .tag, #btn-aujourdhui, .titre-section, .fitness-card h3, .analysis-card h3,
-  .feuille-titre, .onb-cible-lbl, .stats-grille small, .trio > div label, .off-section, .session-superset-titre,
-  [style*="text-transform:uppercase"], [style*="text-transform: uppercase"]) {
+html:root body :is(.summary-card span.libelle, .heros-droite .libelle, .macro-lbl, .anneaux-centre small, .heros-puces div, .coach-carte small, .carte-stats-titre, #bloc-eau h3, .hx-k, .bt-k, .sdj small, .cg small, .cle-lbl, .pg-heros small, .pg-tuile small, .pg-maint small, #ecran-stats .cle-lbl, #muscu-stats-totaux small, .input-group label, .profil-perso-titre, .fiche-kpis small, .fiche-bloc-titre, .fiche-faisceaux-titre, .hd-surtitre, .picker-titre-bloc, .cardio-champ-l, .cardio-record span, .plage-bornes small, .tempo-ligne label, .tempo-phases small, .zones-reglage-entete, .pave-champ > small, .prog-heros small, .onb-etapes-n, .bilan-heros small, .bilan-tuile span, .sh-etat, .ia-prog-tete, .ia-prog-recap-bloc small, .faisceaux-figures figcaption, .serie-entete span, .exo-groupe, .carte-stats-ligne, .cardio-pastille, .pc .tag, #btn-aujourdhui, .titre-section, .fitness-card h3, .analysis-card h3, .feuille-titre, .onb-cible-lbl, .stats-grille small, .trio > div label, .off-section, .session-superset-titre, [style*="xxxxxxxxxxxxxxxxxxxxxxxx"], [style*="xxxxxxxxxxxxxxxxxxxxxxxxx"]) {
   text-transform: none !important; letter-spacing: 0 !important; }
 html:root body :is(.summary-card span.libelle, .heros-droite .libelle, .heros-puces div, .coach-carte small, .carte-stats-titre, #bloc-eau h3, .hx-k, .bt-k,
   .sdj small, .cg small, .cle-lbl, .pg-heros small, .pg-tuile small, .pg-maint small, #ecran-stats .cle-lbl, #muscu-stats-totaux small, .input-group label,
@@ -4293,9 +4228,9 @@ html:root body :is(.modal-content, .feuille-contenu) :is(.feuille-action .ic, .m
 /* Boutons : l'action principale en négatif (blanc en sombre, noir en clair). */
 html:root body .btn-primary, html:root body .pave-valider { background: var(--inv) !important; color: var(--sur-inv) !important; box-shadow: none !important; border: 0 !important; }
 html:root body :is(.btn-primary, .pave-valider) :is(.icone-ui, svg) { color: var(--sur-inv) !important; }
-html:root body :is(.btn-secondaire, .btn-icone, .pilule, .tuile-plus, .repas-ajouter, .btn-analysis, .btn-barcode, .pc-options, .pf-modif, .btn-engrenage) {
+html:root body :is(.btn-secondaire, .btn-icone, .pilule, .repas-ajouter, .btn-analysis, .btn-barcode, .pc-options, .pf-modif, .btn-engrenage) {
   background: var(--s2) !important; color: var(--text) !important; box-shadow: none !important; border: 0 !important; }
-html:root body :is(.btn-secondaire, .btn-icone, .pilule, .tuile-plus, .repas-ajouter, .btn-analysis, .btn-barcode) .icone-ui { color: var(--text) !important; }
+html:root body :is(.btn-secondaire, .btn-icone, .pilule, .repas-ajouter, .btn-analysis, .btn-barcode) .icone-ui { color: var(--text) !important; }
 html:root body :is(.modal-content, .feuille-contenu) :is(.btn-secondaire, .btn-icone, .pilule) { background: var(--s3) !important; }
 html:root body .btn-danger { background: var(--alerte) !important; color: #fff !important; box-shadow: none !important; border: 0 !important; }
 html:root body .segment { background: var(--s2) !important; box-shadow: none !important; }
@@ -4659,10 +4594,6 @@ html:root body .adm-retour .icone-ui { width: 20px; height: 20px; color: var(--t
 html:root body [data-danger] .action-ic .icone-ui { color: var(--alerte-t) !important; }
 #ecran-admin[data-vue="compte"] > .titre-ecran, #ecran-admin[data-vue="stats"] > .titre-ecran { display: none; }
 #admin-vue-compte #admin-pro .ligne-reglage { padding: 11px 0; margin-top: 0; border-top: 0; }
-.adm-cle-edition { padding: 4px 0 12px; }
-.adm-cle-edition input { width: 100%; box-sizing: border-box; margin-bottom: 8px; }
-.adm-cle-edition .btn { width: 100%; }
-.adm-cle-edition .note { margin: 8px 0 0; }
 
 /* Feuilles */
 .adm-carte { background: var(--s2); border-radius: 18px; padding: 14px; margin-bottom: 12px; }
@@ -4792,8 +4723,7 @@ html.app-ios:root body :is(.titre-ecran, .titre-section, .vitrine-sec h3, .modal
   letter-spacing: normal !important; }
 html.app-ios:root body :is(.titre-section, .vitrine-sec h3) { font-size: 1.35rem !important; font-weight: 700 !important; }
 html.app-ios:root body :is(.btn, .pilule, .segment button, .feuille-action, .coach-action, .cp-bouton, .obj-tuile, .onglet) { font-weight: 600 !important; letter-spacing: normal !important; }
-html.app-ios:root body :is(#total-kcals, .reste-kcal, .carte-stats-valeur b, .eau-texte, .hx-geant, .cardio-gros, .bt-n, .pg-tuile b, .pg-pas-tete b, .cg b,
-  .sh-chrono, .mc-r b, .meal-kcals, .heros-puces b, .cle-val, .stats-valeur, .bilan-geant b, .bilan-tuile b, .repos-chrono, .pave-val, .semaine-jour b, .niveau-t b) {
+html.app-ios:root body :is(#total-kcals, .reste-kcal, .carte-stats-valeur b, .eau-texte, .hx-geant, .cardio-gros, .bt-n, .pg-tuile b, .pg-pas-tete b, .cg b, .sh-chrono, .mc-r b, .meal-kcals, .heros-puces b, .cle-val, .stats-valeur, .bilan-geant b, .bilan-tuile b, .repos-chrono, .pave-val, .semaine-jour b) {
   font-family: ui-rounded, 'SF Pro Rounded', var(--police) !important; letter-spacing: -.01em !important; }
 /* Les gros chiffres gardent leur fondu vers le bas (« 30 séries », …). */
 /* Les plus petits textes passent à 11 px, le minimum d'Apple. */
