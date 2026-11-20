@@ -4926,7 +4926,7 @@ html.app-ios:root[data-theme="dark"] { --protein: #ff7b7b; --carbs: #f5b85c; --f
 html.app-ios:root body .titre-ecran { font-size: var(--t-grand-titre) !important; font-weight: 700 !important; letter-spacing: -.012em !important; line-height: 1.12; }
 html.app-ios:root body :is(.titre-section, .vitrine-sec h3) { font-size: var(--t-titre2) !important; font-weight: 600 !important; letter-spacing: -.005em !important; }
 html.app-ios:root body :is(.modal-entete h3, .feuille-titre) { font-size: var(--t-titre3) !important; font-weight: 600 !important; }
-html.app-ios:root body :is(.note, .note-explicative, .food-meta, .carte-stats-ligne, .coach-nb) { font-size: var(--t-legende) !important; line-height: 1.35; }
+html.app-ios:root body :is(.note, .note-explicative, .carte-stats-ligne, .coach-nb) { font-size: var(--t-legende) !important; line-height: 1.35; }
 html.app-ios:root body :is(.btn, .feuille-action, .ligne-reglage, .food-name, .meal-title, .pilule) { font-size: var(--t-corps); }
 html.app-ios:root body :is(.pilule, .coach-action, .segment button) { font-size: var(--t-note) !important; }
 html.app-ios:root body :is(#total-kcals, .reste-kcal, .hx-geant, .cardio-gros, .pg-tuile b, .carte-stats-valeur b, .sh-chrono, .repos-chrono, .bilan-geant b) {
@@ -4945,7 +4945,7 @@ html.app-ios:root body :is(.btn, .pilule, .feuille-action, .coach-action, .actio
 /* Surfaces : grands blocs et cellules aux rayons continus, séparateurs système. */
 html.app-ios:root body :is(.summary-card, .coach-carte, .pg-carte, .fitness-card, .carte-liste, .carte-stats, .bloc-verre, .vitrine) { border-radius: var(--r-bloc); }
 html.app-ios:root body .ligne-reglage { border-radius: 0; }
-html.app-ios:root body :is(.food-item, .ligne-liste) { border-radius: var(--r-cellule); }
+html.app-ios:root body .food-item { border-radius: var(--r-cellule); }
 
 /* Grand titre repliable : passé sous la barre d'état, un titre compact en
    matériau prend le relais (html.titre-replie, voir onScrollAppBar). Repas
@@ -5269,7 +5269,6 @@ html.app-ios body .feuille-poignee { width: 36px; height: 5px; background: color
 html.app-ios body .feuille-action { min-height: 60px; border-radius: 18px !important; padding: 12px 14px !important; }
 html.app-ios body .feuille-action .ic { width: 36px !important; height: 36px !important; border-radius: 10px !important; }
 html.app-ios body .feuille-action .sous { font-size: var(--t-legende) !important; font-weight: 400 !important; }
-html.app-ios body .feuille-action--suggere { box-shadow: inset 0 0 0 1.5px var(--ios-accent) !important; background: color-mix(in srgb, var(--ios-accent) 8%, var(--s2)) !important; }
 html.app-ios body .feuille-contenu > .btn-secondaire:last-child { min-height: 50px; border-radius: 14px !important; font-size: var(--t-corps) !important; }
 html.app-ios body .dialogue-boutons .btn { min-height: 44px; font-size: var(--t-corps) !important; }
 
