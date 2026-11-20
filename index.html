@@ -12375,29 +12375,6 @@ function messageAuth(e) {
   return m || "Une erreur est survenue, réessaie.";
 }
 
-async function connexionCompte() {
-  if (!supa) { alert("Renseigne d'abord l'URL et la clé du projet Supabase (section Synchronisation) : la connexion utilise le même projet."); return; }
-  const email = (document.getElementById('compte-email-input').value || '').trim();
-  const mdp = document.getElementById('compte-mdp-input').value || '';
-  const note = document.getElementById('note-compte');
-  if (!email || !mdp) { if (note) note.textContent = 'Renseigne une adresse et un mot de passe.'; return; }
-  if (note) note.textContent = 'Connexion en cours…';
-  try {
-    const { error } = await supa.auth.signInWithPassword({ email, password: mdp });
-    if (error) throw error;
-    if (note) note.textContent = '';
-    document.getElementById('compte-mdp-input').value = '';
-  } catch (e) { if (note) note.textContent = messageAuth(e); }
-}
-
-/* Bouton unique "Se connecter" de la modale de compte : tente une connexion
-   normale, et si l'adresse/mot de passe ne correspond à aucun compte
-   existant, crée le compte automatiquement plutôt que de se contenter
-   d'une erreur — l'ancien bouton séparé "Créer un compte" passait
-   inaperçu, la plupart des gens cliquant par réflexe sur le bouton vert
-   même pour un tout premier compte. Si l'adresse a en fait déjà un compte
-   et que c'est le mot de passe qui est faux, propose de le réinitialiser
-   par email plutôt que d'en créer un second. */
 /* Fenêtre de connexion, deux modes : « Se connecter » (par défaut) et
    « Créer un compte » (nom d'utilisateur et conditions en plus). Un mot de
    passe faux le dit simplement ; Supabase répond pareil pour une adresse
