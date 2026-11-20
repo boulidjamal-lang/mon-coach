@@ -2758,8 +2758,9 @@
       const part = f => lerp(K_CEINTURE, 0.15, lisse(f));
       // La main. À la barre : le poignet cassé en arrière sous la barre posée (elle repose sur le talon de la main), presque
       // droit en haut. Mains libres : paume en avant ; neutre : paumes face à face ; kettlebell : de face à face à en avant ;
-      // arnold : la paume part tournée vers soi et finit en avant.
-      const casse = parPoints([[0, surBarre ? (o.nuque ? 14 : 30) : 10], [0.35, surBarre ? (o.nuque ? 12 : 16) : 8], [1, 8]]);
+      // arnold : la paume part tournée vers soi et finit en avant. (Devant, en bas, le poignet cassé de 42° : moins cassé,
+      // la barre reste en avant de l'avant-bras, et le coude, plié à sa limite de 152°, ne la ramène plus sur les clavicules.)
+      const casse = parPoints([[0, surBarre ? (o.nuque ? 14 : 42) : 10], [0.35, surBarre ? (o.nuque ? 12 : 16) : 8], [1, 8]]);
       const tourne = o.arnold ? parPoints([[0, 180], [0.55, 0], [1, 0]]) : o.kb ? parPoints([[0, 75], [0.7, 0], [1, 0]]) : o.neutre ? () => 84 : () => 0;
       const mainA = (s, f) => { const w = rad(casse(f)), a = rad(tourne(f)), tour = v => V(-s * (v.z * Math.sin(a)), v.y, v.z * Math.cos(a)); return { paume: tour(V(0, Math.sin(w), Math.cos(w))), dirMain: tour(V(0, Math.cos(w), -Math.sin(w))) }; };
       // Le coude : le plus bas possible sous la charge, puis vers le dehors quand le bras se tend (paumes face à face ou
@@ -2797,10 +2798,10 @@
         let yHaut = hautBarre(zFin);
         const barreA = (f, y, z) => poserBras(troncA(f), f, s => V(s * xM, y, z));
         // Par où passe la barre à la hauteur y, corps posé : elle peut se poser sur la poitrine, les épaules et le cou ; la
-        // tête, elle la passe à 2,5 cm.
+        // tête, elle la passe à 2,7 cm devant le visage, à 2,5 cm derrière le crâne.
         const regionsCorps = o.nuque ? ['cou', 'dos', 'epaule'] : ['thorax', 'epaule', 'cou'];
         const auPlusPres = (y, z, jeu) => {
-          const corpsZ = c.barreContre(y, rB + jeu, regionsCorps, xM - 0.06, sens), teteZ = c.barreContre(y, rB + 0.025, ['tete'], 0.14, sens);
+          const corpsZ = c.barreContre(y, rB + jeu, regionsCorps, xM - 0.06, sens), teteZ = c.barreContre(y, rB + (o.nuque ? 0.025 : 0.027), ['tete'], 0.14, sens);
           if (corpsZ != null) z = sens > 0 ? Math.max(z, corpsZ) : Math.min(z, corpsZ);
           if (teteZ != null) z = sens > 0 ? Math.max(z, teteZ) : Math.min(z, teteZ);
           return z;
