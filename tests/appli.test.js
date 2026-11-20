@@ -8015,6 +8015,9 @@ test('atlas 3D : sans WebGL 2, aucun accès ; avec, la fenêtre s\'ouvre, anime 
     const webgl = await page.evaluate(() => !!document.createElement('canvas').getContext('webgl2'));
     if (!webgl) { await ctx.close(); return; }   // pas de rendu 3D dans ce navigateur de test : rien à vérifier de plus
     await page.evaluate(HISTORIQUE_ATLAS);
+    // La cuisse doit être au repos cette semaine, quel que soit le jour : la semaine commence le lundi, et du vendredi au
+    // dimanche la séance de jambes d'il y a 4 jours y tombait (la carte colorait alors la cuisse). Elle en est retirée.
+    await page.evaluate(() => { const lundi = lundiDeLaSemaine(todayStr()); musculationHistorique = musculationHistorique.filter(h => !(h.date >= lundi && h.exercices.some(e => e.exerciceId === 'e265' || e.exerciceId === 'e29'))); });
     const pret = () => page.waitForFunction(() => atlasMonte && atlasMonte.atlas.mesures().images > 1, null, { timeout: 120000 });
     await page.evaluate(() => { ouvrirAtlas('semaine'); });
     await pret();
