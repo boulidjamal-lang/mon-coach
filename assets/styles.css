@@ -2301,7 +2301,7 @@ html:root #carte-pas-seances { display: none !important; }
 :root[data-theme="dark"]  { --carte-plein: #161924; --piste: rgba(255,255,255,.08); --trait: rgba(255,255,255,.07); }
 .defs-degrades { position: absolute; width: 0; height: 0; overflow: hidden; }
 .date-nav { display: none !important; }
-.anneaux-centre h1, .reste-kcal, .heros-puces b, .carte-stats-valeur b, .eau-texte, .meal-kcals { font-variant-numeric: tabular-nums; }
+.anneaux-centre h1, .reste-kcal, .carte-stats-valeur b, .eau-texte, .meal-kcals { font-variant-numeric: tabular-nums; }
 
 /* En-tête : logo, salutation, série, photo */
 .app-bar h2 { display: flex; align-items: center; gap: 10px; min-width: 0; }
@@ -3312,7 +3312,7 @@ html:root .pp-fait .pp-coche { color: #fff; border-color: transparent; backgroun
 :root[data-theme="light"] #ecran-repas .eau-boutons .btn-icone { color: #075985 !important; }
 :root[data-theme="light"] .faisceaux-alerte { color: #854d0e; }
 /* Plus aucune étiquette sous 11 px (elles descendaient jusqu'à 8,5 px). */
-html:root :is(.cle-lbl, .bt-k, .cg small, .sdj small, .pc .tag, .cardio-pastille, .carte-stats-ligne, .hx-k, .exo-groupe, .serie-entete span, .anneaux-centre small, .meal-kcals small, .heros-puces div, .coach-carte small, .bilan-tuile span, .badge, .pave-unite, .prog-heros small, .zones-grille-tete > span) { font-size: 12px; }
+html:root :is(.cle-lbl, .bt-k, .cg small, .sdj small, .pc .tag, .cardio-pastille, .carte-stats-ligne, .hx-k, .exo-groupe, .serie-entete span, .anneaux-centre small, .meal-kcals small, .coach-carte small, .bilan-tuile span, .badge, .pave-unite, .prog-heros small, .zones-grille-tete > span) { font-size: 12px; }
 html:root :is(.stats-grille small, .faisceaux-figures figcaption, .zones-sigle) { font-size: 12px; }
 html:root .onglet { font-size: 0.66rem; }
 html:root .heros-droite .macro-item { min-height: 36px; }
@@ -3962,7 +3962,7 @@ html.app-ios:root[data-theme="dark"] { --grille: rgba(255,255,255,.12); }
 html.app-ios body { -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
 html.app-ios :is(input, textarea, [contenteditable="true"]) { -webkit-user-select: text; user-select: text; -webkit-touch-callout: default; }
 html:root .app-bar { background: transparent; -webkit-backdrop-filter: none; backdrop-filter: none; }
-html:root :is(.titre-ecran, .titre-section, .salut b, .anneaux-centre h1, .reste-kcal, .heros-puces b, .carte-stats-valeur b, .eau-texte, .meal-title, .meal-kcals, .cle-val, .feuille-titre, .modal-entete h3, .semaine-num b) {
+html:root :is(.titre-ecran, .titre-section, .salut b, .anneaux-centre h1, .reste-kcal, .carte-stats-valeur b, .eau-texte, .meal-title, .meal-kcals, .cle-val, .feuille-titre, .modal-entete h3, .semaine-num b) {
   font-family: 'Manrope', 'Inter', sans-serif; }
 html:root .titre-ecran { font-size: 1.35rem; font-weight: 800; letter-spacing: -0.03em; }
 html:root .titre-section { display: flex; align-items: center; gap: 8px; font-family: 'Manrope', 'Inter', sans-serif; font-size: 1.08rem; font-weight: 800;
@@ -4185,7 +4185,7 @@ html:root[data-theme="dark"] {
 html:root body { font-family: var(--police) !important; background: var(--bg) !important; color: var(--text); }
 html:root body *:not(.marque-anqa) { font-family: inherit !important; }
 html:root body :is(code, pre, kbd, samp, .bloc-sql) { font-family: ui-monospace, 'SF Mono', Menlo, Consolas, monospace !important; }
-html:root body :is(b, strong, h1, .reste-kcal, .eau-texte, .meal-kcals, .carte-stats-valeur b, .heros-puces b, .hx-geant, .cle-val, .bt-n, .stats-valeur, .bilan-geant b, .bilan-tuile b, .serie-ligne input, .repos-chrono) { font-variant-numeric: tabular-nums; }
+html:root body :is(b, strong, h1, .reste-kcal, .eau-texte, .meal-kcals, .carte-stats-valeur b, .hx-geant, .cle-val, .bt-n, .stats-valeur, .bilan-geant b, .bilan-tuile b, .serie-ligne input, .repos-chrono) { font-variant-numeric: tabular-nums; }
 
 /* Ni halo d'ambiance, ni lentilles de verre. */
 .etat-bg { display: none !important; }
@@ -4198,9 +4198,9 @@ html:root body .titre-section > .icone-ui { display: none !important; }
 html:root body :is(.modal-entete h3, .feuille-entete .feuille-titre, .feuille-titre, .hd-titre, .sdj h4, .bilan-heros h4, .hx-titre, .pg-heros h3) { font-weight: 700 !important; }
 
 /* Petits libellés : en minuscules, gris, sans espacement de lettres. */
-html:root body :is(.summary-card span.libelle, .heros-droite .libelle, .macro-lbl, .anneaux-centre small, .heros-puces div, .coach-carte small, .carte-stats-titre, #bloc-eau h3, .hx-k, .bt-k, .sdj small, .cg small, .cle-lbl, .pg-heros small, .pg-tuile small, .pg-maint small, #ecran-stats .cle-lbl, #muscu-stats-totaux small, .input-group label, .profil-perso-titre, .fiche-kpis small, .fiche-bloc-titre, .fiche-faisceaux-titre, .hd-surtitre, .picker-titre-bloc, .cardio-champ-l, .cardio-record span, .plage-bornes small, .tempo-ligne label, .tempo-phases small, .zones-reglage-entete, .pave-champ > small, .prog-heros small, .onb-etapes-n, .bilan-heros small, .bilan-tuile span, .sh-etat, .ia-prog-tete, .ia-prog-recap-bloc small, .faisceaux-figures figcaption, .serie-entete span, .exo-groupe, .carte-stats-ligne, .cardio-pastille, .pc .tag, #btn-aujourdhui, .titre-section, .fitness-card h3, .analysis-card h3, .feuille-titre, .onb-cible-lbl, .stats-grille small, .trio > div label, .off-section, .session-superset-titre, [style*="xxxxxxxxxxxxxxxxxxxxxxxx"], [style*="xxxxxxxxxxxxxxxxxxxxxxxxx"]) {
+html:root body :is(.summary-card span.libelle, .heros-droite .libelle, .macro-lbl, .anneaux-centre small, .coach-carte small, .carte-stats-titre, #bloc-eau h3, .hx-k, .bt-k, .sdj small, .cg small, .cle-lbl, .pg-heros small, .pg-tuile small, .pg-maint small, #ecran-stats .cle-lbl, #muscu-stats-totaux small, .input-group label, .profil-perso-titre, .fiche-kpis small, .fiche-bloc-titre, .fiche-faisceaux-titre, .hd-surtitre, .picker-titre-bloc, .cardio-champ-l, .cardio-record span, .plage-bornes small, .tempo-ligne label, .tempo-phases small, .zones-reglage-entete, .pave-champ > small, .prog-heros small, .onb-etapes-n, .bilan-heros small, .bilan-tuile span, .sh-etat, .ia-prog-tete, .ia-prog-recap-bloc small, .faisceaux-figures figcaption, .serie-entete span, .exo-groupe, .carte-stats-ligne, .cardio-pastille, .pc .tag, #btn-aujourdhui, .titre-section, .fitness-card h3, .analysis-card h3, .feuille-titre, .onb-cible-lbl, .stats-grille small, .trio > div label, .off-section, .session-superset-titre, [style*="xxxxxxxxxxxxxxxxxxxxxxxx"], [style*="xxxxxxxxxxxxxxxxxxxxxxxxx"]) {
   text-transform: none !important; letter-spacing: 0 !important; }
-html:root body :is(.summary-card span.libelle, .heros-droite .libelle, .heros-puces div, .coach-carte small, .carte-stats-titre, #bloc-eau h3, .hx-k, .bt-k,
+html:root body :is(.summary-card span.libelle, .heros-droite .libelle, .coach-carte small, .carte-stats-titre, #bloc-eau h3, .hx-k, .bt-k,
   .sdj small, .cg small, .cle-lbl, .pg-heros small, .pg-tuile small, .pg-maint small, #ecran-stats .cle-lbl, #muscu-stats-totaux small, .input-group label,
   .profil-perso-titre, .fiche-kpis small, .fiche-bloc-titre, .hd-surtitre, .picker-titre-bloc, .cardio-champ-l, .onb-etapes-n, .bilan-heros small, .sh-etat) {
   font-size: .78rem !important; font-weight: 600 !important; color: var(--text-muted) !important; opacity: 1 !important; }
@@ -4723,7 +4723,7 @@ html.app-ios:root body :is(.titre-ecran, .titre-section, .vitrine-sec h3, .modal
   letter-spacing: normal !important; }
 html.app-ios:root body :is(.titre-section, .vitrine-sec h3) { font-size: 1.35rem !important; font-weight: 700 !important; }
 html.app-ios:root body :is(.btn, .pilule, .segment button, .feuille-action, .coach-action, .cp-bouton, .obj-tuile, .onglet) { font-weight: 600 !important; letter-spacing: normal !important; }
-html.app-ios:root body :is(#total-kcals, .reste-kcal, .carte-stats-valeur b, .eau-texte, .hx-geant, .cardio-gros, .bt-n, .pg-tuile b, .pg-pas-tete b, .cg b, .sh-chrono, .mc-r b, .meal-kcals, .heros-puces b, .cle-val, .stats-valeur, .bilan-geant b, .bilan-tuile b, .repos-chrono, .pave-val, .semaine-jour b) {
+html.app-ios:root body :is(#total-kcals, .reste-kcal, .carte-stats-valeur b, .eau-texte, .hx-geant, .cardio-gros, .bt-n, .pg-tuile b, .pg-pas-tete b, .cg b, .sh-chrono, .mc-r b, .meal-kcals, .cle-val, .stats-valeur, .bilan-geant b, .bilan-tuile b, .repos-chrono, .pave-val, .semaine-jour b) {
   font-family: ui-rounded, 'SF Pro Rounded', var(--police) !important; letter-spacing: -.01em !important; }
 /* Les gros chiffres gardent leur fondu vers le bas (« 30 séries », …). */
 /* Les plus petits textes passent à 11 px, le minimum d'Apple. */
