@@ -231,9 +231,10 @@
     if (o.machine && (o.assis || P.sorte === 'dos')) {
       if (d.cles) { d.a = d.cles[0][1]; d.b = d.cles[d.cles.length - 1][1]; delete d.cles; }
       const couche = P.sorte === 'dos';
-      // (Prise neutre devant la poitrine : poignées pivotantes — une poignée verticale fixe pencherait avec le bras de
-      // la machine, l'avant-bras la suivrait et le coude s'écarterait du buste.)
-      const M = surMachine(c, C, d, { pivot: haut ? 'arriere' : 'haut', rayon: haut ? 0.95 : 0.78, ecart: haut ? 0.34 : o.incline ? 0.38 : 0.33, poste: couche ? null : { h: 0.44, angle: 84 }, cotes: m === 'GD' ? ['G', 'D'] : [m], pivotantes: o.neutre && !haut ? true : null });
+      // (Prise neutre : poignées pivotantes — une poignée verticale fixe pencherait avec le bras de la machine et la
+      // main avec elle : devant la poitrine, l'avant-bras la suivait et le coude s'écartait du buste ; au-dessus de la
+      // tête, la main basculée de 33° n'atteignait plus la poignée bras tendus.)
+      const M = surMachine(c, C, d, { pivot: haut ? 'arriere' : 'haut', rayon: haut ? 0.95 : 0.78, ecart: haut ? 0.34 : o.incline ? 0.38 : 0.33, poste: couche ? null : { h: 0.44, angle: 84 }, cotes: m === 'GD' ? ['G', 'D'] : [m], pivotantes: o.neutre ? true : null });
       if (couche) d.fixe.push(...poseFixe(MAT.banc(C, 0)));
       // (Couché : la colonne se dresse au-delà de la tête, la poutre avance au-dessus du visage jusqu'aux paliers.)
       batiBras(C, d, M, couche ? { zColonne: M.i0.tete.z - 0.32, zAvant: 0.4 } : { zAvant: 0.32 });
