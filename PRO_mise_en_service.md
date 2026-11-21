@@ -63,6 +63,12 @@ mois sans Pro, sans limite pratique avec Pro, 600 demandes par mois au plus).
 L'appli détecte la fonction toute seule à la connexion. Tant qu'elle n'est
 pas déployée, l'ancienne clé liée au compte reste utilisée.
 
+> L'appli fait toujours tourner la fonction en `us-east-1` (paramètre
+> `forceFunctionRegion` de l'adresse) : Google refuse les demandes qu'il
+> situe hors des pays où Gemini est ouvert (« User location is not supported
+> for the API use »), et Supabase la ferait sinon tourner dans la région la
+> plus proche de l'utilisateur. Rien à régler dans Supabase.
+
 > `SUPABASE_URL` et `SUPABASE_SERVICE_ROLE_KEY` sont fournis automatiquement
 > aux fonctions : rien à faire.
 
