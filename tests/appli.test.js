@@ -8149,7 +8149,8 @@ test('atlas 3D : la préparation écrite dans le modèle est celle que le moteur
 });
 
 /* Le pupitre (curl, extension des triceps à la machine) : le coussin sous le haut des bras, sans entrer dans la
-   poitrine ; la machine tourne autour du coude, son bâti devant le pupitre. Le crible des traversées n'y trouve rien. */
+   poitrine ; le bras de la machine tourne autour du coude, son palier en dehors du bras, son bâti sur les côtés. Le
+   crible des traversées n'y trouve rien. */
 test('atlas 3D : pupitre et machines à bras — ni coussin dans la poitrine, ni bâti dans les bras', async () => {
   const { pathToFileURL } = require('url'), dossier = path.join(RACINE, 'outils', 'atlas', 'mouvements');
   const { chargerAtlas, chargerMouvements, FICHIER_ATLAS, FICHIER_MOUVEMENTS } = await import(pathToFileURL(path.join(dossier, 'silhouettes.mjs')).href);
@@ -8161,11 +8162,19 @@ test('atlas 3D : pupitre et machines à bras — ni coussin dans la poitrine, ni
     assert.ok(!r.erreur, spec + ' : ' + r.erreur);
     const fautes = bilanSpec(r.releve);
     assert.equal(fautes.length, 0, spec + ' : ' + fautes.map(f => f.e.forme + ' ' + f.e.classe + ' ' + (f.j.exces * 100).toFixed(1) + ' cm').join(' ; '));
-    // Le levier de la machine tourne autour du coude.
+    // Le bras de la machine tourne autour du coude : l'axe de son palier passe par le coude, du début à la fin du
+    // mouvement, et le palier est en dehors du bras.
     if (/machine/.test(spec)) {
-      const d = M.definir(spec, corps, C), info = corps.poser(M.poseA(d, 0, 0)), lev = d.tenu.filter(e => e.t === 'levier');
-      assert.ok(lev.length >= 1 && lev.every(e => e.bati === 'devant'));
-      for (const e of lev) { const de = typeof e.de === 'function' ? e.de(info, 0) : e.de, k = info.coudes[e.m]; assert.ok(Math.hypot(de.y - k.y, de.z - k.z) < 0.01 && Math.abs(Math.abs(de.x) - Math.abs(k.x) - 0.09) < 0.01, spec + ' : le pivot est dans l\'axe du coude'); }
+      const d = M.definir(spec, corps, C), cotes = Object.keys(d.paliers || {});
+      assert.ok(cotes.length >= 1, spec + ' : la machine a ses bras');
+      for (const u of [0, 0.5, 1]) {
+        const info = corps.poser(M.poseA(d, 0, u));
+        for (const k of cotes) {
+          const { pivot, axe } = d.paliers[k], co = info.coudes[k], v = co.clone().sub(pivot), t = v.dot(axe), hors = Math.sqrt(Math.max(0, v.lengthSq() - t * t));
+          assert.ok(hors < 0.01, `${spec} (u=${u}) : le coude ${k} est à ${(hors * 100).toFixed(1)} cm de l'axe du bras de la machine`);
+          assert.ok(Math.abs(pivot.x) > Math.abs(co.x) + 0.08, `${spec} : le palier ${k} est en dehors du coude`);
+        }
+      }
     }
   }
 });

@@ -1558,12 +1558,12 @@
         const a = arcs[k], rot = qAxe(a.n, f * a.tot);
         const pole = a.poleA.dot(a.poleB) > -0.95 ? a.poleA.clone().applyQuaternion(new Quat().slerp(new Quat().setFromUnitVectors(a.poleA, a.poleB), f)) : a.poleA.clone();
         const libre = pivotante(k), paume = libre ? a.paume.clone().lerp(a.paumeB, f).normalize() : a.paume.clone().applyQuaternion(rot), dirMain = libre ? a.dirMain.clone().lerp(a.dirMainB, f).normalize() : a.dirMain.clone().applyQuaternion(rot);
-        // (Les épaules haussées ou avancées que la famille a écrites passent telles quelles : sans elles le shrug montait
-        // les mains en pliant les coudes. La part de la ceinture reste celle d'ordinaire : bras tendu au-dessus de la
-        // tête, une épaule moins entraînée ne laissait plus la main atteindre la poignée.)
+        // (Ce que la famille a écrit de l'épaule et du poignet passe tel quel — épaules haussées ou avancées, part de la
+        // ceinture, poignet cassé : sans cela le shrug montait les mains en pliant les coudes, et en haut du développé
+        // épaules l'épaule montait trop, le coude restait plié à 24°.)
         const g = q.bras[k] || {};
         q.bras[k] = { prise: surArc(a.P, a.n, a.A, f * a.tot), paume, dirMain, pole, doigts: 'barre', rayon: 0.017 };
-        for (const r of ['hausse', 'avance']) if (g[r] != null) q.bras[k][r] = g[r];
+        for (const r of ['hausse', 'avance', 'ceinture', 'casse']) if (g[r] != null) q.bras[k][r] = g[r];
         cibles[k] = q.bras[k].prise.clone();
       }
       viser(c, q, cibles);
@@ -1599,6 +1599,10 @@
     else if (o.poste && o.poste.poitrine) d.fixe.push(...poseFixe(postePoitrine(c, C, d.cles[0][1], o.poste.h)));
     d.objets = (info, u, sortie) => { for (const k of cotes) bras[k].dessiner(info, u, sortie); };
     d.levee = info => 0.1 * Math.max(...cotes.map(k => Math.abs(bras[k].angle(info))));
+    // Les paliers : le point et l'axe autour desquels tourne chaque bras (les tests vérifient qu'ils sont ceux de
+    // l'articulation qui travaille).
+    d.paliers = {};
+    for (const k of cotes) d.paliers[k] = { pivot: arcs[k].P.clone(), axe: arcs[k].n.clone() };
     return { bras, arcs, zDos, i0 };
   }
 
@@ -3383,9 +3387,10 @@
     if (o.machine && (o.assis || P.sorte === 'dos')) {
       if (d.cles) { d.a = d.cles[0][1]; d.b = d.cles[d.cles.length - 1][1]; delete d.cles; }
       const couche = P.sorte === 'dos';
-      // (Prise neutre devant la poitrine : poignées pivotantes — une poignée verticale fixe pencherait avec le bras de
-      // la machine, l'avant-bras la suivrait et le coude s'écarterait du buste.)
-      const M = surMachine(c, C, d, { pivot: haut ? 'arriere' : 'haut', rayon: haut ? 0.95 : 0.78, ecart: haut ? 0.34 : o.incline ? 0.38 : 0.33, poste: couche ? null : { h: 0.44, angle: 84 }, cotes: m === 'GD' ? ['G', 'D'] : [m], pivotantes: o.neutre && !haut ? true : null });
+      // (Prise neutre : poignées pivotantes — une poignée verticale fixe pencherait avec le bras de la machine et la
+      // main avec elle : devant la poitrine, l'avant-bras la suivait et le coude s'écartait du buste ; au-dessus de la
+      // tête, la main basculée de 33° n'atteignait plus la poignée bras tendus.)
+      const M = surMachine(c, C, d, { pivot: haut ? 'arriere' : 'haut', rayon: haut ? 0.95 : 0.78, ecart: haut ? 0.34 : o.incline ? 0.38 : 0.33, poste: couche ? null : { h: 0.44, angle: 84 }, cotes: m === 'GD' ? ['G', 'D'] : [m], pivotantes: o.neutre ? true : null });
       if (couche) d.fixe.push(...poseFixe(MAT.banc(C, 0)));
       // (Couché : la colonne se dresse au-delà de la tête, la poutre avance au-dessus du visage jusqu'aux paliers.)
       batiBras(C, d, M, couche ? { zColonne: M.i0.tete.z - 0.32, zAvant: 0.4 } : { zAvant: 0.32 });
