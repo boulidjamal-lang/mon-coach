@@ -3012,6 +3012,16 @@ function effacerBloc(cle) {
 }
 const GEMINI_KEY_LS = 'gemini_key_v43';
 const GEMINI_MODEL = 'gemini-3.5-flash';
+/* Google refuse une demande quand il situe l'adresse qui l'appelle hors des
+   pays où Gemini est ouvert (« User location is not supported for the API
+   use »), et il lui arrive de mal situer des serveurs. Sans réglage, Supabase
+   fait tourner la fonction « ia » dans la région la plus proche de
+   l'utilisateur : elle tourne donc toujours en us-east-1 (Virginie), où
+   Gemini est ouvert. Par le paramètre d'adresse, pas par l'option « region »
+   de supabase-js : celle-ci ajoute aussi un en-tête x-region que la fonction
+   n'autorise pas (CORS), et la demande ne partirait plus. */
+const FONCTION_IA = 'ia?forceFunctionRegion=us-east-1';
+const LIEU_REFUSE_GEMINI = /location is not supported/i;
 // À quel compte appartiennent les données actuellement en localStorage.
 // Sert à détecter un changement de personne sur un même téléphone.
 const MUSCU_COMPTE_LOCAL_LS = 'mc_compte_local';
@@ -9984,7 +9994,7 @@ async function geminiParServeur(parts, type, candidats) {
   let statut, corps;
   for (let essai = 0; ; essai++) {
     incrementerIA(type);
-    const { data, error } = await supa.functions.invoke('ia', { body: Object.assign({ parts, modele: GEMINI_MODEL, tache: type || 'libre' }, candidats > 1 ? { candidats } : {}) });
+    const { data, error } = await supa.functions.invoke(FONCTION_IA, { body: Object.assign({ parts, modele: GEMINI_MODEL, tache: type || 'libre' }, candidats > 1 ? { candidats } : {}) });
     if (!error) { statut = 200; corps = data || {}; break; }
     statut = error.context && typeof error.context.status === 'number' ? error.context.status : 0;
     corps = {};
@@ -10008,6 +10018,7 @@ async function geminiParServeur(parts, type, candidats) {
   if (statut === 503) throw lisible(/configurée/.test(corps.erreur || '') ? corps.erreur : 'Gemini est surchargé pour le moment (forte demande). Réessaie dans une minute.');
   const message = (corps.error && corps.error.message) || corps.erreur || ('HTTP ' + statut);
   if (statut === 400 && candidats > 1 && /candidat/i.test(message)) throw Object.assign(new Error(message), { candidatsRefuses: true });
+  if (statut === 400 && LIEU_REFUSE_GEMINI.test(message)) throw lisible("Google refuse pour l'instant les demandes d'IA venant du serveur de l'appli. Réessaie plus tard.");
   if (statut !== 200) throw new Error(message);
   return textesCandidats(corps);
 }
@@ -10101,6 +10112,17 @@ async function geminiTextes(parts, type, candidats) {
   if (r.status === 503) throw new Error("Gemini est surchargé pour le moment (forte demande). Réessaie dans une minute.");
   const message = (j.error && j.error.message) || ('HTTP ' + r.status);
   if (r.status === 400 && candidats > 1 && /candidat/i.test(message)) throw Object.assign(new Error(message), { candidatsRefuses: true });
+  /* Google refuse le lieu d'où part la demande : ici, le téléphone lui-même
+     (pays, VPN). Si la fonction serveur répond maintenant (elle ne répondait
+     pas au démarrage), la demande repart par elle, tenue en us-east-1 ;
+     sinon, un message clair à la place du texte de Google. */
+  if (r.status === 400 && LIEU_REFUSE_GEMINI.test(message)) {
+    if (supa && sessionUtilisateur) {
+      await verifierIAServeur();
+      if (iaServeur && iaServeur.pret) return geminiParServeur(parts, type, candidats);
+    }
+    throw Object.assign(new Error("Google n'accepte pas les demandes d'IA depuis l'endroit où tu te connectes (pays ou VPN)."), { lisible: true });
+  }
   if (!r.ok) throw new Error(message);
   return textesCandidats(j);
 }
@@ -24842,7 +24864,7 @@ async function verifierIAServeur() {
   iaServeur = null;
   if (supa && sessionUtilisateur) {
     try {
-      const { data, error } = await supa.functions.invoke('ia', { method: 'GET' });
+      const { data, error } = await supa.functions.invoke(FONCTION_IA, { method: 'GET' });
       if (!error && data && data.pret) iaServeur = data;
     } catch (e) {}
   }

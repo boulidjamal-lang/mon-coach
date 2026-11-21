@@ -1545,7 +1545,7 @@ test("sur le web, le résumé se calcule mais rien n'est publié ; sans Santé a
   assert.equal(r.sante, false);
 }));
 
-test("IA par le serveur : sans clé personnelle, l'IA reste disponible (photo comprise) et chaque demande part avec sa tâche ; l'administration ne distribue plus de clé", () => avecAppli({}, async ({ page }) => {
+test("IA par le serveur : sans clé personnelle, l'IA reste disponible (photo comprise) et chaque demande part avec sa tâche, vers la fonction tenue en us-east-1 ; l'administration ne distribue plus de clé", () => avecAppli({}, async ({ page }) => {
   const r = await page.evaluate(async () => {
     const appels = [];
     supa = { functions: { invoke: async (nom, o) => { appels.push([nom, o.body]); return { data: { candidates: [{ content: { parts: [{ text: '[]' }] } }] }, error: null }; } } };
@@ -1565,9 +1565,46 @@ test("IA par le serveur : sans clé personnelle, l'IA reste disponible (photo co
   });
   assert.deepEqual({ active: r.active, dispo: r.dispo, indispo: r.indispo }, { active: true, dispo: true, indispo: false });
   assert.deepEqual(r.journee, ['[]']);
-  assert.deepEqual(r.appels, [['ia', 'journee', 1], ['ia', 'photo', 3]]);
+  assert.deepEqual(r.appels, [['ia?forceFunctionRegion=us-east-1', 'journee', 1], ['ia?forceFunctionRegion=us-east-1', 'photo', 3]]);
   assert.deepEqual(r.sansRien, [false, false]);
   assert.deepEqual(r.admin, [null, 'undefined', true, false]);
+}));
+
+test("IA : Google refuse le lieu d'où part la demande (« User location is not supported ») — message clair par le serveur ; par la clé du compte, la demande repart par le serveur s'il répond, sinon message clair", () => avecAppli({}, async ({ page }) => {
+  const r = await page.evaluate(async () => {
+    const refus = { error: { code: 400, message: 'User location is not supported for the API use.', status: 'FAILED_PRECONDITION' } };
+    const invocations = [];
+    let serveur = 'refuse';
+    supa = { functions: { invoke: async (nom, o) => {
+      invocations.push([nom, (o && o.method) || 'POST']);
+      if (o && o.method === 'GET') return serveur === 'absent' ? { data: null, error: { context: { status: 404, json: async () => ({}) } } } : { data: { pret: true, pro: true, restant: null }, error: null };
+      if (serveur === 'refuse') return { data: null, error: { context: { status: 400, json: async () => Object.assign({ pro: true, restant: null }, refus) } } };
+      return { data: { candidates: [{ content: { parts: [{ text: 'par le serveur' }] } }] }, error: null };
+    } } };
+    sessionUtilisateur = { id: 'u-1', email: 'moi@test.fr' };
+    userProfile.accordIA = true;
+    const res = {};
+    // Par le serveur (ancienne fonction déployée, qui rend le texte de Google) : un message clair.
+    await verifierIAServeur();
+    try { await geminiTextes([{ text: 'x' }], 'photo', 1); } catch (e) { res.serveur = messageIA(e); }
+    // Par la clé du compte (le serveur ne répondait pas au démarrage) : Google refuse le lieu du téléphone, la demande repart par le serveur.
+    serveur = 'repond'; iaServeur = null; userProfile.geminiKey = 'cle-test'; appliquerGeminiKeyEffective();
+    let directs = 0;
+    window.fetch = async url => { if (/generativelanguage/.test(String(url))) directs++; return new Response(JSON.stringify(refus), { status: 400 }); };
+    res.relais = await geminiTextes([{ text: 'x' }], 'photo', 1);
+    // Ni serveur ni lieu accepté : un message clair à la place du texte de Google.
+    serveur = 'absent'; iaServeur = null; appliquerGeminiKeyEffective();
+    try { await geminiTextes([{ text: 'x' }], 'photo', 1); } catch (e) { res.direct = messageIA(e); }
+    res.directs = directs;
+    res.invocations = invocations;
+    return res;
+  });
+  const ia = 'ia?forceFunctionRegion=us-east-1';
+  assert.equal(r.serveur, "Google refuse pour l'instant les demandes d'IA venant du serveur de l'appli. Réessaie plus tard.");
+  assert.deepEqual(r.relais, ['par le serveur']);
+  assert.equal(r.direct, "Google n'accepte pas les demandes d'IA depuis l'endroit où tu te connectes (pays ou VPN).");
+  assert.equal(r.directs, 2, 'deux demandes directes à Google, une par essai par la clé du compte');
+  assert.deepEqual(r.invocations, [[ia, 'GET'], [ia, 'POST'], [ia, 'GET'], [ia, 'POST'], [ia, 'GET']]);
 }));
 
 test('Administration : signalements (motif, bio, « 2e fois ») ; classer et suspendre les traitent', () => avecAppli({}, async ({ page }) => {
