@@ -16,14 +16,15 @@
         d.pose = u => { const p = cloner(base); p.bassin.rot = qX(lerp(34, -18, u)); p.lombaires = lerp(10, -4, u); const t = c.tronc(p); p.bras = mains(c, t, 'poitrine'); return p; };
         // La machine : l'assise, un repose-pieds, le bâti derrière ; le boudin du haut du dos tient au bout d'un bras
         // qui pivote à hauteur des hanches.
-        const zT = -0.95;
-        fixe.push(...poseFixe(MAT.siege(C, H_SIEGE)), ...poseFixe(horsCadre(deplacer(bati(C, 1.5, 0), V(0, 0, zT)))), pret(tube(V(0, 0.03, zT), V(0, 0.03, 0.3), 0.05, C.cadre)), pret(tube(V(-0.2, 0.12, 0.42), V(0.2, 0.12, 0.42), 0.045, C.cadre)));
-        d.objets = (info, u, sortie) => {
-          const e = info.epaules.G.clone().add(info.epaules.D).multiplyScalar(0.5), q = info.qThorax, pp = e.clone().add(V(0, -0.08, -0.17).applyQuaternion(q));
-          poserObjet(MAT.coussin(C, 0.42, 0.06), pp, null, sortie);
-          for (const s of [1, -1]) { sortie.push(pret(tube(V(s * 0.25, 0.62, -0.12), V(s * 0.25, pp.y, pp.z), 0.04, C.cadre))); sortie.push(pret(cyl(0.045, 0.03, s * 0.25, 0.62, -0.12, C.cadre, 0.5, null, 0.008))); }
-        };
-        d.levee = (info, u) => 0.25 * u;
+        fixe.push(...poseFixe(MAT.siege(C, H_SIEGE)), pret(tube(V(-0.2, 0.12, 0.42), V(0.2, 0.12, 0.42), 0.045, C.cadre)));
+        // Le boudin du haut du dos, au bout d'un bras qui tourne autour de l'axe des hanches (un palier de chaque côté) ;
+        // le boudin est posé contre le dos tel que la pose de départ le place.
+        const dos = info => { const e = info.epaules.G.clone().add(info.epaules.D).multiplyScalar(0.5); return e.add(V(0, -0.08, -0.17).applyQuaternion(info.qThorax)); };
+        d.i0 = c.poser(d.pose(0));
+        const h0 = d.i0.hanches.G.clone().add(d.i0.hanches.D).multiplyScalar(0.5);
+        const bras = brasDeJambe(C, d, ['G'], () => V(0.27, h0.y, h0.z), () => AX, () => { const pp = dos(d.i0), f = [...boudin(C, V(-0.27, pp.y, pp.z), V(0.27, pp.y, pp.z), 0.06)]; for (const s of [1, -1]) f.push(...moyeu(C, V(s * 0.27, h0.y, h0.z), AX), profil(C, V(s * 0.27, h0.y, h0.z), V(s * 0.27, pp.y, pp.z), AX, 0.065, 0.045)); return f; }, info => dos(info));
+        for (const s of [1, -1]) fixe.push(pret(seg(V(s * 0.22, h0.y, h0.z), V(s * 0.4, h0.y, h0.z), 0.02, C.metal, 0.9)), pret(profil(C, V(s * 0.4, h0.y + 0.03, h0.z), V(s * 0.4, 0.03, h0.z - 0.1), AZ, 0.075, 0.05)));
+        fixe.push(...poseFixe(traverse(C, 0.4, -0.4, h0.z - 0.1)), ...poseFixe(placerTour(C, V(0, 0, h0.z - 0.75), null, 1.4)), ...poseFixe(longeron(C, h0.z - 0.55, 0.42)));
         d.vue = { az: 70, el: 10 }; return d;
       }
       // Banc à lombaires incliné : les pieds calés en bas, jambes tendues, le haut des cuisses sur le coussin. Les

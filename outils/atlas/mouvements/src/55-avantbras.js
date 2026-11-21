@@ -46,7 +46,8 @@
     const cle = u => { const q = cloner(p); for (const [k] of COTES) q.bras[k] = (m === 'GD' || m === k) ? bras(u) : (o.debout || o.dos || o.couche ? brasRepos() : B(-4, 36, 0, 92, 150, { doigts: 'detendu' })); return q; };
     d.a = cle(0); d.b = cle(1); d.periode = 2.2;
     const anc = V(0, 0.12, 0.95);
-    d.tenu = o.barre ? [{ t: 'barre', l: 1.2, d: 0.11 }] : o.ez ? [{ t: 'barre', l: 1.1, d: 0.09 }] : o.poulie ? [{ t: 'cable', de: anc, m: 'GD', bout: 'barre', l: 0.5 }] : o.machine ? (m === 'GD' ? ['G', 'D'] : [m]).map(k => ({ t: 'levier', de: V(k === 'G' ? 0.2 : -0.2, 0.5, 0.75), m: k })) : [{ t: 'haltere', m, k: tourne ? 0.8 : 1 }];
+    d.tenu = o.barre ? [{ t: 'barre', l: 1.2, d: 0.11 }] : o.ez ? [{ t: 'barre', l: 1.1, d: 0.09 }] : o.poulie ? [{ t: 'cable', de: anc, m: 'GD', bout: 'barre', l: 0.5 }] : o.machine ? [] : [{ t: 'haltere', m, k: tourne ? 0.8 : 1 }];
     if (o.poulie) fixe.push(...poseFixe(MAT.colonne(C, anc)));
+    if (o.machine) { d.fixe = fixe; machineCoudes(c, C, d, m === 'GD' ? ['G', 'D'] : [m], 'poignets'); }
     return d;
   };

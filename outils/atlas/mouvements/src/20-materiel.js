@@ -270,6 +270,9 @@
       }
       f.push(tube(V(-(x + 0.1), h, zAr), V(x + 0.1, h, zAr), 0.06, C.cadre));
       f.push(tube(V(-(x + 0.1), 0.09, zAr), V(x + 0.1, 0.09, zAr), 0.045, C.cadre));
+      // La traverse haute devant, au-dessus des glissières ; les butées de sécurité, basses, de chaque côté.
+      f.push(tube(V(-(x + 0.1), h, z + 0.06), V(x + 0.1, h, z + 0.06), 0.06, C.cadre));
+      for (const s of [1, -1]) f.push(boite(0.06, 0.04, 0.12, s * x, 0.32, z, C.repere, 0.3, null, 0.006));
       return horsCadre(f);
     },
     /* Pupitre (curl au pupitre) : un coussin incliné devant le buste, sur un pied. */

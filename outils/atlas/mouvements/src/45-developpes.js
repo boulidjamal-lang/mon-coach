@@ -77,8 +77,9 @@
     };
     // Le mouvement va du haut (bras tendus, départ) au bas (barre à la poitrine), puis remonte.
     const autre = m !== 'GD' ? (haut || o.autour ? { prise: t.hanches.D.clone().add(V(-0.085, 0.1, 0.03).applyQuaternion(t.qBassin)), pole: dT(-0.8, 0, -0.6), paume: dT(1, -0.2, 0), dirMain: dT(0.2, -0.3, 1), doigts: 'detendu' } : bras(hautP, paumeB).D) : null;
-    const d = parLesBras(p, bras(hautP, paumeB), bras(bas, paumeA), m, autre);
-    if (m !== 'GD' && !haut && !o.poulie) { d.a.bras.D = cloner(bras(hautP, paumeB).D); d.b.bras.D = cloner(bras(hautP, paumeB).D); if (o.hal || o.kb) { /* l'autre haltère reste en haut */ } }
+    const repos = o.machine && m !== 'GD' && !haut ? { prise: t.hanches.D.clone().add(V(-0.02, 0.07, 0.2).applyQuaternion(t.qBassin)), pole: dT(-0.8, -0.2, -0.5), paume: dT(0, -1, 0), dirMain: dT(0.1, 0, 1), doigts: 'detendu' } : null;   // à la machine, à un bras : l'autre main sur la cuisse
+    const d = parLesBras(p, bras(hautP, paumeB), bras(bas, paumeA), m, repos || autre);
+    if (m !== 'GD' && !haut && !o.poulie && !repos) { d.a.bras.D = cloner(bras(hautP, paumeB).D); d.b.bras.D = cloner(bras(hautP, paumeB).D); if (o.hal || o.kb) { /* l'autre haltère reste en haut */ } }
     /* Au-dessus de la tête : le geste réel, repris point par point.
        À la barre :
        - en bas, la barre repose en haut de la poitrine, à hauteur des clavicules (ou sur les trapèzes, derrière la
@@ -195,7 +196,6 @@
     let tenu;
     if (o.landmine) {
       const pivot = V(0, 0.05, t.epaules.G.z + 1.45);
-      tenu = [{ t: 'levier', de: pivot, m: m === 'GD' ? 'G' : m, bout: 'rien' }];
       fixe = fixe.concat([pret(boite(0.2, 0.08, 0.2, pivot.x, 0.04, pivot.z, C.cadre, 0.5))]);
       d.objets = (info, u, sortie) => { const k = m === 'GD' ? 'G' : m, pr = m === 'GD' ? info.prises.G.clone().add(info.prises.D).multiplyScalar(0.5) : info.prises[k], dir = unite(pr.clone().sub(pivot)); sortie.push(pret(seg(pivot, pr.clone().add(dir.clone().multiplyScalar(m === 'GD' ? 0.095 : 0.12)), 0.025, C.metal, 1))); sortie.push(pret(cyl(0.15, 0.04, 0, 0, 0, C.fonte, 0))); const dq = sortie[sortie.length - 1], pp = pr.clone().sub(dir.clone().multiplyScalar(0.18)), q = arc(AY, dir); dq.p = [pp.x, pp.y, pp.z]; dq.q = [q.x, q.y, q.z, q.w]; };
       tenu = [];
@@ -204,7 +204,6 @@
     else {
       const anc = haut ? (s => V(s * 0.35, 0.1, -0.05)) : P.sorte === 'dos' ? (s => V(s * 0.95, 0.2, t.epaules.G.z)) : (s => V(s * 0.45, t.epaules.G.y - 0.05, t.epaules.G.z - 0.95));
       r.ancre = anc; r.deElas = haut ? null : anc;
-      if (o.machine) r.pivot = haut ? (s => V(s * 0.3, t.epaules.G.y + 0.45, t.epaules.G.z - 0.35)) : (s => V(s * 0.32, t.epaules.G.y + 0.55, t.epaules.G.z + 0.1));
       tenu = tenuDe(o, m === 'GD' ? 'GD' : (haut || o.poulie ? m : 'GD'), r);
       if (o.poulie) for (const s of m === 'GD' ? [1, -1] : [m === 'D' ? -1 : 1]) poserObjet(MAT.colonne(C, anc(s)), V(), null, fixe);
     }
@@ -227,6 +226,18 @@
       if (cles) { delete d.a; delete d.b; }
     } else if (cles) { delete d.a; delete d.b; d.cles = cles; }                 // poses clés, du bas vers le haut
     else if (haut) { const A = d.a; d.a = d.b; d.b = A; }                       // au-dessus de la tête : on part d'en bas
+    // À la machine : les poignées au bout de bras qui tournent ; au-dessus de la tête, leurs paliers sont derrière le
+    // dossier ; devant la poitrine, au-dessus de la course (les bras pendent du haut de la machine).
+    if (o.machine && (o.assis || P.sorte === 'dos')) {
+      if (d.cles) { d.a = d.cles[0][1]; d.b = d.cles[d.cles.length - 1][1]; delete d.cles; }
+      const couche = P.sorte === 'dos';
+      // (Prise neutre devant la poitrine : poignées pivotantes — une poignée verticale fixe pencherait avec le bras de
+      // la machine, l'avant-bras la suivrait et le coude s'écarterait du buste.)
+      const M = surMachine(c, C, d, { pivot: haut ? 'arriere' : 'haut', rayon: haut ? 0.95 : 0.78, ecart: haut ? 0.34 : o.incline ? 0.38 : 0.33, poste: couche ? null : { h: 0.44, angle: 84 }, cotes: m === 'GD' ? ['G', 'D'] : [m], pivotantes: o.neutre && !haut ? true : null });
+      if (couche) d.fixe.push(...poseFixe(MAT.banc(C, 0)));
+      // (Couché : la colonne se dresse au-delà de la tête, la poutre avance au-dessus du visage jusqu'aux paliers.)
+      batiBras(C, d, M, couche ? { zColonne: M.i0.tete.z - 0.32, zAvant: 0.4 } : { zAvant: 0.32 });
+    }
     return d;
   };
   V3.prototype.xyz = function () { return [this.x, this.y, this.z]; };
@@ -258,9 +269,11 @@
       b = o.haut ? B(14, 48, -76, 18, 0) : o.bas ? B(8, 104, -84, 18, 0) : B(6, 88, -84, 16, 0);
       ancre = s => V(s * 1.0, hA, t.epaules.G.z - 0.2); vue = { az: 20, el: 8 };
     }
-    const r = { ancre, deElas: ancre, pivot: s => V(s * 0.35, t.epaules.G.y + 0.5, t.epaules.G.z - 0.1) };
+    const r = { ancre, deElas: ancre };
     if (o.poulie && ancre) for (const s of m === 'GD' ? [1, -1] : [m === 'D' ? -1 : 1]) poserObjet(MAT.colonne(C, ancre(s)), V(), null, fixe);
-    return Object.assign(parLesBras(p, a, b, m), { fixe, vue, tenu: tenuDe(o, m, r) }, rythmeDe(o));
+    const d = Object.assign(parLesBras(p, a, b, m), { fixe, vue, tenu: tenuDe(o, m, r) }, rythmeDe(o));
+    if (o.machine) machineEcarte(c, C, d, { pecdeck: !!o.pecdeck, cotes: m === 'GD' ? ['G', 'D'] : [m] });
+    return d;
   };
 
   /* Pull-over : couché, les bras partent de derrière la tête et reviennent au-dessus de la poitrine.
@@ -268,8 +281,10 @@
   FAM.pullover = (c, o, C) => {
     if (o.machine) {
       const p = allonge(c, { h: 0.44, angle: 84, lomb: 0, thor: 0, cou: 0 }), t = c.tronc(p);
-      const a = B(0, 150, 0, 85, 90), b = B(0, 40, 0, 85, 90);
-      return Object.assign(parLesBras(p, a, b), { fixe: poseFixe(MAT.banc(C, 84)), vue: { az: 60, el: 10 }, tenu: [{ t: 'levier', de: V(0.3, t.epaules.G.y + 0.02, t.epaules.G.z - 0.02), m: 'G' }, { t: 'levier', de: V(-0.3, t.epaules.G.y + 0.02, t.epaules.G.z - 0.02), m: 'D' }] });   // les pivots dans l'axe des épaules, en dehors d'elles
+      const a = B(0, 150, 0, 85, 90, { doigts: 'detendu' }), b = B(0, 40, 0, 85, 90, { doigts: 'detendu' });   // les mains ouvertes : ce sont les coudes qui poussent
+      const d = Object.assign(parLesBras(p, a, b), { fixe: [], vue: { az: 60, el: 10 }, tenu: [] });
+      machinePullover(c, C, d);
+      return d;
     }
     o.plat = true; if (o.jambesHautes) o.jambes = 'levees';
     const P = postureDe(c, o, C), p = P.p;

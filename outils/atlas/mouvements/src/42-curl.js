@@ -16,13 +16,12 @@
     if (o.pupitre) {
       // Assis derrière le pupitre, le haut des bras posé sur le coussin incliné (à 45° environ : le buste penche de
       // 20°, les bras sont levés de 68° par rapport à lui, les épaules avancées au-dessus du coussin). Machine : le
-      // levier tourne autour du coude, son bâti est devant le pupitre.
+      // bras de la machine tourne dans l'axe du coude, son bâti est devant le pupitre.
       p = assis(c, { h: H_SIEGE, penche: 14, zPieds: 0.3 }); p.thorax = 6; p.cou = -8;
       a = B(8, 68, 0, 22, pron, { avance: 12 }); b = B(8, 68, 0, 128, pron, { avance: 12 });
       const t = c.tronc(p), ep = t.epaules.G, pup = pupitreSous(c, p, a, C), k0 = pup.coude;
       fixe = poseFixe(MAT.siege(C, H_SIEGE)).concat(poseFixe(pup));
       ancre = V(0, 0.15, ep.z + 0.75); vue = { az: 52, el: 12 };
-      r.pivot = s => V(s * (Math.abs(k0.x) + 0.09), k0.y, k0.z); r.bati = 'devant';
     } else if (P.sorte === 'ventre') {
       // À plat ventre sur le banc incliné : les bras pendent à la verticale devant le banc.
       const pen = o.ventre === true ? 50 : o.ventre;
@@ -75,5 +74,6 @@
       const A = d.a, Z = d.b;
       d.pose = (u, sens) => { const q = mel(A, Z, u), pr = sens < 0 ? 180 * lisse(u / 0.2) : 180 * lisse((u - 0.86) / 0.14); for (const k of ['G', 'D']) q.bras[k].pron = pr; return q; };
     }
+    if (o.machine && o.pupitre) machineCoudes(c, C, d, m === 'GD' ? ['G', 'D'] : [m]);
     return d;
   };

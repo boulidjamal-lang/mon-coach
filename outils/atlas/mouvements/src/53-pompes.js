@@ -221,7 +221,11 @@
       const cle = u => { const q = cloner(p); for (const [k, s] of COTES) q.bras[k] = { prise: V(s * 0.31, lerp(t.epaules.G.y - 0.27, t.epaules.G.y - 0.56, u), t.epaules.G.z + 0.03), pole: V(s * 0.3, 0.2, -1), paume: V(-s, 0, 0), doigts: 'barre' }; return q; };
       d.a = cle(0); d.b = cle(1);
       fixe.push(...poseFixe(MAT.siege(C, H_SIEGE, 0.6, 6)));
-      d.tenu = [{ t: 'levier', de: V(0.31, 0.5, -0.5), m: 'G' }, { t: 'levier', de: V(-0.31, 0.5, -0.5), m: 'D' }];
+      // Les poignées au bout de deux bras dont les paliers sont derrière le dossier, à mi-course : elles descendent le
+      // long d'un arc à peine courbé.
+      d.fixe = fixe; d.tenu = [];
+      const M = surMachine(c, C, d, { pivot: 'arriere', rayon: 0.8, ecart: 0.33, garder: true, cotes: ['G', 'D'], n: 6 });
+      batiPoteaux(C, d, M, { zAvant: 0.3 });
       d.vue = { az: 55, el: 10 }; return d;
     }
     // Barres parallèles, anneaux, barre droite, barre dans le dos.
@@ -246,8 +250,8 @@
     d.a = cle(0); d.b = cle(1);
     if (o.anneaux) d.tenu = [{ t: 'sangle', de: V(ecart, 2.9, 0), m: 'G', bout: 'anneau' }, { t: 'sangle', de: V(-ecart, 2.9, 0), m: 'D', bout: 'anneau' }];
     else if (o.barre || o.coreen) fixe.push(...poseFixe(MAT.barreFixe(C, h, 1.3)));
-    else fixe.push(...poseFixe(MAT.paralleles(C, h, ecart, 0.75)));
-    if (o.machine) d.objets = (info, u, sortie) => { const g = info.genoux.G.clone().add(info.genoux.D).multiplyScalar(0.5); sortie.push(pret(boite(0.42, 0.05, 0.26, 0, g.y - 0.085, g.z - 0.12, C.banc, 0)), pret(seg(V(0, g.y - 0.1, g.z - 0.12), V(0, 0.25, -0.5), 0.022, C.cadre, 0.5)), pret(boite(0.5, 0.04, 0.5, 0, 0.02, -0.45, C.cadre, 0.5))); };
+    else if (!o.machine) fixe.push(...poseFixe(MAT.paralleles(C, h, ecart, 0.75)));
+    if (o.machine) { d.fixe = fixe; machineAssistance(c, C, d, { h, ecart, cote: -1 }); }
     if (o.leste) d.objets = (info, u, sortie) => { const b = info.bassin.clone().add(V(0, -0.34, 0.1).applyQuaternion(info.qBassin)); sortie.push(pret(seg(info.bassin.clone().add(V(0, -0.02, 0.1).applyQuaternion(info.qBassin)), b, 0.006, C.cable, 0.6))); poserObjet([cyl(0.17, 0.04, 0, 0, 0, C.fonte, 0)], b, null, sortie); };
     if (o.barre) d.vue = { az: 60, el: 8 }; else if (o.coreen) d.vue = { az: 120, el: 8 };
     return d;
