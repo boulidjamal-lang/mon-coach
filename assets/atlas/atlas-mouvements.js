@@ -1558,7 +1558,12 @@
         const a = arcs[k], rot = qAxe(a.n, f * a.tot);
         const pole = a.poleA.dot(a.poleB) > -0.95 ? a.poleA.clone().applyQuaternion(new Quat().slerp(new Quat().setFromUnitVectors(a.poleA, a.poleB), f)) : a.poleA.clone();
         const libre = pivotante(k), paume = libre ? a.paume.clone().lerp(a.paumeB, f).normalize() : a.paume.clone().applyQuaternion(rot), dirMain = libre ? a.dirMain.clone().lerp(a.dirMainB, f).normalize() : a.dirMain.clone().applyQuaternion(rot);
+        // (Les épaules haussées ou avancées que la famille a écrites passent telles quelles : sans elles le shrug montait
+        // les mains en pliant les coudes. La part de la ceinture reste celle d'ordinaire : bras tendu au-dessus de la
+        // tête, une épaule moins entraînée ne laissait plus la main atteindre la poignée.)
+        const g = q.bras[k] || {};
         q.bras[k] = { prise: surArc(a.P, a.n, a.A, f * a.tot), paume, dirMain, pole, doigts: 'barre', rayon: 0.017 };
+        for (const r of ['hausse', 'avance']) if (g[r] != null) q.bras[k][r] = g[r];
         cibles[k] = q.bras[k].prise.clone();
       }
       viser(c, q, cibles);
