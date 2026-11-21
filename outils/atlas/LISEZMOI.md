@@ -230,7 +230,10 @@ de 28 mm, disque de 45 cm, banc à 44 cm.
   chaque image, il prend l'angle qui amène sa poignée ou son boudin sur la main ou la jambe. Les mains sont posées
   sur l'arc de la poignée (`surMachine` : le palier se cherche sur la médiatrice de la course, ou dans l'axe de
   l'articulation ; `pivotEgal` et `pivotCercle` gardent le rayon constant ; poignées pivotantes quand le bras tourne
-  de plus de 45°). Chaque machine a son poste (`posteAssis` : assise, dossier, colonne et goupille de réglage ;
+  de plus de 45°, et aux développés en prise neutre). La machine ne décide que de la main : ce que le mouvement écrit
+  de l'épaule et du poignet (`hausse`, `avance`, `ceinture`, `casse`) passe tel quel. Chaque machine note ses
+  paliers (`d.paliers` : point et axe de chaque bras, que les tests confrontent à l'articulation qui travaille).
+  Chaque machine a son poste (`posteAssis` : assise, dossier, colonne et goupille de réglage ;
   boudins de poitrine ou de cuisses), son bâti en profilés (`batiBras`, `batiCoudes`, `batiPoteaux`) et sa pile de
   poids sous capot (`tourCharge`), posée hors du corps. Développés, écartés et pec deck, oiseau, élévations
   latérales (`machineDeltoides`), pull-over, rowing, tirage, shrug, tractions et dips assistés (`machineAssistance` :
