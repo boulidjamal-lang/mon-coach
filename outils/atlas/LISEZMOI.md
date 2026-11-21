@@ -221,17 +221,29 @@ de 28 mm, disque de 45 cm, banc à 44 cm.
   à têtes à six pans, kettlebell, disque, ballon.
 - Bancs : plat, réglable (crémaillère), décliné (boudins) ; supports de barre du développé couché ; siège ; pupitre ;
   portique de traction ; barres parallèles.
-- Machines à charge guidée : un bâti commun (`bati` : socle, deux montants, traverse, pile de poids entre ses tiges).
-  Tour de poulie (`MAT.colonne` : chariot sur son rail, câble jusqu'à la pile), poste de tirage vertical
-  (`MAT.tirageHaut`), rowing assis (repose-pieds), presse à cuisses (rails, chariot, disques), hack squat, leg
-  extension et leg curl (bras de levier dans l'axe du genou, boudin), machines à leviers (développés, écartés,
-  rowing : `definir` leur donne leur bâti d'après leurs pivots), tractions assistées, mollets, lombaires.
+- Poulies : tour de poulie (`MAT.colonne` : bâti, chariot sur son rail, câble jusqu'à la pile), poste de tirage
+  vertical (`MAT.tirageHaut`), rowing assis (repose-pieds). Presse à cuisses et hack squat : rails en profilés,
+  chariot, disques. Smith machine : glissières, butées de sécurité roses, la barre portée par deux chariots.
+- Machines à charge guidée (`mouvements/src/21-machines.js`) : les types d'appareils qu'on trouve en salle
+  (Basic-Fit, Fitness Park, On Air), avec leurs dimensions et leurs axes de rotation, sans reprendre le dessin d'une
+  marque. Un bras rigide tourne autour de son palier (`brasMobile` : moyeu à pastilles roses, profilés ovales) ; à
+  chaque image, il prend l'angle qui amène sa poignée ou son boudin sur la main ou la jambe. Les mains sont posées
+  sur l'arc de la poignée (`surMachine` : le palier se cherche sur la médiatrice de la course, ou dans l'axe de
+  l'articulation ; `pivotEgal` et `pivotCercle` gardent le rayon constant ; poignées pivotantes quand le bras tourne
+  de plus de 45°). Chaque machine a son poste (`posteAssis` : assise, dossier, colonne et goupille de réglage ;
+  boudins de poitrine ou de cuisses), son bâti en profilés (`batiBras`, `batiCoudes`, `batiPoteaux`) et sa pile de
+  poids sous capot (`tourCharge`), posée hors du corps. Développés, écartés et pec deck, oiseau, élévations
+  latérales (`machineDeltoides`), pull-over, rowing, tirage, shrug, tractions et dips assistés (`machineAssistance` :
+  la plateforme des genoux reste à plat sur son levier), curl, triceps et avant-bras (`machineCoudes` : le bras
+  tourne dans l'axe de flexion du coude), crunch, rotation du buste, leg extension et leg curl assis, couché ou
+  debout (`posteJambes` : bras dans l'axe des genoux), abducteurs, adducteurs, kickback, lombaires, hip thrust,
+  mollets assis et debout, dips assis.
 - La pile de poids monte avec le mouvement : les plaques marquées `leve` suivent la longueur du câble (son minimum
   est relevé à la définition du mouvement), ou ce que dit `d.levee(info, u)` pour une machine sans câble apparent.
 - Pupitre (curl, extension des triceps à la machine) : `pupitreSous` le pose sous le haut des bras (leur dessous
   mesuré de 3 à 14 cm au-dessus du coude), son bord bas à 5 cm au-delà du coude, son bord haut aussi près de
-  l'aisselle que possible sans que son coin arrière entre dans la poitrine. À la machine, le levier tourne autour
-  du coude (pivot dans son axe, 9 cm en dehors) et le bâti se tient devant le pupitre, au-delà des mains.
+  l'aisselle que possible sans que son coin arrière entre dans la poitrine. À la machine, le bras tourne dans l'axe
+  de flexion du coude (palier 12 cm en dehors) et le bâti se tient devant le pupitre, au-delà des mains.
 - Les appuis : là où le corps repose sur un coussin (assise, dossier, banc, pupitre), `appuisDe` relève de quel côté
   la chair porte (des points juste devant la face, à trois instants) et le programme des sommets l'y écrase au lieu de
   la laisser traverser (au plus 1 cm d'enfoncement visible) ; `Corps.peauPosee` fait le même calcul.
@@ -451,10 +463,11 @@ Chaque exercice de la bibliothèque (`EXERCICES_BASE` dans `index.html`) a son m
   une famille, puis ses options — `curl hal assis alt`, `developpe barre incline`, `traction large`,
   `pompe diamant`, `etire pigeon`, `cardio rameur`… `amp=0.5` (valable partout) réduit l'amplitude de moitié.
 - `src/*.js` : les sources, assemblées dans l'ordre des numéros. `00-maths` et `10-corps` (le solveur : bassin,
-  colonne, bras et jambes par cibles ou par angles), `20-materiel` (barres, haltères, bancs, poulies, machines :
-  voir « Le matériel »), `30-postures` (debout, assis, couché, planche…), `35-definition` (lecture du mouvement, poses
-  clés, appuis des pieds), puis une famille de mouvements par fichier (`42-curl` … `58-etirements`) et
-  `90-animation` (la lecture en boucle, le cadrage, le filet qui garde le corps au-dessus du sol).
+  colonne, bras et jambes par cibles ou par angles), `20-materiel` (barres, haltères, bancs, poulies : voir
+  « Le matériel »), `21-machines` (machines à charge guidée), `30-postures` (debout, assis, couché, planche…),
+  `35-definition` (lecture du mouvement, poses clés, appuis des pieds), puis une famille de mouvements par fichier
+  (`42-curl` … `58-etirements`) et `90-animation` (la lecture en boucle, le cadrage, le filet qui garde le corps
+  au-dessus du sol).
   Les options qu'une famille comprend sont celles que son code lit (`o.nom`).
 - `node mouvements/construire.mjs` : assemble `assets/atlas/atlas-mouvements.js` (sources + table).
 - `node mouvements/controle.mjs --table` : contrôle tous les exercices sans moteur 3D (mouvement défini, valeurs
@@ -465,7 +478,7 @@ Chaque exercice de la bibliothèque (`EXERCICES_BASE` dans `index.html`) a son m
   où les deux pieds sont à plat et où rien d'autre ne porte le corps, le centre de gravité est comparé à l'appui des
   pieds (hors d'appui seulement s'il l'est quelle que soit la charge tenue, de rien à une fois le poids du corps), et
   les jambes verrouillées qui basculent en arrière sont relevées. `--tout` affiche aussi ce qui va bien ; un motif
-  après `--table` limite à une famille. 264 mouvements jugés ; le même contrôle tourne dans les tests de l'appli.
+  après `--table` limite à une famille. 263 mouvements jugés ; le même contrôle tourne dans les tests de l'appli.
 - `node mouvements/mains-vides.mjs --table` : une main refermée tient-elle quelque chose ? À cinq instants de chaque
   mouvement qui a du matériel, la distance du creux de chaque main fermée à la forme la plus proche (au-delà de 6 cm,
   elle serre le vide). 623 mouvements jugés ; dans les tests de l'appli.
@@ -480,7 +493,7 @@ Chaque exercice de la bibliothèque (`EXERCICES_BASE` dans `index.html`) a son m
 - `node mouvements/traversees.mjs --table [--json f]` : le corps traverse-t-il le matériel ? Chaque mouvement posé à
   sept instants, les points du corps cherchés dans chaque forme ; les contacts voulus ne sont pas des fautes (main
   sur sa poignée, pied sur son appui, chair enfoncée dans un coussin de moins de 2,2 cm, ou tirée dedans par
-  l'écrasement : elle y est cachée). Sur les 762 mouvements : 274 fautifs au départ, 39 aujourd'hui, de 3,5 cm au
+  l'écrasement : elle y est cachée). Sur les 762 mouvements : 274 fautifs au départ, 37 aujourd'hui, de 3,5 cm au
   plus et de moins de 2 cm pour la plupart (contacts de barre contre le buste, coussins de machines).
 - `node mouvements/deformations.mjs --table [--json f]` : l'épaisseur de chair au-dessus de l'os, comparée au repos
   (gonflements, creux), par partie du corps. À lire avec les images : le grand dorsal s'étire voulu vers son attache,

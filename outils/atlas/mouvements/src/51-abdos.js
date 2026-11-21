@@ -21,7 +21,11 @@
       const base = assis(c, { h: H_SIEGE, zPieds: 0.36 });
       const cle = u => { const p = cloner(base); p.lombaires = 34 * u; p.thorax = 22 * u; p.cou = 10 * u; p.bras = pareil(B(20, 120, 20, 120, 90)); return p; };
       d.a = cle(0); d.b = cle(1); fixe.push(...poseFixe(MAT.siege(C, H_SIEGE, 0.55, 4))); d.vue = { az: 66, el: 10 };
-      d.tenu = [{ t: 'levier', de: () => V(0.2, 1.75, -0.15), m: 'G' }, { t: 'levier', de: () => V(-0.2, 1.75, -0.15), m: 'D' }]; return d;
+      // La machine : les mains tiennent les poignées au bout de deux bras dont les paliers sont de part et d'autre de la
+      // taille ; quand le buste s'enroule, les bras tournent avec lui.
+      const M = surMachine(c, C, d, { cotes: ['G', 'D'], garder: true, n: 10, pivot: V(0, -0.6, -1), rayon: 0.62, ecart: 0.43 });
+      batiPoteaux(C, d, M, { zAvant: 0.3 });
+      return d;
     }
     if (o.poulie || o.elas) {
       // La corde tenue de part et d'autre de la tête : le buste s'enroule, les hanches ne bougent presque pas.

@@ -9,7 +9,7 @@
                    'continu' (cycle sans pause : course, vélo, battements), 'boucle' (poses clés jouées dans l'ordre
                    sur un cycle : la dernière rejoint la première) ;
        tenu      — le matériel tenu : [{ t: 'haltere' | 'barre' | 'kb' | 'disque' | 'balle' | 'poignee', m: 'G' | 'D' | 'GD', … },
-                   { t: 'cable' | 'elastique' | 'sangle' | 'levier', de: point, m, bout: 'barre' | 'corde' | 'poignee' }] ;
+                   { t: 'cable' | 'elastique' | 'sangle', de: point, m, bout: 'barre' | 'corde' | 'poignee' }] ;
        fixe      — le matériel posé (formes prêtes) ; objets(info, u, sortie) — matériel calculé à chaque image ;
        vue       — { az, el } : d'où regarder. */
   const FAM = {};
@@ -37,31 +37,11 @@
       if (d.cles) { const fin = chemin(d.cles, o.amp); d.cles = d.cles.filter(x => x[0] < o.amp).map(x => [x[0] / o.amp, x[1]]).concat([[1, fin]]); }
       else if (d.a && d.b) d.b = mel(d.a, d.b, o.amp);
     }
+    if (o.smith) d.smith = true;
     d.rythme = d.rythme || 'rep';
     d.periode = d.periode || { rep: 2.8, alt: 4.6, tenue: 4, etire: 7, continu: 1.2, boucle: 3.4 }[d.rythme];
     d.tenu = d.tenu || []; d.fixe = d.fixe || [];
     degagerTenu(c, d, C);
-    // Une machine à bras de levier arrive ici sans bâti : on lui donne le sien (montants, pile de poids, la traverse
-    // qui porte les pivots, une poutre au sol jusqu'au siège). Le bâti se tient derrière le corps, ou devant quand
-    // les pivots y sont (rowing) ; la pile monte avec le mouvement.
-    if (o.machine && !d.fixe.some(x => x.leve)) {
-      const info = c.poser(poseA(d, 0, 0));
-      const pivots = d.tenu.filter(e => e.t === 'levier' && e.de).map(e => (typeof e.de === 'function' ? e.de(info, 0) : e.de)).filter(p => p && p.x != null);
-      if (pivots.length) {
-        const zP = pivots.reduce((t, p) => t + p.z, 0) / pivots.length, yP = Math.max(...pivots.map(p => p.y)), zC = info.bassin.z;
-        // (bati 'devant' : le levier tourne autour du coude, sur un pupitre ; le bâti se tient au-delà des mains.)
-        const coude = d.tenu.some(e => e.t === 'levier' && e.bati === 'devant'), devant = coude || zP - zC > 0.6;
-        const zF = devant ? zP + (coude ? 0.45 : 0.14) : Math.min(zC, zP) - 0.6, H = Math.max(1.5, yP + 0.12), f = deplacer(bati(C, H, 0), V(0, 0, zF), devant ? qY(180) : null);
-        for (const p of pivots) { f.push(tube(V(Math.sign(p.x || 1) * Math.max(0.2, Math.abs(p.x)), H, zF), p, 0.045, C.cadre), cyl(0.042, 0.05, p.x, p.y, p.z, C.cadre, 0.5, null, 0.01)); }
-        // La traverse d'un pivot à l'autre : pas aux coudes (elle passerait dans les bras), ni quand les pivots sont dans
-        // l'axe des épaules ou des hanches (elle passerait dans le buste) — chaque pivot tient alors par son seul bras.
-        const milieu = pivots[0].clone().add(pivots[1] || pivots[0]).multiplyScalar(0.5), dansLeCorps = surSegment(info.bassin, info.cou, milieu.x, milieu.y, milieu.z);
-        if (pivots.length > 1 && !coude && Math.hypot(dansLeCorps[0] - milieu.x, dansLeCorps[1] - milieu.y, dansLeCorps[2] - milieu.z) > 0.2) f.push(tube(pivots[0], pivots[1], 0.045, C.cadre));
-        f.push(tube(V(0, 0.03, zF), V(0, 0.03, zC), 0.05, C.cadre));
-        poserObjet(horsCadre(f), V(), null, d.fixe);
-        if (!d.levee) d.levee = (i2, u) => 0.26 * Math.max(0, Math.min(1, u));
-      }
-    }
     // Une tour de poulie : on relève la longueur de câble la plus courte du mouvement, d'où part la pile de poids.
     if (d.fixe.some(x => x.leve) && d.tenu.some(e => e.t === 'cable')) {
       let mini = Infinity;
@@ -275,10 +255,10 @@
           dm.addScaledVector(gd, -dm.dot(gd)); if (dm.lengthSq() > 1e-6) axe = dm;
         }
         poserObjet(f, pos, e.t === 'disque' ? qTenu(axe.lengthSq() > 1e-6 ? axe : AX, AY) : null, sortie);
-      } else if (e.t === 'cable' || e.t === 'elastique' || e.t === 'sangle' || e.t === 'levier') {
-        const r = e.t === 'cable' ? 0.0045 : e.t === 'elastique' ? 0.007 : e.t === 'sangle' ? 0.009 : 0.017;
-        const teinte = e.t === 'cable' ? C.cable : e.t === 'elastique' ? C.elastique : e.t === 'sangle' ? C.sangle : C.cadre;
-        const metal = e.t === 'cable' || e.t === 'levier' ? 0.6 : 0;
+      } else if (e.t === 'cable' || e.t === 'elastique' || e.t === 'sangle') {
+        const r = e.t === 'cable' ? 0.0045 : e.t === 'elastique' ? 0.007 : 0.009;
+        const teinte = e.t === 'cable' ? C.cable : e.t === 'elastique' ? C.elastique : C.sangle;
+        const metal = e.t === 'cable' ? 0.6 : 0;
         const bouts = e.vers ? [point(e.vers, e.m)] : e.bout === 'barre' || e.bout === 'corde' ? [prise('GD')] : cotes(e.m).map(k => info.prises[k]);
         const departs = Array.isArray(e.de) ? e.de : [e.de];
         bouts.forEach((b, n) => {
@@ -305,14 +285,13 @@
             const k = cotes(e.m)[n], dir = unite(de.clone().sub(b)), attache = b.clone().add(dir.clone().multiplyScalar(0.1));
             sortie.push(pret(seg(de, attache, r, teinte, metal)));
             for (const s of [1, -1]) sortie.push(pret(seg(attache, b.clone().add(info.axes[k].clone().multiplyScalar(s * 0.07)), 0.0045, C.metal, 0.8, 0.0045)));
-          } else if (e.t === 'levier') sortie.push(pret(tube(de, b, 0.034, C.cadre)));
-          else sortie.push(pret(seg(de, b, r, teinte, metal)));
+          } else sortie.push(pret(seg(de, b, r, teinte, metal)));
         });
         if (e.bout === 'barre') {
           const f = modeles['barrette' + (e.l || '')] || (modeles['barrette' + (e.l || '')] = MAT.barrette(C, e.l || 0.9));
           const axe = info.prises.G.clone().sub(info.prises.D);
           poserObjet(f, prise('GD'), qTenu(axe.lengthSq() > 1e-6 ? axe : AX, AY), sortie);
-        } else if (e.bout === 'poignee' || (e.t === 'levier' && e.bout !== 'rien')) {
+        } else if (e.bout === 'poignee') {
           const f = modeles.poignee || (modeles.poignee = MAT.poignee(C));
           for (const k of cotes(e.m)) poserObjet(f, info.prises[k], qTenu(info.axes[k], AY), sortie);
         }
@@ -320,6 +299,18 @@
     }
     if (eAvant) marquer();
     if (d.objets) d.objets(info, u, sortie);
+    // Smith machine : la barre est montée sur deux chariots qui coulissent le long des glissières (un fourreau autour de
+    // chaque glissière, et son crochet) ; on les pose aux bouts de la barre, où qu'elle soit.
+    if (d.smith) {
+      const barre = sortie.find(f => f.forme === 'cylindre' && Math.abs(f.s[1] - 1.6) < 0.01 && f.s[0] < 0.02);
+      if (barre) {
+        const q = new Quat(barre.q[0], barre.q[1], barre.q[2], barre.q[3]), ax = AY.clone().applyQuaternion(q), p0 = V(barre.p[0], barre.p[1], barre.p[2]);
+        for (const s of [1, -1]) {
+          const c0 = p0.clone().addScaledVector(ax, s * 0.72);
+          sortie.push(pret(cyl(0.034, 0.16, c0.x, c0.y, c0.z, C.cadre, 0.5, DEBOUT_Q, 0.006)), pret(boite(0.03, 0.03, 0.07, c0.x, c0.y + 0.05, c0.z - 0.05, C.cadre, 0.5, null, 0.004)));
+        }
+      }
+    }
     // Les plaques levées de la pile suivent le câble (d.cable0 : sa longueur la plus courte pendant le mouvement).
     sortie.cable = cable;
     if (d.levee || (cable != null && d.cable0 != null)) {

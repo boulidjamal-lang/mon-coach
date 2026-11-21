@@ -1279,6 +1279,9 @@
       }
       f.push(tube(V(-(x + 0.1), h, zAr), V(x + 0.1, h, zAr), 0.06, C.cadre));
       f.push(tube(V(-(x + 0.1), 0.09, zAr), V(x + 0.1, 0.09, zAr), 0.045, C.cadre));
+      // La traverse haute devant, au-dessus des glissières ; les butées de sécurité, basses, de chaque côté.
+      f.push(tube(V(-(x + 0.1), h, z + 0.06), V(x + 0.1, h, z + 0.06), 0.06, C.cadre));
+      for (const s of [1, -1]) f.push(boite(0.06, 0.04, 0.12, s * x, 0.32, z, C.repere, 0.3, null, 0.006));
       return horsCadre(f);
     },
     /* Pupitre (curl au pupitre) : un coussin incliné devant le buste, sur un pied. */
@@ -1318,6 +1321,501 @@
     if (y.lengthSq() < 1e-6) y = perpendiculaire(x);
     y.normalize();
     return new Quat().setFromBasis(x, y, x.clone().cross(y));
+  }
+  /* ---------- Les machines de salle ----------
+     Les machines guidées des salles (leg extension, leg curl, presses, tirages, pec deck…), dessinées d'après leur
+     fonctionnement et non d'après le modèle d'une marque : un bâti de profilés ovales posé au sol, la pile de poids
+     dans une tour carénée (une fente laisse voir les plaques qui montent), des coussins réglés sur le corps, et des
+     bras mobiles rigides qui tournent chacun autour d'un axe — celui de l'articulation qui travaille (genou, coude,
+     épaule, hanche), marqué d'une pastille comme sur les machines. Le corps est posé sur l'arc du bras (les mains, les
+     chevilles y tombent juste) ; à chaque image, le bras tourne de l'angle qui amène sa poignée ou son boudin sur la
+     main ou la jambe : rien ne s'allonge ni ne se tord. */
+
+  /* Un profilé ovale (section l × e, l'aplat tourné vers `face`) entre deux points : les montants, les longerons. */
+  const ovale = (a, b, l, e, couleur, metal, face) => {
+    const d = b.clone().sub(a), lg = d.length() || 1e-4, y = d.multiplyScalar(1 / lg);
+    let x = perp(face || (Math.abs(y.y) > 0.9 ? AX : AY), y);
+    if (x.lengthSq() < 1e-6) x = perpendiculaire(y);
+    x.normalize();
+    return { forme: 'boite', s: [l, lg + e * 0.4, e], p: a.clone().add(b).multiplyScalar(0.5), q: new Quat().setFromBasis(x, y, x.clone().cross(y)), couleur, metal: metal == null ? 0.5 : metal, r: e * 0.45 };
+  };
+  const profil = (C, a, b, face, l = 0.075, e = 0.048) => ovale(a, b, l, e, C.cadre, 0.5, face);
+  /* Moyeu d'un bras mobile : le palier sur son axe, une pastille de couleur au bout (l'alignement de l'articulation). */
+  function moyeu(C, p, axe, r = 0.052, l = 0.085) {
+    const n = unite(axe);
+    return [seg(p.clone().addScaledVector(n, -l / 2), p.clone().addScaledVector(n, l / 2), r, C.cadre, 0.55, 0.012),
+      seg(p.clone().addScaledVector(n, l / 2 - 0.002), p.clone().addScaledVector(n, l / 2 + 0.006), r * 0.52, C.repere, 0.25, 0.003),
+      seg(p.clone().addScaledVector(n, -l / 2 - 0.006), p.clone().addScaledVector(n, -l / 2 + 0.002), r * 0.52, C.repere, 0.25, 0.003)];
+  }
+  /* La came d'un bras à charge guidée : un disque plat sur l'axe, d'où part la sangle vers la pile. */
+  const came = (C, p, axe, r = 0.075) => { const n = unite(axe); return [seg(p.clone().addScaledVector(n, -0.01), p.clone().addScaledVector(n, 0.01), r, C.cadre, 0.45, 0.006)]; };
+  /* Poignée de machine entre deux points : l'âme d'acier, le manchon de gomme. */
+  const manchon = (C, a, b, r = 0.0165) => [seg(a, b, 0.0125, C.metal, 1), seg(a.clone().lerp(b, 0.08), a.clone().lerp(b, 0.92), r, C.gomme, 0, 0.005)];
+  /* Boudin d'un bras de jambes : la mousse sur son axe d'acier, entre deux points. */
+  const boudin = (C, a, b, r = 0.052) => [seg(a, b, 0.014, C.metal, 0.8), seg(a.clone().lerp(b, 0.04), a.clone().lerp(b, 0.96), r, C.banc, 0.12, Math.min(0.022, r * 0.45))];
+
+  /* La tour de charge, dans son repère (posée au sol, la fente vers +Z) : un socle, deux flancs et un dos carénés, un
+     chapeau, deux joues devant qui laissent voir la pile (ses plaques du haut montent avec la charge). */
+  function tourCharge(C, h = 1.5) {
+    const f = [boite(0.48, 0.04, 0.44, 0, 0.02, 0, C.cadre, 0.45, null, 0.012)];
+    for (const s of [1, -1]) {
+      f.push(boite(0.035, h, 0.4, s * 0.215, h / 2 + 0.02, 0, C.banc, 0.18, null, 0.012));
+      f.push(boite(0.075, h - 0.12, 0.025, s * 0.17, h / 2 + 0.02, 0.188, C.banc, 0.18, null, 0.008));
+    }
+    f.push(boite(0.4, h, 0.022, 0, h / 2 + 0.02, -0.19, C.banc, 0.18, null, 0.006));
+    f.push(boite(0.5, 0.075, 0.45, 0, h + 0.05, 0, C.cadre, 0.45, null, 0.02));
+    f.push(...pile(C, 0, 0.02, 0.07, h - 0.04));
+    return f;
+  }
+  /* Où se tient la tour et ce qui la relie au reste : posée en `pos`, tournée de `rot` (autour de Y). */
+  const placerTour = (C, pos, rot, h) => deplacer(tourCharge(C, h), pos, rot);
+
+  /* Un bras mobile : ses formes sont données à la position de départ ; il tourne autour de l'axe `axe` passant par
+     `pivot`. suit(info) : le point du corps qu'il suit ; ref : ce même point au départ. À chaque image, il tourne de
+     l'angle qui amène ref sur le point suivi (l'un et l'autre vus dans le plan de rotation). */
+  function brasMobile(pivot, axe, formes, ref, suit) {
+    const n = unite(axe), r0 = perp(ref.clone().sub(pivot), n);
+    const angle = info => {
+      const r1 = perp(suit(info).clone().sub(pivot), n);
+      if (r1.lengthSq() < 1e-10 || r0.lengthSq() < 1e-10) return 0;
+      return Math.atan2(r0.clone().cross(r1).dot(n), r0.dot(r1));
+    };
+    const dessiner = (info, u, sortie) => {
+      const q = qAxe(n, angle(info));
+      for (const f of formes) sortie.push(pret(Object.assign({}, f, { p: f.p.clone().sub(pivot).applyQuaternion(q).add(pivot), q: f.aPlat ? f.q : q.clone().multiply(f.q) })));
+    };
+    return { angle, dessiner, pivot, axe: n };
+  }
+  /* Le pivot le plus proche de P0 (l'axe gardant la direction n) qui soit à la même distance de a et de b, les deux
+     positions extrêmes du point suivi : le bras rigide les touche toutes deux (sinon, le point suivi s'écartant ou se
+     rapprochant du pivot, le boudin rentrait dans le membre ou le quittait). */
+  function pivotEgal(P0, n, a, b) {
+    const u = unite(n), pa = perp(a.clone().sub(P0), u).add(P0), pb = perp(b.clone().sub(P0), u).add(P0);
+    const w = pb.clone().sub(pa); if (w.lengthSq() < 1e-8) return P0.clone();
+    w.normalize(); const M = pa.clone().add(pb).multiplyScalar(0.5);
+    return P0.clone().addScaledVector(w, -P0.clone().sub(M).dot(w));
+  }
+  /* Le pivot du cercle qui passe par trois positions du point suivi (début, milieu, fin de la course), vues dans le plan
+     de rotation : le bras rigide les touche toutes trois, et presque toutes celles d'entre elles. Si elles sont presque
+     alignées (le cercle serait immense), le pivot à égale distance des deux bouts le plus proche de P0. */
+  function pivotCercle(P0, n, pts) {
+    const u = unite(n), pl = q => perp(q.clone().sub(P0), u);
+    const a = pl(pts[0]), b = pl(pts[Math.floor(pts.length / 2)]), c2 = pl(pts[pts.length - 1]);
+    const ab = b.clone().sub(a), ac = c2.clone().sub(a), nn = ab.clone().cross(ac), d2 = 2 * nn.lengthSq();
+    if (d2 < 1e-10) return pivotEgal(P0, n, pts[0], pts[pts.length - 1]);
+    const ctr = ac.clone().cross(nn).multiplyScalar(ab.lengthSq()).add(nn.clone().cross(ab).multiplyScalar(ac.lengthSq())).multiplyScalar(1 / d2).add(a);
+    if (ctr.distanceTo(a) > 1.6) return pivotEgal(P0, n, pts[0], pts[pts.length - 1]);
+    return ctr.add(P0);
+  }
+  /* Le point `p` tourné de l'angle a (radians) autour de l'axe `axe` passant par `pivot`. */
+  const surArc = (pivot, axe, p, a) => p.clone().sub(pivot).applyQuaternion(qAxe(unite(axe), a)).add(pivot);
+
+  /* Siège et dossier d'une machine, aux mêmes places que ceux du banc (MAT.banc : le corps posé par allonge s'y
+     ajuste) : le dossier relevé de `angle` degrés, sa charnière à l'origine, la tête vers -Z ; l'assise devant, sa
+     face à la hauteur h. Dessous : la platine du dossier, le fût du siège (réglable : une tige et sa goupille), et une
+     jambe de force vers le longeron. Rend les formes ; .zArriere : le bas du dossier. */
+  function posteAssis(C, h, angle, lDossier = 0.62, lSiege = 0.34, larg = 0.36) {
+    const f = [], a = rad(angle), ep = 0.065, qd = qAxe(AX, a);
+    const mil = V(0, h - ep / 2 + Math.sin(a) * lDossier / 2, -Math.cos(a) * lDossier / 2);
+    f.push(coussin(larg, ep, lDossier, mil.x, mil.y, mil.z, C, qd));
+    f.push(coussin(larg, ep, lSiege, 0, h - ep / 2 + 0.02, lSiege / 2 + 0.012, C, qAxe(AX, rad(-8))));
+    // La platine sous l'assise, celle derrière le dossier.
+    f.push(boite(larg * 0.7, 0.025, lSiege * 0.8, 0, h - ep - 0.005, lSiege / 2, C.cadre, 0.45, qAxe(AX, rad(-8)), 0.006));
+    const dos = V(0, -ep / 2 - 0.02, 0).applyQuaternion(qd);
+    f.push(boite(larg * 0.55, 0.025, lDossier * 0.85, mil.x + dos.x, mil.y + dos.y, mil.z + dos.z, C.cadre, 0.45, qd, 0.006));
+    // Le fût réglable sous l'assise : le tube extérieur, la tige, la goupille rose.
+    const zF = lSiege * 0.45, yH = h - ep - 0.02;
+    f.push(profil(C, V(0, 0.05, zF), V(0, yH - 0.14, zF), AZ, 0.085, 0.085));
+    f.push(profil(C, V(0, yH - 0.2, zF), V(0, yH, zF), AZ, 0.06, 0.06));
+    f.push(cyl(0.012, 0.05, 0, yH - 0.17, zF + 0.065, C.metal, 0.8, LONG_Z), sphere(0.02, 0, yH - 0.17, zF + 0.095, C.repere, 0.2));
+    // La jambe de force : du bas du dossier au pied du fût.
+    const basDos = mil.clone().add(dos).add(V(0, -Math.sin(a) * lDossier * 0.35, Math.cos(a) * lDossier * 0.35));
+    f.push(profil(C, basDos, V(0, 0.06, zF - 0.02), AX, 0.06, 0.045));
+    f.zArriere = mil.z - Math.cos(a) * lDossier / 2 - 0.05;
+    return f;
+  }
+  /* Le longeron au sol, d'un bout à l'autre de la machine (le long de Z), avec ses patins. */
+  const longeron = (C, z0, z1, x = 0) => [profil(C, V(x, 0.03, z0), V(x, 0.03, z1), AY, 0.09, 0.055),
+    boite(0.12, 0.012, 0.14, x, 0.006, z0, C.gomme, 0, null, 0.004), boite(0.12, 0.012, 0.14, x, 0.006, z1, C.gomme, 0, null, 0.004)];
+  /* Une traverse au sol (le long de X), avec ses patins. */
+  const traverse = (C, x0, x1, z) => [profil(C, V(x0, 0.03, z), V(x1, 0.03, z), AY, 0.08, 0.05),
+    boite(0.1, 0.012, 0.12, x0, 0.006, z, C.gomme, 0, null, 0.004), boite(0.1, 0.012, 0.12, x1, 0.006, z, C.gomme, 0, null, 0.004)];
+  /* Une poignée fixe sous la main, au bout d'une tige qui part du bâti en `depuis` : le manchon dans l'axe de la prise. */
+  function poigneeFixe(C, info, k, depuis) {
+    const pr = info.prises[k], ax = unite(info.axes[k].clone()), a = pr.clone().addScaledVector(ax, -0.07), b = pr.clone().addScaledVector(ax, 0.07);
+    const bout = a.distanceTo(depuis) < b.distanceTo(depuis) ? a : b;
+    return [...manchon(C, a, b), seg(bout, depuis, 0.014, C.cadre, 0.5, 0.006)];
+  }
+
+  const moyenneDe = pts => pts.reduce((a, b) => a.add(b), V()).multiplyScalar(1 / pts.length);
+  /* Leg extension et leg curl assis. Le poste assis (siège à h, dossier relevé de `angle`), la tour derrière le
+     dossier ; le bras mobile tourne dans l'axe des genoux, sur le flanc gauche de la machine — sa pastille en face du
+     genou — et porte le boudin en travers des deux jambes : contre le bas des tibias (sens = -1, extension) ou
+     au-dessus des talons (sens = +1, curl). cuisses : le boudin qui tient les cuisses au-dessus des genoux (curl
+     assis). Une poignée sous chaque main, de part et d'autre de l'assise. d.a : la pose de départ ; cotes : les jambes
+     qui travaillent. Remplit fixe, d.objets et d.levee. */
+  function posteJambes(c, C, d, fixe, h, angle, sens, cotes, cuisses) {
+    const i0 = c.poser(d.a), L = c.L;
+    const g = moyenneDe(cotes.map(k => i0.genoux[k])), ch = moyenneDe(cotes.map(k => i0.chevilles[k])), dj = unite(ch.clone().sub(g));
+    // Le devant du tibia : perpendiculaire à la jambe, du côté des orteils.
+    let dev = perp(i0.orteils[cotes[0]].clone().sub(i0.chevilles[cotes[0]]).setX(0), dj); if (dev.lengthSq() < 1e-6) dev = perpendiculaire(dj); dev.normalize();
+    const rc = ch.clone().addScaledVector(dev, -sens * 0.09).addScaledVector(dj, -0.03), xP = 0.27;
+    const P = V(xP, g.y, g.z), E = V(xP, rc.y, rc.z);
+    // Le bras : le palier, la came, le profilé jusqu'au boudin, la douille de réglage, le boudin.
+    const formes = [...moyeu(C, P, AX), ...came(C, P.clone().setX(xP + 0.065), AX), profil(C, P, E, AX, 0.07, 0.045),
+      ovale(E.clone().addScaledVector(dj, -0.09), E.clone().addScaledVector(dj, 0.03), 0.085, 0.06, C.cadre, 0.5, AX),
+      ...boudin(C, V(xP - 0.02, rc.y, rc.z), V(-0.23, rc.y, rc.z))];
+    const bras = brasMobile(P, AX, formes, ch, info => moyenneDe(cotes.map(k => info.chevilles[k])));
+    // L'axe du bras : une broche d'acier qui sort du montant.
+    const poste = posteAssis(C, h, angle, 0.62, 0.32), zS = poste.zArriere;
+    fixe.push(...poseFixe(poste));
+    fixe.push(pret(seg(V(xP - 0.05, g.y, g.z), V(xP + 0.13, g.y, g.z), 0.02, C.metal, 0.9)));
+    fixe.push(pret(profil(C, V(xP + 0.12, 0.03, g.z - 0.22), V(xP + 0.12, g.y + 0.03, g.z), AX, 0.075, 0.05)));
+    fixe.push(...poseFixe(traverse(C, xP + 0.12, -0.05, g.z - 0.22)));
+    // La tour derrière le dossier, sa fente vers le flanc gauche ; le longeron qui la relie à l'avant.
+    const zT = zS - 0.32;
+    fixe.push(...poseFixe(placerTour(C, V(0, 0, zT), qY(90), 1.45)));
+    fixe.push(...poseFixe(longeron(C, zT + 0.2, g.z - 0.2)));
+    // Le boudin des cuisses (curl assis) : fixe, juste au-dessus des cuisses, sur une potence du flanc droit.
+    if (cuisses) {
+      let haut = -Infinity;
+      for (const u of [0, 0.25, 0.5, 0.75, 1]) { c.poser(mel(d.a, d.b, u)); c.peauPosee(['cuisse'], (x, y, z) => { if (Math.abs(x) < 0.16 && Math.abs(z - (g.z - 0.1)) < 0.04 && y > haut) haut = y; }); }
+      const yC = (isFinite(haut) ? haut : g.y + 0.08) + 0.048 - ENFONCE, zC = g.z - 0.1;
+      fixe.push(...poseFixe(boudin(C, V(-0.27, yC, zC), V(0.22, yC, zC), 0.05)));
+      fixe.push(pret(profil(C, V(-0.29, yC, zC), V(-0.29, 0.03, zC - 0.25), AX, 0.07, 0.045)));
+    }
+    // Les poignées sous les mains, tenues par le bâti de l'assise.
+    for (const [k, s] of COTES) fixe.push(...poseFixe(poigneeFixe(C, i0, k, V(s * 0.2, h - 0.09, i0.prises[k].z - 0.06))));
+    d.objets = (info, u, sortie) => bras.dessiner(info, u, sortie);
+    d.levee = info => 0.12 * Math.abs(bras.angle(info));
+    return bras;
+  }
+
+  /* Le siège et le coussin de poitrine d'un poste où l'on se tient assis face à la machine (rowing, oiseau) : l'assise
+     à h, le coussin debout devant le sternum, posé contre la poitrine telle que la pose p la place. */
+  function postePoitrine(c, C, p, h) {
+    c.poser(p);
+    let zMax = -Infinity, yS = 0, n = 0;
+    const t = c.tronc(p), yH = t.epaules.G.y;
+    c.poser(p);
+    c.peauPosee(['thorax'], (x, y, z) => { if (Math.abs(x) < 0.09 && y < yH - 0.06 && y > yH - 0.3) { if (z > zMax) zMax = z; yS += y; n++; } });
+    const zC = (isFinite(zMax) ? zMax : t.epaules.G.z + 0.15) + 0.035 - ENFONCE, yC = n ? yS / n : yH - 0.18;
+    const f = [coussin(0.3, 0.42, 0.07, 0, yC, zC, C), boite(0.2, 0.36, 0.025, 0, yC, zC + 0.05, C.cadre, 0.45, null, 0.006)];
+    f.push(coussin(0.36, 0.065, 0.34, 0, h - 0.0325, -0.02, C), boite(0.25, 0.025, 0.28, 0, h - 0.075, -0.02, C.cadre, 0.45, null, 0.006));
+    f.push(profil(C, V(0, 0.05, -0.02), V(0, h - 0.085, -0.02), AZ, 0.085, 0.085), cyl(0.012, 0.05, 0, h - 0.25, 0.045, C.metal, 0.8, LONG_Z), sphere(0.02, 0, h - 0.25, 0.075, C.repere, 0.2));
+    f.push(profil(C, V(0, 0.05, zC + 0.12), V(0, yC - 0.1, zC + 0.065), AZ, 0.075, 0.05));
+    f.zPoitrine = zC; f.yPoitrine = yC;
+    return f;
+  }
+
+  /* Un exercice de bras à la machine. La famille a posé les mains au départ (d.a) et à l'arrivée (d.b) ; elles tiennent
+     les poignées de bras mobiles (un par main qui travaille) qui tournent chacun autour d'un axe. Pivot calculé : il
+     est choisi du côté o.pivot de la course ('haut', 'bas', 'arriere', 'avant', ou un vecteur), à la distance qui donne
+     au bras la longueur o.rayon, et à o.ecart du milieu ; l'axe est celui qui amène la main du départ à l'arrivée.
+     Pivot donné : o.axe(k, iA, iB) rend { P, n }. Les mains suivent l'arc (poses clés), leur orientation tourne avec la
+     poignée ; le reste du corps va du départ à l'arrivée comme la famille l'a dit.
+     o.poste : { h, angle } (assise et dossier, le corps posé par allonge) ou { h, poitrine: true } (assise, coussin de
+     poitrine) ; o.tour : 'derriere' | 'devant' ; o.cotes : les mains qui travaillent. Rend les bras (pour les bâtis
+     particuliers) ; remplit d.cles, d.fixe, d.objets, d.levee. */
+  function surMachine(c, C, d, o) {
+    const cotes = o.cotes || ['G', 'D'], iA = c.poser(d.a), iB = c.poser(d.b);
+    const A0 = cloner(d.a), B0 = cloner(d.b), N = o.n || 8;
+    const vers = { haut: AY, bas: V(0, -1, 0), arriere: V(0, 0, -1), avant: AZ };
+    const arcs = {};
+    for (const k of cotes) {
+      const s = k === 'G' ? 1 : -1, A = iA.prises[k].clone(), B = iB.prises[k].clone();
+      let P, n;
+      if (o.axe) ({ P, n } = o.axe(k, iA, iB));
+      else {
+        const w = unite(B.clone().sub(A)), M = A.clone().add(B).multiplyScalar(0.5), demi = A.distanceTo(B) / 2;
+        const dir = unite(perp(typeof o.pivot === 'string' ? vers[o.pivot] : o.pivot, w)), D = Math.sqrt(Math.max(0.01, Math.pow(o.rayon || 0.8, 2) - demi * demi));
+        P = M.clone().addScaledVector(dir, D);
+        const v = perp(AX, w); if (o.ecart != null && Math.abs(v.x) > 0.3) P.addScaledVector(v, (s * o.ecart - P.x) / v.x);
+        n = unite(A.clone().sub(P).cross(B.clone().sub(P)));
+      }
+      const rA = perp(A.clone().sub(P), n), rB = perp(B.clone().sub(P), n);
+      const tot = Math.atan2(rA.clone().cross(rB).dot(n), rA.dot(rB));
+      // Le côté du coude : celui que la famille a donné ; sinon, mesuré sur le corps posé — bras tendu, le coude est sur la
+      // ligne épaule-main et son côté ne se lit plus : on garde celui de l'autre bout de la course.
+      const mesure = (i, H) => i.coudes[k].clone().sub(i.epaules[k].clone().add(H).multiplyScalar(0.5));
+      let poleA = d.a.bras[k] && d.a.bras[k].pole ? d.a.bras[k].pole.clone() : mesure(iA, A), poleB = d.b.bras[k] && d.b.bras[k].pole ? d.b.bras[k].pole.clone() : mesure(iB, B);
+      if (poleA.length() < 0.04) poleA = poleB.clone(); if (poleB.length() < 0.04) poleB = poleA.clone();
+      if (o.pole) { const p = o.pole(k); if (p.A) { poleA = p.A.clone(); poleB = p.B.clone(); } else poleA = poleB = p; }
+      arcs[k] = { P, n, A, tot, paume: iA.paumes[k].clone(), dirMain: iA.dirMains[k].clone(), axeMain: iA.axes[k].clone(), poleA: poleA.normalize(), poleB: poleB.normalize(),
+        paumeB: iB.paumes[k].clone(), dirMainB: iB.dirMains[k].clone() };
+    }
+    // Poignées pivotantes quand le bras tourne beaucoup (plus de 45°) : la main garde l'orientation que la famille lui
+    // donne d'un bout à l'autre, la poignée tourne sur son axe au bout du bras (sinon le poignet suivait le bras et le
+    // coude finissait par basculer de l'autre côté).
+    const pivotante = k => o.pivotantes != null ? o.pivotantes : Math.abs(arcs[k].tot) > Math.PI / 4;
+    // Les poses clés : les mains sur l'arc (o.garderPoses : la famille les y met déjà — un avant-bras qui tourne autour
+    // du coude — et ses poses par angles gardent le coude en place sur le pupitre).
+    d.cles = [];
+    if (o.garderPoses) d.cles = [[0, A0], [1, B0]];
+    else for (let i = 0; i <= N; i++) {
+      const f = i / N, q = mel(A0, B0, f), cibles = {};
+      for (const k of cotes) {
+        const a = arcs[k], rot = qAxe(a.n, f * a.tot);
+        const pole = a.poleA.dot(a.poleB) > -0.95 ? a.poleA.clone().applyQuaternion(new Quat().slerp(new Quat().setFromUnitVectors(a.poleA, a.poleB), f)) : a.poleA.clone();
+        const libre = pivotante(k), paume = libre ? a.paume.clone().lerp(a.paumeB, f).normalize() : a.paume.clone().applyQuaternion(rot), dirMain = libre ? a.dirMain.clone().lerp(a.dirMainB, f).normalize() : a.dirMain.clone().applyQuaternion(rot);
+        q.bras[k] = { prise: surArc(a.P, a.n, a.A, f * a.tot), paume, dirMain, pole, doigts: 'barre', rayon: 0.017 };
+        cibles[k] = q.bras[k].prise.clone();
+      }
+      viser(c, q, cibles);
+      d.cles.push([f, q]);
+    }
+    delete d.a; delete d.b;
+    // Les bras mobiles : le palier, le profilé jusqu'au bout de la poignée, la poignée.
+    const i0 = c.poser(d.cles[0][1]), bras = {};
+    for (const k of cotes) {
+      const a = arcs[k], ax = unite(i0.axes[k].clone()), pr = i0.prises[k];
+      const e1 = pr.clone().addScaledVector(ax, -0.075), e2 = pr.clone().addScaledVector(ax, 0.075), bout = e1.distanceTo(a.P) < e2.distanceTo(a.P) ? e1 : e2;
+      const coude = o.dehors ? bout.clone().add(V(Math.sign(pr.x || 1) * o.dehors, 0, 0)).lerp(a.P, 0.12) : bout.clone().lerp(a.P, 0.18).addScaledVector(perp(bout.clone().sub(pr), a.n).normalize(), 0.03);
+      const formes = [...moyeu(C, a.P, a.n), profil(C, a.P, coude, a.n, 0.065, 0.042), profil(C, coude, bout, a.n, 0.055, 0.036)];
+      if (!pivotante(k)) formes.push(...manchon(C, e1, e2));
+      bras[k] = brasMobile(a.P, a.n, formes, pr, info => info.prises[k]);
+      if (pivotante(k)) {
+        // La poignée suit la main ; une chape relie son bout au bout du bras, autour duquel elle pivote.
+        const dessinerBras = bras[k].dessiner, bout0 = bout.clone();
+        bras[k].dessiner = (info, u, sortie) => {
+          dessinerBras(info, u, sortie);
+          const B2 = surArc(a.P, a.n, bout0, bras[k].angle(info)), ax2 = unite(info.axes[k].clone()), p2 = info.prises[k];
+          const f1 = p2.clone().addScaledVector(ax2, -0.075), f2 = p2.clone().addScaledVector(ax2, 0.075), b2 = f1.distanceTo(B2) < f2.distanceTo(B2) ? f1 : f2;
+          for (const f of manchon(C, f1, f2)) sortie.push(pret(f));
+          sortie.push(pret(seg(B2, b2, 0.016, C.cadre, 0.5, 0.006)), pret(sphere(0.022, B2.x, B2.y, B2.z, C.cadre, 0.5)));
+        };
+      }
+    }
+    const garde = o.garder ? d.fixe : [];
+    d.fixe = garde.slice();
+    // Le poste : assise et dossier, ou assise et coussin de poitrine.
+    let zDos = null;
+    if (o.poste && o.poste.angle != null) { const ps = posteAssis(C, o.poste.h, o.poste.angle, 0.62, 0.32); zDos = ps.zArriere; d.fixe.push(...poseFixe(ps)); }
+    else if (o.poste && o.poste.poitrine) d.fixe.push(...poseFixe(postePoitrine(c, C, d.cles[0][1], o.poste.h)));
+    d.objets = (info, u, sortie) => { for (const k of cotes) bras[k].dessiner(info, u, sortie); };
+    d.levee = info => 0.1 * Math.max(...cotes.map(k => Math.abs(bras[k].angle(info))));
+    return { bras, arcs, zDos, i0 };
+  }
+
+  /* Le bâti qui porte les paliers des bras (M : ce que rend surMachine). Les paliers au-dessus de la course
+     (pivot 'haut') : une colonne derrière le dossier (ou devant, `devant`), une poutre qui avance au-dessus de la tête,
+     une traverse qui porte les deux paliers. Derrière (pivot 'arriere') : la traverse derrière le dossier, sur la
+     colonne. La tour derrière la colonne (ou devant, du côté de la colonne). */
+  function batiBras(C, d, M, o) {
+    o = o || {};
+    const ks = Object.keys(M.arcs), P = ks.map(k => M.arcs[k].P), f = [];
+    const yH = Math.max(...P.map(p => p.y)), zH = P.reduce((t, p) => t + p.z, 0) / P.length, xH = Math.max(...P.map(p => Math.abs(p.x)));
+    // (Paliers derrière le dossier : la colonne est sous eux ; au-dessus de la course : derrière le dossier.)
+    const derriere = M.zDos != null && zH < M.zDos - 0.05;
+    // (Devant : au-delà des pieds, la tour encore devant la colonne.)
+    const zPieds = M.i0 ? Math.max(M.i0.orteils.G.z, M.i0.orteils.D.z) : -Infinity;
+    const zCol = o.zColonne != null ? o.zColonne : o.devant ? Math.max(zH + 0.25, zPieds + 0.22) : derriere ? zH : (M.zDos != null ? M.zDos - 0.1 : zH - 0.3);
+    const yT = o.dessous ? yH : yH + 0.09;
+    // La colonne et, si les paliers sont ailleurs qu'au-dessus d'elle, la poutre qui les rejoint.
+    f.push(profil(C, V(0, 0.03, zCol), V(0, yT + 0.03, zCol), AX, 0.1, 0.07));
+    if (Math.abs(zH - zCol) > 0.08) f.push(profil(C, V(0, yT, zCol), V(0, yT, zH), AY, 0.09, 0.06));
+    // La traverse et, de chaque bout, le support du palier (le long de l'axe du bras).
+    f.push(profil(C, V(-(xH + 0.02), yT, zH), V(xH + 0.02, yT, zH), AY, 0.08, 0.055));
+    for (const k of ks) {
+      const a = M.arcs[k], s = Math.sign(a.P.x) || 1, bout = V(s * (xH + 0.02), yT, zH);
+      if (a.P.distanceTo(bout) > 0.03) f.push(profil(C, bout, a.P.clone().addScaledVector(a.n, -s * Math.sign(a.n.x || 1) * 0.0), AZ, 0.06, 0.045));
+      f.push(seg(a.P.clone().addScaledVector(a.n, -0.07), a.P.clone().addScaledVector(a.n, 0.07), 0.018, C.metal, 0.9));
+    }
+    // La tour, et le longeron qui la relie au pied de la colonne et à l'avant de l'assise.
+    const zT = o.devant ? zCol + 0.35 : zCol - 0.35;
+    f.push(...placerTour(C, V(0, 0, zT), qY(o.devant ? 180 : 0), o.hTour || 1.5));
+    f.push(...longeron(C, zT, o.zAvant != null ? o.zAvant : 0.3));
+    d.fixe.push(...poseFixe(horsCadre(f, 1.95)));
+  }
+
+  /* Pec deck, écartés à la machine et oiseau à la machine : deux bras qui pendent du haut de la machine et tournent
+     chacun autour d'un axe vertical passant par l'épaule. Écartés : une poignée verticale au bout du bras ; pec deck :
+     un coussin vertical contre l'avant-bras, la main sur sa poignée ; oiseau (face) : assis face au coussin de
+     poitrine, les bras tendus devant qui s'ouvrent. Remplit d.cles, d.fixe, d.objets, d.levee. */
+  function machineEcarte(c, C, d, o) {
+    const cotes = o.cotes || ['G', 'D'], i0 = c.poser(d.a), haut = Math.max(i0.epaules.G.y, i0.epaules.D.y) + 0.52;
+    const M = surMachine(c, C, d, {
+      cotes, n: 10, poste: o.face ? { h: H_SIEGE, poitrine: true } : { h: 0.44, angle: 84 },
+      // (Oiseau : bras presque tendus, le côté du coude ne se lit pas sur le corps ; il est dehors et un peu en arrière
+      // au départ, en arrière bras ouverts — sinon l'humérus tourne sur lui-même et le deltoïde postérieur se creuse.)
+      pole: o.face ? (k => { const s = k === 'G' ? 1 : -1; return { A: V(s * 0.7, 0.18, -0.7), B: V(-s * 0.7, 0.14, -0.7) }; }) : null,
+      axe: k => { const e = i0.epaules[k]; return { P: V(e.x, haut, e.z), n: o.face ? V(0, k === 'G' ? 1 : -1, 0) : V(0, k === 'G' ? -1 : 1, 0) }; }
+    });
+    // Le bras : du palier, à l'horizontale jusqu'au-dessus de la poignée, puis à la verticale jusqu'à elle (pec deck :
+    // jusqu'au haut du coussin, qui longe l'avant-bras).
+    const iA = M.i0;
+    for (const k of cotes) {
+      const a = M.arcs[k], pr = iA.prises[k], ax = unite(iA.axes[k].clone()), s = k === 'G' ? 1 : -1;
+      const e1 = pr.clone().addScaledVector(ax, -0.075), e2 = pr.clone().addScaledVector(ax, 0.075), hautP = e1.y > e2.y ? e1 : e2;
+      const coin = V(hautP.x, a.P.y, hautP.z), f = [...moyeu(C, a.P, a.n), profil(C, a.P, coin, AY, 0.065, 0.045), profil(C, coin, hautP, AX, 0.06, 0.04), ...manchon(C, e1, e2)];
+      if (o.pecdeck) {
+        // Le coussin le long de l'avant-bras, côté où il pousse.
+        const cd = iA.coudes[k], av = unite(pr.clone().sub(cd)), tg = unite(a.n.clone().cross(pr.clone().sub(a.P))).multiplyScalar(-1);
+        const ctr = cd.clone().lerp(pr, 0.45).addScaledVector(tg, 0.095), q = new Quat().setFromBasis(unite(perp(tg, av)).cross(av), av, unite(perp(tg, av)));
+        f.push(Object.assign(boite(0.11, cd.distanceTo(pr) * 0.95, 0.07, ctr.x, ctr.y, ctr.z, C.banc, 0.12, q, 0.024), {}), profil(C, hautP, ctr.clone().addScaledVector(av, cd.distanceTo(pr) * 0.45), AX, 0.04, 0.03));
+      }
+      M.bras[k] = brasMobile(a.P, a.n, f, pr, info => info.prises[k]);
+    }
+    d.objets = (info, u, sortie) => { for (const k of cotes) M.bras[k].dessiner(info, u, sortie); };
+    // Le bâti : une colonne derrière le dossier (devant le coussin de poitrine pour l'oiseau), une poutre au-dessus de
+    // la tête, une traverse qui porte les deux paliers.
+    batiBras(C, d, M, { devant: !!o.face, dessous: true, zAvant: o.face ? -0.25 : 0.32 });
+    return M;
+  }
+
+  /* L'assise d'un poste où les cuisses sont calées (tirage vertical) : le siège à h, deux boudins posés sur les
+     cuisses, portés par une potence qui monte devant les genoux. */
+  function posteCuisses(c, C, p, h) {
+    c.poser(p);
+    let yMax = -Infinity, zG = 0, n = 0;
+    const info = c.poser(p), g = info.genoux.G.clone().add(info.genoux.D).multiplyScalar(0.5), zB = g.z - 0.12;
+    c.peauPosee(['cuisse'], (x, y, z) => { if (Math.abs(z - zB) < 0.03 && Math.abs(x) < 0.18 && y > yMax) yMax = y; });
+    const yC = (isFinite(yMax) ? yMax : g.y + 0.08) + 0.05 - ENFONCE;
+    const f = [coussin(0.36, 0.065, 0.34, 0, h - 0.0325, -0.02, C), boite(0.25, 0.025, 0.28, 0, h - 0.075, -0.02, C.cadre, 0.45, null, 0.006),
+      profil(C, V(0, 0.05, -0.02), V(0, h - 0.085, -0.02), AZ, 0.085, 0.085), cyl(0.012, 0.05, 0, h - 0.25, 0.045, C.metal, 0.8, LONG_Z), sphere(0.02, 0, h - 0.25, 0.075, C.repere, 0.2)];
+    for (const s of [1, -1]) f.push(...boudin(C, V(s * 0.04, yC, zB), V(s * 0.25, yC, zB), 0.05));
+    f.push(seg(V(-0.04, yC, zB), V(0.04, yC, zB), 0.016, C.metal, 0.9), profil(C, V(0, yC - 0.03, zB + 0.02), V(0, 0.05, zB + 0.42), AX, 0.07, 0.05));
+    return f;
+  }
+
+  /* Le bâti des machines dont les bras tournent à hauteur des coudes (curl, triceps) ou des poignets : de chaque
+     palier, une broche vers le dehors et un montant jusqu'au sol, une traverse entre les montants ; la tour devant,
+     au-delà des pieds, sa fente vers soi, reliée par un longeron. */
+  function batiCoudes(C, d, M) {
+    const f = [], ks = Object.keys(M.arcs), xs = [];
+    for (const k of ks) {
+      const a = M.arcs[k], s = Math.sign(a.P.x) || 1, x = a.P.x + s * 0.09;
+      f.push(seg(a.P.clone().setX(a.P.x - s * 0.05), V(x + s * 0.02, a.P.y, a.P.z), 0.018, C.metal, 0.9));
+      xs.push(x);
+    }
+    const zB0 = Math.max(Object.values(M.arcs)[0].P.z - 0.12, Math.max(M.i0.orteils.G.z, M.i0.orteils.D.z) + 0.1);
+    for (const k of ks) { const a = M.arcs[k], s = Math.sign(a.P.x) || 1, x = a.P.x + s * 0.09; f.push(profil(C, V(x, a.P.y + 0.03, a.P.z), V(x, 0.03, zB0), AZ, 0.075, 0.05)); }
+    // (Les montants descendent au-delà des pieds : plantés près des coudes, ils tombaient sur les chevilles.)
+    const zB = Math.max(Object.values(M.arcs)[0].P.z - 0.12, Math.max(M.i0.orteils.G.z, M.i0.orteils.D.z) + 0.1);
+    f.push(...traverse(C, Math.max(0.2, ...xs.map(Math.abs)), -Math.max(0.2, ...xs.map(Math.abs)), zB));
+    // (La tour sur le flanc droit, à hauteur des coudes : devant, elle cachait tout.)
+    f.push(...placerTour(C, V(-0.72, 0, zB + 0.05), qY(90), 1.3), ...traverse(C, -0.5, -Math.max(0.2, ...xs.map(Math.abs)), zB));
+    d.fixe.push(...poseFixe(f));
+  }
+  /* Curl et extension des triceps à la machine, poignets à la machine : le bras tourne autour du coude (ou du poignet)
+     posé sur le pupitre, son palier en dehors de l'articulation. Le siège et le pupitre de la famille sont gardés. */
+  function machineCoudes(c, C, d, cotes, centre) {
+    const iA = c.poser(d.a), pts = centre === 'poignets' ? iA.poignets : iA.coudes;
+    // L'axe du bras de la machine est celui de l'articulation : perpendiculaire au plan où la main tourne autour d'elle
+    // (le bras n'est pas tout à fait dans l'axe du corps) ; le palier est sur cet axe, 12 cm en dehors.
+    const M = surMachine(c, C, d, { cotes, garder: true, garderPoses: true, dehors: 0.06, axe: (k, i1, i2) => {
+      const s = k === 'G' ? 1 : -1, e = pts[k];
+      let n = unite(i1.prises[k].clone().sub(e).cross(i2.prises[k].clone().sub(e))); if (n.x * s < 0) n.multiplyScalar(-1);
+      return { P: e.clone().addScaledVector(n, 0.12), n };
+    } });
+    batiCoudes(C, d, M);
+    return M;
+  }
+
+  /* Élévations latérales à la machine : assis, le dos au dossier ; chaque bras de la machine tourne autour d'un axe
+     d'avant en arrière qui passe par l'épaule, son palier derrière elle, et pousse le coude par un boudin posé sur le
+     dehors du bras, près du coude. Le bras de la machine passe derrière l'épaule puis longe le bras jusqu'au boudin. */
+  function machineDeltoides(c, C, d, cotes) {
+    const i0 = c.poser(d.a), f = [], bras = {};
+    for (const k of cotes) {
+      const s = k === 'G' ? 1 : -1, e = i0.epaules[k], cd = i0.coudes[k], P = V(e.x, e.y, e.z - 0.2), n = V(0, 0, s);
+      const dehors = unite(perp(cd.clone().sub(e), AZ)), le = cd.clone().addScaledVector(dehors, 0.1).addScaledVector(unite(e.clone().sub(cd)), 0.06);
+      const coin = V(le.x, le.y, P.z), formes = [...moyeu(C, P, n), profil(C, P, coin, AZ, 0.06, 0.042), profil(C, coin, le.clone().setZ(le.z - 0.12), AY, 0.05, 0.035), ...boudin(C, le.clone().setZ(le.z - 0.17), le.clone().setZ(le.z - 0.03), 0.045)];
+      bras[k] = brasMobile(P, n, formes, cd, info => info.coudes[k]);
+      f.push(seg(P.clone().setZ(P.z - 0.1), P.clone().setZ(P.z + 0.03), 0.018, C.metal, 0.9));
+    }
+    d.objets = (info, u, sortie) => { for (const k of cotes) bras[k].dessiner(info, u, sortie); };
+    d.levee = info => 0.12 * Math.max(...cotes.map(k => Math.abs(bras[k].angle(info))));
+    const ps = posteAssis(C, 0.44, 84, 0.62, 0.32), zC = Math.min(...cotes.map(k => i0.epaules[k].z)) - 0.3, yC = Math.max(...cotes.map(k => i0.epaules[k].y));
+    d.fixe = poseFixe(ps);
+    f.push(profil(C, V(0, 0.03, zC), V(0, yC + 0.04, zC), AX, 0.1, 0.07), profil(C, V(-0.3, yC, zC + 0.1), V(0.3, yC, zC + 0.1), AY, 0.08, 0.055));
+    for (const k of cotes) { const s = k === 'G' ? 1 : -1; f.push(profil(C, V(s * 0.3, yC, zC + 0.1), V(i0.epaules[k].x, i0.epaules[k].y, zC + 0.1), AZ, 0.06, 0.045)); }
+    f.push(...placerTour(C, V(0, 0, zC - 0.38), null, 1.45), ...longeron(C, zC - 0.2, 0.32));
+    d.fixe.push(...poseFixe(f));
+  }
+
+  /* Pull-over à la machine : assis, les coudes contre deux boudins portés par des bras qui tournent autour de l'axe
+     des épaules ; les bras de la machine partent de paliers en dehors des épaules. */
+  function machinePullover(c, C, d) {
+    const i0 = c.poser(d.a), f = [], bras = {};
+    for (const k of ['G', 'D']) {
+      const s = k === 'G' ? 1 : -1, e = i0.epaules[k], cd = i0.coudes[k], P = V(s * 0.3, e.y, e.z), n = V(1, 0, 0);
+      const rc = perp(cd.clone().sub(P), n), tg = unite(n.clone().cross(rc)).multiplyScalar(-1);
+      // Le boudin, posé contre le bras du côté où il pousse, en travers du bras ; le bras de la machine, en dehors.
+      const pad = cd.clone().addScaledVector(unite(e.clone().sub(cd)), 0.08).addScaledVector(tg, 0.088), bout = V(P.x, pad.y, pad.z);
+      const formes = [...moyeu(C, P, n), profil(C, P, bout, AX, 0.065, 0.045), ...boudin(C, bout, pad.clone().setX(cd.x + s * 0.01), 0.045)];
+      bras[k] = brasMobile(P, n, formes, cd, info => info.coudes[k]);
+      f.push(seg(P.clone().setX(P.x - s * 0.04), P.clone().setX(P.x + s * 0.14), 0.02, C.metal, 0.9), profil(C, V(s * 0.44, 0.03, P.z - 0.1), V(s * 0.44, P.y + 0.03, P.z), AX, 0.075, 0.05));
+    }
+    d.objets = (info, u, sortie) => { for (const k of ['G', 'D']) bras[k].dessiner(info, u, sortie); };
+    d.levee = info => 0.1 * Math.abs(bras.G.angle(info));
+    const ps = posteAssis(C, 0.44, 84, 0.62, 0.32);
+    d.fixe = poseFixe(ps);
+    f.push(...traverse(C, 0.44, -0.44, i0.epaules.G.z - 0.1), ...placerTour(C, V(0, 0, ps.zArriere - 0.3), null, 1.4), ...longeron(C, ps.zArriere - 0.1, 0.32));
+    d.fixe.push(...poseFixe(f));
+  }
+
+  /* Des paliers portés chacun par son poteau (quand une traverse entre eux passerait dans le corps) : de chaque palier,
+     une broche vers le dehors et un poteau jusqu'au sol ; une traverse au sol derrière ; la tour derrière. */
+  function batiPoteaux(C, d, M, o) {
+    o = o || {};
+    const f = [], ks = Object.keys(M.arcs);
+    let zMin = Infinity;
+    for (const k of ks) {
+      const a = M.arcs[k], s = Math.sign(a.P.x) || 1, x = a.P.x + s * 0.08;
+      f.push(seg(a.P.clone().setX(a.P.x - s * 0.04), V(x + s * 0.02, a.P.y, a.P.z), 0.018, C.metal, 0.9));
+      f.push(profil(C, V(x, a.P.y + 0.03, a.P.z), V(x, 0.03, a.P.z - 0.15), AZ, 0.075, 0.05));
+      zMin = Math.min(zMin, a.P.z - 0.15);
+    }
+    const xs = ks.map(k => Math.abs(M.arcs[k].P.x) + 0.08), X = Math.max(0.3, ...xs);
+    f.push(...traverse(C, X, -X, zMin));
+    const zT = o.zTour != null ? o.zTour : (M.zDos != null ? Math.min(M.zDos, zMin) : zMin) - 0.4;
+    f.push(...placerTour(C, V(0, 0, zT), null, o.hTour || 1.4), ...longeron(C, zT + 0.2, o.zAvant != null ? o.zAvant : 0.3));
+    d.fixe.push(...poseFixe(f));
+  }
+
+  /* Les machines de jambes où un bras tourne autour d'un axe et pousse un membre par un boudin (abducteurs, adducteurs,
+     fessiers, hip thrust) : axe et pivot donnés, le boudin suit le point du corps `suit`. formes(k, i0) rend les formes
+     du bras au départ. */
+  function brasDeJambe(C, d, cotes, P, n, formes, suit) {
+    const i0 = d.i0, bras = {};
+    for (const k of cotes) bras[k] = brasMobile(P(k), n(k), formes(k, i0), suit(i0, k), info => suit(info, k));
+    d.objets = (info, u, sortie) => { for (const k of cotes) bras[k].dessiner(info, u, sortie); };
+    d.levee = info => 0.12 * Math.max(...cotes.map(k => Math.abs(bras[k].angle(info))));
+    return bras;
+  }
+
+  /* Machine à tractions et dips assistés : deux montants derrière soi, la tour derrière eux ; en haut, la barre de
+     traction tenue en avant par deux potences ; à mi-hauteur, les deux poignées de dips ; le plateau où posent les
+     genoux, au bout d'un long bras qui tourne au pied des montants (il pousse les genoux vers le haut : c'est
+     l'assistance). dips : les poignées sont en (±ecart, h) ; traction : la barre est à hBarre. */
+  function machineAssistance(c, C, d, o) {
+    const iA = d.cles ? c.poser(d.cles[0][1]) : c.poser(d.a), iB = d.cles ? c.poser(d.cles[d.cles.length - 1][1]) : c.poser(d.b);
+    const genoux = info => info.genoux.G.clone().add(info.genoux.D).multiplyScalar(0.5);
+    const g0 = genoux(iA), g1 = genoux(iB), zM = Math.min(g0.z, g1.z) - 0.55, f = [];
+    for (const s of [1, -1]) f.push(profil(C, V(s * 0.36, 0.03, zM), V(s * 0.36, (o.hBarre || 2.3) + 0.06, zM), AZ, 0.09, 0.06));
+    f.push(profil(C, V(-0.4, 0.06, zM), V(0.4, 0.06, zM), AY, 0.08, 0.05), ...longeron(C, zM - 0.55, zM + 0.25, 0.36), ...longeron(C, zM - 0.55, zM + 0.25, -0.36));
+    if (o.hBarre) {
+      const yB = o.hBarre;
+      f.push(profil(C, V(-0.4, yB + 0.06, zM), V(0.4, yB + 0.06, zM), AY, 0.08, 0.05));
+      for (const s of [1, -1]) f.push(profil(C, V(s * 0.36, yB + 0.06, zM), V(s * 0.36, yB + 0.02, 0.02), AY, 0.065, 0.045));
+      f.push(cyl(0.016, 0.82, 0, yB, 0.02, C.metal, 1), cyl(0.0185, 0.2, 0.28, yB, 0.02, C.gomme, 0, null, 0.005), cyl(0.0185, 0.2, -0.28, yB, 0.02, C.gomme, 0, null, 0.005));
+    }
+    if (o.ecart) for (const s of [1, -1]) {
+      const x = s * o.ecart;
+      f.push(profil(C, V(s * 0.36, o.h - 0.02, zM), V(x, o.h - 0.02, zM + 0.08), AY, 0.065, 0.045), seg(V(x, o.h, zM + 0.06), V(x, o.h, 0.42), 0.019, C.metal, 1), seg(V(x, o.h, 0.08), V(x, o.h, 0.4), 0.0215, C.gomme, 0, 0.006));
+    }
+    // La tour sur le côté (o.cote : +1 à gauche, -1 à droite), à l'aplomb des montants : derrière, elle cachait le corps
+    // vu de dos.
+    const sT = o.cote || 1;
+    f.push(...placerTour(C, V(sT * 0.82, 0, zM), qY(-90 * sT), 1.7), ...traverse(C, sT * 0.36, sT * 0.6, zM));
+    // Le bras d'assistance : son palier au pied des montants ; le plateau sous les genoux.
+    const pl = g0.clone().add(V(0, -0.11, -0.06)), P = pivotEgal(V(0, 0.32, zM + 0.05), AX, pl, g1.clone().add(V(0, -0.11, -0.06)));
+    const formes = [...moyeu(C, P, AX, 0.06, 0.16), profil(C, P, pl.clone().add(V(0, -0.04, 0)), AX, 0.075, 0.05), Object.assign(coussin(0.44, 0.065, 0.3, pl.x, pl.y, pl.z, C), { aPlat: true }), Object.assign(boite(0.3, 0.025, 0.22, pl.x, pl.y - 0.045, pl.z, C.cadre, 0.45, null, 0.006), { aPlat: true })];
+    const bras = brasMobile(P, AX, formes, pl, info => genoux(info).add(V(0, -0.11, -0.06)));
+    d.objets = (info, u, sortie) => bras.dessiner(info, u, sortie);
+    d.levee = info => 0.35 * Math.abs(bras.angle(info));
+    d.fixe = (o.garder ? d.fixe : []).concat(poseFixe(horsCadre(f, 2.0)));
   }
 
   /* ---------- Postures : de quoi écrire une pose en peu de mots ----------
@@ -1661,7 +2159,7 @@
                    'continu' (cycle sans pause : course, vélo, battements), 'boucle' (poses clés jouées dans l'ordre
                    sur un cycle : la dernière rejoint la première) ;
        tenu      — le matériel tenu : [{ t: 'haltere' | 'barre' | 'kb' | 'disque' | 'balle' | 'poignee', m: 'G' | 'D' | 'GD', … },
-                   { t: 'cable' | 'elastique' | 'sangle' | 'levier', de: point, m, bout: 'barre' | 'corde' | 'poignee' }] ;
+                   { t: 'cable' | 'elastique' | 'sangle', de: point, m, bout: 'barre' | 'corde' | 'poignee' }] ;
        fixe      — le matériel posé (formes prêtes) ; objets(info, u, sortie) — matériel calculé à chaque image ;
        vue       — { az, el } : d'où regarder. */
   const FAM = {};
@@ -1689,31 +2187,11 @@
       if (d.cles) { const fin = chemin(d.cles, o.amp); d.cles = d.cles.filter(x => x[0] < o.amp).map(x => [x[0] / o.amp, x[1]]).concat([[1, fin]]); }
       else if (d.a && d.b) d.b = mel(d.a, d.b, o.amp);
     }
+    if (o.smith) d.smith = true;
     d.rythme = d.rythme || 'rep';
     d.periode = d.periode || { rep: 2.8, alt: 4.6, tenue: 4, etire: 7, continu: 1.2, boucle: 3.4 }[d.rythme];
     d.tenu = d.tenu || []; d.fixe = d.fixe || [];
     degagerTenu(c, d, C);
-    // Une machine à bras de levier arrive ici sans bâti : on lui donne le sien (montants, pile de poids, la traverse
-    // qui porte les pivots, une poutre au sol jusqu'au siège). Le bâti se tient derrière le corps, ou devant quand
-    // les pivots y sont (rowing) ; la pile monte avec le mouvement.
-    if (o.machine && !d.fixe.some(x => x.leve)) {
-      const info = c.poser(poseA(d, 0, 0));
-      const pivots = d.tenu.filter(e => e.t === 'levier' && e.de).map(e => (typeof e.de === 'function' ? e.de(info, 0) : e.de)).filter(p => p && p.x != null);
-      if (pivots.length) {
-        const zP = pivots.reduce((t, p) => t + p.z, 0) / pivots.length, yP = Math.max(...pivots.map(p => p.y)), zC = info.bassin.z;
-        // (bati 'devant' : le levier tourne autour du coude, sur un pupitre ; le bâti se tient au-delà des mains.)
-        const coude = d.tenu.some(e => e.t === 'levier' && e.bati === 'devant'), devant = coude || zP - zC > 0.6;
-        const zF = devant ? zP + (coude ? 0.45 : 0.14) : Math.min(zC, zP) - 0.6, H = Math.max(1.5, yP + 0.12), f = deplacer(bati(C, H, 0), V(0, 0, zF), devant ? qY(180) : null);
-        for (const p of pivots) { f.push(tube(V(Math.sign(p.x || 1) * Math.max(0.2, Math.abs(p.x)), H, zF), p, 0.045, C.cadre), cyl(0.042, 0.05, p.x, p.y, p.z, C.cadre, 0.5, null, 0.01)); }
-        // La traverse d'un pivot à l'autre : pas aux coudes (elle passerait dans les bras), ni quand les pivots sont dans
-        // l'axe des épaules ou des hanches (elle passerait dans le buste) — chaque pivot tient alors par son seul bras.
-        const milieu = pivots[0].clone().add(pivots[1] || pivots[0]).multiplyScalar(0.5), dansLeCorps = surSegment(info.bassin, info.cou, milieu.x, milieu.y, milieu.z);
-        if (pivots.length > 1 && !coude && Math.hypot(dansLeCorps[0] - milieu.x, dansLeCorps[1] - milieu.y, dansLeCorps[2] - milieu.z) > 0.2) f.push(tube(pivots[0], pivots[1], 0.045, C.cadre));
-        f.push(tube(V(0, 0.03, zF), V(0, 0.03, zC), 0.05, C.cadre));
-        poserObjet(horsCadre(f), V(), null, d.fixe);
-        if (!d.levee) d.levee = (i2, u) => 0.26 * Math.max(0, Math.min(1, u));
-      }
-    }
     // Une tour de poulie : on relève la longueur de câble la plus courte du mouvement, d'où part la pile de poids.
     if (d.fixe.some(x => x.leve) && d.tenu.some(e => e.t === 'cable')) {
       let mini = Infinity;
@@ -1927,10 +2405,10 @@
           dm.addScaledVector(gd, -dm.dot(gd)); if (dm.lengthSq() > 1e-6) axe = dm;
         }
         poserObjet(f, pos, e.t === 'disque' ? qTenu(axe.lengthSq() > 1e-6 ? axe : AX, AY) : null, sortie);
-      } else if (e.t === 'cable' || e.t === 'elastique' || e.t === 'sangle' || e.t === 'levier') {
-        const r = e.t === 'cable' ? 0.0045 : e.t === 'elastique' ? 0.007 : e.t === 'sangle' ? 0.009 : 0.017;
-        const teinte = e.t === 'cable' ? C.cable : e.t === 'elastique' ? C.elastique : e.t === 'sangle' ? C.sangle : C.cadre;
-        const metal = e.t === 'cable' || e.t === 'levier' ? 0.6 : 0;
+      } else if (e.t === 'cable' || e.t === 'elastique' || e.t === 'sangle') {
+        const r = e.t === 'cable' ? 0.0045 : e.t === 'elastique' ? 0.007 : 0.009;
+        const teinte = e.t === 'cable' ? C.cable : e.t === 'elastique' ? C.elastique : C.sangle;
+        const metal = e.t === 'cable' ? 0.6 : 0;
         const bouts = e.vers ? [point(e.vers, e.m)] : e.bout === 'barre' || e.bout === 'corde' ? [prise('GD')] : cotes(e.m).map(k => info.prises[k]);
         const departs = Array.isArray(e.de) ? e.de : [e.de];
         bouts.forEach((b, n) => {
@@ -1957,14 +2435,13 @@
             const k = cotes(e.m)[n], dir = unite(de.clone().sub(b)), attache = b.clone().add(dir.clone().multiplyScalar(0.1));
             sortie.push(pret(seg(de, attache, r, teinte, metal)));
             for (const s of [1, -1]) sortie.push(pret(seg(attache, b.clone().add(info.axes[k].clone().multiplyScalar(s * 0.07)), 0.0045, C.metal, 0.8, 0.0045)));
-          } else if (e.t === 'levier') sortie.push(pret(tube(de, b, 0.034, C.cadre)));
-          else sortie.push(pret(seg(de, b, r, teinte, metal)));
+          } else sortie.push(pret(seg(de, b, r, teinte, metal)));
         });
         if (e.bout === 'barre') {
           const f = modeles['barrette' + (e.l || '')] || (modeles['barrette' + (e.l || '')] = MAT.barrette(C, e.l || 0.9));
           const axe = info.prises.G.clone().sub(info.prises.D);
           poserObjet(f, prise('GD'), qTenu(axe.lengthSq() > 1e-6 ? axe : AX, AY), sortie);
-        } else if (e.bout === 'poignee' || (e.t === 'levier' && e.bout !== 'rien')) {
+        } else if (e.bout === 'poignee') {
           const f = modeles.poignee || (modeles.poignee = MAT.poignee(C));
           for (const k of cotes(e.m)) poserObjet(f, info.prises[k], qTenu(info.axes[k], AY), sortie);
         }
@@ -1972,6 +2449,18 @@
     }
     if (eAvant) marquer();
     if (d.objets) d.objets(info, u, sortie);
+    // Smith machine : la barre est montée sur deux chariots qui coulissent le long des glissières (un fourreau autour de
+    // chaque glissière, et son crochet) ; on les pose aux bouts de la barre, où qu'elle soit.
+    if (d.smith) {
+      const barre = sortie.find(f => f.forme === 'cylindre' && Math.abs(f.s[1] - 1.6) < 0.01 && f.s[0] < 0.02);
+      if (barre) {
+        const q = new Quat(barre.q[0], barre.q[1], barre.q[2], barre.q[3]), ax = AY.clone().applyQuaternion(q), p0 = V(barre.p[0], barre.p[1], barre.p[2]);
+        for (const s of [1, -1]) {
+          const c0 = p0.clone().addScaledVector(ax, s * 0.72);
+          sortie.push(pret(cyl(0.034, 0.16, c0.x, c0.y, c0.z, C.cadre, 0.5, DEBOUT_Q, 0.006)), pret(boite(0.03, 0.03, 0.07, c0.x, c0.y + 0.05, c0.z - 0.05, C.cadre, 0.5, null, 0.004)));
+        }
+      }
+    }
     // Les plaques levées de la pile suivent le câble (d.cable0 : sa longueur la plus courte pendant le mouvement).
     sortie.cable = cable;
     if (d.levee || (cable != null && d.cable0 != null)) {
@@ -2282,7 +2771,7 @@
     };
   }
   /* Le matériel tenu, d'après les options : hal, barre, ez, kb, disque, balle, poulie, elas, machine, sangles.
-     r : réglages de la famille { ancre (poulie : point ou fonction du côté), bout, pivot (machine), deElas, lBarre }. */
+     r : réglages de la famille { ancre (poulie : point ou fonction du côté), bout, deElas, lBarre }. */
   function tenuDe(o, m, r) {
     r = r || {};
     const t = [], pt = (v, k) => (typeof v === 'function' && v.length ? v(k === 'D' ? -1 : 1, k) : v);
@@ -2297,7 +2786,6 @@
       if (r.bout === 'barre' || r.bout === 'corde') t.push({ t: 'cable', de: pt(r.ancre, 'G'), bout: r.bout, l: r.lCable });
       else for (const k of cotes) t.push({ t: 'cable', de: pt(r.ancre, k), m: k, bout: 'poignee' });
     } else if (o.elas) for (const k of cotes) t.push({ t: 'elastique', de: r.deElas ? pt(r.deElas, k) : 'pieds', m: k, bout: 'poignee' });
-    else if (o.machine && r.pivot) for (const k of cotes) t.push({ t: 'levier', de: pt(r.pivot, k), m: k, bati: r.bati });
     else if (o.sangles && r.ancre) for (const k of cotes) t.push({ t: 'sangle', de: pt(r.ancre, k), m: k, bout: 'poignee' });
     return t;
   }
@@ -2348,13 +2836,12 @@
     if (o.pupitre) {
       // Assis derrière le pupitre, le haut des bras posé sur le coussin incliné (à 45° environ : le buste penche de
       // 20°, les bras sont levés de 68° par rapport à lui, les épaules avancées au-dessus du coussin). Machine : le
-      // levier tourne autour du coude, son bâti est devant le pupitre.
+      // bras de la machine tourne dans l'axe du coude, son bâti est devant le pupitre.
       p = assis(c, { h: H_SIEGE, penche: 14, zPieds: 0.3 }); p.thorax = 6; p.cou = -8;
       a = B(8, 68, 0, 22, pron, { avance: 12 }); b = B(8, 68, 0, 128, pron, { avance: 12 });
       const t = c.tronc(p), ep = t.epaules.G, pup = pupitreSous(c, p, a, C), k0 = pup.coude;
       fixe = poseFixe(MAT.siege(C, H_SIEGE)).concat(poseFixe(pup));
       ancre = V(0, 0.15, ep.z + 0.75); vue = { az: 52, el: 12 };
-      r.pivot = s => V(s * (Math.abs(k0.x) + 0.09), k0.y, k0.z); r.bati = 'devant';
     } else if (P.sorte === 'ventre') {
       // À plat ventre sur le banc incliné : les bras pendent à la verticale devant le banc.
       const pen = o.ventre === true ? 50 : o.ventre;
@@ -2407,6 +2894,7 @@
       const A = d.a, Z = d.b;
       d.pose = (u, sens) => { const q = mel(A, Z, u), pr = sens < 0 ? 180 * lisse(u / 0.2) : 180 * lisse((u - 0.86) / 0.14); for (const k of ['G', 'D']) q.bras[k].pron = pr; return q; };
     }
+    if (o.machine && o.pupitre) machineCoudes(c, C, d, m === 'GD' ? ['G', 'D'] : [m]);
     return d;
   };
 
@@ -2466,12 +2954,13 @@
       a = B(0, 108, 0, 128, 90); b = B(0, 100, 0, 8, 90); ancre = V(0, 1.55, -0.95);
     } else if (o.machine) {
       // Assis, le haut des bras posé sur un coussin : les mains poussent les poignées vers le bas.
-      // (Le haut des bras à 45° environ, comme au pupitre ; le levier tourne autour du coude, son bâti est devant.)
+      // (Le haut des bras à 45° environ, comme au pupitre ; le bras de la machine tourne dans l'axe du coude, son bâti
+      // est devant.)
       p = assis(c, { h: H_SIEGE, penche: 10, zPieds: 0.3 }); p.thorax = 4;
       a = B(4, 60, 0, 122, 90, { avance: 12 }); b = B(4, 60, 0, 10, 90, { avance: 12 });
       const pup = pupitreSous(c, p, a, C), k0 = pup.coude;
       fixe = poseFixe(MAT.siege(C, H_SIEGE, 0.5, 4)).concat(poseFixe(pup));
-      r.pivot = s => V(s * (Math.abs(k0.x) + 0.09), k0.y, k0.z); r.bati = 'devant'; vue = { az: 55, el: 10 };
+      vue = { az: 55, el: 10 };
     } else {
       // Pushdown : face à la poulie haute, coudes au corps ; les avant-bras descendent.
       P = postureDe(c, o, C, { penche: 8 }); p = P.p; fixe = P.fixe; vue = { az: 55, el: 8 };
@@ -2490,6 +2979,7 @@
     if (o.hal1) { const A = d.a, Z = d.b; d.pose = u => mainsEnCoupe(c, mel(A, Z, u)); d.objets = haltereEnCoupe(C, 1.2); }   // tenu par sa tête du haut, à deux mains
     // Smith machine (développé JM) : la barre coulisse entre deux rails.
     if (o.smith) { const info = c.poser(d.a); d.tenu = [{ t: 'barre', l: 1.6, d: 0.18 }]; d.fixe = d.fixe.concat(poseFixe(MAT.smith(C, (info.prises.G.z + info.prises.D.z) / 2))); }
+    if (o.machine && !o.poulie) machineCoudes(c, C, d, m === 'GD' ? ['G', 'D'] : [m]);
     return d;
   };
 
@@ -2521,7 +3011,7 @@
         // Butterfly inversé : assis face au dossier, bras tendus devant qui s'ouvrent.
         p = assis(c, { h: H_SIEGE, zPieds: 0.3 }); const t = c.tronc(p);
         fixe = poseFixe(MAT.siege(C, H_SIEGE)).concat([pret(boite(0.3, 0.5, 0.06, 0, t.epaules.G.y - 0.2, t.epaules.G.z + 0.19, C.banc, 0))]);
-        a = B(8, 86, -80, 12, 90); b = B(104, 88, 10, 12, 90); r.pivot = () => V(0, t.epaules.G.y + 0.35, t.epaules.G.z + 0.3); vue = { az: 150, el: 12 };
+        a = B(8, 86, -80, 12, 90); b = B(104, 88, 10, 12, 90); vue = { az: 150, el: 12 };
       } else {
         if (o.tabouret) o.penche = 62; else if (o.ventre == null && !o.penche && !o.cote) o.penche = 76;
         pose(); const pen = P.sorte === 'ventre' ? (o.ventre === true ? 45 : o.ventre) : (o.penche === true ? 76 : o.penche || 76);
@@ -2545,7 +3035,7 @@
       pose();
       const base = o.kelso ? B(4, 40, 0, 5, 90) : o.dos ? B(0, -15, 0, 6, 0) : o.barre ? B(0, 8, -25, 6, 180) : o.trapbar ? B(90, 11, 0, 6, 90) : B(90, 5, 0, 6, 90);
       a = Object.assign({}, base, o.kelso ? { avance: 10 } : {}); b = Object.assign({}, base, o.kelso ? { avance: -14, hausse: 8 } : { hausse: 26 });
-      ancre = s => V(s * 0.28, 0.05, 0.02); if (o.machine) r.pivot = s => V(s * 0.3, 0.3, -0.5);
+      ancre = s => V(s * 0.28, 0.05, 0.02);
     } else if (o.facepull) {
       // Tirage visage : la corde vient vers le front, coudes hauts, mains de part et d'autre de la tête.
       if (o.sol) { pose(); a = B(6, 92, -10, 8, 180); b = B(86, 88, 78, 104, 150); ancre = V(0, 1.2, -1.2); }
@@ -2583,13 +3073,14 @@
         p = surLeCote(c, { cote: 'D' }); fixe = []; vue = { az: 0, el: 20 };
         a = B(90, 4, 0, 10, 90); b = B(90, 92, 0, 10, 90); autre = B(0, 150, 0, 60, 90, { doigts: 'detendu' });
       } else {
+        if (o.machine) o.assis = true;                                    // à la machine : assis, le dos au dossier
         pose({ roulis: 0 });
         const haut = o.lu ? 172 : 86;
         a = B(88, 9, 0, 12, 90); b = B(86, haut, 0, o.poliquin ? 14 : 14, o.lu ? 150 : 90);
         if (o.poliquin) a = B(60, 20, 30, 95, 90);                        // montée coudes pliés, descente bras tendus
         if (o.latfront) { plus.cles = true; }
         ancre = s => V(-s * 0.75, 0.1, 0.05);
-        if (o.machine) { a = B(88, 12, 0, 85, 90); b = B(88, 84, 0, 85, 90); r.pivot = s => V(s * 0.2, 1.36, -0.25); }
+        if (o.machine) { a = B(88, 12, 0, 85, 90, { doigts: 'detendu' }); b = B(88, 84, 0, 85, 90, { doigts: 'detendu' }); }   // les coudes poussent les boudins, les mains restent ouvertes
         if (P.sorte === 'ventre') { const ang = o.ventre === true ? 45 : o.ventre; a = B(20, ang * 0.9, 0, 12, 90); b = B(84, 86, 0, 14, 90); }
         if (o.penchecote) { p.bassin.rot = qZ(-14 * (m === 'D' ? -1 : 1)); p.bassin.pos.x += 0.1 * (m === 'D' ? 1 : -1); autre = B(90, 70, 0, 20, 90); }
       }
@@ -2601,6 +3092,15 @@
     if (o.disque) { const i0 = c.poser(parLesBras(p, a, b, m, autre).b); r.rDisque = borne(i0.prises.G.distanceTo(i0.prises.D) / 2 + 0.012, 0.13, 0.21); }
     const d = Object.assign(parLesBras(p, a, b, m, autre), { fixe: colonneSi(o, C, ancres, fixe || []), vue, tenu: tenuDe(o, m, r) }, rythmeDe(o));
     if (plus.rythme) d.rythme = plus.rythme;
+    if (o.machine && o.arriere) machineEcarte(c, C, d, { face: true, cotes: m === 'GD' ? ['G', 'D'] : [m] });
+    else if (o.machine && !o.shrug && !o.front && !o.menton) machineDeltoides(c, C, d, m === 'GD' ? ['G', 'D'] : [m]);
+    else if (o.machine && o.shrug) {
+      // Haussements à la machine : les poignées de part et d'autre des cuisses, au bout de deux bras dont les paliers
+      // sont loin devant, à hauteur des mains — elles montent presque droit.
+      const M = surMachine(c, C, d, { pivot: 'avant', rayon: 0.95, ecart: 0.3, cotes: ['G', 'D'], n: 6 });
+      batiPoteaux(C, d, M, { zTour: Math.max(...Object.values(M.arcs).map(a => a.P.z)) + 0.4, zAvant: -0.1 });
+      d.fixe.push(pret(boite(0.7, 0.04, 0.6, 0, 0.02, 0.05, C.gomme, 0, null, 0.01)));
+    }
     if (o.smith) { const info = c.poser(d.a); d.tenu = [{ t: 'barre', l: 1.6, d: 0.18 }]; d.fixe = d.fixe.concat(poseFixe(MAT.smith(C, (info.prises.G.z + info.prises.D.z) / 2))); }
     if (o.trapbar) { d.tenu = []; d.objets = barreHexagonale(C); }
     if (o.landmine) {
@@ -2724,8 +3224,9 @@
     };
     // Le mouvement va du haut (bras tendus, départ) au bas (barre à la poitrine), puis remonte.
     const autre = m !== 'GD' ? (haut || o.autour ? { prise: t.hanches.D.clone().add(V(-0.085, 0.1, 0.03).applyQuaternion(t.qBassin)), pole: dT(-0.8, 0, -0.6), paume: dT(1, -0.2, 0), dirMain: dT(0.2, -0.3, 1), doigts: 'detendu' } : bras(hautP, paumeB).D) : null;
-    const d = parLesBras(p, bras(hautP, paumeB), bras(bas, paumeA), m, autre);
-    if (m !== 'GD' && !haut && !o.poulie) { d.a.bras.D = cloner(bras(hautP, paumeB).D); d.b.bras.D = cloner(bras(hautP, paumeB).D); if (o.hal || o.kb) { /* l'autre haltère reste en haut */ } }
+    const repos = o.machine && m !== 'GD' && !haut ? { prise: t.hanches.D.clone().add(V(-0.02, 0.07, 0.2).applyQuaternion(t.qBassin)), pole: dT(-0.8, -0.2, -0.5), paume: dT(0, -1, 0), dirMain: dT(0.1, 0, 1), doigts: 'detendu' } : null;   // à la machine, à un bras : l'autre main sur la cuisse
+    const d = parLesBras(p, bras(hautP, paumeB), bras(bas, paumeA), m, repos || autre);
+    if (m !== 'GD' && !haut && !o.poulie && !repos) { d.a.bras.D = cloner(bras(hautP, paumeB).D); d.b.bras.D = cloner(bras(hautP, paumeB).D); if (o.hal || o.kb) { /* l'autre haltère reste en haut */ } }
     /* Au-dessus de la tête : le geste réel, repris point par point.
        À la barre :
        - en bas, la barre repose en haut de la poitrine, à hauteur des clavicules (ou sur les trapèzes, derrière la
@@ -2842,7 +3343,6 @@
     let tenu;
     if (o.landmine) {
       const pivot = V(0, 0.05, t.epaules.G.z + 1.45);
-      tenu = [{ t: 'levier', de: pivot, m: m === 'GD' ? 'G' : m, bout: 'rien' }];
       fixe = fixe.concat([pret(boite(0.2, 0.08, 0.2, pivot.x, 0.04, pivot.z, C.cadre, 0.5))]);
       d.objets = (info, u, sortie) => { const k = m === 'GD' ? 'G' : m, pr = m === 'GD' ? info.prises.G.clone().add(info.prises.D).multiplyScalar(0.5) : info.prises[k], dir = unite(pr.clone().sub(pivot)); sortie.push(pret(seg(pivot, pr.clone().add(dir.clone().multiplyScalar(m === 'GD' ? 0.095 : 0.12)), 0.025, C.metal, 1))); sortie.push(pret(cyl(0.15, 0.04, 0, 0, 0, C.fonte, 0))); const dq = sortie[sortie.length - 1], pp = pr.clone().sub(dir.clone().multiplyScalar(0.18)), q = arc(AY, dir); dq.p = [pp.x, pp.y, pp.z]; dq.q = [q.x, q.y, q.z, q.w]; };
       tenu = [];
@@ -2851,7 +3351,6 @@
     else {
       const anc = haut ? (s => V(s * 0.35, 0.1, -0.05)) : P.sorte === 'dos' ? (s => V(s * 0.95, 0.2, t.epaules.G.z)) : (s => V(s * 0.45, t.epaules.G.y - 0.05, t.epaules.G.z - 0.95));
       r.ancre = anc; r.deElas = haut ? null : anc;
-      if (o.machine) r.pivot = haut ? (s => V(s * 0.3, t.epaules.G.y + 0.45, t.epaules.G.z - 0.35)) : (s => V(s * 0.32, t.epaules.G.y + 0.55, t.epaules.G.z + 0.1));
       tenu = tenuDe(o, m === 'GD' ? 'GD' : (haut || o.poulie ? m : 'GD'), r);
       if (o.poulie) for (const s of m === 'GD' ? [1, -1] : [m === 'D' ? -1 : 1]) poserObjet(MAT.colonne(C, anc(s)), V(), null, fixe);
     }
@@ -2874,6 +3373,18 @@
       if (cles) { delete d.a; delete d.b; }
     } else if (cles) { delete d.a; delete d.b; d.cles = cles; }                 // poses clés, du bas vers le haut
     else if (haut) { const A = d.a; d.a = d.b; d.b = A; }                       // au-dessus de la tête : on part d'en bas
+    // À la machine : les poignées au bout de bras qui tournent ; au-dessus de la tête, leurs paliers sont derrière le
+    // dossier ; devant la poitrine, au-dessus de la course (les bras pendent du haut de la machine).
+    if (o.machine && (o.assis || P.sorte === 'dos')) {
+      if (d.cles) { d.a = d.cles[0][1]; d.b = d.cles[d.cles.length - 1][1]; delete d.cles; }
+      const couche = P.sorte === 'dos';
+      // (Prise neutre devant la poitrine : poignées pivotantes — une poignée verticale fixe pencherait avec le bras de
+      // la machine, l'avant-bras la suivrait et le coude s'écarterait du buste.)
+      const M = surMachine(c, C, d, { pivot: haut ? 'arriere' : 'haut', rayon: haut ? 0.95 : 0.78, ecart: haut ? 0.34 : o.incline ? 0.38 : 0.33, poste: couche ? null : { h: 0.44, angle: 84 }, cotes: m === 'GD' ? ['G', 'D'] : [m], pivotantes: o.neutre && !haut ? true : null });
+      if (couche) d.fixe.push(...poseFixe(MAT.banc(C, 0)));
+      // (Couché : la colonne se dresse au-delà de la tête, la poutre avance au-dessus du visage jusqu'aux paliers.)
+      batiBras(C, d, M, couche ? { zColonne: M.i0.tete.z - 0.32, zAvant: 0.4 } : { zAvant: 0.32 });
+    }
     return d;
   };
   V3.prototype.xyz = function () { return [this.x, this.y, this.z]; };
@@ -2905,9 +3416,11 @@
       b = o.haut ? B(14, 48, -76, 18, 0) : o.bas ? B(8, 104, -84, 18, 0) : B(6, 88, -84, 16, 0);
       ancre = s => V(s * 1.0, hA, t.epaules.G.z - 0.2); vue = { az: 20, el: 8 };
     }
-    const r = { ancre, deElas: ancre, pivot: s => V(s * 0.35, t.epaules.G.y + 0.5, t.epaules.G.z - 0.1) };
+    const r = { ancre, deElas: ancre };
     if (o.poulie && ancre) for (const s of m === 'GD' ? [1, -1] : [m === 'D' ? -1 : 1]) poserObjet(MAT.colonne(C, ancre(s)), V(), null, fixe);
-    return Object.assign(parLesBras(p, a, b, m), { fixe, vue, tenu: tenuDe(o, m, r) }, rythmeDe(o));
+    const d = Object.assign(parLesBras(p, a, b, m), { fixe, vue, tenu: tenuDe(o, m, r) }, rythmeDe(o));
+    if (o.machine) machineEcarte(c, C, d, { pecdeck: !!o.pecdeck, cotes: m === 'GD' ? ['G', 'D'] : [m] });
+    return d;
   };
 
   /* Pull-over : couché, les bras partent de derrière la tête et reviennent au-dessus de la poitrine.
@@ -2915,8 +3428,10 @@
   FAM.pullover = (c, o, C) => {
     if (o.machine) {
       const p = allonge(c, { h: 0.44, angle: 84, lomb: 0, thor: 0, cou: 0 }), t = c.tronc(p);
-      const a = B(0, 150, 0, 85, 90), b = B(0, 40, 0, 85, 90);
-      return Object.assign(parLesBras(p, a, b), { fixe: poseFixe(MAT.banc(C, 84)), vue: { az: 60, el: 10 }, tenu: [{ t: 'levier', de: V(0.3, t.epaules.G.y + 0.02, t.epaules.G.z - 0.02), m: 'G' }, { t: 'levier', de: V(-0.3, t.epaules.G.y + 0.02, t.epaules.G.z - 0.02), m: 'D' }] });   // les pivots dans l'axe des épaules, en dehors d'elles
+      const a = B(0, 150, 0, 85, 90, { doigts: 'detendu' }), b = B(0, 40, 0, 85, 90, { doigts: 'detendu' });   // les mains ouvertes : ce sont les coudes qui poussent
+      const d = Object.assign(parLesBras(p, a, b), { fixe: [], vue: { az: 60, el: 10 }, tenu: [] });
+      machinePullover(c, C, d);
+      return d;
     }
     o.plat = true; if (o.jambesHautes) o.jambes = 'levees';
     const P = postureDe(c, o, C), p = P.p;
@@ -3081,12 +3596,21 @@
       d.objets = (info, u, sortie) => { const G = info.prises.G, D = info.prises.D; barre(uni ? info.prises[m].clone() : G.clone().add(D).multiplyScalar(0.5), G, D, sortie); };
       tenu = [];
     } else {
-      const r = { ancre: s => ancre(s), bout: o.poulie && m === 'GD' ? (o.corde ? 'corde' : 'barre') : null, lCable: o.large ? 1.0 : 0.6, deElas: s => ancre(s), pivot: s => ancre(s).add(V(0, 0.3, 0)), disques: o.pendlay ? 0.225 : 0.2 };
+      const r = { ancre: s => ancre(s), bout: o.poulie && m === 'GD' ? (o.corde ? 'corde' : 'barre') : null, lCable: o.large ? 1.0 : 0.6, deElas: s => ancre(s), disques: o.pendlay ? 0.225 : 0.2 };
       tenu = o.smith ? [{ t: 'barre', l: 1.6, d: 0.18 }] : tenuDe(o, m, r);
       if (o.poulie && ancre) poserObjet(MAT.colonne(C, ancre(1)), V(), null, fixe);
       if (o.smith) fixe = fixe.concat(poseFixe(MAT.smith(C, depart('G', 1).z)));
     }
-    return Object.assign(d, { fixe, vue, tenu }, rythmeDe(o));
+    Object.assign(d, { fixe, vue, tenu }, rythmeDe(o));
+    // À la machine, poitrine contre le coussin : les poignées au bout de bras qui pendent du haut de la machine, devant.
+    if (o.machine && !(o.landmine || o.tbar)) {
+      // (Rowing haut : les coudes partent sur les côtés, un peu en bas et en arrière, du début à la fin — le côté que leur
+      // donnait la famille, presque dans l'axe du bras quand la main passe sous l'épaule, les faisait basculer.)
+      const M = surMachine(c, C, d, { pivot: 'haut', rayon: o.haut ? 0.95 : 0.85, ecart: o.haut ? 0.56 : 0.3, poste: { h: H_SIEGE, poitrine: true }, cotes: m === 'GD' ? ['G', 'D'] : [m],
+        pole: o.haut ? (k => V(k === 'G' ? 1 : -1, -0.25, -0.35)) : null });
+      batiBras(C, d, M, { devant: true, zAvant: -0.25 });
+    }
+    return d;
   };
 
   /* Tirages verticaux à la poulie haute : la barre descend à la poitrine (ou derrière la nuque).
@@ -3123,11 +3647,18 @@
     const d = parLesBras(p, bras(hautP), bras(basP), m);
     // Le buste part un peu en arrière en tirant.
     if (!o.nuque) { d.b.lombaires = -9; d.b.thorax = -5; }
-    const r = { ancre: () => anc, bout: m === 'GD' ? 'barre' : null, lCable: o.large ? 1.15 : o.serre ? 0.3 : 0.8, deElas: () => anc, pivot: s => V(s * 0.3, anc.y, anc.z - 0.5) };
+    const r = { ancre: () => anc, bout: m === 'GD' ? 'barre' : null, lCable: o.large ? 1.15 : o.serre ? 0.3 : 0.8, deElas: () => anc };
     // Assis : le poste de tirage (bâti, potence, assise, boudins) ; sinon une tour de poulie haute devant soi.
-    if (poste) fixe = fixe.concat(poseFixe(o.poulie || o.machine ? MAT.tirageHaut(C, anc, H_SIEGE, 0) : MAT.siege(C, H_SIEGE)));
+    if (poste) fixe = fixe.concat(poseFixe(o.poulie ? MAT.tirageHaut(C, anc, H_SIEGE, 0) : MAT.siege(C, H_SIEGE)));
     else if (o.poulie) fixe = fixe.concat(poseFixe(MAT.colonne(C, anc, V(0, 0, anc.z + 0.3))));
-    return Object.assign(d, { fixe, vue, tenu: tenuDe(o, m, r) });
+    Object.assign(d, { fixe, vue, tenu: tenuDe(o, m, r) });
+    // À la machine : les poignées au bout de bras dont les paliers sont derrière la tête ; les cuisses calées.
+    if (o.machine && poste) {
+      const M = surMachine(c, C, d, { pivot: 'arriere', rayon: 0.85, ecart: 0.33, cotes: m === 'GD' ? ['G', 'D'] : [m] });
+      d.fixe.push(...poseFixe(posteCuisses(c, C, d.cles[0][1], H_SIEGE)));
+      batiBras(C, d, M, { zAvant: 0.45 });
+    }
+    return d;
   };
 
   /* Tractions et suspensions à la barre fixe (ou aux anneaux) : les mains ne bougent pas, le corps monte.
@@ -3184,13 +3715,7 @@
       };
     }
     if (o.elastique) d.objets = (info, u, sortie) => { const pi = info.chevilles.G.clone().add(info.chevilles.D).multiplyScalar(0.5); sortie.push(pret(seg(V(0, H, 0.02), pi, 0.008, C.elastique, 0))); };
-    if (o.machine) {
-      // Machine à tractions assistées : une tour derrière soi, et un bras qui soutient le plateau où posent les genoux.
-      const zT = -0.72;
-      d.fixe = d.fixe.concat(poseFixe(horsCadre(deplacer(bati(C, 2.2, 0), V(0, 0, zT)))));
-      d.objets = (info, u, sortie) => { const g = info.genoux.G.clone().add(info.genoux.D).multiplyScalar(0.5), pl = V(0, g.y - 0.09, g.z - 0.08); sortie.push(pret(coussin(0.46, 0.065, 0.3, pl.x, pl.y, pl.z, C))); sortie.push(pret(tube(V(0, 0.75, zT + 0.05), V(0, pl.y - 0.04, pl.z), 0.05, C.cadre))); };
-      d.levee = (info, u) => 0.5 * (1 - u);
-    }
+    if (o.machine) machineAssistance(c, C, d, { hBarre: H, cote: 1 });   // machine à tractions assistées : genoux sur le plateau
     return d;
   };
 
@@ -3327,18 +3852,20 @@
       // Le bâti : le plateau des pieds, deux rails inclinés sur leurs montants ; le chariot (dossier, épaulières,
       // traverse, disques) glisse le long des rails avec le dos.
       const xR = 0.36, r0 = V(0, 0.16, 0.36), r1 = r0.clone().add(r.clone().multiplyScalar(2.0));
-      fixe = [pret(boite(0.62, 0.035, 0.5, 0, 0.27, 0.56, C.fonte, 0.3, qX(-32), 0.012)), pret(tube(V(0, 0.03, 0.72), V(0, 0.2, 0.62), 0.05, C.cadre))];
+      fixe = [pret(boite(0.62, 0.035, 0.5, 0, 0.27, 0.56, C.fonte, 0.3, qX(-32), 0.012)), pret(profil(C, V(0, 0.03, 0.72), V(0, 0.2, 0.62), AX, 0.075, 0.05))];
       for (const s of [1, -1]) {
-        fixe.push(pret(tube(r0.clone().setX(s * xR), r1.clone().setX(s * xR), 0.055, C.cadre)), Object.assign(pret(tube(V(s * xR, 0.03, r1.z), r1.clone().setX(s * xR), 0.055, C.cadre)), { hors: 1 }));
-        fixe.push(...poseFixe(patin(C, V(s * xR, 0.028, r1.z - 0.1), V(s * xR, 0.028, 0.85), 0.05)));
+        fixe.push(pret(profil(C, r0.clone().setX(s * xR), r1.clone().setX(s * xR), AX, 0.09, 0.06)), Object.assign(pret(profil(C, V(s * xR, 0.03, r1.z), r1.clone().setX(s * xR), AX, 0.09, 0.06)), { hors: 1 }));
+        fixe.push(...poseFixe(patin(C, V(s * xR, 0.028, r1.z - 0.1), V(s * xR, 0.028, 0.85), 0.06)));
       }
-      fixe.push(Object.assign(pret(tube(r1.clone().setX(-xR), r1.clone().setX(xR), 0.055, C.cadre)), { hors: 1 }));
+      fixe.push(Object.assign(pret(profil(C, r1.clone().setX(-xR), r1.clone().setX(xR), AY, 0.09, 0.06)), { hors: 1 }));
       const d = { pose: cle, fixe, vue: { az: 62, el: 10 }, tenu: [] };
       d.objets = (info, u, sortie) => {
         const b = info.bassin, q = qX(-28), dos = V(0, 0.32, -0.15).applyQuaternion(q).add(b);
         sortie.push(pret(coussin(0.4, 0.78, 0.065, dos.x, dos.y, dos.z, C, q)));
         const tr = dos.clone().add(V(0, 0, -0.08).applyQuaternion(q));
-        sortie.push(pret(tube(tr.clone().setX(-xR - 0.04), tr.clone().setX(xR + 0.04), 0.05, C.cadre)));
+        sortie.push(pret(profil(C, tr.clone().setX(-xR - 0.04), tr.clone().setX(xR + 0.04), AY, 0.08, 0.055)));
+        // Les patins du chariot sur les rails.
+        for (const s2 of [1, -1]) sortie.push(pret(ovale(tr.clone().setX(s2 * xR).addScaledVector(r, -0.14), tr.clone().setX(s2 * xR).addScaledVector(r, 0.14), 0.13, 0.11, C.cadre, 0.45, AX)));
         for (const s of [1, -1]) {
           const ep = info.epaules[s > 0 ? 'G' : 'D'], pad = ep.clone().add(V(0, 0.085, 0.01).applyQuaternion(q));
           sortie.push(pret(cyl(0.05, 0.16, pad.x, pad.y, pad.z, C.banc, 0.12, q.clone().multiply(LONG_Z), 0.02)));
@@ -3492,14 +4019,15 @@
         d.pose = u => { const p = cloner(base); p.bassin.rot = qX(lerp(34, -18, u)); p.lombaires = lerp(10, -4, u); const t = c.tronc(p); p.bras = mains(c, t, 'poitrine'); return p; };
         // La machine : l'assise, un repose-pieds, le bâti derrière ; le boudin du haut du dos tient au bout d'un bras
         // qui pivote à hauteur des hanches.
-        const zT = -0.95;
-        fixe.push(...poseFixe(MAT.siege(C, H_SIEGE)), ...poseFixe(horsCadre(deplacer(bati(C, 1.5, 0), V(0, 0, zT)))), pret(tube(V(0, 0.03, zT), V(0, 0.03, 0.3), 0.05, C.cadre)), pret(tube(V(-0.2, 0.12, 0.42), V(0.2, 0.12, 0.42), 0.045, C.cadre)));
-        d.objets = (info, u, sortie) => {
-          const e = info.epaules.G.clone().add(info.epaules.D).multiplyScalar(0.5), q = info.qThorax, pp = e.clone().add(V(0, -0.08, -0.17).applyQuaternion(q));
-          poserObjet(MAT.coussin(C, 0.42, 0.06), pp, null, sortie);
-          for (const s of [1, -1]) { sortie.push(pret(tube(V(s * 0.25, 0.62, -0.12), V(s * 0.25, pp.y, pp.z), 0.04, C.cadre))); sortie.push(pret(cyl(0.045, 0.03, s * 0.25, 0.62, -0.12, C.cadre, 0.5, null, 0.008))); }
-        };
-        d.levee = (info, u) => 0.25 * u;
+        fixe.push(...poseFixe(MAT.siege(C, H_SIEGE)), pret(tube(V(-0.2, 0.12, 0.42), V(0.2, 0.12, 0.42), 0.045, C.cadre)));
+        // Le boudin du haut du dos, au bout d'un bras qui tourne autour de l'axe des hanches (un palier de chaque côté) ;
+        // le boudin est posé contre le dos tel que la pose de départ le place.
+        const dos = info => { const e = info.epaules.G.clone().add(info.epaules.D).multiplyScalar(0.5); return e.add(V(0, -0.08, -0.17).applyQuaternion(info.qThorax)); };
+        d.i0 = c.poser(d.pose(0));
+        const h0 = d.i0.hanches.G.clone().add(d.i0.hanches.D).multiplyScalar(0.5);
+        const bras = brasDeJambe(C, d, ['G'], () => V(0.27, h0.y, h0.z), () => AX, () => { const pp = dos(d.i0), f = [...boudin(C, V(-0.27, pp.y, pp.z), V(0.27, pp.y, pp.z), 0.06)]; for (const s of [1, -1]) f.push(...moyeu(C, V(s * 0.27, h0.y, h0.z), AX), profil(C, V(s * 0.27, h0.y, h0.z), V(s * 0.27, pp.y, pp.z), AX, 0.065, 0.045)); return f; }, info => dos(info));
+        for (const s of [1, -1]) fixe.push(pret(seg(V(s * 0.22, h0.y, h0.z), V(s * 0.4, h0.y, h0.z), 0.02, C.metal, 0.9)), pret(profil(C, V(s * 0.4, h0.y + 0.03, h0.z), V(s * 0.4, 0.03, h0.z - 0.1), AZ, 0.075, 0.05)));
+        fixe.push(...poseFixe(traverse(C, 0.4, -0.4, h0.z - 0.1)), ...poseFixe(placerTour(C, V(0, 0, h0.z - 0.75), null, 1.4)), ...poseFixe(longeron(C, h0.z - 0.55, 0.42)));
         d.vue = { az: 70, el: 10 }; return d;
       }
       // Banc à lombaires incliné : les pieds calés en bas, jambes tendues, le haut des cuisses sur le coussin. Les
@@ -3774,6 +4302,7 @@
       for (const [kk, s] of COTES) {
         if (o.hal) p.bras[kk] = { prise: t.duBassin(V(s * 0.152, 0.0, L.ventre + 0.035)), pole: V(s * 1, -0.3, -0.2), paume: V(-s, 0, 0).applyQuaternion(t.qBassin), dirMain: V(0, -1, 0.25).applyQuaternion(t.qBassin), doigts: 'plat' };   // l'haltère en travers des hanches, une main à plat sur chaque tête
         else if (o.barre || o.smith || o.disque) p.bras[kk] = { prise: t.duBassin(V(s * (o.barre || o.smith ? 0.3 : 0.1), 0.0, L.ventre + 0.035)), pole: V(s * 1, -0.3, -0.2), paume: V(0, -0.3, -1).applyQuaternion(t.qBassin), doigts: 'barre' };
+        else if (o.machine) p.bras[kk] = { prise: t.duBassin(V(s * 0.38, 0.02, L.ventre + 0.055)), pole: V(s * 1, -0.3, -0.2), paume: V(0, -0.3, -1).applyQuaternion(t.qBassin), doigts: 'barre' };   // les mains sur les poignées du bras de la machine, de part et d'autre du coussin
         else if (banc) p.bras[kk] = B(92, 62, 0, 70, 180, { doigts: 'detendu' });
         else p.bras[kk] = B(90, 22, 0, 8, 180, { doigts: 'plat' });
       }
@@ -3785,34 +4314,24 @@
     else if (o.hal) d.tenu = [{ t: 'haltere', m: 'GD', entre: true, k: 1.2 }];
     else if (o.disque) d.tenu = [{ t: 'disque', m: 'GD', r: 0.17, axe: AY }];
     if (o.smith) { const info = c.poser(cle(1)); fixe.push(...poseFixe(MAT.smith(C, info.prises.G.z))); }
-    if (o.machine) d.objets = (info, u, sortie) => { const b = info.bassin.clone().add(V(0, 0.02, L.ventre + 0.05).applyQuaternion(info.qBassin)); sortie.push(pret(cyl(0.05, 0.5, b.x, b.y, b.z, C.banc, 0))); for (const s of [1, -1]) sortie.push(pret(seg(V(s * 0.3, b.y, b.z), V(s * 0.3, 0.1, b.z + 0.5), 0.02, C.cadre, 0.5))); };
+    if (o.machine) {
+      // Le coussin en travers des hanches, au bout de deux bras qui tournent autour de l'axe des genoux (les hanches
+      // décrivent un arc autour d'eux, les tibias restant à peu près droits) ; les paliers en dehors des genoux. Les
+      // mains tiennent les poignées du bras, de part et d'autre du coussin : elles montent avec les hanches.
+      const iA = c.poser(cle(0)), iB = c.poser(cle(1)), g0 = iA.genoux.G.clone().add(iA.genoux.D).multiplyScalar(0.5);
+      const hanches = info => info.bassin.clone().add(V(0, 0.02, L.ventre + 0.055).applyQuaternion(info.qBassin));
+      const g = pivotCercle(g0, AX, [hanches(iA), hanches(c.poser(cle(0.5))), hanches(iB)]);
+      d.i0 = iA;
+      // (Le centre de l'arc des hanches est près des omoplates, posées sur le banc : c'est là que tourne le bras, comme
+      // sur les machines où le dos est calé — ses paliers loin en dehors, au-delà des bras posés sur le banc.)
+      const X = 0.56;
+      brasDeJambe(C, d, ['G'], () => V(X, g.y, g.z), () => AX, () => { const b = hanches(iA), f = [...boudin(C, V(-0.3, b.y, b.z), V(0.3, b.y, b.z), 0.055)]; for (const s of [1, -1]) f.push(...moyeu(C, V(s * X, g.y, g.z), AX), profil(C, V(s * X, g.y, g.z), V(s * X, b.y, b.z), AX, 0.065, 0.045), profil(C, V(s * X, b.y, b.z), V(s * 0.47, b.y, b.z), AY, 0.06, 0.04), ...manchon(C, V(s * 0.47, b.y, b.z), V(s * 0.29, b.y, b.z))); return f; }, info => hanches(info));
+      for (const s of [1, -1]) fixe.push(pret(seg(V(s * (X - 0.03), g.y, g.z), V(s * (X + 0.12), g.y, g.z), 0.02, C.metal, 0.9)), pret(profil(C, V(s * (X + 0.12), g.y + 0.03, g.z), V(s * (X + 0.12), 0.03, g.z - 0.1), AZ, 0.075, 0.05)));
+      fixe.push(...poseFixe(traverse(C, X + 0.12, -X - 0.12, g.z - 0.1)), ...poseFixe(placerTour(C, V(-X - 0.42, 0, g.z - 0.1), qY(90), 1.3)));
+    }
     if (o.elas) d.objets = (info, u, sortie) => sortie.push(pret(seg(info.genoux.G.clone().add(V(0, -0.03, 0)), info.genoux.D.clone().add(V(0, -0.03, 0)), 0.012, C.elastique, 0)));
     return d;
   };
-
-  /* Bras de levier d'une machine de jambes : il pivote dans l'axe des genoux et porte un boudin contre les chevilles
-     (sens = -1 : devant le tibia, pour l'extension ; +1 : derrière, pour le curl). */
-  function levierGenou(C, info, cotes, sens, sortie) {
-    const moy = pts => pts.reduce((a, b) => a.add(b), V()).multiplyScalar(1 / pts.length);
-    const g = moy(cotes.map(k => info.genoux[k])), ch = moy(cotes.map(k => info.chevilles[k])), dj = unite(ch.clone().sub(g));
-    // Le devant du tibia : perpendiculaire à la jambe, du côté des orteils.
-    let dev = perp(info.orteils[cotes[0]].clone().sub(info.chevilles[cotes[0]]).setX(0), dj); if (dev.lengthSq() < 1e-6) dev = perpendiculaire(dj); dev.normalize();
-    const pp = ch.clone().add(dev.clone().multiplyScalar(-sens * 0.09)).add(dj.clone().multiplyScalar(-0.03)), l = cotes.length > 1 ? 0.44 : 0.2;
-    poserObjet(MAT.coussin(C, l, 0.052), pp, null, sortie);
-    for (const s of cotes.length > 1 ? [1, -1] : [cotes[0] === 'G' ? 1 : -1]) {
-      const x = cotes.length > 1 ? s * 0.26 : g.x + s * 0.13, pivot = V(x, g.y, g.z);
-      sortie.push(pret(tube(pivot, V(x, pp.y, pp.z), 0.035, C.cadre)));
-      sortie.push(pret(cyl(0.05, 0.03, x, g.y, g.z, C.cadre, 0.5, null, 0.008)));
-    }
-  }
-  /* Le bâti d'une machine où l'on est assis (extension, curl assis) : la pile de poids derrière le dossier, une poutre
-     au sol, une poignée sous chaque main ; la pile monte avec le mouvement. */
-  function machineAssise(c, C, d, fixe, h, dossier) {
-    const i0 = c.poser(d.a), zP = i0.tete.z - 0.5;
-    fixe.push(...poseFixe(deplacer(bati(C, 1.45, 0), V(0, 0, zP))), pret(tube(V(0, 0.03, zP), V(0, 0.03, 0.2), 0.05, C.cadre)));
-    for (const k of ['G', 'D']) { const pr = i0.prises[k]; fixe.push(...poserObjet(MAT.poignee(C, 0.12), pr, LONG_Z, []), pret(tube(V(pr.x, pr.y, pr.z - 0.07), V(pr.x * 0.6, h - 0.1, pr.z - 0.12), 0.03, C.cadre))); }
-    d.levee = (info, u) => 0.28 * u;
-  }
 
   /* Machines et exercices des cuisses, assis ou couché.
      presse (presse à cuisses à 45° ; horizontale ; verticale ; unejambe ; large, serre ; mollets : presse à mollets) ;
@@ -3831,33 +4350,33 @@
       // Une poignée de chaque côté du siège, dans les mains.
       { const i0 = c.poser(d.pose(0)); for (const [kk, s] of COTES) poigneeEnMain(C, i0, kk, V(s * 0.21, i0.prises[kk].y - 0.09, i0.prises[kk].z), fixe); }
       // Le siège est fixe ; le chariot (plateau, traverse, disques) suit les pieds le long de deux rails.
-      if (!o.verticale) fixe.push(...poseFixe(MAT.banc(C, dossier, 0.3, 0.8, 0.34)));
+      if (!o.verticale) fixe.push(...poseFixe(o.horizontale ? MAT.banc(C, dossier, 0.3, 0.8, 0.34) : posteAssis(C, 0.3, dossier, 0.8, 0.34, 0.42)));
       const plateau = info => info.chevilles.G.clone().setX(0).add(r.clone().multiplyScalar(L.chevilleH + 0.03)).add(e.clone().multiplyScalar(0.06));
       const P0 = plateau(c.poser(d.pose(0))), qPl = arc(AY, r), bas = P0.clone().add(e.clone().multiplyScalar(-0.27));
       const sMin = ang > 5 ? (0.07 - bas.y) / r.y : -0.45, sMax = course + 0.5, xR = 0.39;
       for (const s of [1, -1]) {
         const a = bas.clone().add(r.clone().multiplyScalar(sMin)).setX(s * xR), b = bas.clone().add(r.clone().multiplyScalar(sMax)).setX(s * xR);
-        fixe.push(pret(tube(a, b, 0.055, C.cadre)));
-        if (ang < 80) { fixe.push(pret(tube(V(b.x, 0.03, b.z), b, 0.055, C.cadre))); if (ang <= 5) fixe.push(pret(tube(V(a.x, 0.03, a.z), a, 0.055, C.cadre))); }
+        fixe.push(pret(profil(C, a, b, AX, 0.09, 0.06)));
+        if (ang < 80) { fixe.push(pret(profil(C, V(b.x, 0.03, b.z), b, AX, 0.09, 0.06))); if (ang <= 5) fixe.push(pret(profil(C, V(a.x, 0.03, a.z), a, AX, 0.09, 0.06))); }
         fixe.push(...poseFixe(patin(C, V(s * xR, 0.028, Math.min(a.z, b.z) - 0.08), V(s * xR, 0.028, Math.max(a.z, b.z) + 0.08), 0.05)));
       }
-      { const b = bas.clone().add(r.clone().multiplyScalar(sMax)); fixe.push(Object.assign(pret(tube(V(-xR, b.y, b.z), V(xR, b.y, b.z), 0.055, C.cadre)), { hors: 1 })); }
+      { const b = bas.clone().add(r.clone().multiplyScalar(sMax)); fixe.push(Object.assign(pret(profil(C, V(-xR, b.y, b.z), V(xR, b.y, b.z), AY, 0.09, 0.06)), { hors: 1 })); }
       d.objets = (info, u, sortie) => {
         const m = plateau(info), tr = m.clone().add(e.clone().multiplyScalar(-0.27)).add(r.clone().multiplyScalar(0.035));
         sortie.push(pret(boite(0.62, 0.035, 0.46, m.x, m.y, m.z, C.fonte, 0.3, qPl, 0.012)));
-        sortie.push(pret(tube(tr.clone().setX(-xR - 0.05), tr.clone().setX(xR + 0.05), 0.05, C.cadre)));
-        sortie.push(pret(tube(tr, m.clone().add(r.clone().multiplyScalar(0.03)), 0.04, C.cadre)));
+        sortie.push(pret(profil(C, tr.clone().setX(-xR - 0.05), tr.clone().setX(xR + 0.05), AY, 0.08, 0.055)));
+        sortie.push(pret(profil(C, tr, m.clone().add(r.clone().multiplyScalar(0.03)), AX, 0.07, 0.05)));
+        // Les patins du chariot sur les rails.
+        for (const s2 of [1, -1]) sortie.push(pret(ovale(tr.clone().setX(s2 * xR).addScaledVector(r, -0.12), tr.clone().setX(s2 * xR).addScaledVector(r, 0.12), 0.13, 0.11, C.cadre, 0.45, AX)));
         if (ang === 45) for (const s of [1, -1]) poserObjet(MAT.disque(C, 0.2), tr.clone().setX(s * (xR + 0.11)), null, sortie);
       };
       d.vue = { az: 66, el: 12 }; return d;
     }
     if (o.extension) {
       const base = allonge(c, { h: 0.58, angle: 76, jambes: J(74, 5, 0, 92, 0), lomb: 0, thor: 0, cou: 0 });
-      fixe.push(...poseFixe(MAT.banc(C, 76, 0.58)));
       const cle = u => { const p = cloner(base); for (const k of ['G', 'D']) { p.jambes[k] = J(74, 5, 0, lerp(94, 6, u), -10 * u); p.bras[k] = B(80, 14, 0, 35, 90); } if (o.uni) p.jambes.D = J(74, 5, 0, 92, 0); return p; };
       d.a = cle(0); d.b = cle(1);
-      d.objets = (info, u, sortie) => levierGenou(C, info, o.uni ? ['G'] : ['G', 'D'], -1, sortie);
-      machineAssise(c, C, d, fixe, 0.58, 76);
+      posteJambes(c, C, d, fixe, 0.58, 76, -1, o.uni ? ['G'] : ['G', 'D']);
       return d;
     }
     if (o.curl) {
@@ -3886,11 +4405,9 @@
       }
       if (o.assis) {
         const base = allonge(c, { h: 0.6, angle: 76, jambes: J(74, 5, 0, 12, 0), lomb: 0, thor: 0, cou: 0 });
-        fixe.push(...poseFixe(MAT.banc(C, 76, 0.6)));
         const cle = u => { const p = cloner(base); for (const k of ['G', 'D']) { p.jambes[k] = J(74, 5, 0, lerp(10, 104, u), 0); p.bras[k] = B(80, 14, 0, 35, 90); } if (o.uni) p.jambes.D = J(74, 5, 0, 10, 0); return p; };
         d.a = cle(0); d.b = cle(1);
-        d.objets = (info, u, sortie) => { levierGenou(C, info, o.uni ? ['G'] : ['G', 'D'], 1, sortie); const g = info.genoux.G.clone().add(info.genoux.D).multiplyScalar(0.5); poserObjet(MAT.coussin(C, 0.44, 0.05), V(0, g.y + 0.127, g.z - 0.1), null, sortie); };
-        machineAssise(c, C, d, fixe, 0.6, 76);
+        posteJambes(c, C, d, fixe, 0.6, 76, 1, o.uni ? ['G'] : ['G', 'D'], true);
         return d;
       }
       if (o.debout) {
@@ -3900,8 +4417,24 @@
         d.a = cle(0); d.b = cle(1);
         fixe.push(pret(seg(V(0, 0, 0.4), V(0, 1.15, 0.4), 0.03, C.cadre, 0.5)), pret(cyl(0.015, 0.5, 0, 1.12, 0.38, C.metal, 1)));
         if (o.poulie) { const anc = V(0.09, 0.1, 0.9); d.tenu = [{ t: 'cable', de: anc, vers: info => info.chevilles.G, m: 'G', bout: 'rien' }]; fixe.push(...poseFixe(MAT.colonne(C, anc))); }
-        else if (o.machine) d.objets = (info, u, sortie) => { const ch = info.chevilles.G; sortie.push(pret(cyl(0.045, 0.2, ch.x, ch.y + 0.03, ch.z - 0.09, C.banc, 0))); };
-        d.a.jambes.G = J(10, 3, 0, 6, 0); return d;
+        d.a.jambes.G = J(10, 3, 0, 6, 0);
+        if (o.machine) {
+          // La machine : le coussin devant la cuisse, au-dessus du genou ; le boudin derrière la cheville, au bout d'un
+          // bras qui tourne dans l'axe du genou ; la tour sur le côté de la jambe d'appui.
+          fixe.length = 0;
+          const iA = c.poser(d.a), g = iA.genoux.G, ch = iA.chevilles.G, dj = unite(ch.clone().sub(g)), P = V(g.x + 0.17, g.y, g.z);
+          const rc = info => { const gg = info.genoux.G, c2 = info.chevilles.G, j = unite(c2.clone().sub(gg)), arr = perp(V(0, 0, -1), j).normalize(); return c2.clone().addScaledVector(arr, 0.085).addScaledVector(j, -0.04); };
+          const r0 = rc(iA), bras = brasMobile(P, AX, [...moyeu(C, P, AX), profil(C, P, V(P.x, r0.y, r0.z), AX, 0.065, 0.045), ...boudin(C, V(P.x, r0.y, r0.z), V(r0.x - 0.09, r0.y, r0.z), 0.045)], r0, rc);
+          d.objets = (info, u, sortie) => bras.dessiner(info, u, sortie); d.levee = info => 0.12 * Math.abs(bras.angle(info));
+          const cu = g.clone().addScaledVector(dj, -0.16).add(V(0, 0, 0.11));
+          fixe.push(pret(coussin(0.2, 0.22, 0.07, cu.x, cu.y, cu.z, C)), pret(profil(C, V(cu.x, cu.y, cu.z + 0.05), V(cu.x, 0.03, cu.z + 0.15), AX, 0.07, 0.05)));
+          fixe.push(pret(seg(V(P.x - 0.03, P.y, P.z), V(P.x + 0.1, P.y, P.z), 0.02, C.metal, 0.9)), pret(profil(C, V(P.x + 0.1, P.y + 0.03, P.z), V(P.x + 0.1, 0.03, P.z + 0.1), AZ, 0.075, 0.05)));
+          // L'appui des mains : deux poignées sur une potence, devant la poitrine.
+          for (const [k, s2] of COTES) fixe.push(...poseFixe(manchon(C, V(s2 * 0.1, 1.12, 0.38), V(s2 * 0.24, 1.12, 0.38))));
+          fixe.push(pret(profil(C, V(-0.24, 1.12, 0.4), V(0.24, 1.12, 0.4), AY, 0.05, 0.035)), pret(profil(C, V(0, 1.12, 0.42), V(0, 0.03, 0.45), AX, 0.075, 0.05)));
+          fixe.push(...poseFixe(longeron(C, P.z + 0.1, 0.5)), ...poseFixe(placerTour(C, V(-0.6, 0, 0.1), qY(90), 1.4)), ...poseFixe(traverse(C, -0.4, P.x + 0.1, P.z + 0.1)));
+        }
+        return d;
       }
       // Couché à plat ventre sur le banc : les talons montent vers les fesses.
       const base = aPlatVentre(c, { h: 0.55, angle: 0, d: 0.2, jambes: J(0, 4, 0, 6, 20), cou: -8 });
@@ -3911,12 +4444,19 @@
       if (o.hal) d.objets = (info, u, sortie) => { const m = info.chevilles.G.clone().add(info.chevilles.D).multiplyScalar(0.5), pd = unite(info.orteils.G.clone().sub(info.chevilles.G)); poserObjet(MAT.haltere(C, 1.1), m.clone().add(pd.multiplyScalar(0.1)), qTenu(pd, AX), sortie); };
       else if (o.elas) d.objets = (info, u, sortie) => sortie.push(pret(seg(V(0, 0.3, info.chevilles.G.z - 1.0 + 0 * u), info.chevilles.G.clone().setX(0), 0.008, C.elastique, 0)));
       else {
-        // La machine : le boudin derrière les chevilles sur son bras de levier, deux poignées sous la tête, la pile de poids.
-        d.objets = (info, u, sortie) => levierGenou(C, info, o.uni ? ['G'] : ['G', 'D'], 1, sortie);
-        const i0 = c.poser(d.a), zT = i0.tete.z + 0.75;
-        fixe.push(...poseFixe(deplacer(bati(C, 1.4, 0), V(0, 0, zT), qY(180))), pret(tube(V(0, 0.03, i0.bassin.z), V(0, 0.03, zT), 0.05, C.cadre)));
-        for (const k of ['G', 'D']) { const pr = i0.prises[k]; fixe.push(...poserObjet(MAT.poignee(C, 0.12), pr, LONG_Z, []), pret(tube(V(pr.x, pr.y, pr.z + 0.07), V(pr.x * 0.4, 0.5, pr.z + 0.1), 0.03, C.cadre))); }
-        d.levee = (info, u) => 0.3 * u;
+        // La machine : le bras tourne dans l'axe des genoux, sur le flanc gauche, et porte le boudin derrière les
+        // chevilles ; deux poignées sous la tête ; la tour devant la tête, sa fente vers le côté.
+        const i0 = c.poser(d.a), cotes = o.uni ? ['G'] : ['G', 'D'];
+        const gm = moyenneDe(cotes.map(k => i0.genoux[k])), P = V(0.27, gm.y, gm.z);
+        const rc = info => { const gg = moyenneDe(cotes.map(k => info.genoux[k])), c2 = moyenneDe(cotes.map(k => info.chevilles[k])), j = unite(c2.clone().sub(gg)), haut = perp(AY, j).normalize(); return c2.clone().addScaledVector(haut, 0.085).addScaledVector(j, -0.04); };
+        const r0 = rc(i0), bras = brasMobile(P, AX, [...moyeu(C, P, AX), ...came(C, P.clone().setX(0.335), AX), profil(C, P, V(0.27, r0.y, r0.z), AX, 0.07, 0.045), ...boudin(C, V(0.25, r0.y, r0.z), V(-0.23, r0.y, r0.z))], r0, rc);
+        d.objets = (info, u, sortie) => bras.dessiner(info, u, sortie);
+        d.levee = info => 0.12 * Math.abs(bras.angle(info));
+        const zT = i0.tete.z + 0.62;
+        fixe.push(pret(seg(V(0.22, gm.y, gm.z), V(0.4, gm.y, gm.z), 0.02, C.metal, 0.9)), pret(profil(C, V(0.4, gm.y + 0.03, gm.z), V(0.4, 0.03, gm.z + 0.15), AZ, 0.075, 0.05)));
+        fixe.push(...poseFixe(placerTour(C, V(0, 0, zT), qY(90), 1.4)), ...poseFixe(longeron(C, gm.z + 0.15, zT - 0.2)), ...poseFixe(traverse(C, 0.4, -0.05, gm.z + 0.15)));
+        for (const k of ['G', 'D']) { const pr = i0.prises[k]; fixe.push(...poseFixe(poigneeFixe(C, i0, k, V(pr.x * 0.6, 0.5, pr.z + 0.08)))); }
+        fixe.push(pret(profil(C, V(0, 0.03, i0.bassin.z), V(0, 0.5, i0.bassin.z + 0.1), AX, 0.08, 0.06)));
       }
       return d;
     }
@@ -3960,9 +4500,19 @@
         for (const [k, s] of COTES) p.bras[k] = o.hal ? { prise: V(g.x + s * 0.11, g.y + 0.138 + 0.071, g.z - 0.05), pole: V(s * 1, 0, -0.5), paume: V(0, -1, 0), dirMain: V(-s * 0.25, 0, 1), doigts: 'plat' } : Object.assign({ prise: V((o.uni ? g.x : 0) + s * (o.uni ? 0.12 : 0.16), g.y + tenue.h, g.z - 0.05), pole: V(s * 1, 0, -0.5), paume: V(0, -1, 0), doigts: 'barre' }, { rayon: tenue.r });
         return p;
       };
-      d.pose = cle; fixe.push(...poseFixe(MAT.siege(C, H_SIEGE)), pret(boite(0.46, 0.08, 0.24, 0, 0.04, 0.63, C.fonte, 0.3, null, 0.012)), pret(tube(V(0, 0.03, 0.2), V(0, 0.03, 0.95), 0.05, C.cadre)), pret(tube(V(0, 0.03, 0.95), V(0, 0.62, 0.95), 0.055, C.cadre)));
-      d.objets = (info, u, sortie) => { const g = info.genoux.G.clone().add(o.uni ? info.genoux.G : info.genoux.D).multiplyScalar(0.5); if (o.hal) poserObjet(MAT.haltere(C, 1.2), g.clone().add(V(0, 0.138, -0.05)), null, sortie); else if (o.barre || o.smith) poserObjet(MAT.barre(C, 1.6, 0.18), g.clone().add(V(0, 0.085, -0.05)), null, sortie); else sortie.push(pret(cyl(0.05, 0.42, g.x, g.y + 0.118, g.z - 0.05, C.banc, 0))); };
+      d.pose = cle; fixe.push(...poseFixe(MAT.siege(C, H_SIEGE)), pret(boite(0.46, 0.08, 0.24, 0, 0.04, 0.63, C.fonte, 0.3, null, 0.012)));
+      d.objets = (info, u, sortie) => { const g = info.genoux.G.clone().add(o.uni ? info.genoux.G : info.genoux.D).multiplyScalar(0.5); if (o.hal) poserObjet(MAT.haltere(C, 1.2), g.clone().add(V(0, 0.138, -0.05)), null, sortie); else if (o.barre || o.smith) poserObjet(MAT.barre(C, 1.6, 0.18), g.clone().add(V(0, 0.085, -0.05)), null, sortie); };
       if (o.smith) fixe.push(...poseFixe(MAT.smith(C, 0.37)));
+      if (o.machine) {
+        // La machine : le coussin des genoux au bout d'un bras qui tourne autour d'un axe devant les pieds, à hauteur du
+        // plateau (les genoux montent quand les talons montent) ; les mains tiennent le coussin.
+        const iA = c.poser(cle(0)), iB = c.poser(cle(1)), genou = info => info.genoux.G.clone().add(o.uni ? info.genoux.G : info.genoux.D).multiplyScalar(0.5).add(V(0, 0.122, -0.05));
+        const g0 = genou(iA), P = pivotCercle(V(0.3, 0.18, Math.max(iA.orteils.G.z, iA.orteils.D.z) + 0.12), AX, [g0, genou(c.poser(cle(0.5))), genou(iB)]);
+        d.i0 = iA;
+        brasDeJambe(C, d, ['G'], () => P, () => AX, () => { const f = [...boudin(C, V(-0.3, g0.y, g0.z), V(0.3, g0.y, g0.z), 0.05)]; for (const s of [1, -1]) f.push(...moyeu(C, V(s * 0.3, P.y, P.z), AX), profil(C, V(s * 0.3, P.y, P.z), V(s * 0.3, g0.y, g0.z), AX, 0.065, 0.045)); return f; }, info => genou(info));
+        for (const s of [1, -1]) fixe.push(pret(seg(V(s * 0.27, P.y, P.z), V(s * 0.4, P.y, P.z), 0.02, C.metal, 0.9)), pret(profil(C, V(s * 0.4, P.y + 0.03, P.z), V(s * 0.4, 0.03, P.z), AZ, 0.075, 0.05)));
+        fixe.push(...poseFixe(traverse(C, 0.4, -0.4, P.z)), ...poseFixe(longeron(C, -0.2, P.z)));
+      }
       return d;
     }
     const cle = u => {
@@ -3979,10 +4529,16 @@
     if (o.smith) { const info = c.poser(cle(0)); fixe.push(...poseFixe(MAT.smith(C, info.prises.G.z))); }
     if (o.machine) {
       // Machine à mollets debout : le bâti derrière soi, deux bras jusqu'aux épaulières ; la pile monte avec les talons.
-      const zT = z0 - 0.78;
-      fixe.push(...poseFixe(horsCadre(deplacer(bati(C, 1.95, 0), V(0, 0, zT)))), pret(tube(V(0, 0.03, zT), V(0, 0.03, z0 + 0.1), 0.05, C.cadre)));
-      d.objets = (info, u, sortie) => { for (const k of ['G', 'D']) { const e = info.epaules[k]; poigneeEnMain(C, info, k, V(e.x, e.y + 0.095, e.z + 0.1), sortie); sortie.push(pret(coussin(0.15, 0.065, 0.2, e.x, e.y + 0.095, e.z, C))); sortie.push(pret(tube(V(e.x, e.y + 0.1, e.z - 0.08), V(e.x * 0.9, e.y + 0.02, zT + 0.04), 0.04, C.cadre))); } };
-      d.levee = (info, u) => 0.12 * u;
+      // La machine à mollets debout : les épaulières au bout de deux bras dont les paliers sont loin derrière, à hauteur
+      // d'épaules (elles montent presque droit) ; une marche sous l'avant des pieds ; la tour derrière.
+      const iA = c.poser(cle(0)), ep = k => info => info.epaules[k].clone().add(V(0, 0.095, 0));
+      const e0 = iA.epaules.G.clone().add(iA.epaules.D).multiplyScalar(0.5), zP = e0.z - 0.85, yP = e0.y + 0.095;
+      d.i0 = iA;
+      const bras = brasDeJambe(C, d, ['G', 'D'], k => V(k === 'G' ? 0.3 : -0.3, yP, zP), () => AX, k => { const s = k === 'G' ? 1 : -1, e = ep(k)(iA); return [...moyeu(C, V(s * 0.3, yP, zP), AX), profil(C, V(s * 0.3, yP, zP), V(s * 0.3, e.y + 0.04, e.z - 0.12), AX, 0.065, 0.045), profil(C, V(s * 0.3, e.y + 0.04, e.z - 0.12), V(e.x, e.y + 0.04, e.z - 0.04), AY, 0.055, 0.04), coussin(0.15, 0.065, 0.2, e.x, e.y, e.z, C)]; }, (info, k) => ep(k)(info));
+      const objets = d.objets;
+      d.objets = (info, u, sortie) => { objets(info, u, sortie); for (const k of ['G', 'D']) { const e = info.epaules[k]; poigneeEnMain(C, info, k, V(e.x * 1.2, e.y + 0.1, e.z + 0.02), sortie); } };
+      for (const s of [1, -1]) fixe.push(pret(seg(V(s * 0.27, yP, zP), V(s * 0.4, yP, zP), 0.02, C.metal, 0.9)), pret(profil(C, V(s * 0.4, yP + 0.03, zP), V(s * 0.4, 0.03, zP), AZ, 0.075, 0.05)));
+      fixe.push(...poseFixe(traverse(C, 0.4, -0.4, zP)), ...poseFixe(placerTour(C, V(0, 0, zP - 0.32), null, 1.6)), ...poseFixe(longeron(C, zP - 0.12, z0 + 0.25)), pret(boite(0.5, 0.05, 0.3, 0, 0.025, z0 + 0.06, C.gomme, 0, null, 0.01)));
     }
     return d;
   };
@@ -4046,19 +4602,25 @@
       // À la machine (ou avec une bande aux genoux) : assis, les cuisses s'ouvrent ou se referment.
       const ouvert = 36, ferme = 5;
       const base = allonge(c, { h: 0.5, angle: 76, jambes: J(74, ferme, 0, 88, 0), lomb: 0, thor: 0, cou: 0 });
-      fixe.push(...poseFixe(MAT.banc(C, 76, 0.5)));
+      fixe.push(...poseFixe(o.elas ? MAT.banc(C, 76, 0.5) : posteAssis(C, 0.5, 76, 0.62, 0.32)));
       const cle = k => { const p = cloner(base); p.jambes = pareil(J(74, k, 0, 88, 0)); p.bras = pareil(o.elas ? B(80, 14, 0, 35, 90, { doigts: 'detendu' }) : B(108, 18, 0, 26, 90)); return p; };   // machine : les mains sur les poignées, en arrière des cuisses
       d.a = cle(o.adduction ? ouvert : ferme); d.b = cle(o.adduction ? ferme : ouvert); d.vue = { az: 20, el: 14 };
       // Les coussins suivent les cuisses : à plat contre leur face interne (adducteurs) ou externe (abducteurs), près du genou.
-      d.objets = (info, u, sortie) => {
-        for (const [k, s] of COTES) {
-          if (o.elas) continue;
-          const g = info.genoux[k], t = unite(g.clone().sub(info.hanches[k])), n = perp(V(o.adduction ? -s : s, 0, 0), t).normalize(), ctr = g.clone().addScaledVector(t, -0.09).addScaledVector(n, 0.095);
-          poigneeEnMain(C, info, k, V(s * 0.2, 0.47, info.prises[k].z), sortie);
-          sortie.push(pret(boite(0.05, 0.16, 0.2, ctr.x, ctr.y, ctr.z, C.banc, 0, new Quat().setFromBasis(n, t.clone().cross(n), t))));
-        }
-        if (o.elas) sortie.push(pret(seg(info.genoux.G.clone().add(V(0, 0.05, -0.04)), info.genoux.D.clone().add(V(0, 0.05, -0.04)), 0.012, C.elastique, 0)));
-      };
+      if (o.elas) { d.objets = (info, u, sortie) => sortie.push(pret(seg(info.genoux.G.clone().add(V(0, 0.05, -0.04)), info.genoux.D.clone().add(V(0, 0.05, -0.04)), 0.012, C.elastique, 0))); return d; }
+      // La machine : pour chaque cuisse, un bras qui tourne autour de l'axe de la hanche (à peu près vertical, cuisses à
+      // l'horizontale), son palier sous l'assise ; il passe sous la cuisse et porte, sur un montant, le coussin contre le
+      // dehors (abducteurs) ou le dedans (adducteurs) du genou. Les mains tiennent les poignées de part et d'autre.
+      const iA = c.poser(d.a), iB = c.poser(d.b);
+      const axe = k => { const H = iA.hanches[k], n = unite(iA.genoux[k].clone().sub(H).cross(iB.genoux[k].clone().sub(H))); return n.y < 0 ? n.multiplyScalar(-1) : n; };
+      const palier = k => { const H = iA.hanches[k], n = axe(k), y = H.y - 0.17; return H.clone().addScaledVector(n, (y - H.y) / n.y); };
+      const coussinDe = (info, k) => { const s = k === 'G' ? 1 : -1, g = info.genoux[k], t = unite(g.clone().sub(info.hanches[k])), n = perp(V(o.adduction ? -s : s, 0, 0), t).normalize(); return { ctr: g.clone().addScaledVector(t, -0.09).addScaledVector(n, 0.095), n, t }; };
+      d.i0 = iA;
+      brasDeJambe(C, d, ['G', 'D'], palier, axe, k => {
+        const P = palier(k), { ctr, n, t } = coussinDe(iA, k), pied = V(ctr.x + n.x * 0.04, P.y, ctr.z);
+        return [...moyeu(C, P, axe(k)), profil(C, P, pied, AY, 0.065, 0.045), profil(C, pied, ctr.clone().addScaledVector(n, 0.04), AZ, 0.055, 0.04), boite(0.05, 0.16, 0.2, ctr.x, ctr.y, ctr.z, C.banc, 0.12, new Quat().setFromBasis(n, t.clone().cross(n), t), 0.02)];
+      }, (info, k) => coussinDe(info, k).ctr);
+      for (const [k, s] of COTES) fixe.push(...poseFixe(poigneeFixe(C, iA, k, V(s * 0.2, 0.47, iA.prises[k].z))));
+      { const P = palier('G'); fixe.push(...poseFixe(placerTour(C, V(0, 0, -0.7), null, 1.4)), ...poseFixe(longeron(C, -0.5, P.z + 0.1)), pret(profil(C, V(-0.2, P.y - 0.02, P.z), V(0.2, P.y - 0.02, P.z), AY, 0.08, 0.05)), pret(profil(C, V(0, 0.03, P.z), V(0, P.y - 0.04, P.z), AX, 0.07, 0.05))); }
       return d;
     }
     // Debout, en appui sur une jambe, mains sur un support : l'autre jambe s'écarte, se rapproche ou part en arrière.
@@ -4072,7 +4634,16 @@
     d.vue = o.kickback ? { az: 68, el: 8 } : { az: 15, el: 8 };
     if (o.poulie) { const anc = o.kickback ? V(0.09, 0.1, 1.2) : o.adduction ? V(1.1, 0.1, 0) : V(-1.1, 0.1, 0); d.tenu = [{ t: 'cable', de: anc, vers: info => info.chevilles.G, m: 'G', bout: 'rien' }]; fixe.push(...poseFixe(MAT.colonne(C, anc))); }
     else if (o.elas) d.objets = (info, u, sortie) => sortie.push(pret(seg(info.chevilles.D, info.chevilles.G, 0.008, C.elastique, 0)));
-    else if (o.machine) d.objets = (info, u, sortie) => { const ch = info.chevilles.G; sortie.push(pret(boite(0.2, 0.04, 0.22, ch.x, ch.y - 0.06, ch.z + 0.02, C.cadre, 0.5))); };
+    else if (o.machine) {
+      // La machine à fessiers debout : le boudin derrière le bas de la cuisse, au bout d'un bras qui tourne autour de
+      // l'axe de la hanche, son palier en dehors d'elle ; la tour sur le côté de la jambe d'appui.
+      const iA = c.poser(A), H = iA.hanches.G, P = V(H.x + 0.2, H.y, H.z);
+      const coussinDe = info => { const g = info.genoux.G, t = unite(g.clone().sub(info.hanches.G)), arr = perp(V(0, 0, -1), t).normalize(); return g.clone().addScaledVector(t, -0.1).addScaledVector(arr, 0.105); };
+      d.i0 = iA;
+      brasDeJambe(C, d, ['G'], () => P, () => AX, () => { const pp = coussinDe(iA); return [...moyeu(C, P, AX), profil(C, P, V(P.x, pp.y, pp.z), AX, 0.065, 0.045), ...boudin(C, V(P.x, pp.y, pp.z), V(pp.x - 0.1, pp.y, pp.z), 0.05)]; }, info => coussinDe(info));
+      fixe.push(pret(seg(V(P.x - 0.03, P.y, P.z), V(P.x + 0.12, P.y, P.z), 0.02, C.metal, 0.9)), pret(profil(C, V(P.x + 0.12, 0.03, P.z - 0.1), V(P.x + 0.12, P.y + 0.03, P.z), AZ, 0.075, 0.05)));
+      fixe.push(...poseFixe(placerTour(C, V(-0.62, 0, 0.1), qY(90), 1.4)), ...poseFixe(traverse(C, P.x + 0.12, -0.42, P.z - 0.1)));
+    }
     return d;
   };
 
@@ -4098,7 +4669,11 @@
       const base = assis(c, { h: H_SIEGE, zPieds: 0.36 });
       const cle = u => { const p = cloner(base); p.lombaires = 34 * u; p.thorax = 22 * u; p.cou = 10 * u; p.bras = pareil(B(20, 120, 20, 120, 90)); return p; };
       d.a = cle(0); d.b = cle(1); fixe.push(...poseFixe(MAT.siege(C, H_SIEGE, 0.55, 4))); d.vue = { az: 66, el: 10 };
-      d.tenu = [{ t: 'levier', de: () => V(0.2, 1.75, -0.15), m: 'G' }, { t: 'levier', de: () => V(-0.2, 1.75, -0.15), m: 'D' }]; return d;
+      // La machine : les mains tiennent les poignées au bout de deux bras dont les paliers sont de part et d'autre de la
+      // taille ; quand le buste s'enroule, les bras tournent avec lui.
+      const M = surMachine(c, C, d, { cotes: ['G', 'D'], garder: true, n: 10, pivot: V(0, -0.6, -1), rayon: 0.62, ecart: 0.43 });
+      batiPoteaux(C, d, M, { zAvant: 0.3 });
+      return d;
     }
     if (o.poulie || o.elas) {
       // La corde tenue de part et d'autre de la tête : le buste s'enroule, les hanches ne bougent presque pas.
@@ -4620,7 +5195,11 @@
       const cle = u => { const q = cloner(p); for (const [k, s] of COTES) q.bras[k] = { prise: V(s * 0.31, lerp(t.epaules.G.y - 0.27, t.epaules.G.y - 0.56, u), t.epaules.G.z + 0.03), pole: V(s * 0.3, 0.2, -1), paume: V(-s, 0, 0), doigts: 'barre' }; return q; };
       d.a = cle(0); d.b = cle(1);
       fixe.push(...poseFixe(MAT.siege(C, H_SIEGE, 0.6, 6)));
-      d.tenu = [{ t: 'levier', de: V(0.31, 0.5, -0.5), m: 'G' }, { t: 'levier', de: V(-0.31, 0.5, -0.5), m: 'D' }];
+      // Les poignées au bout de deux bras dont les paliers sont derrière le dossier, à mi-course : elles descendent le
+      // long d'un arc à peine courbé.
+      d.fixe = fixe; d.tenu = [];
+      const M = surMachine(c, C, d, { pivot: 'arriere', rayon: 0.8, ecart: 0.33, garder: true, cotes: ['G', 'D'], n: 6 });
+      batiPoteaux(C, d, M, { zAvant: 0.3 });
       d.vue = { az: 55, el: 10 }; return d;
     }
     // Barres parallèles, anneaux, barre droite, barre dans le dos.
@@ -4645,8 +5224,8 @@
     d.a = cle(0); d.b = cle(1);
     if (o.anneaux) d.tenu = [{ t: 'sangle', de: V(ecart, 2.9, 0), m: 'G', bout: 'anneau' }, { t: 'sangle', de: V(-ecart, 2.9, 0), m: 'D', bout: 'anneau' }];
     else if (o.barre || o.coreen) fixe.push(...poseFixe(MAT.barreFixe(C, h, 1.3)));
-    else fixe.push(...poseFixe(MAT.paralleles(C, h, ecart, 0.75)));
-    if (o.machine) d.objets = (info, u, sortie) => { const g = info.genoux.G.clone().add(info.genoux.D).multiplyScalar(0.5); sortie.push(pret(boite(0.42, 0.05, 0.26, 0, g.y - 0.085, g.z - 0.12, C.banc, 0)), pret(seg(V(0, g.y - 0.1, g.z - 0.12), V(0, 0.25, -0.5), 0.022, C.cadre, 0.5)), pret(boite(0.5, 0.04, 0.5, 0, 0.02, -0.45, C.cadre, 0.5))); };
+    else if (!o.machine) fixe.push(...poseFixe(MAT.paralleles(C, h, ecart, 0.75)));
+    if (o.machine) { d.fixe = fixe; machineAssistance(c, C, d, { h, ecart, cote: -1 }); }
     if (o.leste) d.objets = (info, u, sortie) => { const b = info.bassin.clone().add(V(0, -0.34, 0.1).applyQuaternion(info.qBassin)); sortie.push(pret(seg(info.bassin.clone().add(V(0, -0.02, 0.1).applyQuaternion(info.qBassin)), b, 0.006, C.cable, 0.6))); poserObjet([cyl(0.17, 0.04, 0, 0, 0, C.fonte, 0)], b, null, sortie); };
     if (o.barre) d.vue = { az: 60, el: 8 }; else if (o.coreen) d.vue = { az: 120, el: 8 };
     return d;
@@ -4781,7 +5360,15 @@
     // Rotation debout ou assise, les mains devant soi ou la barre sur les épaules.
     const machine = !!o.machine, base = o.assis || machine ? assis(c, { h: machine ? H_SIEGE : H_BANC, ecart: 0.14 }) : o.genoux ? aGenoux(c, {}) : debout(c, { ecart: 0.19, ouv: 12, dy: -0.02 });
     if (o.assis && !machine) fixe.push(...bancAssis(C));
-    if (machine) fixe.push(...poseFixe(MAT.siege(C, H_SIEGE, 0, 0)));
+    if (machine) {
+      // La machine : le siège, et, au-dessus de la tête, le palier d'un bras qui tourne autour de l'axe de la colonne
+      // vertébrale ; il descend devant la poitrine jusqu'à la barre où sont les mains, et tourne avec le buste.
+      fixe.push(...poseFixe(MAT.siege(C, H_SIEGE, 0, 0)));
+      const t0 = c.tronc(base), P = V(0, t0.epaules.G.y + 0.42, t0.epaules.G.z - 0.02), zC = P.z - 0.42;
+      fixe.push(pret(profil(C, V(0, 0.03, zC), V(0, P.y + 0.09, zC), AX, 0.1, 0.07)), pret(profil(C, V(0, P.y + 0.06, zC), V(0, P.y + 0.06, P.z), AY, 0.09, 0.06)));
+      fixe.push(...poseFixe(placerTour(C, V(0, 0, zC - 0.35), null, 1.5)), ...poseFixe(longeron(C, zC - 0.15, 0.3)));
+      d.machineRotation = { P, t0 };
+    }
     const amp = machine ? 46 : o.barre ? 50 : 44;
     const poser = (p, tw) => {
       p.torsion = tw; p.couRot = -tw * 0.3;
@@ -4801,6 +5388,15 @@
     }
     d.rythme = 'continu'; d.periode = o.barre ? 3 : 2.6;
     d.pose = ph => poser(cloner(base), amp * Math.sin(ph * 2 * Math.PI));
+    if (machine) {
+      const { P } = d.machineRotation, i0 = c.poser(d.pose(0)), M = i0.prises.G.clone().add(i0.prises.D).multiplyScalar(0.5);
+      const avant = V(0, P.y, M.z + 0.02), f = [...moyeu(C, P, AY, 0.06, 0.1), profil(C, P, avant, AY, 0.07, 0.048), profil(C, avant, M.clone().add(V(0, 0.03, 0.04)), AX, 0.065, 0.045)];
+      f.push(...manchon(C, i0.prises.G.clone().add(V(0.05, 0, 0)), i0.prises.D.clone().add(V(-0.05, 0, 0))));
+      const bras = brasMobile(P, AY, f, M, info => info.prises.G.clone().add(info.prises.D).multiplyScalar(0.5));
+      d.objets = (info, u, sortie) => bras.dessiner(info, u, sortie);
+      d.levee = info => 0.15 * Math.abs(bras.angle(info));
+      delete d.machineRotation;
+    }
     if (o.barre) d.tenu = [{ t: 'barre', l: 1.6, d: 0 }]; else d.tenu = charge();
     if (machine) d.objets = (info, u, sortie) => {
       // Le bras de la machine tourne avec le buste : deux poignées reliées, au bout d'un bras qui vient de l'axe (derrière
@@ -4858,8 +5454,9 @@
     const cle = u => { const q = cloner(p); for (const [k] of COTES) q.bras[k] = (m === 'GD' || m === k) ? bras(u) : (o.debout || o.dos || o.couche ? brasRepos() : B(-4, 36, 0, 92, 150, { doigts: 'detendu' })); return q; };
     d.a = cle(0); d.b = cle(1); d.periode = 2.2;
     const anc = V(0, 0.12, 0.95);
-    d.tenu = o.barre ? [{ t: 'barre', l: 1.2, d: 0.11 }] : o.ez ? [{ t: 'barre', l: 1.1, d: 0.09 }] : o.poulie ? [{ t: 'cable', de: anc, m: 'GD', bout: 'barre', l: 0.5 }] : o.machine ? (m === 'GD' ? ['G', 'D'] : [m]).map(k => ({ t: 'levier', de: V(k === 'G' ? 0.2 : -0.2, 0.5, 0.75), m: k })) : [{ t: 'haltere', m, k: tourne ? 0.8 : 1 }];
+    d.tenu = o.barre ? [{ t: 'barre', l: 1.2, d: 0.11 }] : o.ez ? [{ t: 'barre', l: 1.1, d: 0.09 }] : o.poulie ? [{ t: 'cable', de: anc, m: 'GD', bout: 'barre', l: 0.5 }] : o.machine ? [] : [{ t: 'haltere', m, k: tourne ? 0.8 : 1 }];
     if (o.poulie) fixe.push(...poseFixe(MAT.colonne(C, anc)));
+    if (o.machine) { d.fixe = fixe; machineCoudes(c, C, d, m === 'GD' ? ['G', 'D'] : [m], 'poignets'); }
     return d;
   };
   /* ---------- Cardio et déplacements ----------

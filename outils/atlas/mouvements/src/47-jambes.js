@@ -99,18 +99,20 @@
       // Le bâti : le plateau des pieds, deux rails inclinés sur leurs montants ; le chariot (dossier, épaulières,
       // traverse, disques) glisse le long des rails avec le dos.
       const xR = 0.36, r0 = V(0, 0.16, 0.36), r1 = r0.clone().add(r.clone().multiplyScalar(2.0));
-      fixe = [pret(boite(0.62, 0.035, 0.5, 0, 0.27, 0.56, C.fonte, 0.3, qX(-32), 0.012)), pret(tube(V(0, 0.03, 0.72), V(0, 0.2, 0.62), 0.05, C.cadre))];
+      fixe = [pret(boite(0.62, 0.035, 0.5, 0, 0.27, 0.56, C.fonte, 0.3, qX(-32), 0.012)), pret(profil(C, V(0, 0.03, 0.72), V(0, 0.2, 0.62), AX, 0.075, 0.05))];
       for (const s of [1, -1]) {
-        fixe.push(pret(tube(r0.clone().setX(s * xR), r1.clone().setX(s * xR), 0.055, C.cadre)), Object.assign(pret(tube(V(s * xR, 0.03, r1.z), r1.clone().setX(s * xR), 0.055, C.cadre)), { hors: 1 }));
-        fixe.push(...poseFixe(patin(C, V(s * xR, 0.028, r1.z - 0.1), V(s * xR, 0.028, 0.85), 0.05)));
+        fixe.push(pret(profil(C, r0.clone().setX(s * xR), r1.clone().setX(s * xR), AX, 0.09, 0.06)), Object.assign(pret(profil(C, V(s * xR, 0.03, r1.z), r1.clone().setX(s * xR), AX, 0.09, 0.06)), { hors: 1 }));
+        fixe.push(...poseFixe(patin(C, V(s * xR, 0.028, r1.z - 0.1), V(s * xR, 0.028, 0.85), 0.06)));
       }
-      fixe.push(Object.assign(pret(tube(r1.clone().setX(-xR), r1.clone().setX(xR), 0.055, C.cadre)), { hors: 1 }));
+      fixe.push(Object.assign(pret(profil(C, r1.clone().setX(-xR), r1.clone().setX(xR), AY, 0.09, 0.06)), { hors: 1 }));
       const d = { pose: cle, fixe, vue: { az: 62, el: 10 }, tenu: [] };
       d.objets = (info, u, sortie) => {
         const b = info.bassin, q = qX(-28), dos = V(0, 0.32, -0.15).applyQuaternion(q).add(b);
         sortie.push(pret(coussin(0.4, 0.78, 0.065, dos.x, dos.y, dos.z, C, q)));
         const tr = dos.clone().add(V(0, 0, -0.08).applyQuaternion(q));
-        sortie.push(pret(tube(tr.clone().setX(-xR - 0.04), tr.clone().setX(xR + 0.04), 0.05, C.cadre)));
+        sortie.push(pret(profil(C, tr.clone().setX(-xR - 0.04), tr.clone().setX(xR + 0.04), AY, 0.08, 0.055)));
+        // Les patins du chariot sur les rails.
+        for (const s2 of [1, -1]) sortie.push(pret(ovale(tr.clone().setX(s2 * xR).addScaledVector(r, -0.14), tr.clone().setX(s2 * xR).addScaledVector(r, 0.14), 0.13, 0.11, C.cadre, 0.45, AX)));
         for (const s of [1, -1]) {
           const ep = info.epaules[s > 0 ? 'G' : 'D'], pad = ep.clone().add(V(0, 0.085, 0.01).applyQuaternion(q));
           sortie.push(pret(cyl(0.05, 0.16, pad.x, pad.y, pad.z, C.banc, 0.12, q.clone().multiply(LONG_Z), 0.02)));

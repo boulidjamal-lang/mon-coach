@@ -151,12 +151,21 @@
       d.objets = (info, u, sortie) => { const G = info.prises.G, D = info.prises.D; barre(uni ? info.prises[m].clone() : G.clone().add(D).multiplyScalar(0.5), G, D, sortie); };
       tenu = [];
     } else {
-      const r = { ancre: s => ancre(s), bout: o.poulie && m === 'GD' ? (o.corde ? 'corde' : 'barre') : null, lCable: o.large ? 1.0 : 0.6, deElas: s => ancre(s), pivot: s => ancre(s).add(V(0, 0.3, 0)), disques: o.pendlay ? 0.225 : 0.2 };
+      const r = { ancre: s => ancre(s), bout: o.poulie && m === 'GD' ? (o.corde ? 'corde' : 'barre') : null, lCable: o.large ? 1.0 : 0.6, deElas: s => ancre(s), disques: o.pendlay ? 0.225 : 0.2 };
       tenu = o.smith ? [{ t: 'barre', l: 1.6, d: 0.18 }] : tenuDe(o, m, r);
       if (o.poulie && ancre) poserObjet(MAT.colonne(C, ancre(1)), V(), null, fixe);
       if (o.smith) fixe = fixe.concat(poseFixe(MAT.smith(C, depart('G', 1).z)));
     }
-    return Object.assign(d, { fixe, vue, tenu }, rythmeDe(o));
+    Object.assign(d, { fixe, vue, tenu }, rythmeDe(o));
+    // À la machine, poitrine contre le coussin : les poignées au bout de bras qui pendent du haut de la machine, devant.
+    if (o.machine && !(o.landmine || o.tbar)) {
+      // (Rowing haut : les coudes partent sur les côtés, un peu en bas et en arrière, du début à la fin — le côté que leur
+      // donnait la famille, presque dans l'axe du bras quand la main passe sous l'épaule, les faisait basculer.)
+      const M = surMachine(c, C, d, { pivot: 'haut', rayon: o.haut ? 0.95 : 0.85, ecart: o.haut ? 0.56 : 0.3, poste: { h: H_SIEGE, poitrine: true }, cotes: m === 'GD' ? ['G', 'D'] : [m],
+        pole: o.haut ? (k => V(k === 'G' ? 1 : -1, -0.25, -0.35)) : null });
+      batiBras(C, d, M, { devant: true, zAvant: -0.25 });
+    }
+    return d;
   };
 
   /* Tirages verticaux à la poulie haute : la barre descend à la poitrine (ou derrière la nuque).
@@ -193,11 +202,18 @@
     const d = parLesBras(p, bras(hautP), bras(basP), m);
     // Le buste part un peu en arrière en tirant.
     if (!o.nuque) { d.b.lombaires = -9; d.b.thorax = -5; }
-    const r = { ancre: () => anc, bout: m === 'GD' ? 'barre' : null, lCable: o.large ? 1.15 : o.serre ? 0.3 : 0.8, deElas: () => anc, pivot: s => V(s * 0.3, anc.y, anc.z - 0.5) };
+    const r = { ancre: () => anc, bout: m === 'GD' ? 'barre' : null, lCable: o.large ? 1.15 : o.serre ? 0.3 : 0.8, deElas: () => anc };
     // Assis : le poste de tirage (bâti, potence, assise, boudins) ; sinon une tour de poulie haute devant soi.
-    if (poste) fixe = fixe.concat(poseFixe(o.poulie || o.machine ? MAT.tirageHaut(C, anc, H_SIEGE, 0) : MAT.siege(C, H_SIEGE)));
+    if (poste) fixe = fixe.concat(poseFixe(o.poulie ? MAT.tirageHaut(C, anc, H_SIEGE, 0) : MAT.siege(C, H_SIEGE)));
     else if (o.poulie) fixe = fixe.concat(poseFixe(MAT.colonne(C, anc, V(0, 0, anc.z + 0.3))));
-    return Object.assign(d, { fixe, vue, tenu: tenuDe(o, m, r) });
+    Object.assign(d, { fixe, vue, tenu: tenuDe(o, m, r) });
+    // À la machine : les poignées au bout de bras dont les paliers sont derrière la tête ; les cuisses calées.
+    if (o.machine && poste) {
+      const M = surMachine(c, C, d, { pivot: 'arriere', rayon: 0.85, ecart: 0.33, cotes: m === 'GD' ? ['G', 'D'] : [m] });
+      d.fixe.push(...poseFixe(posteCuisses(c, C, d.cles[0][1], H_SIEGE)));
+      batiBras(C, d, M, { zAvant: 0.45 });
+    }
+    return d;
   };
 
   /* Tractions et suspensions à la barre fixe (ou aux anneaux) : les mains ne bougent pas, le corps monte.
@@ -254,13 +270,7 @@
       };
     }
     if (o.elastique) d.objets = (info, u, sortie) => { const pi = info.chevilles.G.clone().add(info.chevilles.D).multiplyScalar(0.5); sortie.push(pret(seg(V(0, H, 0.02), pi, 0.008, C.elastique, 0))); };
-    if (o.machine) {
-      // Machine à tractions assistées : une tour derrière soi, et un bras qui soutient le plateau où posent les genoux.
-      const zT = -0.72;
-      d.fixe = d.fixe.concat(poseFixe(horsCadre(deplacer(bati(C, 2.2, 0), V(0, 0, zT)))));
-      d.objets = (info, u, sortie) => { const g = info.genoux.G.clone().add(info.genoux.D).multiplyScalar(0.5), pl = V(0, g.y - 0.09, g.z - 0.08); sortie.push(pret(coussin(0.46, 0.065, 0.3, pl.x, pl.y, pl.z, C))); sortie.push(pret(tube(V(0, 0.75, zT + 0.05), V(0, pl.y - 0.04, pl.z), 0.05, C.cadre))); };
-      d.levee = (info, u) => 0.5 * (1 - u);
-    }
+    if (o.machine) machineAssistance(c, C, d, { hBarre: H, cote: 1 });   // machine à tractions assistées : genoux sur le plateau
     return d;
   };
 

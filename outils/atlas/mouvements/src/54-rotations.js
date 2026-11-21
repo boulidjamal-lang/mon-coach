@@ -128,7 +128,15 @@
     // Rotation debout ou assise, les mains devant soi ou la barre sur les épaules.
     const machine = !!o.machine, base = o.assis || machine ? assis(c, { h: machine ? H_SIEGE : H_BANC, ecart: 0.14 }) : o.genoux ? aGenoux(c, {}) : debout(c, { ecart: 0.19, ouv: 12, dy: -0.02 });
     if (o.assis && !machine) fixe.push(...bancAssis(C));
-    if (machine) fixe.push(...poseFixe(MAT.siege(C, H_SIEGE, 0, 0)));
+    if (machine) {
+      // La machine : le siège, et, au-dessus de la tête, le palier d'un bras qui tourne autour de l'axe de la colonne
+      // vertébrale ; il descend devant la poitrine jusqu'à la barre où sont les mains, et tourne avec le buste.
+      fixe.push(...poseFixe(MAT.siege(C, H_SIEGE, 0, 0)));
+      const t0 = c.tronc(base), P = V(0, t0.epaules.G.y + 0.42, t0.epaules.G.z - 0.02), zC = P.z - 0.42;
+      fixe.push(pret(profil(C, V(0, 0.03, zC), V(0, P.y + 0.09, zC), AX, 0.1, 0.07)), pret(profil(C, V(0, P.y + 0.06, zC), V(0, P.y + 0.06, P.z), AY, 0.09, 0.06)));
+      fixe.push(...poseFixe(placerTour(C, V(0, 0, zC - 0.35), null, 1.5)), ...poseFixe(longeron(C, zC - 0.15, 0.3)));
+      d.machineRotation = { P, t0 };
+    }
     const amp = machine ? 46 : o.barre ? 50 : 44;
     const poser = (p, tw) => {
       p.torsion = tw; p.couRot = -tw * 0.3;
@@ -148,6 +156,15 @@
     }
     d.rythme = 'continu'; d.periode = o.barre ? 3 : 2.6;
     d.pose = ph => poser(cloner(base), amp * Math.sin(ph * 2 * Math.PI));
+    if (machine) {
+      const { P } = d.machineRotation, i0 = c.poser(d.pose(0)), M = i0.prises.G.clone().add(i0.prises.D).multiplyScalar(0.5);
+      const avant = V(0, P.y, M.z + 0.02), f = [...moyeu(C, P, AY, 0.06, 0.1), profil(C, P, avant, AY, 0.07, 0.048), profil(C, avant, M.clone().add(V(0, 0.03, 0.04)), AX, 0.065, 0.045)];
+      f.push(...manchon(C, i0.prises.G.clone().add(V(0.05, 0, 0)), i0.prises.D.clone().add(V(-0.05, 0, 0))));
+      const bras = brasMobile(P, AY, f, M, info => info.prises.G.clone().add(info.prises.D).multiplyScalar(0.5));
+      d.objets = (info, u, sortie) => bras.dessiner(info, u, sortie);
+      d.levee = info => 0.15 * Math.abs(bras.angle(info));
+      delete d.machineRotation;
+    }
     if (o.barre) d.tenu = [{ t: 'barre', l: 1.6, d: 0 }]; else d.tenu = charge();
     if (machine) d.objets = (info, u, sortie) => {
       // Le bras de la machine tourne avec le buste : deux poignées reliées, au bout d'un bras qui vient de l'axe (derrière

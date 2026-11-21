@@ -27,7 +27,7 @@
         // Butterfly inversé : assis face au dossier, bras tendus devant qui s'ouvrent.
         p = assis(c, { h: H_SIEGE, zPieds: 0.3 }); const t = c.tronc(p);
         fixe = poseFixe(MAT.siege(C, H_SIEGE)).concat([pret(boite(0.3, 0.5, 0.06, 0, t.epaules.G.y - 0.2, t.epaules.G.z + 0.19, C.banc, 0))]);
-        a = B(8, 86, -80, 12, 90); b = B(104, 88, 10, 12, 90); r.pivot = () => V(0, t.epaules.G.y + 0.35, t.epaules.G.z + 0.3); vue = { az: 150, el: 12 };
+        a = B(8, 86, -80, 12, 90); b = B(104, 88, 10, 12, 90); vue = { az: 150, el: 12 };
       } else {
         if (o.tabouret) o.penche = 62; else if (o.ventre == null && !o.penche && !o.cote) o.penche = 76;
         pose(); const pen = P.sorte === 'ventre' ? (o.ventre === true ? 45 : o.ventre) : (o.penche === true ? 76 : o.penche || 76);
@@ -51,7 +51,7 @@
       pose();
       const base = o.kelso ? B(4, 40, 0, 5, 90) : o.dos ? B(0, -15, 0, 6, 0) : o.barre ? B(0, 8, -25, 6, 180) : o.trapbar ? B(90, 11, 0, 6, 90) : B(90, 5, 0, 6, 90);
       a = Object.assign({}, base, o.kelso ? { avance: 10 } : {}); b = Object.assign({}, base, o.kelso ? { avance: -14, hausse: 8 } : { hausse: 26 });
-      ancre = s => V(s * 0.28, 0.05, 0.02); if (o.machine) r.pivot = s => V(s * 0.3, 0.3, -0.5);
+      ancre = s => V(s * 0.28, 0.05, 0.02);
     } else if (o.facepull) {
       // Tirage visage : la corde vient vers le front, coudes hauts, mains de part et d'autre de la tête.
       if (o.sol) { pose(); a = B(6, 92, -10, 8, 180); b = B(86, 88, 78, 104, 150); ancre = V(0, 1.2, -1.2); }
@@ -89,13 +89,14 @@
         p = surLeCote(c, { cote: 'D' }); fixe = []; vue = { az: 0, el: 20 };
         a = B(90, 4, 0, 10, 90); b = B(90, 92, 0, 10, 90); autre = B(0, 150, 0, 60, 90, { doigts: 'detendu' });
       } else {
+        if (o.machine) o.assis = true;                                    // à la machine : assis, le dos au dossier
         pose({ roulis: 0 });
         const haut = o.lu ? 172 : 86;
         a = B(88, 9, 0, 12, 90); b = B(86, haut, 0, o.poliquin ? 14 : 14, o.lu ? 150 : 90);
         if (o.poliquin) a = B(60, 20, 30, 95, 90);                        // montée coudes pliés, descente bras tendus
         if (o.latfront) { plus.cles = true; }
         ancre = s => V(-s * 0.75, 0.1, 0.05);
-        if (o.machine) { a = B(88, 12, 0, 85, 90); b = B(88, 84, 0, 85, 90); r.pivot = s => V(s * 0.2, 1.36, -0.25); }
+        if (o.machine) { a = B(88, 12, 0, 85, 90, { doigts: 'detendu' }); b = B(88, 84, 0, 85, 90, { doigts: 'detendu' }); }   // les coudes poussent les boudins, les mains restent ouvertes
         if (P.sorte === 'ventre') { const ang = o.ventre === true ? 45 : o.ventre; a = B(20, ang * 0.9, 0, 12, 90); b = B(84, 86, 0, 14, 90); }
         if (o.penchecote) { p.bassin.rot = qZ(-14 * (m === 'D' ? -1 : 1)); p.bassin.pos.x += 0.1 * (m === 'D' ? 1 : -1); autre = B(90, 70, 0, 20, 90); }
       }
@@ -107,6 +108,15 @@
     if (o.disque) { const i0 = c.poser(parLesBras(p, a, b, m, autre).b); r.rDisque = borne(i0.prises.G.distanceTo(i0.prises.D) / 2 + 0.012, 0.13, 0.21); }
     const d = Object.assign(parLesBras(p, a, b, m, autre), { fixe: colonneSi(o, C, ancres, fixe || []), vue, tenu: tenuDe(o, m, r) }, rythmeDe(o));
     if (plus.rythme) d.rythme = plus.rythme;
+    if (o.machine && o.arriere) machineEcarte(c, C, d, { face: true, cotes: m === 'GD' ? ['G', 'D'] : [m] });
+    else if (o.machine && !o.shrug && !o.front && !o.menton) machineDeltoides(c, C, d, m === 'GD' ? ['G', 'D'] : [m]);
+    else if (o.machine && o.shrug) {
+      // Haussements à la machine : les poignées de part et d'autre des cuisses, au bout de deux bras dont les paliers
+      // sont loin devant, à hauteur des mains — elles montent presque droit.
+      const M = surMachine(c, C, d, { pivot: 'avant', rayon: 0.95, ecart: 0.3, cotes: ['G', 'D'], n: 6 });
+      batiPoteaux(C, d, M, { zTour: Math.max(...Object.values(M.arcs).map(a => a.P.z)) + 0.4, zAvant: -0.1 });
+      d.fixe.push(pret(boite(0.7, 0.04, 0.6, 0, 0.02, 0.05, C.gomme, 0, null, 0.01)));
+    }
     if (o.smith) { const info = c.poser(d.a); d.tenu = [{ t: 'barre', l: 1.6, d: 0.18 }]; d.fixe = d.fixe.concat(poseFixe(MAT.smith(C, (info.prises.G.z + info.prises.D.z) / 2))); }
     if (o.trapbar) { d.tenu = []; d.objets = barreHexagonale(C); }
     if (o.landmine) {
