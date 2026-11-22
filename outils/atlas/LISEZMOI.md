@@ -563,6 +563,30 @@ muscles qui travaillent en rose, même peau, même matériel). Trois fichiers pa
   qu'il avait (sa photo, ou la silhouette de son groupe). En séance, toucher la miniature ouvre l'atlas sur le
   mouvement de l'exercice.
 
+## Les vidéos d'exercice rendues dans Blender (prototype : curl aux haltères)
+
+Le même corps et le même moteur de mouvement que l'atlas, mais en pleine résolution (les 178 muscles de Z-Anatomy
+sans allègement, 394 177 sommets) et rendus par Cycles : écorché monochrome, muscles qui travaillent en rouge (les
+principaux plus soutenus), relief des fibres, éclairage de studio, ombres au sol, fond sombre, haltères modélisés.
+Trois étapes, dans `video/` :
+
+1. `SOURCES=<dossier de muscles.bin, squelette.bin, regions.bin> node --max-old-space-size=8000 video/exporter.mjs
+   "curl hal" 70 curl.bin` : reprend chaque sommet du modèle complet sur l'atlas préparé (attaches, part « par la
+   corde », carrure), soude la peau des mains, et pose le mouvement image par image au tempo d'une vraie répétition
+   (pause en bas, montée 1 s, contraction en haut, descente freinée 1,1 s ; 70 images à 25 par seconde, la boucle se
+   referme sur la première).
+2. `python video/scene.py curl.bin images 0-69 1080 48` (Python avec le module `bpy` de Blender 5) : construit la
+   scène, déforme chaque pièce comme le moteur de l'appli (quaternions duaux), gonfle le biceps et le brachial à la
+   contraction, place les haltères sur la poignée du moteur et rend chaque image sur fond transparent.
+3. `bash video/assembler.sh images curl-halteres` : pose les images sur le fond et écrit la boucle en H.264 et en HEVC.
+
+Mesuré ici (4 cœurs, sans carte graphique) : 85 s par image en 1080 × 1080, soit 1 h 40 pour la boucle ; la boucle
+pèse 324 ko en H.264 et 178 ko en HEVC. Les scripts ne savent rendre que des haltères pour l'instant : le reste du
+matériel et le choix des muscles en rouge par exercice viendront si cette qualité est retenue.
+
+Licence : Z-Anatomy est sous CC BY-SA 4.0. Les vidéos qui en sont tirées sont des adaptations : elles portent la
+mention « Z-Anatomy, CC BY-SA 4.0 » et restent sous cette licence.
+
 Ce que le mouvement ne montre pas : les
 déplacements (fentes marchées, marches latérales) se font sur place ; les mouvements à plusieurs temps (relevé
 turc, haltérophilie) passent par quelques poses clés ; les muscles s'étirent et se raccourcissent avec les os mais
