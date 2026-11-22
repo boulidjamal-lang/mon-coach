@@ -1,8 +1,9 @@
 # Vidéo d'un exercice, étape 2 : le corps anatomique de l'atlas en pleine résolution, posé image par image comme
 # le moteur de l'appli le pose (quaternions duaux, part « par la corde »), rendu par Cycles en studio.
 # python scene.py <export.bin> <dossier de sortie> <images : "35" ou "0-69" ou "0,17,35"> [résolution] [échantillons]
-# (Python avec le module bpy de Blender 5.) Réglages : EXPO (exposition), CAM="x,y,z,cible x,y,z,focale" (repère Blender).
-import bpy, sys, os, json, struct, math
+# (Python avec le module bpy de Blender 5.) Réglages : EXPO (exposition), CAM="x,y,z,cible x,y,z,focale" (repère Blender),
+# EXCLURE=<expression régulière> : pièces à laisser de côté (sur leur nom d'origine), pour un contrôle.
+import bpy, sys, os, json, struct, math, re
 import numpy as np
 from mathutils import Matrix, Vector, Quaternion
 
@@ -34,7 +35,7 @@ def app_vers_blender(P):  # (x, y, z) de l'appli -> (x, -z, y) de Blender
 # ---------- Les pièces, rangées par matière ----------
 groupes = {'chair': [], 'rouge1': [], 'rouge2': [], 'os': [], 'peau': []}
 for p in H['pieces']:
-    if p['type'] == 'aponevrose':
+    if p['type'] == 'aponevrose' or (os.environ.get('EXCLURE') and re.search(os.environ['EXCLURE'], p['source'], re.I)):
         continue
     g = 'peau' if p['type'] == 'peau' else 'os' if p['type'] == 'os' else 'rouge1' if p['nom'] in PRINCIPAUX else 'rouge2' if p['nom'] in SECONDAIRES else 'chair'
     groupes[g].append(p)

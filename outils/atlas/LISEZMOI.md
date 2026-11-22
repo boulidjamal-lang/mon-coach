@@ -587,6 +587,28 @@ matériel et le choix des muscles en rouge par exercice viendront si cette quali
 Licence : Z-Anatomy est sous CC BY-SA 4.0. Les vidéos qui en sont tirées sont des adaptations : elles portent la
 mention « Z-Anatomy, CC BY-SA 4.0 » et restent sous cette licence.
 
+### Avec l'écorché de Charleeh (BodyParts3D et Z-Anatomy)
+
+`video/exporter-ecorche.mjs` écrit la même sortie à partir de l'écorché publié sur <https://github.com/Charleeh/ecorche>
+(`model/ecorche.glb` : 634 pièces nommées, os et muscles d'un homme adulte, BodyParts3D complété par Z-Anatomy), qui
+n'a ni squelette ni poses (`video/glb.mjs` lit le fichier) :
+
+`SOURCES=<dossier de squelette.bin et regions.bin> node --max-old-space-size=8000 video/exporter-ecorche.mjs ecorche.glb "curl hal" 70 ecorche.bin`
+
+- Calage sur le squelette de l'atlas : une similitude d'ensemble pose les os de l'écorché sur ceux de Z-Anatomy
+  (échelle 0,998, 32 mm de décalage d'avant en arrière, 2,6 mm d'écart moyen), puis chaque articulation reçoit le
+  déplacement rigide qui pose ses propres os sur ceux de Z-Anatomy (1 à 3,5 mm d'écart moyen selon l'articulation).
+- Chaque muscle reprend les attaches des muscles de l'atlas qu'il recouvre (la correspondance est écrite à côté de la
+  sortie, `-muscles.txt`) et sa forme suit les déplacements de ses articulations : il garde la sienne, posée sur nos
+  os. Les os suivent une seule articulation. La droite est le miroir de la gauche, comme dans l'écorché et l'atlas.
+- La peau des mains vient de Z-Anatomy, comme pour l'autre modèle. L'oblique interne et le droit de l'abdomen ne sont
+  pas dessinés : entièrement recouverts par la gaine de l'oblique externe, ils la traversent par endroits (taches
+  sombres sur le ventre).
+- Pas de carrure : l'écorché garde ses proportions. Les muscles qui travaillent sont désignés par leur nom anglais
+  dans l'écorché (`ROLES`).
+- Licence : CC BY-SA 4.0. Mention : « Écorché (github.com/Charleeh/ecorche), CC BY-SA 4.0. Based on BodyParts3D,
+  © The Database Center for Life Science, CC BY 4.0, and Z-Anatomy by Gauthier Kervyn, CC BY-SA 4.0. »
+
 Ce que le mouvement ne montre pas : les
 déplacements (fentes marchées, marches latérales) se font sur place ; les mouvements à plusieurs temps (relevé
 turc, haltérophilie) passent par quelques poses clés ; les muscles s'étirent et se raccourcissent avec les os mais
