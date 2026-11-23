@@ -51,9 +51,10 @@ uniform vec3 u_cam;
 uniform float u_cote, u_passe, u_corde;
 uniform int u_nbAppuis;
 uniform int u_attaches;           // le numéro de la première attache (0 : le modèle n'en a pas)
+uniform vec3 u_attache;           // l'attache au repos, côté gauche : l'axe de son glissement (x, z), la hauteur de l'insertion
 uniform vec4 u_appuis[24];        // les appuis (6 au plus), quatre lignes chacun : voir appuis()
 uniform sampler2D u_etats;
-uniform highp sampler2D u_os;      // la pose : lignes 2 et 3, un déplacement rigide par articulation (côté gauche, côté droit) ; pour une attache, un troisième texel : l'axe de son glissement et son évasement
+uniform highp sampler2D u_os;      // la pose : lignes 2 et 3, un déplacement rigide par articulation (côté gauche, côté droit) ; pour une attache, un troisième texel : le déport de son insertion (x, z) et son évasement
 uniform uvec4 u_doigts;           // les os des doigts (un bit par articulation)
 uniform float u_mainsCouvertes;   // 1 : la peau couvre les mains
 out vec3 v_pos, v_nor;
@@ -116,13 +117,19 @@ void main() {
   // Les attaches (grand dorsal) : le muscle glisse autour du tronc vers son insertion. Quand elle monte avec le bras, il
   // monte sur un tronc qui s'élargit vers l'aisselle : il s'écarte donc de l'axe de son glissement, d'autant que le
   // sommet monte lui-même (sa part d'attache) — et plus du tout au bout du tendon, qui reste sur l'os.
+  // Quand l'insertion s'éloigne elle-même de l'axe (bras écarté du corps : son déport, e.xy), l'attache emmène le muscle
+  // d'autant. Seul son haut doit la suivre — là où il quitte les côtes pour l'aisselle et couvre l'omoplate qui pivote
+  // avec le bras (le grand rond) : en entier jusqu'à 6 cm sous l'insertion, plus du tout à 14 cm. Plus bas, l'arrière
+  // et le côté du muscle restent contre les côtes : ils s'en écartaient de 2 à 4 cm, et le dos gonflait en ailes sous
+  // les bras. Son bord avant, posé sur le dentelé antérieur qui pivote avec l'omoplate, suit toujours (sinon le
+  // dentelé passait à travers).
   if (u_attaches > 0) for (int k = 0; k < 4; k++) {
     if (a_poids[k] > 0.0 && int(a_os[k]) >= u_attaches) {
       vec4 e = texelFetch(u_os, ivec2(int(a_os[k]) * 3 + 2, 2 + cote), 0);
-      if (e.z > 0.0) {
+      if (e.z > 0.0 || e.x != 0.0 || e.y != 0.0) {
         float wa = a_poids[k] / wTout;
-        vec2 rv = p0.xz - e.xy;
-        vec3 dv = vec3(rv.x, 0.0, rv.y) * (e.z * wa * min(1.0, 2.0 * (1.0 - wa)) / max(length(rv), 1e-4));
+        vec2 rv = p0.xz - vec2(cote == 1 ? -u_attache.x : u_attache.x, u_attache.y);
+        vec3 dv = vec3(rv.x, 0.0, rv.y) * (e.z * wa * min(1.0, 2.0 * (1.0 - wa)) / max(length(rv), 1e-4)) - vec3(e.x, 0.0, e.y) * (wa * smoothstep(0.06, 0.14, u_attache.z - p0.y) * (1.0 - smoothstep(0.0, 0.5, rv.y / max(length(rv), 1e-4))));
         p += dv + 2.0 * cross(qr.xyz, cross(qr.xyz, dv) + qr.w * dv);
       }
     }
@@ -176,6 +183,7 @@ uniform mat4 u_vp;
 uniform float u_cote, u_corde;
 uniform vec3 u_bande;                     // le raccord : distance au bord où le film suit pleinement les muscles, puis celles où il commence et finit de devenir translucide
 uniform int u_attaches, u_nbAppuis, u_nbTenus;
+uniform vec3 u_attache;
 uniform vec4 u_appuis[24];
 uniform highp sampler2D u_os;
 uniform vec4 u_tenuC[2], u_tenuA[2];   // ce que serrent les mains : centre et rayon, axe et demi-longueur
@@ -232,10 +240,10 @@ void main() {
     if (u_attaches > 0) for (int k = 0; k < 4; k++) {
       if (a_poidsM[k] > 0.0 && int(a_osM[k]) >= u_attaches) {
         vec4 e = texelFetch(u_os, ivec2(int(a_osM[k]) * 3 + 2, 2 + cote), 0);
-        if (e.z > 0.0) {
+        if (e.z > 0.0 || e.x != 0.0 || e.y != 0.0) {
           float wa = a_poidsM[k] / wM;
-          vec2 rv = pm.xz - e.xy;
-          vec3 dv = vec3(rv.x, 0.0, rv.y) * (e.z * wa * min(1.0, 2.0 * (1.0 - wa)) / max(length(rv), 1e-4));
+          vec2 rv = pm.xz - vec2(cote == 1 ? -u_attache.x : u_attache.x, u_attache.y);
+          vec3 dv = vec3(rv.x, 0.0, rv.y) * (e.z * wa * min(1.0, 2.0 * (1.0 - wa)) / max(length(rv), 1e-4)) - vec3(e.x, 0.0, e.y) * (wa * smoothstep(0.06, 0.14, u_attache.z - pm.y) * (1.0 - smoothstep(0.0, 0.5, rv.y / max(length(rv), 1e-4))));
           q += dv + 2.0 * cross(qr.xyz, cross(qr.xyz, dv) + qr.w * dv);
         }
       }
@@ -355,7 +363,13 @@ void main() {
     // derrière le film.
     float z = texelFetch(u_fond, px, 0).r;
     float ecart = 2.0 * u_plans.x * u_plans.y / (u_plans.x + u_plans.y - (2.0 * z - 1.0) * (u_plans.y - u_plans.x)) - v_prof;
-    float sous = v_film * smoothstep(-0.024, -0.010, ecart) * (1.0 - smoothstep(0.014, 0.034, ecart));
+    // Un film très étiré est un voile tendu d'un membre à l'autre, par-dessus un creux (l'aisselle quand le bras s'écarte :
+    // du bras au flanc) : une vraie peau s'y coucherait sur les muscles. Il laisse donc voir les muscles même loin derrière
+    // lui (jusqu'à 12 cm), au lieu de faire une membrane grise qui cache le haut du grand dorsal. L'étirement : la surface
+    // posée du film rapportée à la sienne au repos, en ce point.
+    float etire = length(cross(dFdx(v_pos), dFdy(v_pos))) / max(length(cross(dFdx(v_repos), dFdy(v_repos))), 1e-14);
+    float voile = smoothstep(2.0, 4.5, etire);
+    float sous = v_film * smoothstep(-0.024, -0.010, ecart) * (1.0 - smoothstep(0.014 + 0.10 * voile, 0.034 + 0.10 * voile, ecart));
     // L'image des muscles, lue en quatre points autour de celui-ci : la peau diffuse un peu ce qu'elle recouvre (et
     // l'image, dessinée sans lissage des bords, n'a plus de crénelage).
     vec2 uv = gl_FragCoord.xy * u_point, e = 0.75 * u_point;
@@ -1294,7 +1308,7 @@ void main() {
     const NX = INTER.length, NT = Math.max(NJ + 2 * NX, NQ);
     // Rangées 2 et 3 : pour les muscles et les os, le même déplacement écrit en quaternion dual (deux texels par
     // articulation : la rotation, puis le glissement), côté gauche puis côté droit (celui de l'articulation jumelle).
-    const pose = new Float32Array(NT * 3 * 4 * 4), quats = new Float32Array(NQ * 8), matsQ = new Float32Array(NQ * 12), evases = new Float32Array(NQ);
+    const pose = new Float32Array(NT * 3 * 4 * 4), quats = new Float32Array(NQ * 8), matsQ = new Float32Array(NQ * 12), evases = new Float32Array(NQ), deports = new Float32Array(NQ * 2);
     let poseSale = true;
     const ID12 = [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0], tmp12 = new Float32Array(12);
     function intermediaire(mats, de, vers, part, c, retrait) {
@@ -1330,7 +1344,7 @@ void main() {
        par rapport à un os éloigné (le bras levé, vu du thorax). */
     function ecrireQuaternions(mats) {
       const q = quats;
-      evases.fill(0);
+      evases.fill(0); deports.fill(0);
       if (mats) {
         // Les attaches : l'orientation de l'articulation d'origine, déplacée comme le point d'insertion sur l'os visé.
         const m = matsQ; for (let k = 0; k < NJ * 12; k++) m[k] = mats[k];
@@ -1344,6 +1358,10 @@ void main() {
           const da = Math.atan2(l[0] - xA, l[2] - zA) - Math.atan2(c[0] - xA, c[2] - zA), an = da > Math.PI ? da - 2 * Math.PI : da < -Math.PI ? da + 2 * Math.PI : da, co = Math.cos(an), si = Math.sin(an);
           // L'évasement : l'écart à l'axe que prend le muscle quand l'insertion monte (voir reponderer et le programme des sommets).
           evases[i] = (a.virtuel.evase || 0) * Math.max(0, l[1] - c[1]);
+          // Le déport : de combien l'insertion s'est éloignée de l'axe (bras écarté du corps), dans sa direction, à l'horizontale
+          // (repère de l'origine) ; seul le haut du muscle le suit (voir le programme des sommets).
+          const rI = Math.hypot(l[0] - xA, l[2] - zA), kD = rI > 1e-6 ? 1 - Math.hypot(c[0] - xA, c[2] - zA) / rI : 0;
+          deports[i * 2] = (l[0] - xA) * kD; deports[i * 2 + 1] = (l[2] - zA) * kD;
           // La rotation de l'attache : celle de l'origine, puis ce tour autour de l'axe vertical ; elle emmène c sur w.
           for (let r = 0; r < 3; r++) {
             const r0 = m[A + r * 4], r1 = m[A + r * 4 + 1], r2 = m[A + r * 4 + 2];
@@ -1374,8 +1392,8 @@ void main() {
       for (let i = 0; i < NQ; i++) {
         const j = SQ.length ? SQ[i].jumeau : i;
         for (let k = 0; k < 8; k++) { pose[G + i * 12 + k] = q[i * 8 + k]; pose[D + i * 12 + k] = q[j * 8 + k]; }
-        // Troisième texel, pour une attache : l'axe de son glissement (x, z) et son évasement du moment.
-        if (i >= NJ) { const a = SQ[i].virtuel.axe, b = SQ[j].virtuel.axe; pose[G + i * 12 + 8] = a[0]; pose[G + i * 12 + 9] = a[1]; pose[G + i * 12 + 10] = evases[i]; pose[D + i * 12 + 8] = b[0]; pose[D + i * 12 + 9] = b[1]; pose[D + i * 12 + 10] = evases[j]; }
+        // Troisième texel, pour une attache : le déport de son insertion (x, z) et son évasement du moment.
+        if (i >= NJ) { pose[G + i * 12 + 8] = deports[i * 2]; pose[G + i * 12 + 9] = deports[i * 2 + 1]; pose[G + i * 12 + 10] = evases[i]; pose[D + i * 12 + 8] = deports[j * 2]; pose[D + i * 12 + 9] = deports[j * 2 + 1]; pose[D + i * 12 + 10] = evases[j]; }
       }
     }
     function ecrirePose(mats) {
@@ -1602,7 +1620,7 @@ void main() {
       gl.uniform3fv(pr.u.u_min, E.boite.min); gl.uniform3fv(pr.u.u_etendue, E.boite.etendue);
       gl.uniform3fv(pr.u.u_cam, m.oeil);
       gl.uniform1f(pr.u.u_corde, 1);
-      gl.uniform1i(pr.u.u_attaches, NQ > NJ ? NJ : 0);
+      gl.uniform1i(pr.u.u_attaches, NQ > NJ ? NJ : 0); gl.uniform3f(pr.u.u_attache, NQ > NJ ? SQ[NJ].virtuel.axe[0] : 0, NQ > NJ ? SQ[NJ].virtuel.axe[1] : 0, NQ > NJ ? SQ[NJ].centre[1] : 0);
       gl.uniform1i(pr.u.u_nbAppuis, nbAppuis); if (nbAppuis) gl.uniform4fv(pr.u.u_appuis, appuisU);
       gl.uniform4ui(pr.u.u_doigts, BITS_DOIGTS[0], BITS_DOIGTS[1], BITS_DOIGTS[2], BITS_DOIGTS[3]); gl.uniform1f(pr.u.u_mainsCouvertes, PE && niveauPeau > 0 ? 1 : 0);
       if (reperage) return;
@@ -1649,7 +1667,7 @@ void main() {
       gl.uniform1f(pr.u.u_clair, opt.clair ? 1 : 0); gl.uniform1f(pr.u.u_chair, Math.max(0, Math.min(1, +opt.chair)));
       if (H.oeil) gl.uniform4f(pr.u.u_oeil, H.oeil.centre[0], H.oeil.centre[1], H.oeil.centre[2], H.oeil.rayon);
       gl.uniform3fv(pr.u.u_teint, couleur(opt.teint).map(x => lin(x / 255))); gl.uniform3fv(pr.u.u_poil, couleur(opt.poil).map(x => lin(x / 255)));
-      gl.uniform1f(pr.u.u_corde, 1); gl.uniform1i(pr.u.u_attaches, NQ > NJ ? NJ : 0);
+      gl.uniform1f(pr.u.u_corde, 1); gl.uniform1i(pr.u.u_attaches, NQ > NJ ? NJ : 0); gl.uniform3f(pr.u.u_attache, NQ > NJ ? SQ[NJ].virtuel.axe[0] : 0, NQ > NJ ? SQ[NJ].virtuel.axe[1] : 0, NQ > NJ ? SQ[NJ].centre[1] : 0);
       // Le raccord (voir SOMMETS_PEAU) : le film suit pleinement les muscles à partir de la bande écrite dans le fichier ;
       // il commence à laisser voir les muscles un peu après le bord, et pleinement une bande et demie plus loin.
       gl.uniform3f(pr.u.u_bande, H.corps.bande, 0.4 * H.corps.bande, 1.5 * H.corps.bande);

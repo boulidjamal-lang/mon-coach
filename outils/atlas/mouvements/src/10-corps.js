@@ -95,7 +95,7 @@
       // Les attaches (ajoutées par le moteur : voir reponderer) : orientation de l'articulation d'origine (de), placées
       // comme le point d'insertion (leur centre) emmené par l'os visé (vers). Elles suivent, elles ne se posent pas.
       this.virtuel = squelette.map(a => a.virtuel || null);
-      this.evase = new Float32Array(nb); this.aEvase = false;
+      this.evase = new Float32Array(nb); this.deport = new Float32Array(nb * 2); this.aEvase = false;
       this.tete = squelette.map(a => V(a.centre[0], a.centre[1], a.centre[2]));
       this.decal = squelette.map((a, k) => (a.parent >= 0 ? this.tete[k].clone().sub(this.tete[a.parent]) : this.tete[k].clone()));
       this.ql = Array.from({ length: nb }, () => new Quat());   // rotation par rapport au parent
@@ -201,7 +201,12 @@
           let an = Math.atan2(l.x - xA, l.z - zA) - Math.atan2(c.x - xA, c.z - zA); if (an > Math.PI) an -= 2 * Math.PI; else if (an < -Math.PI) an += 2 * Math.PI;
           qw[b].copy(qw[vi.de]).multiply(qAxe(AY, an));
           // L'évasement : l'écart à l'axe que prend le muscle quand l'insertion monte (voir le moteur).
-          this.evase[b] = (vi.evase || 0) * Math.max(0, l.y - c.y); if (this.evase[b] > 1e-5) this.aEvase = true;
+          this.evase[b] = (vi.evase || 0) * Math.max(0, l.y - c.y);
+          // Le déport : de combien l'insertion s'est éloignée de l'axe (bras écarté), dans sa direction, à l'horizontale ;
+          // seul le haut du muscle le suit (voir peauPosee).
+          const rI = Math.hypot(l.x - xA, l.z - zA), kD = rI > 1e-6 ? 1 - Math.hypot(c.x - xA, c.z - zA) / rI : 0;
+          this.deport[b * 2] = (l.x - xA) * kD; this.deport[b * 2 + 1] = (l.z - zA) * kD;
+          if (this.evase[b] > 1e-5 || Math.abs(this.deport[b * 2]) + Math.abs(this.deport[b * 2 + 1]) > 1e-5) this.aEvase = true;
           continue;
         }
         if (p < 0) { qw[b].copy(ql[b]); pw[b].copy(this.posRacine); continue; }
@@ -299,11 +304,14 @@
           }
           px += (cx / wt - px) * c; py += (cy / wt - py) * c; pz += (cz / wt - pz) * c;
         }
-        // Les attaches : l'évasement du muscle qui monte avec le bras (voir le programme des sommets du moteur).
+        // Les attaches : l'évasement du muscle qui monte avec le bras, et le déport de l'insertion que seul le haut du
+        // muscle suit — en entier jusqu'à 6 cm sous l'insertion, plus du tout à 14 cm, sauf le bord avant, posé sur le
+        // dentelé (voir le programme des sommets du moteur).
         if (this.aEvase) for (let k = 0; k < 4; k++) {
           const w = pe.W[v * 4 + k]; if (!w) continue;
-          const j = cote ? S[pe.J[v * 4 + k]].jumeau : pe.J[v * 4 + k], e = this.evase[j]; if (!(e > 0)) continue;
-          const a = this.virtuel[j].axe, ex = X - a[0], ez = Z - a[1], g = e * w * Math.min(1, 2 * (1 - w)) / Math.max(Math.hypot(ex, ez), 1e-4), vx = ex * g, vz = ez * g;
+          const j = cote ? S[pe.J[v * 4 + k]].jumeau : pe.J[v * 4 + k]; if (!this.virtuel[j]) continue;
+          const e = this.evase[j], a = this.virtuel[j].axe, ex = X - a[0], ez = Z - a[1], g = e * w * Math.min(1, 2 * (1 - w)) / Math.max(Math.hypot(ex, ez), 1e-4);
+          const sd = w * lisse((this.tete[j].y - Y - 0.06) / 0.08) * (1 - lisse(ez / Math.max(Math.hypot(ex, ez), 1e-4) / 0.5)), vx = ex * g - this.deport[j * 2] * sd, vz = ez * g - this.deport[j * 2 + 1] * sd;
           // (vx, 0, vz) tourné par la rotation mélangée du sommet.
           const tx = -rz * 0 + rw * vx + ry * vz, ty = rz * vx - rx * vz, tz = rx * 0 - ry * vx + rw * vz;
           px += vx + 2 * (ry * tz - rz * ty); py += 2 * (rz * tx - rx * tz); pz += vz + 2 * (rx * ty - ry * tx);
