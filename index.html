@@ -6149,15 +6149,18 @@ function pourcent(v, max) {
   return Math.max(0, Math.min(100, (v / max) * 100));
 }
 
-/* « +36 kcal · séance ce soir » sous « Il te reste » : la séance prévue
-   aujourd'hui est déjà dans l'objectif (voir prochainesSeances). */
+/* « dont 36 kcal · séance ce soir » sous « Il te reste » : la séance prévue
+   aujourd'hui est déjà dans l'objectif (voir prochainesSeances). « dont »
+   plutôt que « + » : le chiffre est compris dans l'objectif, pas à ajouter.
+   Trop longue pour la colonne, elle passe sur deux lignes, coupée au « · »
+   seulement (deux blocs insécables), plutôt que d'être tronquée. */
 const ICONE_HALTERE = '<svg class="icone-ui" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17.596 12.768a2 2 0 1 0 2.829-2.829l-1.768-1.767a2 2 0 0 0 2.828-2.829l-2.828-2.828a2 2 0 0 0-2.829 2.828l-1.767-1.768a2 2 0 1 0-2.829 2.829z" /><path d="m2.5 21.5 1.4-1.4" /><path d="m20.1 3.9 1.4-1.4" /><path d="M5.343 21.485a2 2 0 1 0 2.829-2.828l1.767 1.768a2 2 0 1 0 2.829-2.829l-6.364-6.364a2 2 0 1 0-2.829 2.829l1.768 1.767a2 2 0 0 0-2.828 2.829z" /><path d="m9.6 14.4 4.8-4.8" /></svg>';
 function majSeancePrevueHeros(t) {
   const el = document.getElementById('seance-prevue-heros');
   if (!el) return;
   const s = t && t.seancePrevue && t.prevueObjectif > 0 ? t.seancePrevue : null;
   el.classList.toggle('hidden', !s);
-  el.innerHTML = s ? `${ICONE_HALTERE}<span><b>+${Math.round(t.prevueObjectif).toLocaleString('fr-FR')}\u00a0kcal</b> · séance ${escapeHtml(momentSeance(s))}</span>` : '';
+  el.innerHTML = s ? `${ICONE_HALTERE}<span><span class="seance-heros-bloc">dont <b>${Math.round(t.prevueObjectif).toLocaleString('fr-FR')}\u00a0kcal</b> ·</span> <span class="seance-heros-bloc">séance ${escapeHtml(momentSeance(s))}</span></span>` : '';
   const sem = document.getElementById('semaine-heros');
   if (sem) {
     sem.classList.toggle('hidden', !(t && t.reprise > 0));

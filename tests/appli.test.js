@@ -2784,7 +2784,7 @@ test('Séances prévues : la séance du soir comptée dès le matin, remplacée 
   assert.equal(mer.prevue.kcal, formule);
   assert.ok(mer.prevue.kcal > 0);
   assert.equal(mer.target, mer.sans + mer.prevueObjectif, 'l\'objectif monte de la séance prévue');
-  assert.match(mer.heros, /^\+\d+\skcal · séance ce soir$/);
+  assert.match(mer.heros, /^dont\s\d+\skcal · séance\sce\ssoir$/, 'compris dans l\'objectif : « dont », pas « + »');
   assert.match(constat(mer, 'seance'), new RegExp(`^Ce soir, ta séance ${mer.prevue.nom} \\(.+\\)\\s:\\s\\+${mer.prevueObjectif}\\skcal déjà dans ton objectif\\.`));
   assert.equal(constat(mer, 'seance-pas-faite'), '', 'le matin, pas de rappel');
 
