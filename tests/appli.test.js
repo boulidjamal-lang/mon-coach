@@ -4960,6 +4960,81 @@ test('Progrès : résumé en une phrase, projection, maintenance réelle, consta
   assert.match(await page.textContent('.pg-heros p'), /Fixe un poids visé/);
 }));
 
+test("Progrès rangé : les pas dans Cardio (courbe dessinée sans passer par Repas), plus de « Prévision vs réalité », le Résumé ne répète pas le poids, grille muscu repliée, titres d'une seule taille sur iPhone", () => avecAppli({ natif: true }, async ({ page }) => {
+  const r = await page.evaluate(async () => {
+    const t = todayStr(), attendre = ms => new Promise(fin => setTimeout(fin, ms));
+    for (let k = 0; k <= 20; k++) {
+      const d = shiftDate(t, -k), j = getDay(d);
+      j.weight = Math.round((80 + k * 0.05) * 100) / 100;
+      j.steps = 6000 + k * 100;
+      j.meals[MEALS[0]].push({ name: 'Riz', grams: 300, kcal: 2000, p: 120, c: 250, f: 60 });
+      saveData(d);
+    }
+    // Deux grands muscles et deux petits travaillés.
+    const exo = g => toutesLesExercices().find(e => e.groupe === g);
+    const seance = (id, date) => ({ id, programmeNom: 'Tout', date, debut: Date.now(), fin: Date.now(), dureeMin: 50, maj: Date.now(),
+      exercices: ['pectoraux', 'dos', 'mollets', 'abdos'].map(g => ({ exerciceId: exo(g).id, nom: exo(g).nom, series: [1, 2, 3].map(() => ({ poids: 20, reps: 10, fait: true })) })) });
+    musculationHistorique.push(seance('s1', shiftDate(t, -9)), seance('s2', shiftDate(t, -3)));
+    sauvegarderHistorique();
+    buildMasterArrays();
+    choisirPeriodeStats('30');
+    ouvrirProgres();
+    await attendre(300);
+    const res = {};
+    res.puces = [...document.querySelectorAll('.pg-heros-puces > div span')].map(x => x.textContent);
+    res.tuilePoids = document.querySelector('#pg-resume .pg-tuile--lien').textContent.replace(/\s+/g, ' ');
+    // Cardio tout de suite, sans passer par Repas (qui dessinait la courbe des pas).
+    choisirOngletStats('activite');
+    await attendre(300);
+    res.pas = { tete: document.getElementById('pg-pas-tete').textContent.replace(/\s+/g, ' '),
+      onglet: stepsChartInstance ? stepsChartInstance.canvas.closest('.stats-tab').dataset.tab : null,
+      jours: stepsChartInstance ? stepsChartInstance.data.datasets[0].data.filter(v => v > 0).length : 0, largeur: stepsChartInstance ? stepsChartInstance.width : 0 };
+    choisirOngletStats('poids');
+    await attendre(300);
+    const corps = document.querySelector('#ecran-stats .stats-tab[data-tab="poids"]');
+    res.corps = { pas: !!corps.querySelector('#stepsChart, #pg-pas-tete'), prevision: /Prévision vs réalité/.test(corps.textContent), tuiles: corps.querySelectorAll('#grille-cles .cle').length };
+    choisirOngletStats('muscu');
+    await attendre(300);
+    const lignes = () => [...document.querySelectorAll('#pg-grille-muscu .zones-grille-ligne:not(.zones-grille-tete) [role="rowheader"]')].map(x => x.textContent);
+    const bouton = () => document.querySelector('#pg-grille-muscu .zones-grille-plus');
+    res.grille = { avant: lignes(), bouton: bouton().textContent, encours: document.querySelector('#pg-grille-muscu .zones-grille-encours').textContent,
+      lundi: String(dateLocale(lundiDeLaSemaine(t)).getDate()) };
+    bouton().click();
+    Object.assign(res.grille, { apres: lignes(), bouton2: bouton().textContent, ouvert: bouton().getAttribute('aria-expanded') });
+    // Titres de section : une seule taille, d'un onglet à l'autre (hors volets repliés de Muscu).
+    res.titres = {};
+    for (const o of ONGLETS_STATS) {
+      choisirOngletStats(o);
+      await attendre(60);
+      const tab = document.querySelector(`#ecran-stats .stats-tab[data-tab="${o}"]`);
+      res.titres[o] = [...new Set([...tab.querySelectorAll('.pg-h, .titre-section')].filter(h => !h.closest('.pg-repli') && h.offsetParent).map(h => getComputedStyle(h).fontSize))];
+    }
+    res.ios = document.documentElement.classList.contains('app-ios');
+    return res;
+  });
+  // Résumé : la variation du poids est dans la tuile Poids, plus en double dans la grande carte.
+  assert.deepEqual(r.puces, ['force (1RM est.)', 'jours dans la cible']);
+  assert.match(r.tuilePoids, /Poids.*kg.*[−+][\d,]+ kg/);
+  // Cardio : les pas, avec leur courbe, dessinée sans avoir ouvert Repas.
+  assert.match(r.pas.tete, /pas \/ jour/);
+  assert.equal(r.pas.onglet, 'activite');
+  assert.ok(r.pas.jours >= 20 && r.pas.largeur > 0, JSON.stringify(r.pas));
+  // Corps : ni pas ni « Prévision vs réalité » (doublon de « Ta maintenance réelle »).
+  assert.deepEqual(r.corps, { pas: false, prevision: false, tuiles: 2 });
+  // Muscu : les grands muscles d'abord ; les autres derrière le bouton, sous les premiers.
+  assert.ok(r.grille.avant.includes('Pectoraux') && r.grille.avant.includes('Dos'), r.grille.avant.join());
+  assert.ok(!r.grille.avant.includes('Mollets') && !r.grille.avant.includes('Abdominaux'), r.grille.avant.join());
+  assert.match(r.grille.bouton, /^Voir (les \d+ autres muscles|l'autre muscle)$/);
+  assert.deepEqual(r.grille.apres.slice(0, r.grille.avant.length), r.grille.avant);
+  assert.ok(r.grille.apres.includes('Mollets') && r.grille.apres.includes('Abdominaux'), r.grille.apres.join());
+  assert.equal(r.grille.bouton2, 'Seulement les grands muscles');
+  assert.equal(r.grille.ouvert, 'true');
+  assert.equal(r.grille.encours, r.grille.lundi, 'la semaine en cours porte la date de son lundi');
+  // Une seule taille de titre dans tout Progrès, sur iPhone.
+  assert.equal(r.ios, true);
+  assert.equal(new Set(Object.values(r.titres).flat()).size, 1, JSON.stringify(r.titres));
+}));
+
 test('Progrès : pesées sur une partie de la période, le rythme se rapporte aux jours pesés et colle à la maintenance réelle', () => avecAppli({}, async ({ page }) => {
   // 30 jours de repas notés, mais des pesées seulement les 19 derniers jours (−1 kg par semaine).
   // Diviser l'écart de tendance par les 30 jours donnait 0,5 kg par semaine, alors que la

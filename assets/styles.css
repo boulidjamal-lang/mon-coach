@@ -3405,6 +3405,8 @@ html:root .saisie-rapide-valeur input { width: 100%; max-width: 170px; height: a
 .zones-case { display: grid; place-items: center; height: 28px; border-radius: 8px; font-style: normal; font-size: 12px; font-weight: 800; color: #0b1020; }
 .zones-case.vide { background: var(--piste); }
 html[data-theme="dark"] .zones-case--sous { color: #fff; }
+html:root #ecran-stats .zones-grille-tete > span.zones-grille-encours { color: var(--text); text-decoration: underline; text-decoration-thickness: 2px; text-underline-offset: 3px; }
+.zones-grille-plus { display: block; margin: 2px 0 0; }
 .zones-grille-legende { display: flex; flex-wrap: wrap; gap: 6px 12px; margin-top: 10px; font-size: .7rem; font-weight: 700; color: var(--text-muted); }
 .zones-grille-legende i { display: inline-block; width: 10px; height: 10px; margin-right: 5px; border-radius: 3px; vertical-align: -1px; }
 html:root .btn-analysis { min-height: 50px; border: 0; border-radius: 16px; font-weight: 800; color: #fff !important; background: linear-gradient(135deg, #a78bfa, #6366f1) !important; box-shadow: 0 12px 24px -12px rgba(99,102,241,.8) !important; }
@@ -3492,7 +3494,7 @@ html:root .pg-heros h3 { margin: 6px 0 4px; font: 800 1.36rem/1.2 'Manrope', 'In
 .pg-h-proj { fill: none; stroke: var(--pgh-trait); stroke-width: 2; stroke-dasharray: 5 5; opacity: .8; }
 .pg-h-cible { fill: none; stroke: var(--pgh-trait); stroke-width: 2; }
 .pg-h-der { fill: var(--pgh-trait); stroke: var(--carte-plein); stroke-width: 2; }
-.pg-heros-puces { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 8px; padding-top: 10px; border-top: 1px solid var(--trait); }
+.pg-heros-puces { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; margin-top: 8px; padding-top: 10px; border-top: 1px solid var(--trait); }
 .pg-heros-puces b { display: block; font: 800 1.05rem 'Manrope', 'Inter', sans-serif; letter-spacing: -.02em; }
 .pg-heros-puces span { font-size: 11px; font-weight: 600; color: var(--text-muted); }
 
@@ -4881,6 +4883,12 @@ html.app-ios:root[data-theme="dark"] {
 html.app-ios:root body :is(.titre-ecran, .titre-section, .vitrine-sec h3, .modal-entete h3, .feuille-titre, .hx-titre, .pg-heros h3, .sdj h4, .meal-title, .salut b) {
   letter-spacing: normal !important; }
 html.app-ios:root body :is(.titre-section, .vitrine-sec h3) { font-size: 1.35rem !important; font-weight: 700 !important; }
+/* Progrès : une seule taille de titre de section. Sur iPhone, les « pg-h »
+   (Mensurations, Ta force, Répartition moyenne…) restaient plus petits que les
+   « titre-section » (Ta courbe de poids, Minutes par semaine…), parfois dans le
+   même onglet. Les sous-titres des volets repliés restent plus petits. */
+html.app-ios:root body #ecran-stats .pg-h { font-size: 1.35rem !important; font-weight: 700 !important; letter-spacing: normal !important; }
+html.app-ios:root body #ecran-stats .pg-repli .titre-section { font-size: 1.05rem !important; }
 html.app-ios:root body :is(.btn, .pilule, .segment button, .feuille-action, .coach-action, .cp-bouton, .obj-tuile, .onglet) { font-weight: 600 !important; letter-spacing: normal !important; }
 html.app-ios:root body :is(#total-kcals, .reste-kcal, .carte-stats-valeur b, .eau-texte, .hx-geant, .cardio-gros, .bt-n, .pg-tuile b, .pg-pas-tete b, .cg b, .sh-chrono, .mc-r b, .meal-kcals, .cle-val, .stats-valeur, .bilan-geant b, .bilan-tuile b, .repos-chrono, .pave-val, .semaine-jour b) {
   font-family: ui-rounded, 'SF Pro Rounded', var(--police) !important; letter-spacing: -.01em !important; }
