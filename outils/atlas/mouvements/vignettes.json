@@ -768,11 +768,11 @@
    "periode": 2.8,
    "images": 42,
    "octets": {
-    "image": 6730,
-    "clair": 7368,
-    "sombre": 7810
+    "image": 6378,
+    "clair": 7512,
+    "sombre": 7805
    },
-   "cle": "95337e08ae03f323"
+   "cle": "aa8dbb2e2c57c861"
   },
   "e127": {
    "mouvement": "traction pendu",
@@ -1483,11 +1483,11 @@
    "periode": 2.8,
    "images": 42,
    "octets": {
-    "image": 6232,
-    "clair": 7988,
-    "sombre": 8063
+    "image": 6146,
+    "clair": 7810,
+    "sombre": 7974
    },
-   "cle": "af82ebbe9c95d897"
+   "cle": "d082ae47fe84a7dd"
   },
   "e225": {
    "mouvement": "planche birddog",
@@ -1522,11 +1522,11 @@
    "periode": 2.8,
    "images": 42,
    "octets": {
-    "image": 6226,
-    "clair": 7566,
-    "sombre": 7601
+    "image": 6210,
+    "clair": 7525,
+    "sombre": 7339
    },
-   "cle": "31b5049860ae401a"
+   "cle": "af40358061a6a838"
   },
   "e239": {
    "mouvement": "hanche adduction poulie",
@@ -9764,11 +9764,11 @@
    "periode": 2.8,
    "images": 42,
    "octets": {
-    "image": 6256,
-    "clair": 6799,
-    "sombre": 6535
+    "image": 6348,
+    "clair": 6688,
+    "sombre": 6500
    },
-   "cle": "9fb2f40f5e02b2d4"
+   "cle": "7c2d17bb0839e7ad"
   },
   "sw-tirage-a-la-poulie-unilateral-en-demi-genou": {
    "mouvement": "tirage demigenou uni",
@@ -9777,11 +9777,11 @@
    "periode": 2.8,
    "images": 42,
    "octets": {
-    "image": 5462,
-    "clair": 6371,
-    "sombre": 6590
+    "image": 5440,
+    "clair": 6300,
+    "sombre": 6565
    },
-   "cle": "29c4b32c162b6a72"
+   "cle": "fabf67bd0bb5c819"
   },
   "sw-tirage-a-un-bras-sur-machine-avec-support-pour-la-poitrine": {
    "mouvement": "rowing machine uni",
@@ -9972,11 +9972,11 @@
    "periode": 2.8,
    "images": 42,
    "octets": {
-    "image": 5468,
-    "clair": 7341,
-    "sombre": 7332
+    "image": 5506,
+    "clair": 7239,
+    "sombre": 7452
    },
-   "cle": "c88917e5d2f21321"
+   "cle": "6e8dd6263e1afca3"
   },
   "sw-tirage-vertical-a-genoux-a-la-poulie": {
    "mouvement": "tirage genoux",
@@ -9986,10 +9986,10 @@
    "images": 42,
    "octets": {
     "image": 5464,
-    "clair": 6963,
-    "sombre": 6885
+    "clair": 7034,
+    "sombre": 7046
    },
-   "cle": "129fd87232dfb4e7"
+   "cle": "fa46ba32409e348a"
   },
   "sw-tirage-vertical-a-la-barre-avec-prise-large": {
    "mouvement": "elevation menton barre large",
@@ -10011,11 +10011,11 @@
    "periode": 2.8,
    "images": 42,
    "octets": {
-    "image": 6004,
-    "clair": 8221,
-    "sombre": 8272
+    "image": 5974,
+    "clair": 8198,
+    "sombre": 8212
    },
-   "cle": "438b21ed719fdc2f"
+   "cle": "af910aaa7c9edf8e"
   },
   "sw-tirage-vertical-a-la-poulie-prise-neutre": {
    "mouvement": "tirage neutre",
@@ -10024,11 +10024,11 @@
    "periode": 2.8,
    "images": 42,
    "octets": {
-    "image": 6324,
-    "clair": 7926,
-    "sombre": 7792
+    "image": 6304,
+    "clair": 7653,
+    "sombre": 7780
    },
-   "cle": "93aa9890f9857031"
+   "cle": "4ef5cd4d8520f1b1"
   },
   "sw-tirage-vertical-a-un-bras": {
    "mouvement": "tirage uni",
@@ -10037,11 +10037,11 @@
    "periode": 2.8,
    "images": 42,
    "octets": {
-    "image": 5954,
-    "clair": 6863,
-    "sombre": 6799
+    "image": 5916,
+    "clair": 6894,
+    "sombre": 6922
    },
-   "cle": "fab6d9968c986778"
+   "cle": "31d6453479540535"
   },
   "sw-tirage-vertical-a-un-bras-avec-bande-elastique": {
    "mouvement": "tirage elas genoux uni",
@@ -10050,11 +10050,11 @@
    "periode": 2.8,
    "images": 42,
    "octets": {
-    "image": 4932,
-    "clair": 6051,
-    "sombre": 6327
+    "image": 4908,
+    "clair": 6170,
+    "sombre": 6461
    },
-   "cle": "70ce19a4b18b8629"
+   "cle": "ef03e39b14172c8e"
   },
   "sw-tirage-vertical-bras-tendus": {
    "mouvement": "tirage tendus",
@@ -10180,11 +10180,11 @@
    "periode": 2.8,
    "images": 42,
    "octets": {
-    "image": 5750,
-    "clair": 6475,
-    "sombre": 6945
+    "image": 5584,
+    "clair": 6731,
+    "sombre": 6995
    },
-   "cle": "3c218ba72c7b415a"
+   "cle": "f5c3a7e12825300f"
   },
   "sw-traction-arriere-prise-large": {
    "mouvement": "traction large nuque",
@@ -10284,11 +10284,11 @@
    "periode": 2.8,
    "images": 42,
    "octets": {
-    "image": 5830,
-    "clair": 6534,
-    "sombre": 6974
+    "image": 5586,
+    "clair": 6677,
+    "sombre": 7126
    },
-   "cle": "3a94e9e73748faaf"
+   "cle": "bc87c4a928af5e71"
   },
   "sw-traction-en-prise-serree": {
    "mouvement": "traction serre",

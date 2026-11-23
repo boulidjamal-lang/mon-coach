@@ -193,6 +193,17 @@
       }
       return f;   // rien au-dessus de la barre : la tête et le buste y passent (traction, muscle-up)
     },
+    /* Poignées parallèles d'une barre de traction (prise neutre) : deux barres le long de Z, à la hauteur h, écartées
+       de 2 × ecart, soudées à la barre du portique placée derrière la tête (en zArriere) ; les mains les tiennent paumes
+       face à face, le visage monte entre elles. Une barre droite ne se tient pas paumes face à face. */
+    poigneesNeutres(C, h, ecart, zArriere = -0.36, zAvant = 0.22) {
+      const f = [], l = zAvant - zArriere, zm = (zAvant + zArriere) / 2;
+      for (const s of [1, -1]) {
+        f.push(cyl(0.016, l, s * ecart, h, zm, C.metal, 1, LONG_Z, 0.016));
+        f.push(cyl(0.0185, 0.17, s * ecart, h, 0.02, C.gomme, 0, LONG_Z, 0.006));
+      }
+      return f;
+    },
     /* Barres parallèles : deux barres le long de Z, à la hauteur h, écartées de 2 × ecart, sur un bâti en U. */
     paralleles(C, h = 1.25, ecart = 0.28, l = 0.7) {
       const f = [], zM = -l / 2 + 0.03;

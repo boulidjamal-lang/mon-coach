@@ -366,6 +366,14 @@ pendu, vers le haut en appui renversé). Avec les cibles des mains, `tendre` les
 barre (`viser`) : sur une barre fixe, une main en pronation tombait de 2 à 3 cm à côté — au-dessus de la barre en haut
 d'une traction. Les tractions ont cinq poses clés : entre deux, les mains restent sur la barre à 3 mm près.
 
+Prise neutre (tractions prise neutre, lestées ou non) : une barre droite ne se tient pas paumes face à face. Le portique
+porte deux poignées parallèles (`MAT.poigneesNeutres`, 54 cm entre elles), sa barre passe derrière la tête ; le visage
+monte entre les poignées. Les coudes descendent devant le buste et le long des côtes (pôle vers l'avant et le bas,
+poignet incliné jusqu'à 30° autour de la poignée) : ils s'ouvraient à l'horizontale sur les côtés et le dos, vu de
+derrière, faisait des « ailes ». En haut, la poitrine vient à la hauteur des poignées (épaules 12 cm dessous).
+Tirage vertical : la barre descend devant le haut de la poitrine, 10 cm sous la ligne des épaules (elle s'arrêtait au
+menton, 3 cm sous elle) ; toutes les variantes assises, à genoux, à un bras, à l'élastique et à la machine en profitent.
+
 Pendu, les mains ne bougent pas : quand le bassin bascule (relevés de jambes) les épaules restent sous la barre ; en
 vrille (genoux obliques, essuie-glaces), ce sont le bassin et les jambes qui tournent sous des épaules qui restent
 face à la barre — la vrille tournait les épaules et pliait un bras à 50°. En appui renversé, hausser les épaules

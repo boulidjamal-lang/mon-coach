@@ -1202,6 +1202,17 @@
       }
       return f;   // rien au-dessus de la barre : la tête et le buste y passent (traction, muscle-up)
     },
+    /* Poignées parallèles d'une barre de traction (prise neutre) : deux barres le long de Z, à la hauteur h, écartées
+       de 2 × ecart, soudées à la barre du portique placée derrière la tête (en zArriere) ; les mains les tiennent paumes
+       face à face, le visage monte entre elles. Une barre droite ne se tient pas paumes face à face. */
+    poigneesNeutres(C, h, ecart, zArriere = -0.36, zAvant = 0.22) {
+      const f = [], l = zAvant - zArriere, zm = (zAvant + zArriere) / 2;
+      for (const s of [1, -1]) {
+        f.push(cyl(0.016, l, s * ecart, h, zm, C.metal, 1, LONG_Z, 0.016));
+        f.push(cyl(0.0185, 0.17, s * ecart, h, 0.02, C.gomme, 0, LONG_Z, 0.006));
+      }
+      return f;
+    },
     /* Barres parallèles : deux barres le long de Z, à la hauteur h, écartées de 2 × ecart, sur un bâti en U. */
     paralleles(C, h = 1.25, ecart = 0.28, l = 0.7) {
       const f = [], zM = -l / 2 + 0.03;
@@ -3645,7 +3656,7 @@
     const e = o.large ? 0.43 : o.serre ? 0.1 : o.sup ? 0.19 : 0.3, portee = (L.bras + L.prise) * 0.97;
     const anc = V(0, t.epaules.G.y + 1.0, t.epaules.G.z + (o.demigenou ? 0.5 : o.genoux ? 0.23 : 0.14));   // à genoux : la tour reste devant les genoux (et devant le pied avancé)
     const paume = s => (o.neutre || o.serre || m !== 'GD' ? V(-s, 0, 0) : o.sup ? V(0, 0, -1) : V(0, 0, 1));
-    const basP = s => (o.nuque ? V(s * 0.42, 0.03, -0.1) : V(s * Math.max(e, 0.17), -0.03, 0.17));
+    const basP = s => (o.nuque ? V(s * 0.42, 0.03, -0.1) : V(s * Math.max(e, 0.17), -0.1, 0.16));   // devant le haut de la poitrine (l'origine est entre les deux épaules)
     // Une poignée au bout du câble (prise neutre, serrée, à une main) tourne avec la main : le poignet reste droit.
     const libre = o.neutre || o.serre || m !== 'GD';
     const bras = f => { const r = {}; for (const [k, s] of COTES) { r[k] = { prise: t.duThorax(f(s)), pole: dT(s * 1, -0.5, o.sup || o.serre ? 0.5 : -0.25), paume: dT(...paume(s).xyz()), dirMain: dT(0, 1, 0), doigts: 'barre' }; if (libre) r[k].autour = 'libre'; } return r; };
@@ -3676,7 +3687,7 @@
      (assistée, genoux sur un plateau), negative (descente lente), anneaux, scapulaire (bras tendus, seules les
      épaules travaillent), pendu (suspension tenue), autour (le menton passe d'un côté puis de l'autre). */
   FAM.traction = (c, o, C) => {
-    const L = c.L, H = 2.42, ecart = o.large ? 0.46 : o.serre ? 0.14 : o.sup ? 0.22 : 0.33;
+    const L = c.L, H = 2.42, ecart = o.large ? 0.46 : o.serre ? 0.14 : o.sup ? 0.22 : o.neutre ? 0.27 : 0.33;
     let yPendu = null;
     const base = u => {
       const p = { bassin: { pos: L.racine.clone(), rot: qX(lerp(0, o.nuque ? 6 : -10, u)) }, lombaires: lerp(0, o.nuque ? 0 : -6, u), thorax: lerp(0, o.nuque ? 4 : -6, u), cou: lerp(-4, o.nuque ? -24 : 14, u), jambes: {}, bras: {} };
@@ -3684,14 +3695,16 @@
       // Épaules à une longueur de bras sous la barre, puis menton au-dessus ; le corps recule : la barre passe devant.
       const dx = ecart - t.epaules.G.x, pendu = Math.sqrt(Math.max(0.01, Math.pow((L.bras + L.prise) * 0.96, 2) - dx * dx));
       // Prise serrée : les mains sont presque à l'aplomb des épaules, le coude est au bout de sa course un peu plus tôt —
-      // on monte moins haut, la barre devant le haut de la poitrine.
-      const yEp = lerp(yPendu != null ? yPendu : H - pendu, H - (o.nuque ? 0.1 : o.serre ? 0.225 : 0.17), u);
-      p.bassin.pos.y += yEp - t.epaules.G.y; p.bassin.pos.z += lerp(0.02, o.nuque ? 0.12 : o.serre ? -0.14 : -0.1, u) - t.epaules.G.z;
+      // on monte moins haut, la barre devant le haut de la poitrine. Prise neutre : le visage monte entre les poignées,
+      // la poitrine vient à leur hauteur (épaules 12 cm dessous), sans reculer derrière elles.
+      const yEp = lerp(yPendu != null ? yPendu : H - pendu, H - (o.nuque ? 0.1 : o.serre ? 0.225 : o.neutre ? 0.12 : 0.17), u);
+      p.bassin.pos.y += yEp - t.epaules.G.y; p.bassin.pos.z += lerp(0.02, o.nuque ? 0.12 : o.serre ? -0.14 : o.neutre ? -0.05 : -0.1, u) - t.epaules.G.z;
       for (const [k, s] of COTES) {
         p.jambes[k] = o.machine ? J(8, 3, 0, 96, 30) : J(lerp(6, 14, u), 2, 0, o.leste ? 20 : 62, 30);
-        // Le coude : sur le côté ; devant le corps en supination, en prise neutre ou serrée (les avant-bras restent
-        // d'aplomb sous des mains plus rapprochées que les épaules).
-        p.bras[k] = { prise: V(s * ecart, H, 0.02), pole: o.serre ? V(s * 0.35, -0.6, 0.8) : V(s * 1, -0.2, o.sup || o.neutre ? 0.5 : -0.25), paume: o.neutre ? V(-s, 0, 0) : o.sup ? V(0, 0, -1) : V(0, 0, 1), dirMain: V(0, 1, 0), doigts: 'barre' };
+        // Le coude : sur le côté en pronation ; devant le corps en prise serrée ; un peu en avant en supination. En prise
+        // neutre (poignées parallèles, paumes face à face), il descend devant le buste et le long des côtes au lieu de
+        // s'ouvrir sur les côtés (le dos faisait des « ailes ») : le poignet s'incline un peu plus autour de la poignée.
+        p.bras[k] = { prise: V(s * ecart, H, 0.02), pole: o.neutre ? V(s * 0.3, -0.7, 0.65) : o.serre ? V(s * 0.35, -0.6, 0.8) : V(s * 1, -0.2, o.sup ? 0.5 : -0.25), ...(o.neutre ? { aplomb: 30 } : {}), paume: o.neutre ? V(-s, 0, 0) : o.sup ? V(0, 0, -1) : V(0, 0, 1), dirMain: V(0, 1, 0), doigts: 'barre' };
         if (o.scapulaire) p.bras[k].hausse = lerp(22, -6, u * 8);
       }
       // La barre est fixe : les mains tombent juste dessus (une main en pronation arrive sinon 2 à 3 cm à côté).
@@ -3701,7 +3714,10 @@
     // Pendu, les bras sont tendus : la hauteur des épaules se règle une fois sur le corps posé (elles montent avec les bras).
     { const p0 = base(0); tendre(c, p0, V(0, -1, 0), null, null, o.anneaux ? null : { G: V(ecart, H, 0.02), D: V(-ecart, H, 0.02) }); yPendu = c.tronc(p0).epaules.G.y; }
     const amp = o.scapulaire ? 0.1 : 1;
-    const d = { vue: { az: o.sup ? 150 : 205, el: 4 }, fixe: o.anneaux ? [] : poseFixe(MAT.barreFixe(C, H, Math.max(1.3, 2 * ecart + 0.4))), tenu: [] };
+    // Prise neutre : deux poignées parallèles, la barre du portique derrière la tête.
+    const fixe = o.anneaux ? [] : o.neutre ? poseFixe(MAT.barreFixe(C, H, 1.3), V(0, 0, -0.36)).concat(poseFixe(MAT.poigneesNeutres(C, H, ecart)))
+      : poseFixe(MAT.barreFixe(C, H, Math.max(1.3, 2 * ecart + 0.4)));
+    const d = { vue: { az: o.sup ? 150 : 205, el: 4 }, fixe, tenu: [] };
     if (o.pendu) { d.a = base(0); d.b = base(0.03); d.rythme = 'tenue'; }
     else if (o.autour) {
       // Le corps passe d'un côté de la barre à l'autre, mains fixes : seize poses réglées d'avance sur le tour (mains
