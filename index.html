@@ -31796,7 +31796,7 @@ function dessinerDoublonsAliments() {
   const { groupes, base, partages } = doublonsAliments;
   const enTrop = g => g.lignes.length - 1;
   const sommes = l => l.reduce((n, g) => n + enTrop(g), 0);
-  const surs = groupes.filter(g => g.identiques && g.lignes.length > 1);
+  const nbSurs = doublonsARetirer(groupes).length;
   const familles = [
     ['Même nom ou même code-barres, mêmes valeurs', groupes.filter(g => g.type !== 'proche' && g.identiques)],
     ['Même nom ou même code-barres, valeurs différentes : à vérifier', groupes.filter(g => g.type !== 'proche' && !g.identiques)],
@@ -31806,12 +31806,15 @@ function dessinerDoublonsAliments() {
   if (etat) etat.textContent = `${accord(base, 'aliment', 'aliments')} dans la base, ${accord(partages, 'aliment partagé', 'aliments partagés')}. `
     + (groupes.length ? `${accord(groupes.length, 'famille de doublons', 'familles de doublons')}, ${accord(sommes(groupes), 'ligne en trop', 'lignes en trop')}.` : 'Aucun doublon.');
   rapport.innerHTML = '';
-  if (surs.length) {
+  if (nbSurs) {
     const b = document.createElement('button');
     b.type = 'button'; b.className = 'btn btn-primary doublons-fusion';
-    b.textContent = `Fusionner les doublons aux mêmes valeurs (${accord(doublonsARetirer(groupes).length, 'ligne retirée', 'lignes retirées')})`;
+    b.textContent = `Fusionner les doublons aux mêmes valeurs (${accord(nbSurs, 'ligne retirée', 'lignes retirées')})`;
     b.addEventListener('click', () => fusionnerDoublonsSurs());
-    rapport.appendChild(b);
+    const n = document.createElement('p');
+    n.className = 'note doublons-note';
+    n.textContent = "Un aliment est gardé par famille. Restent à retirer à la main : les valeurs différentes, les noms seulement proches dans la base d'aliments et les codes-barres différents.";
+    rapport.append(b, n);
   }
   familles.forEach(([titre, liste]) => {
     if (!liste.length) return;
@@ -31846,7 +31849,9 @@ function carteDoublon(g) {
       x.type = 'button'; x.className = 'pilule';
       x.textContent = 'Retirer';
       x.setAttribute('aria-label', 'Retirer « ' + l.nom + ' »');
-      x.addEventListener('click', () => retirerDoublons([l], '« ' + l.nom + ' »'));
+      // Son code-barres ne vit nulle part ailleurs dans la famille : il ne sera plus reconnu au scan.
+      const perdu = l.code && !g.lignes.some(y => y !== l && y.code === l.code);
+      x.addEventListener('click', () => retirerDoublons([l], '« ' + l.nom + ' »', perdu ? `Son code-barres (${l.code}) ne sera plus reconnu au scan.` : ''));
       r.appendChild(x);
     }
     carte.appendChild(r);
@@ -31854,53 +31859,72 @@ function carteDoublon(g) {
   return carte;
 }
 /* Retire des lignes : partagées → supprime (récupérable), base → effacées. */
-async function retirerDoublons(lignes, quoi) {
+async function retirerDoublons(lignes, quoi, avertissement) {
   const partages = lignes.filter(l => l.table === 'partage' && l.id != null);
   const base = doublonsAliments && doublonsAliments.cle ? lignes.filter(l => l.table === 'base' && l.id != null) : [];
   if (!partages.length && !base.length) return 0;
   const texte = `Retirer ${quoi} ?\n\n` + [partages.length ? accord(partages.length, 'aliment partagé retiré (récupérable)', 'aliments partagés retirés (récupérables)') : '',
     base.length ? accord(base.length, 'ligne effacée de la base d’aliments', 'lignes effacées de la base d’aliments') : ''].filter(Boolean).join(', ')
-    + '.\nLes repas déjà notés ne changent pas.';
+    + '.\n' + (avertissement ? avertissement + '\n' : '') + 'Les repas déjà notés ne changent pas.';
   if (!(await confirmer(texte, { ok: 'Retirer', danger: true }))) return 0;
-  const dire = t => { const e = document.getElementById('doublons-etat'); if (e) e.textContent = t; };
+  /* La base renvoie les lignes réellement touchées : une règle d'accès qui
+     refuse sans le dire (0 ligne modifiée, aucune erreur) ne passe pas
+     pour un retrait réussi. Seules ces lignes quittent le rapport. */
+  const cle = l => l.table + ':' + String(l.id);
+  const faits = new Set();
+  let echec = null;
   try {
     const qui = 'doublon (' + (sessionUtilisateur ? sessionUtilisateur.email : 'admin') + ')';
     for (let i = 0; i < partages.length; i += 200) {
-      const { error } = await supa.from('aliments_partages').update({ supprime: true, supprime_par: qui, supprime_le: new Date().toISOString() })
-        .in('id', partages.slice(i, i + 200).map(l => l.id));
+      const { data, error } = await supa.from('aliments_partages').update({ supprime: true, supprime_par: qui, supprime_le: new Date().toISOString() })
+        .in('id', partages.slice(i, i + 200).map(l => l.id)).select('id');
       if (error) throw error;
+      (data || []).forEach(x => faits.add('partage:' + String(x.id)));
     }
     if (base.length) {
       const s = await detecterSchemaAliments();
       for (let i = 0; i < base.length; i += 200) {
-        const { error } = await supa.from(confSupabase().table).delete().in(s.cle, base.slice(i, i + 200).map(l => l.id));
+        const { data, error } = await supa.from(confSupabase().table).delete().in(s.cle, base.slice(i, i + 200).map(l => l.id)).select(s.cle);
         if (error) throw error;
+        (data || []).forEach(x => faits.add('base:' + String(x[s.cle])));
       }
     }
+  } catch (e) { echec = e; }
+  const retirees = lignes.filter(l => faits.has(cle(l)));
+  if (retirees.length) {
     cacheVider(); cacheAliments.clear();
-    const ids = new Set(lignes.map(l => l.table + ':' + l.id));
     doublonsAliments.groupes = doublonsAliments.groupes
-      .map(g => Object.assign({}, g, { lignes: g.lignes.filter(l => !ids.has(l.table + ':' + l.id)) }))
+      .map(g => Object.assign({}, g, { lignes: g.lignes.filter(l => !faits.has(cle(l))) }))
       .filter(g => g.lignes.length > 1)
       .map(g => Object.assign(g, { identiques: g.lignes.every(l => valeursProches(l, g.lignes[0])) }));
-    doublonsAliments.partages -= partages.length;
-    doublonsAliments.base -= base.length;
-    await consignerAction('aliments_fusionnes', null, accord(partages.length + base.length, 'doublon retiré', 'doublons retirés'), null, lignes.slice(0, 40).map(l => l.nom).join(', '));
-    dessinerDoublonsAliments();
-    return partages.length + base.length;
-  } catch (e) {
-    dire('Retrait impossible : ' + (e.message || e));
-    return 0;
+    doublonsAliments.partages -= retirees.filter(l => l.table === 'partage').length;
+    doublonsAliments.base -= retirees.filter(l => l.table === 'base').length;
+    await consignerAction('aliments_fusionnes', null, accord(retirees.length, 'doublon retiré', 'doublons retirés'), null, retirees.slice(0, 40).map(l => l.nom).join(', '));
   }
+  dessinerDoublonsAliments();
+  const restees = partages.length + base.length - retirees.length;
+  if (echec || restees) {
+    const e = document.getElementById('doublons-etat');
+    if (e) e.textContent = (retirees.length ? accord(retirees.length, 'ligne retirée', 'lignes retirées') + ', ' : '')
+      + accord(restees, 'ligne non retirée', 'lignes non retirées') + ' : '
+      + (echec ? (echec.message || String(echec)) : 'la base a refusé la modification (droits d’administration).');
+  }
+  return retirees.length;
 }
 /* Les familles aux mêmes valeurs qui se touchent (« Poulet » a le même nom
    qu'un autre « Poulet » et un nom proche de « Poulets ») n'en font qu'une :
-   on garde un seul aliment par ensemble, le premier dans l'ordre à garder. */
+   on garde un seul aliment par ensemble, le premier dans l'ordre à garder.
+   Restent à la main : une ligne de la base d'aliments dont le nom n'est que
+   proche (« Pain de mie », « Mie de pain » : deux aliments de la table CIQUAL
+   peuvent se ressembler), et une ligne dont le code-barres n'est pas celui
+   de l'aliment gardé (deux marques aux mêmes valeurs : le retirer, c'est
+   perdre son code au scan). */
 function doublonsARetirer(groupes) {
   const cle = l => l.table + ':' + l.id;
   const parent = new Map(), ligne = new Map();
   const racine = k => { while (parent.get(k) !== k) { parent.set(k, parent.get(parent.get(k))); k = parent.get(k); } return k; };
-  groupes.filter(g => g.identiques).forEach(g => g.lignes.forEach(l => {
+  groupes.filter(g => g.identiques).forEach(g => g.lignes.forEach((l, i) => {
+    if (i > 0 && g.type === 'proche' && l.table === 'base') return;
     const k = cle(l);
     if (!parent.has(k)) { parent.set(k, k); ligne.set(k, l); }
     const a = racine(cle(g.lignes[0])), b = racine(k);
@@ -31909,7 +31933,7 @@ function doublonsARetirer(groupes) {
   const ensembles = new Map();
   ligne.forEach((l, k) => { const r = racine(k); if (!ensembles.has(r)) ensembles.set(r, []); ensembles.get(r).push(l); });
   const out = [];
-  ensembles.forEach(e => { e.sort(ordreAGarder); out.push(...e.slice(1)); });
+  ensembles.forEach(e => { e.sort(ordreAGarder); e.slice(1).forEach(l => { if (!l.code || l.code === e[0].code) out.push(l); }); });
   return out;
 }
 async function fusionnerDoublonsSurs() {

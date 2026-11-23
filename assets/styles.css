@@ -4782,7 +4782,8 @@ html:root body .adm-err-tete > .icone-ui { width: 18px; height: 18px; color: var
 .adm-occ li b { font-weight: 800; }
 .adm-occ li span { color: var(--text-muted); min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .adm-occ li em { margin-left: auto; font-style: normal; color: var(--text-muted); font-size: .74rem; white-space: nowrap; font-variant-numeric: tabular-nums; }
-.doublons-fusion { width: 100%; margin: 4px 0 10px; }
+.doublons-fusion { width: 100%; margin: 4px 0 6px; }
+.doublons-note { margin: 0 2px 10px; }
 .doublons-famille { margin: 4px 0; border-top: 1px solid var(--ligne); }
 .doublons-famille > summary { cursor: pointer; padding: 12px 4px; font-size: .84rem; font-weight: 800; }
 .doublons-carte { margin: 0 0 10px; padding: 2px 12px; border-radius: 14px; background: var(--piste); }

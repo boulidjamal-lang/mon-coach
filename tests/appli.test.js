@@ -2596,7 +2596,8 @@ test("Administration : analyse des doublons de toute la base d'aliments (mêmes 
       [T]: [
         base(1, 'Blanc de poulet', 120, 23, 0, 2.5), base(2, 'Poulet blanc', 121, 23.2, 0, 2.4),        // noms proches, mêmes valeurs
         base(3, 'Riz basmati cuit', 130, 2.7, 28, 0.3), base(4, 'Riz basmati cuit', 350, 7, 78, 1),      // même nom, valeurs différentes
-        base(5, 'Pomme', 52, 0.3, 14, 0.2, '999')
+        base(5, 'Pomme', 52, 0.3, 14, 0.2, '999'),
+        base(6, 'Banane', 89, 1.1, 20, 0.3)
       ],
       aliments_partages: [
         part('A', 'pomme', 52, 0.3, 14, 0.2),                                         // même nom que la base
@@ -2605,10 +2606,12 @@ test("Administration : analyse des doublons de toute la base d'aliments (mêmes 
         part('D', 'Skyr nature', 62, 10, 4, 0.2, { code_barre: '123', cree_le: '2026-10-03' }),   // même code-barres
         part('E', 'Unique', 100, 1, 1, 1),
         part('F', 'Galette', 400, 9, 70, 8), part('G', 'Galettes', 120, 3, 20, 2, { valide: false }),   // noms proches, valeurs différentes
+        part('K', 'banane', 89, 1.1, 20, 0.3, { code_barre: '777' }),                  // même nom, mais un code-barres à lui
         part('Z', 'Pomme', 52, 0.3, 14, 0.2, { supprime: true })                       // déjà retiré : ignoré
       ]
     };
     const ecrits = [], journal = [];
+    let refuser = false;   // une règle d'accès qui refuse sans erreur : aucune ligne touchée
     const requete = table => {
       const filtres = []; let maj = null, efface = false, plage = null;
       const b = {
@@ -2620,10 +2623,11 @@ test("Administration : analyse des doublons de toute la base d'aliments (mêmes 
         delete: () => { efface = true; return b; },
         then: (ok, ko) => {
           let lignes = (db[table] || []).filter(x => filtres.every(f => f(x)));
+          if ((maj || efface) && refuser) lignes = [];
           if (maj) { lignes.forEach(x => Object.assign(x, maj)); ecrits.push(['maj', table === T ? 'base' : table, lignes.map(x => x.id).join(',')]); }
           if (efface) { db[table] = db[table].filter(x => !lignes.includes(x)); ecrits.push(['efface', table === T ? 'base' : table, lignes.map(x => x.id).join(',')]); }
           if (plage) lignes = lignes.slice(plage[0], plage[1] + 1);
-          return Promise.resolve({ data: maj || efface ? null : lignes, error: null }).then(ok, ko);
+          return Promise.resolve({ data: lignes, error: null }).then(ok, ko);
         }
       };
       return b;
@@ -2631,7 +2635,7 @@ test("Administration : analyse des doublons de toute la base d'aliments (mêmes 
     supa = { from: requete, rpc: async (nom, args) => { journal.push([nom, (args || {}).p_action, (args || {}).p_cible_libelle]); return { data: null, error: null }; } };
     sessionUtilisateur = { id: 'admin', email: ADMIN_EMAIL };
     detecterSchemaAliments = async () => ({ vide: false, nom: 'nom', codeBarre: 'code_barre', cle: 'id', kcal: 'kcal', prot: 'prot', gluc: 'gluc', lip: 'lip' });
-    let questions = [];
+    const questions = [];
     confirmer = async texte => { questions.push(texte); return true; };
     const lire = () => ({
       etat: document.getElementById('doublons-etat').textContent,
@@ -2639,52 +2643,61 @@ test("Administration : analyse des doublons de toute la base d'aliments (mêmes 
       familles: [...document.querySelectorAll('#doublons-rapport .doublons-famille')].map(d => [d.querySelector('summary').textContent,
         [...d.querySelectorAll('.doublons-carte')].map(c => [...c.querySelectorAll('.doublons-ligne')].map(l => l.querySelector('b').textContent + (l.classList.contains('gardee') ? '*' : '')).join(' | '))])
     });
+    const attendre = () => new Promise(ok => setTimeout(ok, 30));
     await ouvrirDoublonsAliments();
     const avant = lire();
     const ouverte = document.getElementById('feuille-doublons-aliments').classList.contains('show');
     await fusionnerDoublonsSurs();
     const apres = lire();
-    const q1 = questions[0];
-    // Retirer à la main : un aliment partagé, puis une ligne de la base.
+    // Retirer à la main : des aliments partagés, puis des lignes de la base.
     const retirer = nom => [...document.querySelectorAll('#doublons-rapport .doublons-ligne')].find(l => l.querySelector('b').textContent === nom).querySelector('button');
-    retirer('Galettes').click(); await new Promise(ok => setTimeout(ok, 30));
-    const ligneRiz = [...document.querySelectorAll('#doublons-rapport .doublons-ligne:not(.gardee)')].find(l => /350 kcal/.test(l.textContent));
-    ligneRiz.querySelector('button').click(); await new Promise(ok => setTimeout(ok, 30));
+    retirer('Galettes').click(); await attendre();
+    retirer('banane').click(); await attendre();
+    const ligneRiz = () => [...document.querySelectorAll('#doublons-rapport .doublons-ligne:not(.gardee)')].find(l => /350 kcal/.test(l.textContent));
+    // La base refuse sans erreur : la ligne reste, l'admin est prévenu.
+    refuser = true;
+    ligneRiz().querySelector('button').click(); await attendre();
+    const refusee = lire();
+    refuser = false;
+    ligneRiz().querySelector('button').click(); await attendre();
+    retirer('Poulet blanc').click(); await attendre();
     const fin = lire();
     // Sans compte admin, rien n'est lu.
     sessionUtilisateur = { id: 'u1', email: 'quelqu.un@example.com' };
     await ouvrirDoublonsAliments();
     const refus = document.getElementById('doublons-etat').textContent;
-    return { avant, ouverte, apres, q1, fin, ecrits, journal, refus, nbQuestions: questions.length,
+    return { avant, ouverte, apres, questions, refusee, fin, ecrits, journal, refus,
       restantsBase: db[T].map(a => a.id).join(','), retires: db.aliments_partages.filter(a => a.supprime).map(a => a.id + ':' + (a.supprime_par || '').split(' ')[0]).sort() };
   });
   assert.equal(r.ouverte, true);
-  assert.match(r.avant.etat, /^5 aliments dans la base, 7 aliments partagés\. 6 familles de doublons, 6 lignes en trop\.$/);
-  assert.equal(r.avant.bouton, 'Fusionner les doublons aux mêmes valeurs (4 lignes retirées)');
+  assert.equal(r.avant.etat, '6 aliments dans la base, 8 aliments partagés. 7 familles de doublons, 7 lignes en trop.');
+  assert.equal(r.avant.bouton, 'Fusionner les doublons aux mêmes valeurs (3 lignes retirées)');
   assert.deepEqual(r.avant.familles, [
-    ['Même nom ou même code-barres, mêmes valeurs — 2 familles, 2 en trop', ['Pomme* | pomme', 'Skyr* | Skyr nature']],
+    ['Même nom ou même code-barres, mêmes valeurs — 3 familles, 3 en trop', ['Pomme* | pomme', 'Banane* | banane', 'Skyr* | Skyr nature']],
     ['Même nom ou même code-barres, valeurs différentes : à vérifier — 1 famille, 1 en trop', ['Riz basmati cuit* | Riz basmati cuit']],
     ['Noms proches, mêmes valeurs — 2 familles, 2 en trop', ['Blanc de poulet* | Poulet blanc', 'Pomme* | Pommes']],
     ['Noms proches, valeurs différentes : à vérifier — 1 famille, 1 en trop', ['Galette* | Galettes']]
   ]);
-  assert.match(r.q1, /^Retirer 4 doublons aux mêmes valeurs \(un aliment de chaque famille est gardé\) \?/);
-  assert.match(r.q1, /3 aliments partagés retirés \(récupérables\), 1 ligne effacée de la base d’aliments\./);
-  // Un seul toucher : partagés retirés (récupérables), ligne de la base effacée ; le reste ne bouge pas.
-  assert.deepEqual(r.ecrits.slice(0, 2), [['maj', 'aliments_partages', 'A,B,D'], ['efface', 'base', '2']]);
+  // Un seul toucher : les aliments partagés en double sont retirés (récupérables). Restent à la main :
+  // « Poulet blanc » (base d'aliments, nom seulement proche) et « banane » (son propre code-barres).
+  assert.equal(r.questions[0], 'Retirer 3 doublons aux mêmes valeurs (un aliment de chaque famille est gardé) ?\n\n3 aliments partagés retirés (récupérables).\nLes repas déjà notés ne changent pas.');
+  assert.deepEqual(r.ecrits[0], ['maj', 'aliments_partages', 'A,B,D']);
   assert.equal(r.apres.bouton, '');
-  assert.match(r.apres.etat, /^4 aliments dans la base, 4 aliments partagés\. 2 familles de doublons, 2 lignes en trop\.$/);
-  assert.deepEqual(r.apres.familles.map(f => f[1]), [['Riz basmati cuit* | Riz basmati cuit'], ['Galette* | Galettes']]);
-  assert.deepEqual(r.ecrits.slice(2), [['maj', 'aliments_partages', 'G'], ['efface', 'base', '4']]);
-  assert.match(r.fin.etat, /Aucun doublon\.$/);
+  assert.equal(r.apres.etat, '6 aliments dans la base, 5 aliments partagés. 4 familles de doublons, 4 lignes en trop.');
+  assert.deepEqual(r.apres.familles.map(f => f[1]), [['Banane* | banane'], ['Riz basmati cuit* | Riz basmati cuit'], ['Blanc de poulet* | Poulet blanc'], ['Galette* | Galettes']]);
+  // À la main : la perte du code-barres est annoncée avant de confirmer.
+  assert.equal(r.questions[1], 'Retirer « Galettes » ?\n\n1 aliment partagé retiré (récupérable).\nLes repas déjà notés ne changent pas.');
+  assert.equal(r.questions[2], 'Retirer « banane » ?\n\n1 aliment partagé retiré (récupérable).\nSon code-barres (777) ne sera plus reconnu au scan.\nLes repas déjà notés ne changent pas.');
+  assert.equal(r.questions[3], 'Retirer « Riz basmati cuit » ?\n\n1 ligne effacée de la base d’aliments.\nLes repas déjà notés ne changent pas.');
+  assert.deepEqual(r.ecrits.slice(1), [['maj', 'aliments_partages', 'G'], ['maj', 'aliments_partages', 'K'], ['efface', 'base', ''], ['efface', 'base', '4'], ['efface', 'base', '2']]);
+  assert.equal(r.refusee.etat, '1 ligne non retirée : la base a refusé la modification (droits d’administration).');
+  assert.deepEqual(r.refusee.familles.map(f => f[1]), [['Riz basmati cuit* | Riz basmati cuit'], ['Blanc de poulet* | Poulet blanc']]);
+  assert.equal(r.fin.etat, '4 aliments dans la base, 3 aliments partagés. Aucun doublon.');
   assert.deepEqual(r.fin.familles, []);
-  assert.equal(r.nbQuestions, 3);
-  assert.equal(r.restantsBase, '1,3,5');
-  assert.deepEqual(r.retires, ['A:doublon', 'B:doublon', 'D:doublon', 'G:doublon', 'Z:']);
-  assert.deepEqual(r.journal.filter(j => j[1] === 'aliments_fusionnes'), [
-    ['admin_consigner', 'aliments_fusionnes', '4 doublons retirés'],
-    ['admin_consigner', 'aliments_fusionnes', '1 doublon retiré'],
-    ['admin_consigner', 'aliments_fusionnes', '1 doublon retiré']
-  ]);
+  assert.equal(r.questions.length, 6);
+  assert.equal(r.restantsBase, '1,3,5,6');
+  assert.deepEqual(r.retires, ['A:doublon', 'B:doublon', 'D:doublon', 'G:doublon', 'K:doublon', 'Z:']);
+  assert.deepEqual(r.journal.filter(j => j[1] === 'aliments_fusionnes').map(j => j[2]), ['3 doublons retirés', '1 doublon retiré', '1 doublon retiré', '1 doublon retiré', '1 doublon retiré']);
   assert.equal(r.refus, "Réservé à l'administrateur connecté.");
 }));
 
