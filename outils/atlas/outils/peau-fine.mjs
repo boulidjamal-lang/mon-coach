@@ -68,16 +68,31 @@ const bvh = (() => {
   return { b: new MeshBVH(g, { indirect: true }), P: P2, T: T2, miroirDe };
 })();
 chrono(`modèle préparé : ${NA} sommets, ${NTm} triangles par côté, ${SQ.length} articulations (${SQ.length - NJ} attaches)`);
+// Le côté de chaque triangle des muscles : BRAS (bras, avant-bras, main ; os du bras), TRONC (le reste), ou ni l'un ni
+// l'autre (l'épaule : deltoïdes, coiffe des rotateurs, grand rond). Voir « L'aisselle » plus bas.
+const BRAS = 1, TRONC = 2;
+const classeTri = (() => {
+  const deSommet = new Uint8Array(NA).fill(TRONC), cote = { bras: BRAS, avant_bras: BRAS, main: BRAS, epaule: 0 };
+  for (const st of E.structures) { const c = st.region in cote ? cote[st.region] : TRONC; for (let v = st.sommets; v < st.sommets + st.nbSommets; v++) deSommet[v] = c; }
+  const osDuBras = SQ.map(a => /^(humerus|ulna|radius|main|doigt)/.test(a.nom || ''));
+  for (let v = 0; v < NA; v++) { const o = v * pasA; if (!estOs(v, o)) continue; let w = 0; for (let k = 0; k < 4; k++) if (osDuBras[bA[o + 12 + k]]) w += bA[o + 16 + k]; deSommet[v] = w > 127 ? BRAS : TRONC; }
+  const c = new Uint8Array(bvh.T.length / 3);
+  for (let t = 0; t < NTm; t++) c[t] = deSommet[Tm[t * 3]];
+  bvh.miroirDe.forEach((t, k) => { c[NTm + k] = c[t]; });
+  return c;
+})();
 const tmp = new THREE.Vector3(), pt = new THREE.Vector3();
 // Le point de la surface des muscles le plus proche de s, parmi ceux qui sont « sous » lui : dans le cône d'axe
-// `dedans` (unitaire ; sans lui, le plus proche tout court). Rend { q, d, f } ou rien.
-function sous(s, dedans, cosMin, dMax) {
+// `dedans` (unitaire ; sans lui, le plus proche tout court), hors des triangles du côté `exclu` (BRAS, TRONC ; 0 : aucun).
+// Rend { q, d, f } ou rien.
+function sous(s, dedans, cosMin, dMax, exclu = 0) {
   let mieux = dMax, f = -1; const q = new THREE.Vector3();
   pt.set(s[0], s[1], s[2]);
   bvh.b.shapecast({
     boundsTraverseOrder: b => b.distanceToPoint(pt),
     intersectsBounds: (b, feuille, score) => score < mieux,
     intersectsTriangle: (tri, i) => {
+      if (exclu && classeTri[i] === exclu) return false;
       tri.closestPointToPoint(pt, tmp);
       const d = tmp.distanceTo(pt);
       if (!(d < mieux)) return false;   // (un triangle dégénéré donne une distance indéfinie)
@@ -311,6 +326,28 @@ function normalesDe(P) {
   for (let i = 0; i < NC; i++) { if (plan[i]) N[i * 3] = 0; const l = Math.hypot(N[i * 3], N[i * 3 + 1], N[i * 3 + 2]) || 1; for (let k = 0; k < 3; k++) N[i * 3 + k] /= l; }
   return N;
 }
+/* L'aisselle. Bras le long du corps, le bras étoffé chevauche le flanc : sous l'aisselle, la peau du flanc se trouvait
+   dans la longue portion du triceps, celle de l'intérieur du bras dans le grand dorsal — chacune ressortait sur le
+   muscle de l'autre et en prenait les attaches. Bras avancé ou levé, la peau du dos partait avec le triceps et celle du
+   bras restait au flanc : une toile tendue du dos au bras. Loin de l'épaule, la peau du tronc ne se pose donc que sur
+   des muscles du tronc (ou de l'épaule), celle du bras que sur des muscles du bras (ou de l'épaule). Qui est quoi, la
+   peau d'origine le dit : sa part de bras (posée par peau.mjs d'après la région ; une articulation intermédiaire compte
+   pour sa part). Près de l'épaule — à moins de EPAULE_R0 de son centre, puis de moins en moins jusqu'à EPAULE_R1 — rien
+   n'est exclu : la peau y suit les muscles qu'elle recouvre, quels qu'ils soient. Le corps du film est le côté gauche :
+   l'épaule gauche suffit. */
+const EPAULE_R0 = Number(process.env.EPAULE_R0 || 0.05), EPAULE_R1 = Number(process.env.EPAULE_R1 || 0.13);
+const exclu = new Uint8Array(NC);
+{
+  const osDuBras = SQ.map(a => /^(humerus|ulna|radius|main|doigt)/.test(a.nom || '') && a.nom.endsWith('.G'));
+  const partBras = j => { if (j < NJ) return osDuBras[j] ? 1 : 0; const k = j - NJ; if (k >= X.length) return 0; const x = X[k]; return (osDuBras[x.de] ? 1 - x.part : 0) + (osDuBras[x.vers] ? x.part : 0); };
+  const C = SQ[SQ.findIndex(a => a.nom === 'humerus.G')].centre;
+  const lisse01 = t => { t = Math.max(0, Math.min(1, t)); return t * t * (3 - 2 * t); };
+  for (let i = 0; i < NC; i++) {
+    const loin = lisse01((Math.hypot(P0[i * 3] - C[0], P0[i * 3 + 1] - C[1], P0[i * 3 + 2] - C[2]) - EPAULE_R0) / (EPAULE_R1 - EPAULE_R0));
+    let bras = 0; for (let k = 0; k < 4; k++) bras += partBras(corps.os[i][k]) * corps.poids[i][k] / 255;
+    exclu[i] = loin * (1 - bras) >= 0.5 ? BRAS : loin * bras >= 0.5 ? TRONC : 0;
+  }
+}
 const Pf = Float64Array.from(P0), Qf = new Float64Array(NC * 3), Ff = new Int32Array(NC).fill(-1), pose = new Uint8Array(NC);
 // La pièce de l'entrejambe reste une membrane tendue : ses sommets (le milieu de chaque éventail, les milieux de ses
 // arêtes, et trois rangs autour) ne sont pas attirés par les muscles — ils vont au milieu de leurs voisins et ne font
@@ -337,14 +374,14 @@ const tendus = new Uint8Array(NC);
 // sinon le plus proche dans le cône. { q, d, f, dehors, n } ou rien (le sommet flotte : rien sous lui à portée).
 function dessous(i, N, portee) {
   const s = [Pf[i * 3], Pf[i * 3 + 1], Pf[i * 3 + 2]], dedans = [-N[i * 3], -N[i * 3 + 1], -N[i * 3 + 2]];
-  let h = sous(s, null, -1, portee);
+  let h = sous(s, null, -1, portee, exclu[i]);
   if (h) {
     const n = normaleTri(h.f), v = [s[0] - h.q[0], s[1] - h.q[1], s[2] - h.q[2]];
     // Dans la chair : derrière le triangle le plus proche.
     if (h.d > 1e-6 && (v[0] * n[0] + v[1] * n[1] + v[2] * n[2]) < -0.2 * h.d) return Object.assign(h, { dehors: false, n });
     if (h.d < 2 * EPAISSEUR || -(v[0] * dedans[0] + v[1] * dedans[1] + v[2] * dedans[2]) / h.d >= CONE) return Object.assign(h, { dehors: true, n });
   }
-  h = sous(s, dedans, CONE, portee);
+  h = sous(s, dedans, CONE, portee, exclu[i]);
   return h ? Object.assign(h, { dehors: true, n: normaleTri(h.f) }) : null;
 }
 let ecartsDepart = null;
@@ -396,7 +433,7 @@ for (let tour = 0; tour < TOURS + 3; tour++) {
 // L'écart final, mesuré : du film au muscle le plus proche.
 {
   const e = []; let loin = 0;
-  for (let i = 0; i < NC; i++) { if (corps.bord[i]) continue; const h = sous([Pf[i * 3], Pf[i * 3 + 1], Pf[i * 3 + 2]], null, -1, 0.2); if (h) { e.push(h.d); if (h.d > 0.006) loin++; if (Ff[i] < 0) { Ff[i] = h.f; for (let k = 0; k < 3; k++) Qf[i * 3 + k] = h.q[k]; } } }
+  for (let i = 0; i < NC; i++) { if (corps.bord[i]) continue; const h = sous([Pf[i * 3], Pf[i * 3 + 1], Pf[i * 3 + 2]], null, -1, 0.2, exclu[i]); if (h) { e.push(h.d); if (h.d > 0.006) loin++; if (Ff[i] < 0) { Ff[i] = h.f; for (let k = 0; k < 3; k++) Qf[i * 3 + k] = h.q[k]; } } }
   const tri = e.slice().sort((a, b) => a - b), q = p => (tri[Math.floor(p * (tri.length - 1))] * 1000).toFixed(1);
   chrono(`écart du film au muscle : médiane ${q(0.5)} mm, 9 sur 10 sous ${q(0.9)} mm, 99 sur 100 sous ${q(0.99)} mm, maximum ${q(1)} mm (${loin} sommets à plus de 6 mm : le film tendu au-dessus d'un creux)`);
 }
@@ -413,7 +450,19 @@ if (process.env.DETAIL) {
   for (const z in parZone) { const l = parZone[z].sort((a, b) => a - b), q = p => l[Math.floor(p * (l.length - 1))].toFixed(1); console.log(`   peau d'origine à moins de 12 mm du bord, ${z} : ${l.length} sommets, écart au muscle de ${q(0)} à ${q(1)} mm (médiane ${q(0.5)}, 1 sur 10 sous ${q(0.1)})`); }
 }
 // Le bord : ses sommets ne bougent pas ; leurs attaches de muscle sont celles du muscle le plus proche.
-for (let i = 0; i < NC; i++) if (Ff[i] < 0) { const h = sous([Pf[i * 3], Pf[i * 3 + 1], Pf[i * 3 + 2]], null, -1, Infinity); Ff[i] = h.f; for (let k = 0; k < 3; k++) Qf[i * 3 + k] = h.q[k]; }
+for (let i = 0; i < NC; i++) if (Ff[i] < 0) { const h = sous([Pf[i * 3], Pf[i * 3 + 1], Pf[i * 3 + 2]], null, -1, Infinity, exclu[i]); Ff[i] = h.f; for (let k = 0; k < 3; k++) Qf[i * 3 + k] = h.q[k]; }
+// (contrôle) L'aisselle : les sommets que la règle tient loin des muscles de l'autre côté, et ceux qui, posés, en sont
+// encore le plus près (le film y passe au-dessus d'eux sans s'y attacher).
+{
+  let nT = 0, nB = 0, pT = 0, pB = 0;
+  for (let i = 0; i < NC; i++) {
+    if (!exclu[i] || corps.bord[i]) continue;
+    if (exclu[i] === BRAS) nT++; else nB++;
+    const h = sous([Pf[i * 3], Pf[i * 3 + 1], Pf[i * 3 + 2]], null, -1, 0.2);
+    if (h && classeTri[h.f] === exclu[i]) { if (exclu[i] === BRAS) pT++; else pB++; }
+  }
+  chrono(`aisselle : ${nT} sommets de la peau du tronc posés hors des muscles du bras (${pT} en restent le plus près), ${nB} de la peau du bras hors de ceux du tronc (${pB})`);
+}
 
 /* ---------- Les attaches du muscle recouvert ---------- */
 const poidsM = Array.from({ length: NC }, () => ({})), ombreM = new Float64Array(NC);

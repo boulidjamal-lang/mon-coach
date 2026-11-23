@@ -92,6 +92,13 @@ gommait tout le relief. Sur le corps, elle est donc remplacée par un film, fabr
   plus proche, dans un cône de 85° autour de sa normale, s'arrête à 1,5 mm de lui, ressort s'il est entré dans la
   chair, et se lisse avec ses voisins. Il ne plonge pas dans les fentes étroites (sillon des fesses, aine) : un sommet
   ne descend pas à plus de 1,2 mm sous la moyenne de ses voisins ;
+- **chaque peau reste de son côté à l'aisselle** : bras le long du corps, le bras étoffé chevauche le flanc, et la
+  peau du flanc se posait sur la longue portion du triceps, celle de l'intérieur du bras sur le grand dorsal — bras
+  avancé ou levé, la peau du dos partait avec le triceps, tendue en toile jusqu'au bras. À plus de 5 à 13 cm du centre
+  de l'épaule, la peau du tronc ne se pose donc que sur des muscles du tronc ou de l'épaule (deltoïdes, coiffe, grand
+  rond), celle du bras que sur des muscles du bras ou de l'épaule ; ce qui est tronc ou bras, la peau d'origine le dit
+  (sa part de bras, posée par `peau.mjs` d'après la région). Plus près de l'épaule, la peau suit le muscle qu'elle
+  recouvre, quel qu'il soit ;
 - **il suit le muscle qu'il recouvre** : chaque sommet reprend les attaches du point de muscle sous lui (mêmes os,
   mêmes poids, quaternions duaux, corde et appuis compris), au lieu des attaches de la peau d'origine. Le film bouge
   donc comme les muscles, sans glisser sur eux ;
