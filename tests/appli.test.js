@@ -529,6 +529,43 @@ test('stats muscu : détail par faisceau et déséquilibres (pecs, épaules, dos
   assert.deepEqual(['pectoraux', 'epaules', 'dos'].flatMap(g => r[g].alertes), []);
 }));
 
+test("rotations de l'épaule : la coiffe des rotateurs travaille (sous-scapulaire en interne, sous-épineux et petit rond en externe) — en rose plein dans la 3D, nommée dans la liste et la fiche", () => avecAppli({}, async ({ page }) => {
+  const r = await page.evaluate(() => {
+    const coiffe = role => ({ groupe: 'epaules', faisceau: null, role });
+    const S = [
+      { id: 'subscapulaire', app: [coiffe('stabilisateur')] }, { id: 'infra_epineux', app: [coiffe('stabilisateur')] },
+      { id: 'petit_rond', app: [coiffe('stabilisateur')] }, { id: 'supra_epineux', app: [coiffe('stabilisateur')] },
+      { id: 'deltoide_anterieur', app: [{ groupe: 'epaules', faisceau: 'delt_ant', role: 'principal' }] }
+    ];
+    const N = neutresExerciceAtlas(), plein = melangerCouleurs(N.muscle, couleurCssAtlas('--corps-cible', '#f472b6'), 1);
+    const pleins = id => { const c = carteExerciceAtlas(trouverExercice(id), S).couleurs; return S.filter(x => c[x.id] === plein).map(x => x.id); };
+    const ids = ['e1267', 'e1268', 'sw-rotation-externe-en-decubitus-lateral', 'sw-rotation-externe-de-l-x27-epaule-en-position-assise', 'sw-rotation-cubaine-avec-halteres', 'e43'];
+    const res = { exos: ids.map(id => { const e = trouverExercice(id); return [e.nom, e.materiel, e.groupe]; }), pleins: ids.map(pleins),
+      textes: ['e1267', 'e43'].map(id => musclesExerciceTexte(trouverExercice(id))) };
+    afficherFicheExerciceBiblio('e1267');
+    res.fiche = (document.querySelector('#fiche-exercice-container .fiche-coiffe') || {}).textContent || '';
+    fermerModal('fiche-exercice-modal');
+    afficherFicheExerciceBiblio('e43');
+    res.ficheLaterale = !!document.querySelector('#fiche-exercice-container .fiche-coiffe');
+    fermerModal('fiche-exercice-modal');
+    return res;
+  });
+  assert.deepEqual(r.exos, [
+    ['Rotation interne à 90° à la poulie', 'poulie', 'epaules'],
+    ['Rotation externe à 90° à la poulie', 'poulie', 'epaules'],
+    ['Rotation externe en décubitus latéral', 'haltere', 'epaules'],
+    ["Rotation externe de l'épaule en position assise", 'haltere', 'epaules'],
+    ['Rotation cubaine avec haltères', 'haltere', 'epaules'],
+    ['Élévation latérale à la poulie', 'poulie', 'epaules']
+  ]);
+  // Rotation interne : le sous-scapulaire (et, en surface, le deltoïde antérieur) ; externe : sous-épineux et petit rond.
+  assert.deepEqual(r.pleins, [['subscapulaire', 'deltoide_anterieur'], ['infra_epineux', 'petit_rond'], ['infra_epineux', 'petit_rond'],
+    ['infra_epineux', 'petit_rond'], ['infra_epineux', 'petit_rond'], []]);
+  assert.deepEqual(r.textes, [{ principal: 'Épaules (coiffe des rotateurs)', secondaires: ['Pectoraux', 'Dos'] }, { principal: 'Épaules', secondaires: [] }]);
+  assert.equal(r.fiche, 'Coiffe des rotateurs : sous-scapulaire.');
+  assert.equal(r.ficheLaterale, false);
+}));
+
 test('faisceaux : affichés sur la fiche, réglables dans Administration, données piégées ignorées', () => avecAppli({}, async ({ page }) => {
   const r = await page.evaluate(() => {
     const exo = toutesLesExercices().find(e => e.nom === 'Développé incliné avec haltères');
@@ -7645,7 +7682,7 @@ test('atlas 3D : le registre du modèle parle la langue de l\'appli (groupes, fa
 /* Chaque mouvement de la table, posé sur le squelette du modèle à plusieurs instants (sans navigateur) : il se définit
    sans erreur, ne donne que des valeurs finies, ne passe pas sous le sol, et ses mains et ses pieds atteignent leurs
    appuis. Le contrôle est celui de la chaîne de fabrication (outils/atlas/mouvements/controle.mjs). */
-test('atlas 3D : les mouvements des 823 exercices se posent sans défaut', async () => {
+test('atlas 3D : les mouvements des 825 exercices se posent sans défaut', async () => {
   const { pathToFileURL } = require('url'), dossier = path.join(RACINE, 'outils', 'atlas', 'mouvements');
   const { controlerSpec } = await import(pathToFileURL(path.join(dossier, 'controle.mjs')).href);
   const { chargerAtlas, chargerMouvements, FICHIER_ATLAS, FICHIER_MOUVEMENTS } = await import(pathToFileURL(path.join(dossier, 'silhouettes.mjs')).href);
@@ -7653,7 +7690,7 @@ test('atlas 3D : les mouvements des 823 exercices se posent sans défaut', async
   const atlas = chargerAtlas(FICHIER_ATLAS), M = chargerMouvements(FICHIER_MOUVEMENTS);
   const corps = new M.Corps(atlas.E.squelette, atlas.peau), specs = Object.keys(M.EXERCICES);
   assert.ok(specs.length > 700, 'la table des mouvements');
-  assert.equal(specs.reduce((n, s) => n + M.EXERCICES[s].length, 0), 823, 'un mouvement par exercice');
+  assert.equal(specs.reduce((n, s) => n + M.EXERCICES[s].length, 0), 825, 'un mouvement par exercice');
   const defauts = [];
   for (const spec of specs) { const pb = controlerSpec(M, corps, M.TEINTES.clair, spec); if (pb.length) defauts.push(spec + ' : ' + pb.join(' ; ')); }
   assert.deepEqual(defauts, [], 'mouvements à revoir');

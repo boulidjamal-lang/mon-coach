@@ -3076,7 +3076,12 @@
         p = surLeCote(c, { cote: 'D' }); fixe = []; vue = { az: 0, el: 22 };
         a = B(90, 6, -62, 90, 90); b = B(90, 6, 38, 90, 90);
         autre = B(0, 150, 0, 60, 90, { doigts: 'detendu' });
-      } else { pose(); a = B(90, 86, 4, 90, 180); b = B(90, 86, 86, 90, 180); }
+      } else {
+        pose(); a = B(90, 86, 4, 90, 180); b = B(90, 86, 86, 90, 180);
+        // À la poulie (rotation externe à 90°) : face à la poulie, à hauteur de la main au départ, un peu en dehors du
+        // coude ; l'avant-bras monte de l'horizontale à la verticale contre le câble.
+        if (o.poulie || o.elas) { ancre = s => V(s * 0.62, 1.42, 1.05); vue = { az: 140, el: 10 }; }
+      }
     } else if (o.rotint) {
       // Rotation interne à 90° : debout dos à la poulie, bras écarté à hauteur d'épaule, coude plié à angle droit.
       // L'avant-bras part de la verticale (main en haut, câble tendu vers l'arrière à hauteur de la main) et bascule
@@ -6656,6 +6661,7 @@
     "elevation facepull poulie tabouret":["sw-tirage-visage-assis"],
     "elevation rotext hal tabouret uni":["sw-rotation-externe-de-l-x27-epaule-en-position-assise"],
     "elevation rotint poulie uni":["e1267"],
+    "elevation rotext poulie uni":["e1268"],
     "developpe epaules hal assis neutre":["sw-developpe-epaules-assis-prise-neutre"],
     "elevation rotext hal cote uni":["sw-rotation-externe-en-decubitus-lateral"],
     "elevation menton smith":["e391"],
