@@ -19333,6 +19333,7 @@ const EXERCICES_BASE = [
   {"id": "sw-dumbbell-alternate-hammer-front-raise-elevation-frontale-alternee-avec-halteres-en-prise-marteau", "nom": "Élévation frontale alternée avec haltères en prise marteau", "nomEn": "Dumbbell Alternate Hammer Front Raise", "groupe": "epaules", "secondaires": ["pectoraux"], "materiel": "haltere"},
   {"id": "sw-rotation-externe-de-l-x27-epaule-en-position-assise", "nom": "Rotation externe de l'épaule en position assise", "nomEn": "Seated Shoulder External Rotation", "groupe": "epaules", "secondaires": [], "materiel": "haltere"},
   {"id": "e1267", "nom": "Rotation interne à 90° à la poulie", "nomEn": "Cable 90° Internal Rotation", "groupe": "epaules", "secondaires": ["pectoraux", "dos"], "materiel": "poulie"},
+  {"id": "e1268", "nom": "Rotation externe à 90° à la poulie", "nomEn": "Cable 90° External Rotation", "groupe": "epaules", "secondaires": [], "materiel": "poulie"},
   {"id": "sw-conducteur-de-volant-avec-disque", "nom": "Conducteur de volant avec disque", "nomEn": "Plate Bus Driver", "groupe": "epaules", "secondaires": [], "materiel": "autre"},
   {"id": "e53", "nom": "Pompe en pike", "nomEn": "Pike Push-Up", "groupe": "epaules", "secondaires": ["pectoraux", "triceps"], "materiel": "poids_corps"},
   {"id": "sw-tirage-facial-aux-anneaux", "nom": "Face pull aux anneaux", "nomEn": "Ring Face Pull", "groupe": "epaules", "secondaires": ["dos"], "materiel": "autre", "charge": false},
@@ -23206,6 +23207,7 @@ function afficherFicheExerciceBiblio(id, options) {
   html += `<div class="fiche-bloc">
     <div class="fiche-bloc-titre">Muscles sollicités</div>
     <div class="fiche-muscles"><span class="principal">${escapeHtml(GROUPES_MUSCULAIRES[e.groupe] || '')}</span>${(e.secondaires || []).filter(g => g !== e.groupe && GROUPES_MUSCULAIRES[g]).map(g => `<span>${escapeHtml(GROUPES_MUSCULAIRES[g])}</span>`).join('')}</div>
+    ${coiffeExercice(e) ? `<p class="note fiche-coiffe">Coiffe des rotateurs : ${escapeHtml(coiffeExercice(e).texte)}.</p>` : ''}
     ${faisceauxFicheHTML(e)}
     ${boutonAtlasHTML('exercice', e.id, mouvement3d ? 'Explorer les muscles en 3D' : mouvementExercice(e.id) ? 'Voir le mouvement en 3D' : 'Voir les muscles en 3D')}
     <div class="fiche-record" style="margin-top:6px;"><span>Matériel</span><b>${MATERIELS[e.materiel].ic} ${escapeHtml(MATERIELS[e.materiel].label)}</b></div>
@@ -23929,6 +23931,21 @@ function niveauxDepuisPoids(poids) {
   return n;
 }
 function contient(n, ...mots) { return mots.some(m => n.includes(m)); }
+/* Rotations de l'épaule (interne ou externe, bras le long du corps ou à 90°) : c'est la coiffe des rotateurs qui
+   travaille d'abord — le sous-scapulaire en rotation interne, le sous-épineux et le petit rond en rotation externe
+   (la rotation cubaine en est une, bras levé). Identifiants des structures de l'atlas ; elles y sont rangées
+   « stabilisateurs » de l'épaule, à peine teintées, alors qu'ici elles font le mouvement. */
+const COIFFE_ROTATEURS = {
+  interne: { muscles: ['subscapulaire'], texte: 'sous-scapulaire' },
+  externe: { muscles: ['infra_epineux', 'petit_rond'], texte: 'sous-épineux et petit rond' }
+};
+function coiffeExercice(exo) {
+  if (!exo || exo.groupe !== 'epaules') return null;
+  const noms = [exo.nom, exo.nomEn].map(t => ' ' + normaliserRecherche(t) + ' ');
+  if (noms.some(n => contient(n, 'rotation interne', 'internal rotation'))) return COIFFE_ROTATEURS.interne;
+  if (noms.some(n => contient(n, 'rotation externe', 'external rotation', 'rotation cubaine', 'cuban rotation'))) return COIFFE_ROTATEURS.externe;
+  return null;
+}
 const REGLES_FAISCEAUX = {
   pectoraux: n => {
     if (contient(n, ' pompe', ' push up', ' pushup')) {
@@ -23944,6 +23961,8 @@ const REGLES_FAISCEAUX = {
   epaules: n => {
     // Rotation interne (coiffe : sous-scapulaire) : en surface, c'est le deltoïde antérieur qui travaille.
     if (contient(n, 'rotation interne', 'internal rotation')) return { delt_ant: 1 };
+    // Rotation cubaine : rowing menton puis rotation externe, bras levé — l'arrière et le côté de l'épaule.
+    if (contient(n, 'rotation cubaine', 'cuban rotation')) return { delt_post: 0.5, delt_lat: 0.5 };
     if (contient(n, 'oiseau', 'arriere', 'posterieur', 'face pull', 'tirage visage', 'tirage facial', 'reverse fly', 'rear delt', 'delt fly', 'butterfly inverse', 'ecarte inverse', 'ecartes inverses', 'powell', 'rotation externe', 'external rotation')
       || (contient(n, 'elevation', 'raise') && contient(n, 'penche', 'bent over'))
       || (contient(n, 'tirage', 'row') && contient(n, 'penche', 'bent over'))
@@ -24976,10 +24995,12 @@ function teinteExerciceAtlas(ctx, lien) {
 /* Les couleurs du corps pour un exercice (l'atlas en mode « Exercice », et le mouvement dans la fiche de l'exercice) :
    les muscles qui travaillent en rose, les autres dans un gris clair qui laisse lire le corps en mouvement. */
 function carteExerciceAtlas(exo, structures, ctx) {
-  const N = neutresExerciceAtlas(), c = ctx || { exo }, couleurs = {};
+  const N = neutresExerciceAtlas(), c = ctx || { exo }, couleurs = {}, coiffe = coiffeExercice(exo);
   structures.forEach(s => {
     let mieux = null;
-    s.app.forEach(lien => { const t = teinteExerciceAtlas(c, lien); if (t) { const k = t.k * POIDS_ROLE_ATLAS[lien.role]; if (!mieux || k > mieux.k) mieux = { c: t.c, k }; } });
+    // Les muscles de la coiffe qui font la rotation : muscle principal, en plein.
+    if (coiffe && coiffe.muscles.includes(s.id)) mieux = { c: couleurCssAtlas('--corps-cible', '#f472b6'), k: 1 };
+    else s.app.forEach(lien => { const t = teinteExerciceAtlas(c, lien); if (t) { const k = t.k * POIDS_ROLE_ATLAS[lien.role]; if (!mieux || k > mieux.k) mieux = { c: t.c, k }; } });
     if (mieux) couleurs[s.id] = melangerCouleurs(N.muscle, mieux.c, Math.max(0.18, Math.min(1, mieux.k)));
   });
   return { couleurs, muscle: N.muscle, tendon: N.tendon, os: N.os, peau: N.peau, tendons: 0.3, estompe: 0.5 };
@@ -28623,7 +28644,8 @@ function badgeNiveauHTML(exerciceId) {
 }
 function musclesExerciceTexte(exo) {
   const sec = (exo.secondaires || []).filter(g => g !== exo.groupe).map(g => GROUPES_MUSCULAIRES[g]).filter(Boolean);
-  return { principal: GROUPES_MUSCULAIRES[exo.groupe] || '', secondaires: sec };
+  const principal = GROUPES_MUSCULAIRES[exo.groupe] || '';
+  return { principal: principal && coiffeExercice(exo) ? principal + ' (coiffe des rotateurs)' : principal, secondaires: sec };
 }
 
 /* =====================================================================

@@ -781,11 +781,24 @@
    "periode": 2.8,
    "images": 42,
    "octets": {
-    "image": 7768,
-    "clair": 6569,
-    "sombre": 6259
+    "image": 7770,
+    "clair": 6600,
+    "sombre": 6231
    },
-   "cle": "c23f91b6e7e15710"
+   "cle": "704186f11de41bd7"
+  },
+  "e1268": {
+   "mouvement": "elevation rotext poulie uni",
+   "instant": 1,
+   "depart": 1.371,
+   "periode": 2.8,
+   "images": 42,
+   "octets": {
+    "image": 8080,
+    "clair": 6422,
+    "sombre": 6288
+   },
+   "cle": "54b923f00c85bed4"
   },
   "e127": {
    "mouvement": "traction pendu",
@@ -8529,11 +8542,11 @@
    "periode": 2.8,
    "images": 42,
    "octets": {
-    "image": 6326,
-    "clair": 8503,
-    "sombre": 8186
+    "image": 6304,
+    "clair": 8376,
+    "sombre": 8035
    },
-   "cle": "0c6b12315d334191"
+   "cle": "a0bfd3af14683c9a"
   },
   "sw-rotation-debout-avec-barre": {
    "mouvement": "rotation debout barre",
@@ -8594,11 +8607,11 @@
    "periode": 2.8,
    "images": 42,
    "octets": {
-    "image": 8062,
-    "clair": 6622,
-    "sombre": 6593
+    "image": 8070,
+    "clair": 6687,
+    "sombre": 6601
    },
-   "cle": "1fdf463652681ce3"
+   "cle": "b9046a8a584c2a8a"
   },
   "sw-rotation-externe-en-decubitus-lateral": {
    "mouvement": "elevation rotext hal cote uni",
@@ -8607,11 +8620,11 @@
    "periode": 2.8,
    "images": 42,
    "octets": {
-    "image": 5316,
-    "clair": 5148,
-    "sombre": 5290
+    "image": 5310,
+    "clair": 5114,
+    "sombre": 5355
    },
-   "cle": "01a643b8d68e7409"
+   "cle": "e0e542393b6e3fd9"
   },
   "sw-rotation-horizontale-avec-bande-elastique": {
    "mouvement": "rotation debout elas",
