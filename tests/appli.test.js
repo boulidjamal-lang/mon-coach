@@ -2756,10 +2756,9 @@ test('Séances prévues : la séance du soir comptée dès le matin, remplacée 
     const j = getDay(todayStr()), avant = { goal: j.goal, steps: j.steps };
     j.goal = 'seche'; j.steps = 100;
     const t = computeTargets(j, todayStr());
-    // « Ta journée » dit pourquoi l'objectif monte moins que la dépense.
-    renderSeancesPrevues(); ouvrirDepense();
+    // « Mes séances prévues » (Profil) dit pourquoi l'objectif monte moins que la dépense.
+    renderSeancesPrevues();
     const note = document.querySelector('#bloc-seances-prevues .sp-ligne--jour + .sp-note').textContent;
-    fermerModal('depense-modal');
     const sauve = userProfile.seancesPrevues;
     userProfile.seancesPrevues = { mode: 'off' };
     const sans = computeTargets(j, todayStr());
@@ -2780,20 +2779,23 @@ test('Séances prévues : la séance du soir comptée dès le matin, remplacée 
   const i = ordre.indexOf(mer.prevue.nom);
   assert.deepEqual(mer.a_venir.map(x => x[1]), [0, 1, 2].map(k => ordre[(i + k) % 3]));
 
-  // « Ta journée » : la séance du jour, les suivantes, les jours repérés ; « Pas de séance aujourd'hui » la retire.
+  // « Mes séances prévues », dans Profil (plus dans Ta journée, ouverte depuis Repas) : la séance du jour,
+  // les suivantes, les jours repérés ; « Pas de séance aujourd'hui » la retire.
   const journee = await page.evaluate(() => {
-    ouvrirDepense();
+    allerA('reglages'); renderApp();
     const b = document.getElementById('bloc-seances-prevues');
-    const res = { cache: b.classList.contains('hidden'), lignes: [...b.querySelectorAll('.sp-ligne')].map(l => l.querySelector('.sp-nom b').textContent + ' ' + l.querySelector('.sp-kcal').textContent),
+    const res = { ou: [!!b.closest('#ecran-reglages'), !!document.querySelector('#depense-modal #bloc-seances-prevues'), b.getBoundingClientRect().height > 0],
+      cache: b.classList.contains('hidden'), lignes: [...b.querySelectorAll('.sp-ligne')].map(l => l.querySelector('.sp-nom b').textContent + ' ' + l.querySelector('.sp-kcal').textContent),
       repere: b.querySelector('.sp-reperes').textContent, detail: document.getElementById('detail-depense').textContent };
     [...b.querySelectorAll('button')].find(x => x.textContent === "Pas de séance aujourd'hui").click();
     res.apres = { exception: userProfile.seancesPrevues.exceptions[todayStr()], prevue: !!computeTargets(getDay(todayStr()), todayStr()).seancePrevue,
       bouton: [...b.querySelectorAll('button')].map(x => x.textContent).includes("J'ai une séance aujourd'hui"), heros: document.getElementById('seance-prevue-heros').classList.contains('hidden') };
     [...b.querySelectorAll('button')].find(x => x.textContent === "J'ai une séance aujourd'hui").click();
     res.retour = { exceptions: userProfile.seancesPrevues.exceptions || null, prevue: !!computeTargets(getDay(todayStr()), todayStr()).seancePrevue };
-    fermerModal('depense-modal');
+    allerA('repas');
     return res;
   });
+  assert.deepEqual(journee.ou, [true, false, true]);
   assert.equal(journee.cache, false);
   assert.equal(journee.lignes.length, 3);
   assert.match(journee.lignes[0], new RegExp(`^${mer.prevue.nom} \\+${mer.prevue.kcal}\\skcal$`));
@@ -2896,9 +2898,7 @@ test('Séances prévues : chaque jour son programme, appris de tes séances (sé
     currentDate = auj; allerA('repas'); renderApp();
     const j = getDay(auj), t = computeTargets(j, auj);
     const lundi = prochainesSeances(7).find(x => x.date === '2026-11-09');
-    ouvrirDepense();
     const note = document.querySelector('#bloc-seances-prevues .sp-reperes').textContent;
-    fermerModal('depense-modal');
     allerA('seance'); choisirModeSeance('muscu');
     const carte = document.querySelector('#vitrine-muscu .sdj');
     const carteMardi = [carte.querySelector('small').textContent, carte.querySelector('h4').textContent];
@@ -2922,7 +2922,7 @@ test('Séances prévues : chaque jour son programme, appris de tes séances (sé
 
   // Le programme d'un jour fixé à la main l'emporte ; « Auto » le rend aux séances.
   const fixe = await page.evaluate(() => {
-    ouvrirDepense();
+    allerA('reglages'); renderApp();
     const menus = () => [...document.querySelectorAll('#bloc-seances-prevues .sp-prog')].map(l => [l.querySelector('span').textContent, l.querySelector('select').selectedOptions[0].textContent]);
     const avant = menus();
     const sel = [...document.querySelectorAll('#bloc-seances-prevues .sp-prog')].find(l => l.querySelector('span').textContent === 'Mercredi').querySelector('select');
@@ -2930,7 +2930,7 @@ test('Séances prévues : chaque jour son programme, appris de tes séances (sé
     const res = { avant, demain: prochainesSeances(7)[0].nom, carte: seanceAAfficher().p.nom, note: document.querySelector('#bloc-seances-prevues .sp-reperes').textContent, reglage: userProfile.seancesPrevues.programmes };
     choisirProgrammeJour(3, '');
     res.apres = { demain: prochainesSeances(7)[0].nom, reglage: userProfile.seancesPrevues.programmes || null };
-    fermerModal('depense-modal');
+    allerA('repas');
     return res;
   });
   assert.deepEqual(fixe.avant, [['Lundi', 'Auto · Pecs Triceps'], ['Mercredi', 'Auto · Jambes'], ['Jeudi', 'Auto · Épaules'], ['Samedi', 'Auto · Dos Biceps']]);
@@ -5828,7 +5828,7 @@ test("Profil : la page montre « moi » (identité, objectif, corps, badges), l'
     };
   });
   assert.deepEqual(r.ordre, ['vitrine-profil', 'carte-corps', 'gymbros-rangee-profil', 'vitrine-badges']);
-  assert.deepEqual(r.titres, ['Mon objectif', 'Mon corps', 'Passe de saison', 'Vitrine']);
+  assert.deepEqual(r.titres, ['Mon objectif', 'Mes séances prévues', 'Mon corps', 'Passe de saison', 'Vitrine']);
   assert.deepEqual([r.corps, r.reglages, r.identite, r.compteSansBalance, r.modifier], [true, true, true, true, true]);
   assert.deepEqual(r.balance, [true, false]);
 }));
@@ -7317,10 +7317,10 @@ test('rappels sur l\'iPhone : activés avec l\'autorisation, recalculés à chaq
     saveData(todayStr()); renderApp(); await attendre();
     res.apresRepas = programmes().map(n => n.id);
     res.annules = (notifs().filter(a => a[1] === 'cancel').pop() || [, , { notifications: [] }])[2].notifications.length;
-    // Toucher un rappel : la séance ouvre Ta journée, la pesée sa saisie.
+    // Toucher un rappel : la séance ouvre « Mes séances prévues » (Profil), la pesée sa saisie.
     ouvrirDepuisRappel({ rappel: 'seance', date: todayStr() }); await new Promise(ok => setTimeout(ok, 200));
-    res.toucheSeance = document.getElementById('depense-modal').classList.contains('show');
-    fermerModal('depense-modal');
+    res.toucheSeance = ecranActif === 'reglages' && !document.getElementById('depense-modal').classList.contains('show');
+    allerA('repas');
     ouvrirDepuisRappel({ rappel: 'pesee' }); await new Promise(ok => setTimeout(ok, 200));
     res.touchePesee = document.getElementById('feuille-saisie-rapide').classList.contains('show');
     fermerFeuilles();

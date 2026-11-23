@@ -2502,6 +2502,7 @@ body.sur-repas .semaine-nav { display: block; }
 .seance-prevue-heros .icone-ui { width: 14px; height: 14px; flex: none; color: var(--primary); }
 .seance-prevue-heros b { color: var(--text); font-weight: 800; }
 /* Séances prévues (Ta journée) : aujourd'hui, les jours à venir, les jours de séance. */
+.carte-seances { padding: 14px 16px 8px; }
 .sp-ligne { display: grid; grid-template-columns: 3.4em 1fr auto; align-items: center; gap: 12px; padding: 9px 0; border-top: 1px solid var(--verre-brd); }
 .sp-titre + .sp-ligne { border-top: 0; }
 .sp-quand { font-size: 0.72rem; font-weight: 800; text-transform: uppercase; letter-spacing: .05em; color: var(--text-muted); line-height: 1.25; }

@@ -775,6 +775,12 @@
       <p class="note note-explicative" id="note-ajustement-profil" style="margin:4px 0 0;">Chaque lundi, tes repas notés et tes pesées des 4 dernières semaines corrigent la formule.</p>
     </div>
 
+    <!-- Mes séances prévues : la séance du jour (sa dépense compte dans
+         l'objectif dès le matin), celles des 6 jours suivants et les jours de
+         séance (voir prochainesSeances, renderSeancesPrevues). -->
+    <div class="vitrine-sec"><h3>Mes séances prévues</h3></div>
+    <div class="carte-liste carte-seances" id="bloc-seances-prevues"><div id="seances-prevues-contenu"></div></div>
+
     <!-- Mon corps : ce qui sert aux calculs (sexe, âge, taille), puis le suivi
          (mensurations, photos). -->
     <div class="vitrine-sec"><h3>Mon corps</h3></div>
@@ -2241,12 +2247,6 @@
           <p class="note" style="margin:6px 0 0;"><b>Objectif</b> : sèche −20 % (jamais sous le métabolisme de base), masse +15 %. Recomposition : calories du maintien, protéines de sèche.</p>
         </details>
       </div>
-      <!-- Séances prévues : leur dépense compte dans l'objectif dès le matin
-           (voir prochainesSeances, renderSeancesPrevues). Seulement pour aujourd'hui. -->
-      <div class="bloc-verre" id="bloc-seances-prevues">
-        <h3 style="margin-top:0;margin-bottom:10px;font-size:0.85rem;text-transform:uppercase;letter-spacing:0.8px;"><svg class="icone-ui" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17.596 12.768a2 2 0 1 0 2.829-2.829l-1.768-1.767a2 2 0 0 0 2.828-2.829l-2.828-2.828a2 2 0 0 0-2.829 2.828l-1.767-1.768a2 2 0 1 0-2.829 2.829z" /><path d="m2.5 21.5 1.4-1.4" /><path d="m20.1 3.9 1.4-1.4" /><path d="M5.343 21.485a2 2 0 1 0 2.829-2.828l1.767 1.768a2 2 0 1 0 2.829-2.829l-6.364-6.364a2 2 0 1 0-2.829 2.829l1.768 1.767a2 2 0 0 0-2.828 2.829z" /><path d="m9.6 14.4 4.8-4.8" /></svg> Séances prévues</h3>
-        <div id="seances-prevues-contenu"></div>
-      </div>
       <div class="titre-depliant titre-section ia-seulement" role="button" tabindex="0" aria-expanded="false" onclick="basculerNotesRepliees(this, 'note-bilan-jour')" onkeydown="if(event.key==='Enter')basculerNotesRepliees(this, 'note-bilan-jour')"><svg class="icone-ui" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 8V4H8" /><rect width="16" height="12" x="4" y="8" rx="2" /><path d="M2 14h2" /><path d="M20 14h2" /><path d="M15 13v2" /><path d="M9 13v2" /></svg> Bilan de la journée</div>
       <div class="analysis-card ia-seulement" id="carte-bilan-jour">
         <p class="note note-repliee" id="note-bilan-jour">Un bilan de ta nutrition et de ton activité ce jour-là, séance comprise.</p>
@@ -3568,9 +3568,9 @@ function ouvrirDepuisRappel(x) {
   const faire = () => setTimeout(() => {
     currentDate = todayStr();
     document.querySelectorAll('.modal.show').forEach(m => fermerModal(m.id));
+    if (x.rappel === 'seance') { ouvrirSeancesPrevues(); return; }
     allerA('repas'); renderApp();
-    if (x.rappel === 'seance') ouvrirDepense();
-    else if (x.rappel === 'pesee') ouvrirSaisieRapide('poids');
+    if (x.rappel === 'pesee') ouvrirSaisieRapide('poids');
   }, 60);
   if (document.readyState === 'complete') faire(); else window.addEventListener('load', faire, { once: true });
 }
@@ -6164,16 +6164,14 @@ function majSeancePrevueHeros(t) {
     sem.innerHTML = t && t.reprise > 0 ? `<span><b>−${t.reprise.toLocaleString('fr-FR')}\u00a0kcal</b> · pour équilibrer ta semaine</span>` : '';
   }
 }
-/* « Séances prévues » dans Ta journée : la séance d'aujourd'hui (avec de
+/* « Mes séances prévues » dans Profil : la séance d'aujourd'hui (avec de
    quoi la retirer ou en ajouter une), celles des 6 jours suivants, et les
-   jours de séance (repérés tout seuls, choisis, ou aucun). */
+   jours de séance (repérés tout seuls, choisis, ou aucun). Toujours à
+   partir d'aujourd'hui, quel que soit le jour affiché dans Repas. */
 function renderSeancesPrevues() {
   const bloc = document.getElementById('bloc-seances-prevues'), el = document.getElementById('seances-prevues-contenu');
   if (!bloc || !el) return;
   const auj = todayStr();
-  // Ça ne concerne qu'aujourd'hui et les jours qui viennent.
-  bloc.classList.toggle('hidden', currentDate !== auj);
-  if (currentDate !== auj) return;
   const r = reglageSeancesPrevues(), liste = prochainesSeances(7);
   const fr = n => Math.round(n).toLocaleString('fr-FR');
   const duree = m => m >= 60 ? Math.floor(m / 60) + '\u00a0h' + (m % 60 ? '\u00a0' + String(m % 60).padStart(2, '0') : '') : m + '\u00a0min';
@@ -10725,6 +10723,13 @@ function ouvrirMacro(cle) {
 /* Résumé des calories (Repas du jour) › détail Nutrition, dépense du jour en haut. */
 function ouvrirDepense() {
   ouvrirModal('depense-modal');
+}
+/* Profil, à « Mes séances prévues » (le rappel d'une séance pas faite y mène :
+   « Pas de séance aujourd'hui » la retire de l'objectif). */
+function ouvrirSeancesPrevues() {
+  allerA('reglages'); renderApp();
+  const b = document.getElementById('bloc-seances-prevues');
+  if (b) setTimeout(() => b.scrollIntoView({ block: 'center', behavior: 'smooth' }), 80);
 }
 
 /* Les curseurs émettent « input » à chaque pixel. Sans temporisation, glisser
