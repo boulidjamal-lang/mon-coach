@@ -774,6 +774,19 @@
    },
    "cle": "ae3ba95e04579248"
   },
+  "e1267": {
+   "mouvement": "elevation rotint poulie uni",
+   "instant": 1,
+   "depart": 1.371,
+   "periode": 2.8,
+   "images": 42,
+   "octets": {
+    "image": 7768,
+    "clair": 6569,
+    "sombre": 6259
+   },
+   "cle": "c23f91b6e7e15710"
+  },
   "e127": {
    "mouvement": "traction pendu",
    "instant": 1,

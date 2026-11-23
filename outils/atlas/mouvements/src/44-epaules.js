@@ -1,7 +1,7 @@
 
   /* Élévations et tirages des épaules et des trapèzes.
      Sortes : lat (élévation latérale, défaut), front, arriere (oiseau), y, menton (rowing menton), shrug, facepull,
-     rotext (rotation externe), cubain (rotation cubaine), lu, cercles, ange (ange mural), passage (bande passée
+     rotext (rotation externe), rotint (rotation interne à 90°), cubain (rotation cubaine), lu, cercles, ange (ange mural), passage (bande passée
      par-dessus la tête), tete (kettlebell autour de la tête), volant (disque tourné comme un volant), tenue (maintien
      bras tendus devant). Options : hal, barre, disque, poulie, elas, machine, kb ; uni, alt ; postures de postureDe ;
      marteau ; serre, large (rowing menton) ; dos (barre derrière le dos) ; kelso (haussement, buste sur banc incliné) ;
@@ -64,6 +64,14 @@
         a = B(90, 6, -62, 90, 90); b = B(90, 6, 38, 90, 90);
         autre = B(0, 150, 0, 60, 90, { doigts: 'detendu' });
       } else { pose(); a = B(90, 86, 4, 90, 180); b = B(90, 86, 86, 90, 180); }
+    } else if (o.rotint) {
+      // Rotation interne à 90° : debout dos à la poulie, bras écarté à hauteur d'épaule, coude plié à angle droit.
+      // L'avant-bras part de la verticale (main en haut, câble tendu vers l'arrière à hauteur de la main) et bascule
+      // en avant jusqu'à l'horizontale, le coude restant à sa place. La poulie est un peu en dehors du coude : en fin
+      // de geste, le câble repart vers l'arrière à côté du bras, pas à travers.
+      pose(); a = B(90, 86, 86, 90, 180); b = B(90, 86, 0, 90, 180);
+      if (o.poulie || o.elas) ancre = s => V(s * 0.62, 1.72, -0.95);
+      vue = { az: 40, el: 8 };
     } else if (o.cubain) {
       // Rotation cubaine : coudes à hauteur d'épaules, les avant-bras basculent de bas en haut.
       pose(); a = B(84, 84, -80, 92, 180); b = B(84, 84, 86, 92, 180);

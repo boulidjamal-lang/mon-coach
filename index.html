@@ -19332,6 +19332,7 @@ const EXERCICES_BASE = [
   {"id": "sw-epaule-jete-avec-kettlebell", "nom": "Épaulé-jeté avec kettlebell", "nomEn": "Kettlebell Clean and Jerk", "groupe": "quadriceps", "secondaires": ["abdos", "dos", "ischios", "biceps", "avant_bras", "pectoraux", "mollets", "fessiers", "epaules"], "materiel": "kettlebell"},
   {"id": "sw-dumbbell-alternate-hammer-front-raise-elevation-frontale-alternee-avec-halteres-en-prise-marteau", "nom": "Élévation frontale alternée avec haltères en prise marteau", "nomEn": "Dumbbell Alternate Hammer Front Raise", "groupe": "epaules", "secondaires": ["pectoraux"], "materiel": "haltere"},
   {"id": "sw-rotation-externe-de-l-x27-epaule-en-position-assise", "nom": "Rotation externe de l'épaule en position assise", "nomEn": "Seated Shoulder External Rotation", "groupe": "epaules", "secondaires": [], "materiel": "haltere"},
+  {"id": "e1267", "nom": "Rotation interne à 90° à la poulie", "nomEn": "Cable 90° Internal Rotation", "groupe": "epaules", "secondaires": ["pectoraux", "dos"], "materiel": "poulie"},
   {"id": "sw-conducteur-de-volant-avec-disque", "nom": "Conducteur de volant avec disque", "nomEn": "Plate Bus Driver", "groupe": "epaules", "secondaires": [], "materiel": "autre"},
   {"id": "e53", "nom": "Pompe en pike", "nomEn": "Pike Push-Up", "groupe": "epaules", "secondaires": ["pectoraux", "triceps"], "materiel": "poids_corps"},
   {"id": "sw-tirage-facial-aux-anneaux", "nom": "Face pull aux anneaux", "nomEn": "Ring Face Pull", "groupe": "epaules", "secondaires": ["dos"], "materiel": "autre", "charge": false},
@@ -23941,6 +23942,8 @@ const REGLES_FAISCEAUX = {
     return null;
   },
   epaules: n => {
+    // Rotation interne (coiffe : sous-scapulaire) : en surface, c'est le deltoïde antérieur qui travaille.
+    if (contient(n, 'rotation interne', 'internal rotation')) return { delt_ant: 1 };
     if (contient(n, 'oiseau', 'arriere', 'posterieur', 'face pull', 'tirage visage', 'tirage facial', 'reverse fly', 'rear delt', 'delt fly', 'butterfly inverse', 'ecarte inverse', 'ecartes inverses', 'powell', 'rotation externe', 'external rotation')
       || (contient(n, 'elevation', 'raise') && contient(n, 'penche', 'bent over'))
       || (contient(n, 'tirage', 'row') && contient(n, 'penche', 'bent over'))
