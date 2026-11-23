@@ -4886,9 +4886,10 @@ html.app-ios:root body :is(.titre-section, .vitrine-sec h3) { font-size: 1.35rem
 /* Progrès : une seule taille de titre de section. Sur iPhone, les « pg-h »
    (Mensurations, Ta force, Répartition moyenne…) restaient plus petits que les
    « titre-section » (Ta courbe de poids, Minutes par semaine…), parfois dans le
-   même onglet. Les sous-titres des volets repliés restent plus petits. */
-html.app-ios:root body #ecran-stats .pg-h { font-size: 1.35rem !important; font-weight: 700 !important; letter-spacing: normal !important; }
-html.app-ios:root body #ecran-stats .pg-repli .titre-section { font-size: 1.05rem !important; }
+   même onglet. Les sous-titres des volets repliés restent plus petits. Mêmes
+   valeurs que les « titre-section » (taille de texte iOS, plus bas). */
+html.app-ios:root body #ecran-stats .pg-h { font-size: var(--t-titre2) !important; font-weight: 600 !important; letter-spacing: -.005em !important; }
+html.app-ios:root body #ecran-stats .pg-repli .titre-section { font-size: var(--t-corps) !important; }
 html.app-ios:root body :is(.btn, .pilule, .segment button, .feuille-action, .coach-action, .cp-bouton, .obj-tuile, .onglet) { font-weight: 600 !important; letter-spacing: normal !important; }
 html.app-ios:root body :is(#total-kcals, .reste-kcal, .carte-stats-valeur b, .eau-texte, .hx-geant, .cardio-gros, .bt-n, .pg-tuile b, .pg-pas-tete b, .cg b, .sh-chrono, .mc-r b, .meal-kcals, .cle-val, .stats-valeur, .bilan-geant b, .bilan-tuile b, .repos-chrono, .pave-val, .semaine-jour b) {
   font-family: ui-rounded, 'SF Pro Rounded', var(--police) !important; letter-spacing: -.01em !important; }
