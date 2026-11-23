@@ -2302,6 +2302,124 @@ test("Administration : les doublons d'aliments sont fusionnés au lieu d'appara�
   assert.match(r.parQui, /^fusion/);
 }));
 
+test("Administration : analyse des doublons de toute la base d'aliments (mêmes noms, codes, noms proches) et fusion", () => avecAppli({}, async ({ page }) => {
+  const r = await page.evaluate(async () => {
+    const T = confSupabase().table;
+    const base = (id, nom, kcal, prot, gluc, lip, code_barre) => ({ id, nom, kcal, prot, gluc, lip, code_barre: code_barre || '' });
+    const part = (id, nom, kcal100, p100, c100, f100, o) => Object.assign({ id, nom, kcal100, p100, c100, f100, code_barre: '', valide: true, supprime: false, cree_le: '2026-10-01' }, o || {});
+    const db = {
+      [T]: [
+        base(1, 'Blanc de poulet', 120, 23, 0, 2.5), base(2, 'Poulet blanc', 121, 23.2, 0, 2.4),        // noms proches, mêmes valeurs
+        base(3, 'Riz basmati cuit', 130, 2.7, 28, 0.3), base(4, 'Riz basmati cuit', 350, 7, 78, 1),      // même nom, valeurs différentes
+        base(5, 'Pomme', 52, 0.3, 14, 0.2, '999')
+      ],
+      aliments_partages: [
+        part('A', 'pomme', 52, 0.3, 14, 0.2),                                         // même nom que la base
+        part('B', 'Pommes', 53, 0.3, 14, 0.2, { valide: false }),                      // pluriel
+        part('C', 'Skyr', 60, 10, 4, 0.2, { code_barre: '123' }),
+        part('D', 'Skyr nature', 62, 10, 4, 0.2, { code_barre: '123', cree_le: '2026-10-03' }),   // même code-barres
+        part('E', 'Unique', 100, 1, 1, 1),
+        part('F', 'Galette', 400, 9, 70, 8), part('G', 'Galettes', 120, 3, 20, 2, { valide: false }),   // noms proches, valeurs différentes
+        part('Z', 'Pomme', 52, 0.3, 14, 0.2, { supprime: true })                       // déjà retiré : ignoré
+      ]
+    };
+    const ecrits = [], journal = [];
+    const requete = table => {
+      const filtres = []; let maj = null, efface = false, plage = null;
+      const b = {
+        select: () => b, limit: () => b, or: () => b,
+        range: (de, a) => { plage = [de, a]; return b; },
+        eq: (c, v) => { filtres.push(x => String(x[c]) === String(v)); return b; },
+        in: (c, vals) => { filtres.push(x => vals.map(String).includes(String(x[c]))); return b; },
+        update: v => { maj = v; return b; },
+        delete: () => { efface = true; return b; },
+        then: (ok, ko) => {
+          let lignes = (db[table] || []).filter(x => filtres.every(f => f(x)));
+          if (maj) { lignes.forEach(x => Object.assign(x, maj)); ecrits.push(['maj', table === T ? 'base' : table, lignes.map(x => x.id).join(',')]); }
+          if (efface) { db[table] = db[table].filter(x => !lignes.includes(x)); ecrits.push(['efface', table === T ? 'base' : table, lignes.map(x => x.id).join(',')]); }
+          if (plage) lignes = lignes.slice(plage[0], plage[1] + 1);
+          return Promise.resolve({ data: maj || efface ? null : lignes, error: null }).then(ok, ko);
+        }
+      };
+      return b;
+    };
+    supa = { from: requete, rpc: async (nom, args) => { journal.push([nom, (args || {}).p_action, (args || {}).p_cible_libelle]); return { data: null, error: null }; } };
+    sessionUtilisateur = { id: 'admin', email: ADMIN_EMAIL };
+    detecterSchemaAliments = async () => ({ vide: false, nom: 'nom', codeBarre: 'code_barre', cle: 'id', kcal: 'kcal', prot: 'prot', gluc: 'gluc', lip: 'lip' });
+    let questions = [];
+    confirmer = async texte => { questions.push(texte); return true; };
+    const lire = () => ({
+      etat: document.getElementById('doublons-etat').textContent,
+      bouton: (document.querySelector('#doublons-rapport .doublons-fusion') || {}).textContent || '',
+      familles: [...document.querySelectorAll('#doublons-rapport .doublons-famille')].map(d => [d.querySelector('summary').textContent,
+        [...d.querySelectorAll('.doublons-carte')].map(c => [...c.querySelectorAll('.doublons-ligne')].map(l => l.querySelector('b').textContent + (l.classList.contains('gardee') ? '*' : '')).join(' | '))])
+    });
+    await ouvrirDoublonsAliments();
+    const avant = lire();
+    const ouverte = document.getElementById('feuille-doublons-aliments').classList.contains('show');
+    await fusionnerDoublonsSurs();
+    const apres = lire();
+    const q1 = questions[0];
+    // Retirer à la main : un aliment partagé, puis une ligne de la base.
+    const retirer = nom => [...document.querySelectorAll('#doublons-rapport .doublons-ligne')].find(l => l.querySelector('b').textContent === nom).querySelector('button');
+    retirer('Galettes').click(); await new Promise(ok => setTimeout(ok, 30));
+    const ligneRiz = [...document.querySelectorAll('#doublons-rapport .doublons-ligne:not(.gardee)')].find(l => /350 kcal/.test(l.textContent));
+    ligneRiz.querySelector('button').click(); await new Promise(ok => setTimeout(ok, 30));
+    const fin = lire();
+    // Sans compte admin, rien n'est lu.
+    sessionUtilisateur = { id: 'u1', email: 'quelqu.un@example.com' };
+    await ouvrirDoublonsAliments();
+    const refus = document.getElementById('doublons-etat').textContent;
+    return { avant, ouverte, apres, q1, fin, ecrits, journal, refus, nbQuestions: questions.length,
+      restantsBase: db[T].map(a => a.id).join(','), retires: db.aliments_partages.filter(a => a.supprime).map(a => a.id + ':' + (a.supprime_par || '').split(' ')[0]).sort() };
+  });
+  assert.equal(r.ouverte, true);
+  assert.match(r.avant.etat, /^5 aliments dans la base, 7 aliments partagés\. 6 familles de doublons, 6 lignes en trop\.$/);
+  assert.equal(r.avant.bouton, 'Fusionner les doublons aux mêmes valeurs (4 lignes retirées)');
+  assert.deepEqual(r.avant.familles, [
+    ['Même nom ou même code-barres, mêmes valeurs — 2 familles, 2 en trop', ['Pomme* | pomme', 'Skyr* | Skyr nature']],
+    ['Même nom ou même code-barres, valeurs différentes : à vérifier — 1 famille, 1 en trop', ['Riz basmati cuit* | Riz basmati cuit']],
+    ['Noms proches, mêmes valeurs — 2 familles, 2 en trop', ['Blanc de poulet* | Poulet blanc', 'Pomme* | Pommes']],
+    ['Noms proches, valeurs différentes : à vérifier — 1 famille, 1 en trop', ['Galette* | Galettes']]
+  ]);
+  assert.match(r.q1, /^Retirer 4 doublons aux mêmes valeurs \(un aliment de chaque famille est gardé\) \?/);
+  assert.match(r.q1, /3 aliments partagés retirés \(récupérables\), 1 ligne effacée de la base d’aliments\./);
+  // Un seul toucher : partagés retirés (récupérables), ligne de la base effacée ; le reste ne bouge pas.
+  assert.deepEqual(r.ecrits.slice(0, 2), [['maj', 'aliments_partages', 'A,B,D'], ['efface', 'base', '2']]);
+  assert.equal(r.apres.bouton, '');
+  assert.match(r.apres.etat, /^4 aliments dans la base, 4 aliments partagés\. 2 familles de doublons, 2 lignes en trop\.$/);
+  assert.deepEqual(r.apres.familles.map(f => f[1]), [['Riz basmati cuit* | Riz basmati cuit'], ['Galette* | Galettes']]);
+  assert.deepEqual(r.ecrits.slice(2), [['maj', 'aliments_partages', 'G'], ['efface', 'base', '4']]);
+  assert.match(r.fin.etat, /Aucun doublon\.$/);
+  assert.deepEqual(r.fin.familles, []);
+  assert.equal(r.nbQuestions, 3);
+  assert.equal(r.restantsBase, '1,3,5');
+  assert.deepEqual(r.retires, ['A:doublon', 'B:doublon', 'D:doublon', 'G:doublon', 'Z:']);
+  assert.deepEqual(r.journal.filter(j => j[1] === 'aliments_fusionnes'), [
+    ['admin_consigner', 'aliments_fusionnes', '4 doublons retirés'],
+    ['admin_consigner', 'aliments_fusionnes', '1 doublon retiré'],
+    ['admin_consigner', 'aliments_fusionnes', '1 doublon retiré']
+  ]);
+  assert.equal(r.refus, "Réservé à l'administrateur connecté.");
+}));
+
+test('Recherche : un même aliment sous un autre nom (mots inversés, pluriel, « de ») ne s’affiche qu’une fois', () => avecAppli({}, async ({ page }) => {
+  const r = await page.evaluate(async () => {
+    const n = (kcal, p, c, f) => ({ 'energy-kcal_100g': kcal, proteins_100g: p, carbohydrates_100g: c, fat_100g: f });
+    chercherAlimentsSupabase = async () => ({ aliments: [
+      { name: 'Poulet blanc', source: 'ciqual', nutriments: n(121, 23.2, 0, 2.4) },
+      { name: 'Blanc de poulet', source: 'ciqual', nutriments: n(120, 23, 0, 2.5) },       // même aliment : masqué
+      { name: 'Blancs de poulet panés', source: 'ciqual', nutriments: n(230, 15, 18, 11) },
+      { name: 'Poulets blancs', source: 'ciqual', nutriments: n(165, 31, 0, 3.6) }          // nom proche, autres valeurs : gardé
+    ] });
+    chercherAlimentsPartages = async () => [{ nom: 'Poulet, blanc', kcal100: 122, p100: 23, c100: 0, f100: 2.5, valide: true }];
+    chercherUSDA = async () => [{ nom: 'Chicken breast', kcal100: 120, p100: 22.5, c100: 0, f100: 2.6, source: 'usda' }];
+    const res = await rechercherTousAliments('poulet');
+    return res.suite.map(a => a.name);
+  });
+  assert.deepEqual(r, ['Poulet, blanc', 'Blancs de poulet panés', 'Poulets blancs', 'Chicken breast']);
+}));
+
 test('Repas du jour refait : anneaux, semaine, série de jours, coach', () => avecAppli({}, async ({ page }) => {
   const r = await page.evaluate(() => {
     const t = todayStr();

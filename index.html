@@ -1258,6 +1258,19 @@
 </div>
 
 <!-- ============ FEUILLE : maintenance (admin) ============ -->
+<!-- ============ FEUILLE : doublons de la base d'aliments (Administration) ============ -->
+<div class="feuille" id="feuille-doublons-aliments" role="dialog" aria-modal="true" aria-labelledby="titre-doublons-aliments">
+  <div class="feuille-contenu">
+    <div class="feuille-poignee"></div>
+    <div class="feuille-entete">
+      <div class="feuille-titre" id="titre-doublons-aliments">Doublons d'aliments</div>
+      <button class="feuille-fermer" type="button" onclick="fermerFeuilles()" aria-label="Fermer">&times;</button>
+    </div>
+    <p class="note" id="doublons-etat" aria-live="polite"></p>
+    <div id="doublons-rapport"></div>
+  </div>
+</div>
+
 <div class="feuille" id="feuille-admin-maintenance" role="dialog" aria-modal="true" aria-labelledby="feuille-admin-maintenance-titre">
   <div class="feuille-contenu">
     <div class="feuille-poignee"></div>
@@ -1268,6 +1281,7 @@
     <div class="carte-liste">
       <button type="button" class="ligne-reglage ligne-reglage--bouton" onclick="reparerAppli()"><span class="action-ic"><svg class="icone-ui" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8" /><path d="M21 3v5h-5" /><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16" /><path d="M8 16H3v5" /></svg></span><span class="ligne-txt"><b>Réparer l'appli sur ce téléphone</b><small>Recharge la dernière version · les données restent</small></span><span class="ligne-chevron"><svg class="icone-ui" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 18 6-6-6-6" /></svg></span></button>
       <button type="button" class="ligne-reglage ligne-reglage--bouton" id="btn-corriger-unites-admin" onclick="corrigerUnitesTousComptes()"><span class="action-ic"><svg class="icone-ui" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21.3 15.3a2.4 2.4 0 0 1 0 3.4l-2.6 2.6a2.4 2.4 0 0 1-3.4 0L2.7 8.7a2.41 2.41 0 0 1 0-3.4l2.6-2.6a2.41 2.41 0 0 1 3.4 0Z" /><path d="m14.5 12.5 2-2" /><path d="m11.5 9.5 2-2" /><path d="m8.5 6.5 2-2" /><path d="m17.5 15.5 2-2" /></svg></span><span class="ligne-txt"><b id="btn-corriger-unites-admin-texte">Corriger les unités g/ml</b><small>Boissons encore en grammes, sur les journées de <strong>tous les comptes</strong></small></span><span class="ligne-chevron"><svg class="icone-ui" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 18 6-6-6-6" /></svg></span></button>
+      <button type="button" class="ligne-reglage ligne-reglage--bouton" onclick="ouvrirDoublonsAliments()"><span class="action-ic"><svg class="icone-ui" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="14" height="14" x="8" y="8" rx="2" ry="2" /><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2" /></svg></span><span class="ligne-txt"><b>Analyser les doublons d'aliments</b><small>Toute la base et les aliments partagés : identiques, mêmes noms, noms proches</small></span><span class="ligne-chevron"><svg class="icone-ui" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 18 6-6-6-6" /></svg></span></button>
       <button type="button" class="ligne-reglage ligne-reglage--bouton" onclick="nettoyerDoublonsAlimentsPartages()"><span class="action-ic"><svg class="icone-ui" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m16 22-1-4" /><path d="M19 13.99a1 1 0 0 0 1-1V12a2 2 0 0 0-2-2h-3a1 1 0 0 1-1-1V4a2 2 0 0 0-4 0v5a1 1 0 0 1-1 1H6a2 2 0 0 0-2 2v.99a1 1 0 0 0 1 1" /><path d="M5 14h14l1.973 6.767A1 1 0 0 1 20 22H4a1 1 0 0 1-.973-1.233z" /><path d="m8 22 1-4" /></svg></span><span class="ligne-txt"><b>Retirer les copies d'aliments de la base</b><small>Aliments en attente déjà présents dans la base commune</small></span><span class="ligne-chevron"><svg class="icone-ui" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 18 6-6-6-6" /></svg></span></button>
     </div>
     <p class="note" id="note-nettoyage-aliments"></p>
@@ -30176,13 +30190,22 @@ async function rechercherTousAliments(query) {
   const dejaCodes = new Set(deja.filter(p => p.code).map(p => String(p.code).trim()));
 
   const vus = new Set(dejaNoms);
+  /* Un même aliment sous un autre nom (mots dans un autre ordre, pluriel,
+     « de / au / la ») et aux mêmes valeurs ne s'affiche qu'une fois : le
+     premier venu (déjà mangé, puis partagé, base, USDA). */
+  const valeurs = p => { const n = p.nutriments || {}; return { kcal: n['energy-kcal_100g'], p: n['proteins_100g'], c: n['carbohydrates_100g'], f: n['fat_100g'] }; };
+  const proches = new Map();
+  const retenir = item => { const k = cleProcheAliment(item.name); if (!proches.has(k)) proches.set(k, []); proches.get(k).push(valeurs(item)); };
+  deja.forEach(retenir);
   const ajouter = (liste, out) => {
     liste.forEach(item => {
       const n = normaliserRecherche(item.name);
       if (vus.has(n)) return;
       // Même code-barres qu'un aliment déjà mangé : c'est le même produit.
       if (item.code && dejaCodes.has(String(item.code).trim())) return;
+      if ((proches.get(cleProcheAliment(item.name)) || []).some(v => valeursProches(v, valeurs(item)))) return;
       vus.add(n);
+      retenir(item);
       out.push(item);
     });
   };
@@ -31445,6 +31468,264 @@ async function nettoyerDoublonsAlimentsPartages() {
   } catch (e) {
     dire('Nettoyage impossible : ' + e.message);
   }
+}
+
+/* =====================================================================
+   DOUBLONS DE LA BASE D'ALIMENTS — analyse complète (Administration)
+   Lit toute la base d'aliments et tous les aliments partagés (ceux qui ne
+   sont pas retirés), puis range les doublons :
+   - même nom (accents, casse et ponctuation mis à part) ou même code-barres ;
+   - noms proches : mêmes mots dans un autre ordre, au pluriel, avec ou sans
+     « de, du, au, la… » (« Blanc de poulet » et « Poulet blanc »).
+   Chaque famille dit si les valeurs sont les mêmes (5 kcal ou 5 %, 1,5 g
+   par macro) : alors l'un suffit et la fusion est proposée d'un toucher ;
+   sinon, c'est à vérifier et chaque ligne se retire à la main.
+   Gardé : la base d'aliments avant les aliments partagés, un validé avant
+   un en attente, celui qui a un code-barres, le plus ancien. Retiré : un
+   aliment partagé comme une suppression admin (supprime, récupérable) ;
+   une ligne de la base d'aliments est effacée. Tout passe par une
+   confirmation et va au journal d'administration. La lecture se fait dans
+   la session de l'admin, comme le reste de l'Administration.
+   ===================================================================== */
+const MOTS_VIDES_ALIMENTS = new Set(['de', 'du', 'des', 'd', 'la', 'le', 'les', 'l', 'au', 'aux', 'a', 'et', 'en', 'un', 'une', 'pour']);
+function cleProcheAliment(nom) {
+  const mots = normaliserRecherche(nom).split(' ').filter(m => m && !MOTS_VIDES_ALIMENTS.has(m))
+    .map(m => m.length > 3 ? m.replace(/[sx]$/, '') : m);
+  return [...new Set(mots)].sort().join(' ');
+}
+function valeursProches(a, b) {
+  const pres = (x, y, abs, rel) => Math.abs((Number(x) || 0) - (Number(y) || 0)) <= Math.max(abs, rel * Math.max(Math.abs(Number(x) || 0), Math.abs(Number(y) || 0)));
+  return pres(a.kcal, b.kcal, 5, 0.05) && pres(a.p, b.p, 1.5, 0.1) && pres(a.c, b.c, 1.5, 0.1) && pres(a.f, b.f, 1.5, 0.1);
+}
+// Celui qu'on garde passe devant : base, validé, avec code-barres, le plus ancien.
+function ordreAGarder(a, b) {
+  return ((a.table === 'base' ? 0 : 1) - (b.table === 'base' ? 0 : 1))
+    || ((a.valide === false ? 1 : 0) - (b.valide === false ? 1 : 0))
+    || ((a.code ? 0 : 1) - (b.code ? 0 : 1))
+    || String(a.cree_le || '').localeCompare(String(b.cree_le || ''))
+    || String(a.id).localeCompare(String(b.id), 'fr', { numeric: true });
+}
+/* lignes : { table: 'base' | 'partage', id, nom, code, kcal, p, c, f, valide, cree_le }
+   → { groupes: [{ type: 'nom' | 'code' | 'proche', lignes (la gardée d'abord), identiques }], ... } */
+function analyserDoublons(lignes) {
+  const parent = lignes.map((_, i) => i);
+  const racine = i => parent[i] === i ? i : (parent[i] = racine(parent[i]));
+  const premier = new Map();
+  lignes.forEach((l, i) => {
+    ['n:' + normaliserRecherche(l.nom), l.code ? 'c:' + l.code : ''].filter(Boolean).forEach(k => {
+      if (premier.has(k)) { const a = racine(premier.get(k)), b = racine(i); if (a !== b) parent[b] = a; }
+      else premier.set(k, i);
+    });
+  });
+  const classes = new Map();
+  lignes.forEach((l, i) => { const r = racine(i); if (!classes.has(r)) classes.set(r, []); classes.get(r).push(l); });
+  const groupes = [];
+  const identiques = g => g.every(l => valeursProches(l, g[0]));
+  const representants = [];
+  classes.forEach(g => {
+    g.sort(ordreAGarder);
+    representants.push(g[0]);
+    if (g.length < 2) return;
+    const memesNoms = new Set(g.map(l => normaliserRecherche(l.nom))).size === 1;
+    groupes.push({ type: memesNoms ? 'nom' : 'code', lignes: g, identiques: identiques(g) });
+  });
+  // Noms proches : entre familles différentes (une ligne par famille, celle qu'on garde).
+  const parCle = new Map();
+  representants.forEach(l => {
+    const k = cleProcheAliment(l.nom);
+    if (!k) return;
+    if (!parCle.has(k)) parCle.set(k, []);
+    parCle.get(k).push(l);
+  });
+  parCle.forEach(g => {
+    if (g.length < 2) return;
+    g.sort(ordreAGarder);
+    groupes.push({ type: 'proche', lignes: g, identiques: identiques(g) });
+  });
+  return groupes;
+}
+async function lireAlimentsPourDoublons(dire) {
+  const lignes = [];
+  const s = await detecterSchemaAliments(true);
+  const table = confSupabase().table;
+  let base = 0, partages = 0;
+  if (s && !s.vide && s.nom) {
+    for (let de = 0; de < 100000; de += 1000) {
+      const { data, error } = await supa.from(table).select('*').range(de, de + 999);
+      if (error) throw error;
+      (data || []).forEach(a => {
+        const nom = String(a[s.nom] || '').trim();
+        if (!nom) return;
+        lignes.push({ table: 'base', id: s.cle ? a[s.cle] : null, nom, code: s.codeBarre ? String(a[s.codeBarre] || '').trim() : '',
+          kcal: s.kcal ? nombreSouple(a[s.kcal]) : 0, p: s.prot ? nombreSouple(a[s.prot]) : 0, c: s.gluc ? nombreSouple(a[s.gluc]) : 0, f: s.lip ? nombreSouple(a[s.lip]) : 0 });
+        base++;
+      });
+      dire(`Lecture de la base d'aliments… ${nombreFr(base, 0)}`);
+      if (!data || data.length < 1000) break;
+    }
+  }
+  for (let de = 0; de < 100000; de += 1000) {
+    const { data, error } = await supa.from('aliments_partages').select('id,nom,kcal100,p100,c100,f100,code_barre,valide,supprime,cree_le')
+      .or('supprime.is.null,supprime.eq.false').range(de, de + 999);
+    if (error) throw error;
+    (data || []).forEach(a => {
+      const nom = String(a.nom || '').trim();
+      if (!nom || a.supprime === true) return;
+      lignes.push({ table: 'partage', id: a.id, nom, code: String(a.code_barre || '').trim(), kcal: nombreSouple(a.kcal100), p: nombreSouple(a.p100),
+        c: nombreSouple(a.c100), f: nombreSouple(a.f100), valide: a.valide !== false, cree_le: a.cree_le || '' });
+      partages++;
+    });
+    dire(`Lecture des aliments partagés… ${nombreFr(partages, 0)}`);
+    if (!data || data.length < 1000) break;
+  }
+  return { lignes, base, partages, cle: !!(s && s.cle) };
+}
+let doublonsAliments = null;   // { groupes, base, partages, cle }
+async function ouvrirDoublonsAliments() {
+  fermerFeuilles();
+  ouvrirFeuille('feuille-doublons-aliments');
+  const etat = document.getElementById('doublons-etat');
+  const rapport = document.getElementById('doublons-rapport');
+  const dire = t => { if (etat) etat.textContent = t; };
+  rapport.innerHTML = '';
+  if (!supa || !estCompteAdmin()) { dire("Réservé à l'administrateur connecté."); return; }
+  try {
+    dire('Lecture des aliments…');
+    const lu = await lireAlimentsPourDoublons(dire);
+    doublonsAliments = { groupes: analyserDoublons(lu.lignes), base: lu.base, partages: lu.partages, cle: lu.cle };
+    dessinerDoublonsAliments();
+  } catch (e) {
+    dire('Analyse impossible : ' + (e.message || e));
+  }
+}
+function dessinerDoublonsAliments() {
+  const etat = document.getElementById('doublons-etat');
+  const rapport = document.getElementById('doublons-rapport');
+  if (!doublonsAliments || !rapport) return;
+  const { groupes, base, partages } = doublonsAliments;
+  const enTrop = g => g.lignes.length - 1;
+  const sommes = l => l.reduce((n, g) => n + enTrop(g), 0);
+  const surs = groupes.filter(g => g.identiques && g.lignes.length > 1);
+  const familles = [
+    ['Même nom ou même code-barres, mêmes valeurs', groupes.filter(g => g.type !== 'proche' && g.identiques)],
+    ['Même nom ou même code-barres, valeurs différentes : à vérifier', groupes.filter(g => g.type !== 'proche' && !g.identiques)],
+    ['Noms proches, mêmes valeurs', groupes.filter(g => g.type === 'proche' && g.identiques)],
+    ['Noms proches, valeurs différentes : à vérifier', groupes.filter(g => g.type === 'proche' && !g.identiques)]
+  ];
+  if (etat) etat.textContent = `${accord(base, 'aliment', 'aliments')} dans la base, ${accord(partages, 'aliment partagé', 'aliments partagés')}. `
+    + (groupes.length ? `${accord(groupes.length, 'famille de doublons', 'familles de doublons')}, ${accord(sommes(groupes), 'ligne en trop', 'lignes en trop')}.` : 'Aucun doublon.');
+  rapport.innerHTML = '';
+  if (surs.length) {
+    const b = document.createElement('button');
+    b.type = 'button'; b.className = 'btn btn-primary doublons-fusion';
+    b.textContent = `Fusionner les doublons aux mêmes valeurs (${accord(doublonsARetirer(groupes).length, 'ligne retirée', 'lignes retirées')})`;
+    b.addEventListener('click', () => fusionnerDoublonsSurs());
+    rapport.appendChild(b);
+  }
+  familles.forEach(([titre, liste]) => {
+    if (!liste.length) return;
+    const d = document.createElement('details');
+    d.className = 'doublons-famille';
+    d.open = liste.length <= 12;
+    const sum = document.createElement('summary');
+    sum.textContent = `${titre} — ${accord(liste.length, 'famille', 'familles')}, ${accord(sommes(liste), 'en trop', 'en trop')}`;
+    d.appendChild(sum);
+    liste.slice(0, 400).forEach(g => d.appendChild(carteDoublon(g)));
+    if (liste.length > 400) { const p = document.createElement('p'); p.className = 'note'; p.textContent = `… et ${nombreFr(liste.length - 400, 0)} autres familles.`; d.appendChild(p); }
+    rapport.appendChild(d);
+  });
+}
+function carteDoublon(g) {
+  const carte = document.createElement('div');
+  carte.className = 'doublons-carte';
+  g.lignes.forEach((l, i) => {
+    const r = document.createElement('div');
+    r.className = 'doublons-ligne' + (i === 0 ? ' gardee' : '');
+    const t = document.createElement('div');
+    t.className = 'doublons-texte';
+    const nom = document.createElement('b');
+    nom.textContent = l.nom;
+    const meta = document.createElement('small');
+    meta.textContent = (l.table === 'base' ? 'Base d’aliments' : 'Partagé' + (l.valide === false ? ', en attente' : ''))
+      + ` · ${nombreFr(l.kcal, 0)} kcal · P ${nombreFr(l.p, 1)} · G ${nombreFr(l.c, 1)} · L ${nombreFr(l.f, 1)}` + (l.code ? ' · ' + l.code : '') + (i === 0 ? ' · gardé' : '');
+    t.append(nom, meta);
+    r.appendChild(t);
+    if (i > 0 && (l.table === 'partage' || doublonsAliments.cle)) {
+      const x = document.createElement('button');
+      x.type = 'button'; x.className = 'pilule';
+      x.textContent = 'Retirer';
+      x.setAttribute('aria-label', 'Retirer « ' + l.nom + ' »');
+      x.addEventListener('click', () => retirerDoublons([l], '« ' + l.nom + ' »'));
+      r.appendChild(x);
+    }
+    carte.appendChild(r);
+  });
+  return carte;
+}
+/* Retire des lignes : partagées → supprime (récupérable), base → effacées. */
+async function retirerDoublons(lignes, quoi) {
+  const partages = lignes.filter(l => l.table === 'partage' && l.id != null);
+  const base = doublonsAliments && doublonsAliments.cle ? lignes.filter(l => l.table === 'base' && l.id != null) : [];
+  if (!partages.length && !base.length) return 0;
+  const texte = `Retirer ${quoi} ?\n\n` + [partages.length ? accord(partages.length, 'aliment partagé retiré (récupérable)', 'aliments partagés retirés (récupérables)') : '',
+    base.length ? accord(base.length, 'ligne effacée de la base d’aliments', 'lignes effacées de la base d’aliments') : ''].filter(Boolean).join(', ')
+    + '.\nLes repas déjà notés ne changent pas.';
+  if (!(await confirmer(texte, { ok: 'Retirer', danger: true }))) return 0;
+  const dire = t => { const e = document.getElementById('doublons-etat'); if (e) e.textContent = t; };
+  try {
+    const qui = 'doublon (' + (sessionUtilisateur ? sessionUtilisateur.email : 'admin') + ')';
+    for (let i = 0; i < partages.length; i += 200) {
+      const { error } = await supa.from('aliments_partages').update({ supprime: true, supprime_par: qui, supprime_le: new Date().toISOString() })
+        .in('id', partages.slice(i, i + 200).map(l => l.id));
+      if (error) throw error;
+    }
+    if (base.length) {
+      const s = await detecterSchemaAliments();
+      for (let i = 0; i < base.length; i += 200) {
+        const { error } = await supa.from(confSupabase().table).delete().in(s.cle, base.slice(i, i + 200).map(l => l.id));
+        if (error) throw error;
+      }
+    }
+    cacheVider(); cacheAliments.clear();
+    const ids = new Set(lignes.map(l => l.table + ':' + l.id));
+    doublonsAliments.groupes = doublonsAliments.groupes
+      .map(g => Object.assign({}, g, { lignes: g.lignes.filter(l => !ids.has(l.table + ':' + l.id)) }))
+      .filter(g => g.lignes.length > 1)
+      .map(g => Object.assign(g, { identiques: g.lignes.every(l => valeursProches(l, g.lignes[0])) }));
+    doublonsAliments.partages -= partages.length;
+    doublonsAliments.base -= base.length;
+    await consignerAction('aliments_fusionnes', null, accord(partages.length + base.length, 'doublon retiré', 'doublons retirés'), null, lignes.slice(0, 40).map(l => l.nom).join(', '));
+    dessinerDoublonsAliments();
+    return partages.length + base.length;
+  } catch (e) {
+    dire('Retrait impossible : ' + (e.message || e));
+    return 0;
+  }
+}
+/* Les familles aux mêmes valeurs qui se touchent (« Poulet » a le même nom
+   qu'un autre « Poulet » et un nom proche de « Poulets ») n'en font qu'une :
+   on garde un seul aliment par ensemble, le premier dans l'ordre à garder. */
+function doublonsARetirer(groupes) {
+  const cle = l => l.table + ':' + l.id;
+  const parent = new Map(), ligne = new Map();
+  const racine = k => { while (parent.get(k) !== k) { parent.set(k, parent.get(parent.get(k))); k = parent.get(k); } return k; };
+  groupes.filter(g => g.identiques).forEach(g => g.lignes.forEach(l => {
+    const k = cle(l);
+    if (!parent.has(k)) { parent.set(k, k); ligne.set(k, l); }
+    const a = racine(cle(g.lignes[0])), b = racine(k);
+    if (a !== b) parent.set(b, a);
+  }));
+  const ensembles = new Map();
+  ligne.forEach((l, k) => { const r = racine(k); if (!ensembles.has(r)) ensembles.set(r, []); ensembles.get(r).push(l); });
+  const out = [];
+  ensembles.forEach(e => { e.sort(ordreAGarder); out.push(...e.slice(1)); });
+  return out;
+}
+async function fusionnerDoublonsSurs() {
+  if (!doublonsAliments) return;
+  const liste = doublonsARetirer(doublonsAliments.groupes);
+  if (!liste.length) return;
+  await retirerDoublons(liste, accord(liste.length, 'doublon aux mêmes valeurs', 'doublons aux mêmes valeurs') + ' (un aliment de chaque famille est gardé)');
 }
 
 /* admin_aliments ne renvoie pas forcément la colonne `valide` : on la
