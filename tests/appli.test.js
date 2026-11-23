@@ -1419,7 +1419,7 @@ test("fibres, sucres, sel et AGS (lot 15) : comptés quand les aliments les port
   });
   assert.deepEqual(r.totaux, [15.6, 1.7, 5.42, 9.1, 2, 3, 690]);
   assert.equal(r.affiche[0], true);
-  assert.match(r.affiche[1], /^Fibres 15,6 g\/30 g \| Sucres 1,7 g\/\d+ g \| Sel 5,42 g\/5 g \| AGS 9,1 g\/\d+ g \| sur 2 aliments sur 3$/);
+  assert.match(r.affiche[1], /^Fibres 15,6 g\/30 g \| Sucres 1,7 g\/\d+ g \| Sel 5,42 g\/5 g \| Gras saturés 9,1 g\/\d+ g \| sur 2 aliments sur 3$/);
   assert.match(r.affiche[2], /^Sel 5,42 g/, 'le sel au-dessus du repère est signalé');
   assert.deepEqual(r.reperes, { fib: 30, suc: 50, sel: 5, ags: 22 });
   assert.equal(r.cache, true);
@@ -4735,6 +4735,70 @@ test('Progrès : toucher « Ta maintenance réelle » l\'explique avec les chiff
   assert.equal(r.tete, 'Bientôt');
   assert.deepEqual(r.lignes.map(l => l[1]), ['0 / 4', '0 / 14 j', '0 / 10']);
   assert.match(r.texte, /Ce qu'il faut pour la calculer/);
+}));
+
+test('nouvel utilisateur : « Premiers pas » se coche dès le premier repas noté, le questionnaire écrit ses nombres à la française', () => avecAppli({}, async ({ page }) => {
+  // La carte telle qu'elle est juste après le questionnaire.
+  await page.evaluate(() => {
+    userProfile.onboarding = new Date().toISOString();
+    userProfile.premiersPas = { interets: INTERETS.slice(), masque: false };
+    allerA('repas'); renderApp();
+  });
+  const etape = () => page.evaluate(() => {
+    const e = [...document.querySelectorAll('#premiers-pas .pp-etape')].find(x => /premier repas/.test(x.textContent));
+    return { fait: e.classList.contains('pp-fait'), compte: document.querySelector('#premiers-pas .pp-anneau b').textContent };
+  });
+  assert.deepEqual(await etape(), { fait: false, compte: '1/5' });
+  // Un aliment ajouté : l'étape se coche sans changer d'écran.
+  await page.evaluate(() => addItemToMeal('breakfast', { name: 'Banane', grams: 120, kcal: 107, p: 1, c: 24, f: 0 }));
+  assert.deepEqual(await etape(), { fait: true, compte: '2/5' });
+  // La carte terminée ne présume pas du genre.
+  await page.evaluate(() => { userProfile.premiersPas.interets = ['nutrition']; const j = getDay(todayStr()); j.steps = 6000; saveData(todayStr()); renderPremiersPas(); });
+  assert.equal(await page.textContent('#premiers-pas h3'), "Bravo, c'est parti !");
+  // Le résultat du questionnaire : 1 813, pas 1813.
+  const r = await page.evaluate(() => {
+    ouvrirBilanInitial();
+    onbReponses.gender = 'm'; onbReponses.pasHabituels = 6000; onbReponses.goal = 'seche';
+    document.getElementById('onb-age').value = 29; document.getElementById('onb-taille').value = 178; document.getElementById('onb-poids').value = 84;
+    onbSuivant(4);
+    return { cible: document.getElementById('onb-cible').textContent, detail: document.getElementById('onb-detail').textContent };
+  });
+  assert.match(r.cible, /^\d\s\d{3}$/);
+  assert.match(r.detail, /Métabolisme de base\d\s\d{3} kcal/);
+  assert.match(r.detail, /Dépense estimée\d\s\d{3} kcal/);
+  // 1 813 kcal, c'est aussi son métabolisme de base : le questionnaire dit pourquoi.
+  assert.match(r.detail, /ne descend pas sous ton métabolisme de base/);
+  // « Indique tes pas du jour → Faire » ouvre la saisie des pas (le champ de l'écran Activité est masqué).
+  const pas = await page.evaluate(() => {
+    bilanForce = false; fermerModal('modal-bienvenue');
+    faireEtapePremiersPas('pas');
+    return { ecran: ecranActif, feuille: document.getElementById('feuille-saisie-rapide').classList.contains('show'), titre: document.getElementById('saisie-rapide-titre').textContent };
+  });
+  assert.deepEqual(pas, { ecran: 'repas', feuille: true, titre: 'Pas du jour' });
+  // « Ta journée » écrit ses nombres à la française.
+  const journee = await page.evaluate(() => { fermerFeuilles(); ouvrirDepense(); const d = document.getElementById('detail-depense').textContent; fermerModal('depense-modal'); return d; });
+  assert.match(journee, /Dépense totale estimée\d\s\d{3} kcal/);
+}));
+
+test('sans réseau au lancement : recherche d\'aliment et connexion parlent à l\'utilisateur, pas de « projet Supabase »', () => avecAppli({}, async ({ page, dialogues }) => {
+  // Ici, comme sur un iPhone ouvert hors réseau la première fois, la bibliothèque Supabase n'a pas pu se charger.
+  const r = await page.evaluate(async () => {
+    const avant = !!supa;
+    const utilisateur = (await chercherAlimentsSupabase('banane')).probleme;
+    sessionUtilisateur = { id: 'admin', email: ADMIN_EMAIL };
+    const admin = (await chercherAlimentsSupabase('banane')).probleme;
+    sessionUtilisateur = null;
+    await connexionOuCreerCompte();
+    return { avant, utilisateur, admin, note: document.getElementById('note-compte').textContent, intro: document.getElementById('compte-intro').textContent };
+  });
+  assert.equal(r.avant, false);
+  assert.doesNotMatch(r.utilisateur, /Supabase|table|colonne/i);
+  assert.match(r.utilisateur, /ne répond pas pour l'instant.*saisir les valeurs à la main/);
+  assert.match(r.admin, /projet Supabase/, "l'administrateur garde le détail");
+  // « Se connecter » sans bibliothèque : on retente de la charger, puis on dit qu'il n'y a pas de réseau.
+  assert.equal(r.note, "Pas de réseau pour l'instant : connecte-toi dès que tu as du signal.");
+  assert.ok(!dialogues.some(d => /Supabase/.test(d)), dialogues.join(' | '));
+  assert.match(r.intro, /crée ton compte/);
 }));
 
 test('profil : le formulaire suit le profil enregistré et une saisie vide ne remplace rien', () => avecAppli({}, async ({ page }) => {

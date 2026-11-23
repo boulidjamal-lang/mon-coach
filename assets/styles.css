@@ -1690,6 +1690,12 @@ img.vignette-3d { background: radial-gradient(ellipse 75% 60% at 50% 42%, #1b1e2
 .pp-go { flex: none; background: none; border: 0; font: inherit; font-size: 0.8rem; font-weight: 800; color: var(--primary); cursor: pointer; padding: 6px 0 6px 8px; }
 .pp-visite { margin: 4px 0 0; padding-top: 10px; border-top: 1px solid var(--verre-brd); font-size: 0.76rem; color: var(--text-muted); }
 .pp-visite button { background: none; border: 0; padding: 0; font: inherit; font-weight: 800; color: var(--primary); cursor: pointer; }
+/* Petits boutons texte (« Masquer », « Faire », « Les revoir », « Pèse-toi », Face/Dos) :
+   la zone qu'on touche dépasse le texte pour approcher les 44 points d'Apple,
+   sans rien changer à l'œil. */
+:is(.pp-masquer, .pp-go, .pp-visite button, .pg-lien-clair) { position: relative; }
+:is(.pp-masquer, .pp-go, .pp-visite button, .pg-lien-clair, .cp-bouton)::after { content: ''; position: absolute; inset: -12px -8px; }
+.cp-bouton:not(.hx--pivot > .cp-bouton) { position: relative; }
 .interet { display: flex; align-items: center; gap: 14px; width: 100%; margin-bottom: 10px; padding: 14px; border-radius: 18px; background: var(--verre-fort); border: 2px solid transparent; color: var(--text); font: inherit; text-align: left; cursor: pointer; }
 .interet[aria-pressed="true"] { border-color: var(--primary); background: color-mix(in srgb, var(--primary) 10%, var(--verre-fort)); }
 .interet-ico { width: 44px; height: 44px; flex: none; border-radius: 14px; background: var(--verre-creux); display: flex; align-items: center; justify-content: center; }
