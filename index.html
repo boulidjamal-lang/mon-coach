@@ -11977,10 +11977,6 @@ function ajoutsDepuisOuverture() {
   const liste = getDay(currentDate).meals[repasFeuille] || [];
   return liste.slice(Math.min(s.depart, liste.length));
 }
-function dejaAjouteIci(nom, code) {
-  const n = normaliserRecherche(nom), c = code ? String(code).trim() : '';
-  return ajoutsDepuisOuverture().some(it => (c && it.code && String(it.code).trim() === c) || normaliserRecherche(it.name) === n);
-}
 
 function dessinerFeuilleAjout() {
   const t = document.getElementById('feuille-repas-titre');
@@ -12027,26 +12023,47 @@ function ligneAjout({ nom, meta, icone, detailler, droite }) {
   if (droite) ligne.appendChild(droite);
   return ligne;
 }
-function boutonPlusAjout(nom, fait, ajouter) {
+/* « + » : ajoute l'aliment et devient une coche. Retoucher la coche le
+   retire (le dernier ajouté ici, pendant cette ouverture) : on coche et on
+   décoche comme une liste. Deux portions, c'est le réglage de la portion. */
+function boutonPlusAjout(nom, fait, ajouter, code) {
   const b = document.createElement('button');
   b.type = 'button';
-  b.className = 'ajout-plus' + (fait ? ' fait' : '');
-  b.setAttribute('aria-label', (fait ? 'Ajouté. Ajouter encore : ' : 'Ajouter : ') + nom);
-  b.innerHTML = fait ? ICONE_COCHE : '+';
+  b.className = 'ajout-plus';
+  b.majEtat = () => {
+    const ajoute = !!dernierAjoutIci(nom, code);
+    b.classList.toggle('fait', ajoute);
+    b.innerHTML = ajoute ? ICONE_COCHE : '+';
+    b.setAttribute('aria-pressed', String(ajoute));
+    b.setAttribute('aria-label', ajoute ? 'Ajouté : ' + nom + '. Toucher pour le retirer' : 'Ajouter : ' + nom);
+  };
   b.addEventListener('click', ev => {
     ev.stopPropagation();
-    if (ajouter() === false) return;
-    vibrer('leger');
-    marquerAjoute(b, nom);
+    const deja = dernierAjoutIci(nom, code);
+    if (deja) {
+      retirerAlimentAjoute(currentDate, deja);
+      vibrer('selection');
+      majPiedAjout();
+    } else {
+      if (ajouter() === false) return;
+      vibrer('leger');
+    }
+    b.majEtat();
   });
+  b.majEtat();
   return b;
 }
-function marquerAjoute(b, nom) {
-  if (!b) return;
-  b.classList.add('fait');
-  b.innerHTML = ICONE_COCHE;
-  b.setAttribute('aria-label', 'Ajouté. Ajouter encore : ' + nom);
+// Le dernier aliment de ce nom (ou de ce code-barres) ajouté depuis l'ouverture de la feuille.
+function dernierAjoutIci(nom, code) {
+  const n = normaliserRecherche(nom), c = code ? String(code).trim() : '';
+  const l = ajoutsDepuisOuverture();
+  for (let i = l.length - 1; i >= 0; i--) {
+    const it = l[i];
+    if ((c && it.code && String(it.code).trim() === c) || normaliserRecherche(it.name) === n) return it;
+  }
+  return null;
 }
+function marquerAjoute(b) { if (b && b.majEtat) b.majEtat(); }
 
 /* =====================================================================
    RÉGLAGE DE LA PORTION, SUR PLACE
@@ -12141,7 +12158,7 @@ function basculerPortion(ligne, spec) {
     if (!(q > 0)) return;
     if (spec.ajouter(compte(), cuit ? q : null) === false) return;
     vibrer('leger');
-    marquerAjoute(ligne.querySelector('.ajout-plus'), spec.nom);
+    marquerAjoute(ligne.querySelector('.ajout-plus'));
     fermerPortions();
     majPiedAjout();
   };
@@ -12366,7 +12383,7 @@ function ligneHabituel(e) {
     retirer.addEventListener('click', () => { masquerDejaMange(e.cle); dessinerCorpsAjout(); });
     droite.append(etoile, retirer);
   } else {
-    droite = boutonPlusAjout(e.nom, dejaAjouteIci(e.nom, e.code), () => ajouterHabituel(e));
+    droite = boutonPlusAjout(e.nom, false, () => ajouterHabituel(e), e.code);
   }
   return ligneAjout({ nom: (fav ? '★ ' : '') + e.nom, meta, icone: iconeAliment(e.nom), droite,
     detailler: ligne => basculerPortion(ligne, specHabituel(e)) });
@@ -12388,7 +12405,7 @@ function ligneRecettePerso(r) {
   const nom = r.nom + (r.partageePar ? ' · partagée' : '');
   return ligneAjout({ nom, meta: '1 portion · ' + nombreFr(t.parPortionKcal, 0) + ' kcal · P ' + Math.round(t.parPortionP) + ' g', icone: iconeAliment(r.nom),
     detailler: ligne => basculerPortion(ligne, specRecettePerso(r)),
-    droite: boutonPlusAjout(r.nom, dejaAjouteIci(r.nom), () => { loguerPortionRecettePerso(r.id, repasFeuille); majPiedAjout(); return true; }) });
+    droite: boutonPlusAjout(r.nom, false, () => { loguerPortionRecettePerso(r.id, repasFeuille); majPiedAjout(); return true; }) });
 }
 /* Toucher un aliment : la saisie détaillée, par-dessus la feuille, remplie,
    la quantité prête à être tapée. */
@@ -12447,10 +12464,13 @@ async function afficherResultatsAjout(q) {
   libre.classList.add('ajout-libre');
   corps.appendChild(libre);
 
-  const reponse = await chercherAlimentsSupabase(q);
+  // Les mêmes sources que la recherche de toujours : aliments créés par les utilisateurs, base d'aliments, USDA,
+  // sans doublon (même nom ou même code-barres = même aliment, déjà mangé compris).
+  const reponse = await rechercherTousAliments(q);
   if (monNumero !== numeroRechercheAjout) return;   // une frappe plus récente a pris le relais
   const nomsDeja = new Set(deja.map(e => normaliserRecherche(e.nom)));
-  const base = (reponse.aliments || []).filter(a => !nomsDeja.has(normaliserRecherche(a.name)));
+  const codesDeja = new Set(deja.filter(e => e.code).map(e => String(e.code).trim()));
+  const base = (reponse.suite || []).filter(a => !nomsDeja.has(normaliserRecherche(a.name)) && !(a.code && codesDeja.has(String(a.code).trim())));
   attente.remove();
   const titres = { perso: 'Mes aliments', partage: 'Créés par les utilisateurs', usda: 'Base USDA' };
   const groupes = new Map();
@@ -12465,7 +12485,7 @@ async function afficherResultatsAjout(q) {
     bloc.className = 'ajout-liste';
     produits.forEach(p => {
       const kcal = Math.round((p.nutriments && p.nutriments['energy-kcal_100g']) || 0);
-      const meta = kcal + ' kcal/100 g' + (p.source === 'partage' && !p.est_mien ? ' · créé par un utilisateur' : '');
+      const meta = kcal + ' kcal/100 g' + (p.source !== 'partage' ? '' : p.est_mien ? (p.valide === false ? ' · mon aliment, en attente de validation' : ' · mon aliment') : ' · créé par un utilisateur');
       bloc.appendChild(ligneAjout({ nom: p.name || 'Produit inconnu', meta, detailler: ligne => basculerPortion(ligne, specProduit(p)),
         // Pas de « + » direct : sans quantité habituelle, la ligne ouvre le réglage (100 g proposés).
         droite: (() => { const s = document.createElement('span'); s.className = 'ajout-chevron'; s.setAttribute('aria-hidden', 'true'); s.textContent = '›'; return s; })() }));

@@ -4262,6 +4262,12 @@ test("ajout à un repas : une seule feuille — les habituels DU repas en un tou
     res.resteOuverte = ouverte('feuille-repas');
     res.coche = document.querySelector('#ajout-corps .ajout-ligne .ajout-plus').classList.contains('fait');
     res.pied = pied();
+    // Retoucher la coche : l'aliment est retiré, le « + » revient ; un toucher de plus le remet.
+    const plus = () => document.querySelector('#ajout-corps .ajout-ligne .ajout-plus');
+    plus().click();
+    res.decoche = [dej().length, plus().classList.contains('fait'), plus().textContent];
+    plus().click();
+    res.recoche = [dej().map(x => [x.name, x.grams]), plus().classList.contains('fait')];
     document.querySelector('#ajout-pied .ajout-annuler').click();
     res.apresAnnul = dej().length;
     res.piedApres = [pied(), !!document.querySelector('#ajout-pied .ajout-annuler')];
@@ -4303,8 +4309,11 @@ test("ajout à un repas : une seule feuille — les habituels DU repas en un tou
     retirerAlimentAjoute(t, dej()[0]);
     // Un aliment de la base : 100 g proposés, et pour le riz pesé cuit, compté cru.
     window.chercherAlimentsSupabase = async () => ({ aliments: [{ name: 'Riz basmati', source: 'base', nutriments: { 'energy-kcal_100g': 350, proteins_100g: 7, carbohydrates_100g: 78, fat_100g: 1 } }] });
+    // Les aliments créés par les utilisateurs sont aussi cherchés (comme dans la recherche de toujours).
+    window.chercherAlimentsPartages = async () => [{ nom: 'Riz cantonais maison', kcal100: 160, p100: 5, c100: 25, f100: 4, code_barre: '', source: 'partage', est_mien: false, valide: true }];
     champ.value = 'riz basm'; majRechercheAjout();
     await new Promise(ok => setTimeout(ok, 500));
+    res.sourcesBase = sections().filter(t => /Créés par les utilisateurs|Base d’aliments/.test(t));
     const riz = [...document.querySelectorAll('#ajout-corps .ajout-ligne')].find(l => l.querySelector('.ajout-nom').textContent === 'Riz basmati');
     res.rizSansPlus = !riz.querySelector('.ajout-plus');
     riz.querySelector('.ajout-info').click();
@@ -4339,6 +4348,8 @@ test("ajout à un repas : une seule feuille — les habituels DU repas en un tou
   assert.equal(r.resteOuverte, true);
   assert.equal(r.coche, true);
   assert.match(r.pied, /^Déjeuner · 1 aliment · 297 kcalIl te reste [\d\s\u202f]+ kcal aujourd’huiAnnuler le dernier$/);
+  assert.deepEqual(r.decoche, [0, false, '+']);
+  assert.deepEqual(r.recoche, [[['Poulet', 180]], true]);
   assert.equal(r.apresAnnul, 0);
   assert.match(r.piedApres[0], /^Déjeuner · 0 aliment · 0 kcalIl te reste /);
   assert.equal(r.piedApres[1], false);
@@ -4355,6 +4366,7 @@ test("ajout à un repas : une seule feuille — les habituels DU repas en un tou
   assert.deepEqual(r.apresReglage, [[['Poulet', 100, 165]], false, true]);
   assert.deepEqual(r.detail, ['Poulet', '180']);
   assert.equal(r.reste, true);
+  assert.deepEqual(r.sourcesBase, ['Créés par les utilisateurs', 'Base d’aliments']);
   assert.equal(r.rizSansPlus, true);
   assert.deepEqual(r.riz, ['100', '350']);
   assert.deepEqual(r.rizAjoute, [['Riz basmati', 36, 100, 126]]);
