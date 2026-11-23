@@ -4343,6 +4343,37 @@ test('Progrès : résumé en une phrase, projection, maintenance réelle, consta
   assert.match(await page.textContent('.pg-heros p'), /Fixe un poids visé/);
 }));
 
+test('Progrès : pesées sur une partie de la période, le rythme se rapporte aux jours pesés et colle à la maintenance réelle', () => avecAppli({}, async ({ page }) => {
+  // 30 jours de repas notés, mais des pesées seulement les 19 derniers jours (−1 kg par semaine).
+  // Diviser l'écart de tendance par les 30 jours donnait 0,5 kg par semaine, alors que la
+  // maintenance réelle, calculée sur les jours pesés, annonçait un déficit de près de 1 kg.
+  await page.evaluate(() => {
+    const t = todayStr();
+    for (let k = 0; k <= 29; k++) {
+      const d = shiftDate(t, -k), j = getDay(d);
+      if (k <= 18) j.weight = Math.round((90 + k / 7) * 100) / 100;
+      j.meals[MEALS[0]].push({ name: 'Poulet rôti', grams: 300, kcal: 2000, p: 150, c: 200, f: 70 });
+      saveData(d);
+    }
+    buildMasterArrays();
+    choisirPeriodeStats('30');
+    ouvrirProgres();
+  });
+  await page.waitForTimeout(300);
+  const r = await page.evaluate(() => ({
+    phrase: document.querySelector('.pg-heros h3').textContent,
+    maint: document.querySelector('#pg-resume .pg-maint').textContent.replace(/\s+/g, ' ')
+  }));
+  const m = r.maint.match(/([\d ]+) kcal.*Tu manges (\d+) % de ta maintenance → −(\d+),(\d) kg par semaine/);
+  assert.ok(m, r.maint);
+  const kcal = Number(m[1].replace(/\D/g, '')), pct = Number(m[2]), rythme = Number(m[3] + '.' + m[4]);
+  // Le déficit que donne la maintenance réelle, converti en kilos par semaine, est le rythme affiché.
+  const deficit = (1 - pct / 100) * kcal * 7 / 7700;
+  assert.ok(Math.abs(deficit - rythme) <= 0.08, `déficit ${deficit.toFixed(2)} kg/sem. contre ${rythme} affiché`);
+  assert.ok(rythme >= 0.8 && rythme <= 1, 'rythme ' + rythme);
+  assert.match(r.phrase, new RegExp('^Tu perds ' + m[3] + ',' + m[4] + ' kg par semaine'));
+}));
+
 test('profil : le formulaire suit le profil enregistré et une saisie vide ne remplace rien', () => avecAppli({}, async ({ page }) => {
   const r = await page.evaluate(async () => {
     onbReponses.gender = 'f'; onbReponses.goal = 'seche'; onbReponses.pasHabituels = 6000;

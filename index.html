@@ -4500,8 +4500,8 @@ function tendancePoidsAu(pesees, d) {
   return f.length ? f.reduce((t, [, v]) => t + v, 0) / f.length : null;
 }
 /* Rythme du poids, en kg par semaine, sur les nbJours derniers jours —
-   calculé exactement comme le bilan de Progrès (tendance lissée sur 7 jours,
-   de la première à la dernière connue de la période, rapportée à sa durée).
+   calculé exactement comme le bilan de Progrès (rythmeTendance : tendance
+   lissée sur 7 jours, de la première à la dernière connue de la période).
    La carte Poids et Progrès sur 30 jours donnent ainsi le même chiffre,
    au lieu d'un rythme sur une semaine d'un côté et sur 30 jours de l'autre. */
 function rythmePoidsJours(nbJours) {
@@ -4511,8 +4511,7 @@ function rythmePoidsJours(nbJours) {
     const w = Number(appData[d] && appData[d].weight);
     poids.push(Number.isFinite(w) && w > 0 ? w : null);
   }
-  const tendance = moyenneGlissante(poids, 7).slice(6).filter(v => v != null);
-  return tendance.length ? (tendance[tendance.length - 1] - tendance[0]) / (nbJours / 7) : null;
+  return rythmeTendance(moyenneGlissante(poids, 7).slice(6));
 }
 function carteStatsPoidsHTML() {
   const auj = todayStr();
@@ -10253,6 +10252,19 @@ function moyenneGlissante(valeurs, fenetre) {
   }
   return out;
 }
+/* Rythme en kg par semaine d'une tendance jour par jour (null où elle
+   manque) : l'écart entre sa première et sa dernière valeur, rapporté aux
+   jours qui les séparent, pas à la durée de la période. 2,8 kg perdus entre
+   deux points de tendance distants de 19 jours, c'est 1 kg par semaine, même
+   affiché sur 30 jours (diviser par 30 jours donnait 0,6 et contredisait la
+   maintenance réelle, calculée sur ces 19 jours). Sous 6 jours d'écart, on
+   divise quand même par 6 : deux pesées proches ne s'extrapolent pas. */
+function rythmeTendance(tendance) {
+  const JOURS_MIN = 6;
+  let i0 = -1, i1 = -1;
+  tendance.forEach((v, i) => { if (v != null) { if (i0 < 0) i0 = i; i1 = i; } });
+  return i0 < 0 ? null : (tendance[i1] - tendance[i0]) / Math.max(i1 - i0, JOURS_MIN) * 7;
+}
 
 /* =====================================================================
    BILAN D'UNE PÉRIODE
@@ -10320,7 +10332,7 @@ function bilanPeriode(s, e) {
     // Prévision : l'écart cumulé converti en kilos, à comparer au réel.
     deltaPrevu: remplis.length ? ecartCumule / KCAL_PAR_KG : null,
     deltaPoids,
-    rythmeSemaine: (deltaPoids != null && semaines >= 1) ? deltaPoids / semaines : null,
+    rythmeSemaine: (deltaPoids != null && semaines >= 1) ? rythmeTendance(idx.map(i => lisse[i])) : null,
     poidsDebut, poidsFin, poidsRef,
     protParKg: (poidsRef > 0 && prot.length) ? avg(prot) / poidsRef : null,
     moyPas: Math.round(avg(idx.filter(jourComptable).map(i => globalMasterSteps[i]))),
