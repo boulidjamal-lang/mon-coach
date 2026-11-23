@@ -875,32 +875,27 @@
   <button type="button" class="onglet" id="onglet-profil" data-ecran="reglages" onclick="allerA('reglages')"><svg class="icone-ui" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="5" /><path d="M20 21a8 8 0 0 0-16 0" /></svg><span>Profil</span></button>
 </nav>
 
-<!-- ================= FEUILLE D'ACTION REPAS ================= -->
-<div class="feuille" id="feuille-repas" role="dialog" aria-modal="true" aria-labelledby="feuille-repas-titre">
+<!-- ================= FEUILLE : AJOUTER À UN REPAS =================
+     Une seule feuille, ouverte sur ce qui sert : la recherche (code-barres et
+     photo à côté), les repas déjà pris à reprendre d'un toucher, puis les
+     aliments habituels de ce repas, ajoutés d'un toucher (« + ») à la quantité
+     de la dernière fois. Elle reste ouverte pour en ajouter plusieurs ; le pied
+     dit où en est le repas. Contenu dessiné par dessinerFeuilleAjout(). -->
+<div class="feuille feuille-ajout" id="feuille-repas" role="dialog" aria-modal="true" aria-labelledby="feuille-repas-titre">
   <div class="feuille-contenu">
     <div class="feuille-poignee"></div>
-    <div class="feuille-titre" id="feuille-repas-titre">Ajouter au repas</div>
-    <button class="feuille-action hidden" id="opt-hier" onclick="copierRepasPrecedent()">
-      <span class="ic" aria-hidden="true"><svg class="icone-ui" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" /><path d="M3 3v5h5" /><path d="M12 7v5l4 2" /></svg></span>
-      <span><span id="opt-hier-titre">Comme hier</span><span class="sous" id="opt-hier-sous"></span></span>
-    </button>
-    <button class="feuille-action" id="opt-manuel" onclick="depuisFeuille('manuel')">
-      <span class="ic" aria-hidden="true"><svg class="icone-ui" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 6.528V3a1 1 0 0 1 1-1h0" /><path d="M18.237 21A15 15 0 0 0 22 11a6 6 0 0 0-10-4.472A6 6 0 0 0 2 11a15.1 15.1 0 0 0 3.763 10 3 3 0 0 0 3.648.648 5.5 5.5 0 0 1 5.178 0A3 3 0 0 0 18.237 21" /></svg></span>
-      <span>Rechercher un aliment<span class="sous">Dans la base d'aliments et ce que tu as déjà mangé</span></span>
-    </button>
-    <button class="feuille-action" id="opt-recette" onclick="depuisFeuille('recette')">
-      <span class="ic" aria-hidden="true"><svg class="icone-ui" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12h20" /><path d="M20 12v8a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-8" /><path d="m4 8 16-4" /><path d="m8.86 6.78-.45-1.81a2 2 0 0 1 1.45-2.43l1.94-.48a2 2 0 0 1 2.43 1.46l.45 1.8" /></svg></span>
-      <span>Recette<span class="sous">Une de tes recettes enregistrées, en un tap</span></span>
-    </button>
-    <button class="feuille-action ia-seulement" id="opt-photo" onclick="depuisFeuille('photo')">
-      <span class="ic" aria-hidden="true"><svg class="icone-ui" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M13.997 4a2 2 0 0 1 1.76 1.05l.486.9A2 2 0 0 0 18.003 7H20a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2h1.997a2 2 0 0 0 1.759-1.048l.489-.904A2 2 0 0 1 10.004 4z" /><circle cx="12" cy="13" r="3" /></svg></span>
-      <span>Photo ou description<span class="sous">Détection des aliments par l'IA, avec ou sans photo</span></span>
-    </button>
-    <button class="feuille-action" id="opt-barcode" onclick="depuisFeuille('barcode')">
-      <span class="ic" aria-hidden="true"><svg class="icone-ui" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7V5a2 2 0 0 1 2-2h2" /><path d="M17 3h2a2 2 0 0 1 2 2v2" /><path d="M21 17v2a2 2 0 0 1-2 2h-2" /><path d="M7 21H5a2 2 0 0 1-2-2v-2" /><path d="M8 7v10" /><path d="M12 7v10" /><path d="M17 7v10" /></svg></span>
-      <span>Code-barres<span class="sous">Scanner ou saisir un code produit</span></span>
-    </button>
-    <button class="btn btn-secondaire" style="margin-top:6px;" onclick="fermerFeuilleRepas()">Annuler</button>
+    <div class="ajout-entete">
+      <div class="feuille-titre" id="feuille-repas-titre">Ajouter au repas</div>
+      <button type="button" class="ajout-ok" onclick="fermerFeuilleRepas()">OK</button>
+    </div>
+    <div class="ajout-repas" id="ajout-repas" role="group" aria-label="Repas"></div>
+    <div class="ajout-recherche">
+      <label class="ajout-champ"><svg class="icone-ui" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m21 21-4.34-4.34" /><circle cx="11" cy="11" r="8" /></svg><input type="search" id="ajout-q" placeholder="Aliment, plat, recette…" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" enterkeyhint="search" aria-label="Rechercher un aliment ou une recette" oninput="majRechercheAjout()"></label>
+      <button type="button" class="ajout-outil" id="opt-barcode" onclick="depuisFeuille('barcode')" aria-label="Scanner un code-barres" title="Code-barres"><svg class="icone-ui" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7V5a2 2 0 0 1 2-2h2" /><path d="M17 3h2a2 2 0 0 1 2 2v2" /><path d="M21 17v2a2 2 0 0 1-2 2h-2" /><path d="M7 21H5a2 2 0 0 1-2-2v-2" /><path d="M8 7v10" /><path d="M12 7v10" /><path d="M17 7v10" /></svg></button>
+      <button type="button" class="ajout-outil ia-seulement" id="opt-photo" onclick="depuisFeuille('photo')" aria-label="Photo ou description : l'IA reconnaît les aliments" title="Photo ou description (IA)"><svg class="icone-ui" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M13.997 4a2 2 0 0 1 1.76 1.05l.486.9A2 2 0 0 0 18.003 7H20a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2h1.997a2 2 0 0 0 1.759-1.048l.489-.904A2 2 0 0 1 10.004 4z" /><circle cx="12" cy="13" r="3" /></svg></button>
+    </div>
+    <div class="ajout-corps" id="ajout-corps"></div>
+    <div class="ajout-pied" id="ajout-pied" aria-live="polite"></div>
   </div>
 </div>
 
@@ -6129,6 +6124,8 @@ function renderMeals(day) {
         <div class="repas-depliant"><ul class="food-list" id="aliments-${mealId}">${rows}</ul></div>
       </div>`;
   }).join('');
+  // Feuille d'ajout ouverte : son pied suit le repas (ajouts par la fiche, le code-barres, la photo…).
+  if (typeof feuilleAjoutOuverte === 'function' && feuilleAjoutOuverte()) majPiedAjout();
 }
 
 function pourcent(v, max) {
@@ -7547,7 +7544,9 @@ async function verifierNouvelleVersion() {
   }
 }
 
-function ouvrirManuel(mealId) {
+/* produit : choisi dans la feuille d'ajout — la fiche s'ouvre remplie, la
+   quantité prête à être tapée. nomLibre : « Saisir « … » à la main ». */
+function ouvrirManuel(mealId, produit, nomLibre) {
   activeMealId = mealId;
   ['man-name', 'man-kcal100', 'man-p100', 'man-c100', 'man-f100'].forEach(i => document.getElementById(i).value = '');
   document.getElementById('man-grams').value = 100;
@@ -7562,7 +7561,12 @@ function ouvrirManuel(mealId) {
   majUniteCourante();
   cacherSuggestionsOFF();
   calculerApercuManuel();
-  ouvrirModal('manual-modal');
+  // Ouverte depuis la feuille d'ajout, la fiche ne vise ni le nom ni les
+  // suggestions : elle est déjà remplie, ou il ne reste que les valeurs.
+  ouvrirModal('manual-modal', !!(produit || nomLibre));
+  const viser = id => setTimeout(() => { const c = document.getElementById(id); if (c) { c.focus(); if (c.select) c.select(); } }, 120);
+  if (produit) { fillFromOFF(produit); viser('man-grams'); return; }
+  if (nomLibre) { document.getElementById('man-name').value = nomLibre; majAideCruCuit(); viser('man-kcal100'); return; }
   // Les derniers aliments sont proposés d'emblée, sans dépendre du focus :
   // sur mobile, ouvrir le clavier n'est pas toujours ce que veut l'utilisateur.
   setTimeout(() => afficherRecherche('', true), 90);
@@ -7911,6 +7915,11 @@ function construireHistorique() {
         e.fois++;
         e.repas[m] = (e.repas[m] || 0) + 1;     // à quels repas il est mangé (idées du coach)
         e.dernierJour = ds;
+        // La dernière fois, en tout et à chaque repas : la feuille d'ajout la
+        // recopie d'un toucher (même quantité, mêmes valeurs, même code-barres).
+        e.dernier = it;
+        (e.derniers = e.derniers || {})[m] = it;
+        (e.joursRepas = e.joursRepas || {})[m] = ds;
         e.grammes = Math.round(g * 10) / 10;    // la dernière quantité utilisée
         e.kcal100 = Math.round((Number(it.kcal) || 0) * f);
         e.p100 = Math.round((Number(it.p) || 0) * f * 10) / 10;
@@ -8175,6 +8184,9 @@ async function validerAjoutManuel() {
   addItemToMeal(activeMealId, item, { partager: !dejaEnBase, source: sourceCourante === 'usda' ? 'usda' : sourceCourante === 'historique' ? 'historique' : 'manuel' });
   if (item.eauMl) ajouterEau(item.eauMl);
   fermerModal('manual-modal');
+  // Feuille d'ajout restée dessous : ses coches suivent (sans relancer une recherche).
+  const champAjout = document.getElementById('ajout-q');
+  if (feuilleAjoutOuverte() && !(champAjout && champAjout.value.trim().length >= 2)) dessinerCorpsAjout();
 }
 
 /* =====================================================================
@@ -12045,21 +12057,385 @@ function repasDuMoment() {
 }
 
 /* =====================================================================
-   FEUILLE D'ACTION « ajouter un aliment »
-   Les trois boutons par repas faisaient douze boutons a l'ecran. Un seul
-   bouton par repas ouvre desormais cette feuille.
+   AJOUTER À UN REPAS — UNE SEULE FEUILLE
+   L'ancienne feuille posait d'abord une question (rechercher, recette,
+   photo, code-barres ?) avant de laisser faire quoi que ce soit ; chaque
+   aliment passait ensuite par un formulaire aux valeurs pour 100 g, et la
+   feuille se refermait après chacun. Un yaourt mangé tous les jours : quatre
+   touchers et un formulaire ; un déjeuner de quatre aliments : seize.
+   Elle s'ouvre maintenant sur ce qui sert :
+   - la recherche, avec le code-barres et la photo à côté ;
+   - les repas déjà pris (le même repas, 14 derniers jours), repris d'un toucher ;
+   - les aliments habituels DE CE REPAS (au déjeuner, la banane du matin ne
+     passe plus devant le poulet), ajoutés d'un toucher sur « + », à la
+     quantité de la dernière fois à ce repas ;
+   - les recettes enregistrées, une portion d'un toucher.
+   Toucher la ligne elle-même ouvre la saisie détaillée (quantité, valeurs),
+   par-dessus la feuille. La feuille reste ouverte : on enchaîne, le pied dit
+   où en est le repas, et le dernier ajout s'annule d'un toucher.
    ===================================================================== */
 let repasFeuille = null;
+// Où en était le repas à l'ouverture (ou au changement de repas) : ce qui
+// vient après, quelle que soit la façon de l'ajouter, est « ajouté ici ».
+let instantaneAjout = null;
+// « Modifier » sur les habituels : épingler (favori) ou retirer de la liste.
+let modeGestionHabituels = false;
+let minuteurRechercheAjout = null, numeroRechercheAjout = 0;
+const REPAS_COURTS = { breakfast: 'Petit-déj', lunch: 'Déjeuner', snack: 'Collation', dinner: 'Dîner' };
+const AU_REPAS_FEUILLE = { breakfast: 'au petit-déjeuner', lunch: 'au déjeuner', snack: 'en collation', dinner: 'au dîner' };
+
+function feuilleAjoutOuverte() {
+  const f = document.getElementById('feuille-repas');
+  return !!(f && f.classList.contains('show'));
+}
 function ouvrirFeuilleRepas(mealId) {
   repasFeuille = MEALS.indexOf(mealId) === -1 ? repasDuMoment() : mealId;
-  majOptionHier();
-  const t = document.getElementById('feuille-repas-titre');
-  if (t) t.textContent = 'Ajouter à : ' + (MEAL_LABELS[repasFeuille] || '');
+  modeGestionHabituels = false;
+  const q = document.getElementById('ajout-q');
+  if (q) q.value = '';
+  noterInstantaneAjout();
+  dessinerFeuilleAjout();
   const f = document.getElementById('feuille-repas');
   f.classList.add('show');
   document.body.classList.add('couche-ouverte');
-  const b = f.querySelector('.feuille-action');
-  if (b) setTimeout(() => b.focus(), 60);
+  const corps = document.getElementById('ajout-corps');
+  if (corps) corps.scrollTop = 0;
+  // Le focus va à la feuille elle-même, pas au champ : sur l'iPhone le
+  // clavier surgirait et cacherait les suggestions, qui suffisent le plus souvent.
+  const c = f.querySelector('.feuille-contenu');
+  if (c) { c.setAttribute('tabindex', '-1'); setTimeout(() => c.focus({ preventScroll: true }), 60); }
+}
+function noterInstantaneAjout() {
+  const liste = getDay(currentDate).meals[repasFeuille] || [];
+  instantaneAjout = { date: currentDate, repas: repasFeuille, depart: liste.length };
+}
+function choisirRepasFeuille(m) {
+  if (MEALS.indexOf(m) === -1 || m === repasFeuille) return;
+  repasFeuille = m;
+  noterInstantaneAjout();
+  dessinerFeuilleAjout();
+}
+/* Les aliments ajoutés à ce repas depuis l'ouverture : « + », saisie
+   détaillée, code-barres, photo ou recette, tout compte. */
+function ajoutsDepuisOuverture() {
+  const s = instantaneAjout;
+  if (!s || s.date !== currentDate || s.repas !== repasFeuille) return [];
+  const liste = getDay(currentDate).meals[repasFeuille] || [];
+  return liste.slice(Math.min(s.depart, liste.length));
+}
+function dejaAjouteIci(nom, code) {
+  const n = normaliserRecherche(nom), c = code ? String(code).trim() : '';
+  return ajoutsDepuisOuverture().some(it => (c && it.code && String(it.code).trim() === c) || normaliserRecherche(it.name) === n);
+}
+
+function dessinerFeuilleAjout() {
+  const t = document.getElementById('feuille-repas-titre');
+  if (t) t.textContent = 'Ajouter à : ' + (MEAL_LABELS[repasFeuille] || '');
+  const r = document.getElementById('ajout-repas');
+  if (r) r.innerHTML = MEALS.map(m => `<button type="button" aria-pressed="${m === repasFeuille}" onclick="choisirRepasFeuille('${m}')">${REPAS_COURTS[m]}</button>`).join('');
+  const q = document.getElementById('ajout-q');
+  const texte = q ? q.value.trim() : '';
+  if (texte.length >= 2) afficherResultatsAjout(texte);
+  else dessinerCorpsAjout();
+  majPiedAjout();
+}
+
+function enteteSectionAjout(texte, action, faire) {
+  const h = document.createElement('div');
+  h.className = 'ajout-section';
+  const s = document.createElement('span');
+  s.textContent = texte;
+  h.appendChild(s);
+  if (action) {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.textContent = action;
+    b.addEventListener('click', faire);
+    h.appendChild(b);
+  }
+  return h;
+}
+function quantiteAliment(it) {
+  return nombreFr(Number(it && it.grams) || 0, 0) + (it && it.unite === 'ml' ? ' ml' : ' g');
+}
+/* Une ligne : l'aliment (le toucher ouvre le détail) et son bouton à droite. */
+function ligneAjout({ nom, meta, icone, detailler, droite }) {
+  const ligne = document.createElement('div');
+  ligne.className = 'ajout-ligne';
+  const info = document.createElement('button');
+  info.type = 'button';
+  info.className = 'ajout-info';
+  info.innerHTML = `<span class="food-initiale food-initiale--icone" aria-hidden="true">${icone || iconeAliment(nom)}</span><span class="ajout-texte"><span class="ajout-nom"></span><span class="ajout-meta"></span></span>`;
+  info.querySelector('.ajout-nom').textContent = nom;
+  info.querySelector('.ajout-meta').textContent = meta || '';
+  if (detailler) info.addEventListener('click', detailler);
+  ligne.appendChild(info);
+  if (droite) ligne.appendChild(droite);
+  return ligne;
+}
+function boutonPlusAjout(nom, fait, ajouter) {
+  const b = document.createElement('button');
+  b.type = 'button';
+  b.className = 'ajout-plus' + (fait ? ' fait' : '');
+  b.setAttribute('aria-label', (fait ? 'Ajouté. Ajouter encore : ' : 'Ajouter : ') + nom);
+  b.innerHTML = fait ? ICONE_COCHE : '+';
+  b.addEventListener('click', ev => {
+    ev.stopPropagation();
+    if (ajouter() === false) return;
+    b.classList.add('fait');
+    b.innerHTML = ICONE_COCHE;
+    b.setAttribute('aria-label', 'Ajouté. Ajouter encore : ' + nom);
+  });
+  return b;
+}
+
+/* Feuille sans recherche : repas à reprendre, habituels, recettes. */
+function dessinerCorpsAjout() {
+  const corps = document.getElementById('ajout-corps');
+  if (!corps) return;
+  numeroRechercheAjout++;   // une recherche encore en route n'écrit plus ici
+  corps.innerHTML = '';
+  const reprises = repasAReprendre(repasFeuille, 3);
+  const { titre, liste } = alimentsHabituels(repasFeuille, 12);
+  if (!reprises.length && !liste.length) {
+    const p = document.createElement('p');
+    p.className = 'ajout-vide';
+    p.textContent = "Cherche un aliment, scanne son code-barres ou prends ton assiette en photo. Ce que tu notes ici revient ensuite en tête de liste, prêt à être ajouté d'un toucher.";
+    corps.appendChild(p);
+  }
+  if (reprises.length) {
+    corps.appendChild(enteteSectionAjout('Reprendre un repas'));
+    const rangee = document.createElement('div');
+    rangee.className = 'ajout-reprises';
+    reprises.forEach((r, i) => {
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'ajout-reprise';
+      if (i === 0) b.id = 'opt-hier';
+      const kcal = r.items.reduce((s, it) => s + (Number(it.kcal) || 0), 0);
+      const t = document.createElement('b');
+      if (i === 0) t.id = 'opt-hier-titre';
+      t.textContent = r.date === shiftDate(currentDate, -1) ? 'Comme hier' : 'Comme le ' + formatDateDisplay(r.date).toLowerCase();
+      const meta = document.createElement('small');
+      meta.textContent = r.items.length + ' aliment' + (r.items.length > 1 ? 's' : '') + ' · ' + nombreFr(kcal, 0) + ' kcal';
+      const noms = document.createElement('small');
+      noms.className = 'ajout-reprise-noms';
+      noms.textContent = r.items.map(it => it.name).join(', ');
+      b.append(t, meta, noms);
+      b.addEventListener('click', () => reprendreRepas(r.date));
+      rangee.appendChild(b);
+    });
+    corps.appendChild(rangee);
+  }
+  if (liste.length) {
+    corps.appendChild(enteteSectionAjout(titre, modeGestionHabituels ? 'OK' : 'Modifier', () => { modeGestionHabituels = !modeGestionHabituels; dessinerCorpsAjout(); }));
+    const bloc = document.createElement('div');
+    bloc.className = 'ajout-liste';
+    liste.forEach(e => bloc.appendChild(ligneHabituel(e)));
+    corps.appendChild(bloc);
+  }
+  const recettes = recettesPerso.concat(recettesPartagees);
+  corps.appendChild(enteteSectionAjout('Recettes', 'Toutes les recettes', () => depuisFeuille('recette')));
+  if (recettes.length) {
+    const bloc = document.createElement('div');
+    bloc.className = 'ajout-liste';
+    recettes.slice(0, 8).forEach(r => bloc.appendChild(ligneRecettePerso(r)));
+    corps.appendChild(bloc);
+  } else {
+    const p = document.createElement('p');
+    p.className = 'ajout-note';
+    p.textContent = 'Tes recettes enregistrées viendront ici, ajoutées d’un toucher. « Toutes les recettes » : celles d’Askēsis, à la portion.';
+    corps.appendChild(p);
+  }
+}
+
+/* Le même repas les jours précédents (14 jours au plus), sans doublon :
+   deux déjeuners identiques n'en font qu'un. */
+function repasAReprendre(mealId, n) {
+  const vus = new Set(), res = [];
+  for (let k = 1; k <= 14 && res.length < n; k++) {
+    const d = shiftDate(currentDate, -k), j = appData[d];
+    const items = j && j.meals && Array.isArray(j.meals[mealId]) ? j.meals[mealId].filter(it => it && it.name) : [];
+    if (!items.length) continue;
+    const signature = items.map(it => normaliserRecherche(it.name)).sort().join('|');
+    if (vus.has(signature)) continue;
+    vus.add(signature);
+    res.push({ date: d, items });
+  }
+  return res;
+}
+// Le dernier repas de ce type (repris par « Comme hier »).
+function repasPrecedent(mealId) { return repasAReprendre(mealId, 1)[0] || null; }
+
+/* Les aliments de ce repas, du plus habituel au moins habituel : les favoris
+   d'abord (épinglés), puis le nombre de fois à ce repas, puis le plus récent.
+   Jamais mangés à ce repas : la liste de toute la journée. */
+function alimentsHabituels(mealId, n) {
+  const tout = historique();
+  const fav = e => estAlimentFavori(e.cle) ? 1 : 0;
+  const ici = tout.filter(e => fav(e) || (e.repas[mealId] || 0) > 0).sort((a, b) =>
+    (fav(b) - fav(a)) || ((b.repas[mealId] || 0) - (a.repas[mealId] || 0))
+    || String((b.joursRepas || {})[mealId] || '').localeCompare(String((a.joursRepas || {})[mealId] || '')));
+  if (ici.some(e => (e.repas[mealId] || 0) > 0)) return { titre: 'Souvent ' + AU_REPAS_FEUILLE[mealId], liste: ici.slice(0, n) };
+  return { titre: 'Tes aliments habituels', liste: tout.slice(0, n) };
+}
+// La portion de la dernière fois À CE REPAS, sinon la dernière tout court.
+function portionHabituelle(e, mealId) {
+  return (e.derniers && e.derniers[mealId]) || e.dernier || null;
+}
+function ligneHabituel(e) {
+  const portion = portionHabituelle(e, repasFeuille);
+  const fav = estAlimentFavori(e.cle);
+  const meta = portion ? quantiteAliment(portion) + ' · ' + nombreFr(Number(portion.kcal) || 0, 0) + ' kcal' : e.kcal100 + ' kcal/100 g';
+  let droite;
+  if (modeGestionHabituels) {
+    droite = document.createElement('span');
+    droite.className = 'ajout-gestion';
+    const etoile = document.createElement('button');
+    etoile.type = 'button';
+    etoile.className = 'off-favori' + (fav ? ' on' : '');
+    etoile.textContent = fav ? '★' : '☆';
+    etoile.setAttribute('aria-pressed', String(fav));
+    etoile.setAttribute('aria-label', 'Favori, en tête de liste : « ' + e.nom + ' »');
+    etoile.addEventListener('click', () => { basculerAlimentFavori(e.cle); dessinerCorpsAjout(); });
+    const retirer = document.createElement('button');
+    retirer.type = 'button';
+    retirer.className = 'off-retirer';
+    retirer.textContent = '×';
+    retirer.setAttribute('aria-label', 'Retirer « ' + e.nom + ' » de la liste (il revient s’il est remangé)');
+    retirer.addEventListener('click', () => { masquerDejaMange(e.cle); dessinerCorpsAjout(); });
+    droite.append(etoile, retirer);
+  } else {
+    droite = boutonPlusAjout(e.nom, dejaAjouteIci(e.nom, e.code), () => ajouterHabituel(e));
+  }
+  return ligneAjout({ nom: (fav ? '★ ' : '') + e.nom, meta, icone: iconeAliment(e.nom), droite,
+    detailler: () => detaillerAliment(Object.assign(entreeVersProduit(e), portion ? { grammes: Number(portion.grams) || e.grammes, unite: portion.unite || e.unite } : {})) });
+}
+/* « + » : l'aliment tel qu'il a été noté la dernière fois à ce repas
+   (quantité, valeurs, code-barres), sous son nom actuel. */
+function ajouterHabituel(e) {
+  const portion = portionHabituelle(e, repasFeuille);
+  if (!portion || !(Number(portion.grams) > 0)) { detaillerAliment(entreeVersProduit(e)); return false; }
+  const item = JSON.parse(JSON.stringify(portion));
+  item.name = e.nom;
+  addItemToMeal(repasFeuille, item, { source: 'historique' });
+  if (eauDeLaBoisson(item)) ajouterEau(eauDeLaBoisson(item));
+  majPiedAjout();
+  return true;
+}
+function ligneRecettePerso(r) {
+  const t = totauxRecettePerso(r);
+  const nom = r.nom + (r.partageePar ? ' · partagée' : '');
+  return ligneAjout({ nom, meta: '1 portion · ' + nombreFr(t.parPortionKcal, 0) + ' kcal · P ' + Math.round(t.parPortionP) + ' g', icone: iconeAliment(r.nom),
+    detailler: () => depuisFeuille('recette'),
+    droite: boutonPlusAjout(r.nom, dejaAjouteIci(r.nom), () => { loguerPortionRecettePerso(r.id, repasFeuille); majPiedAjout(); return true; }) });
+}
+/* Toucher un aliment : la saisie détaillée, par-dessus la feuille, remplie,
+   la quantité prête à être tapée. */
+function detaillerAliment(produit) { ouvrirManuel(repasFeuille || repasDuMoment(), produit); }
+
+/* Recherche : déjà mangé, mes recettes, recettes Askēsis, puis la base
+   (réseau), et toujours la saisie à la main en dernier recours. */
+function majRechercheAjout() {
+  const champ = document.getElementById('ajout-q');
+  const q = champ ? champ.value.trim() : '';
+  clearTimeout(minuteurRechercheAjout);
+  if (q.length < 2) { dessinerCorpsAjout(); return; }
+  minuteurRechercheAjout = setTimeout(() => afficherResultatsAjout(q), 160);
+}
+async function afficherResultatsAjout(q) {
+  const corps = document.getElementById('ajout-corps');
+  if (!corps) return;
+  const monNumero = ++numeroRechercheAjout;
+  corps.innerHTML = '';
+  corps.scrollTop = 0;
+  const mots = normaliserRecherche(q).split(' ').filter(Boolean);
+  const correspond = nom => { const c = normaliserRecherche(nom); return mots.every(m => c.includes(m)); };
+  const fav = e => estAlimentFavori(e.cle) ? 1 : 0;
+  const deja = historique().filter(e => correspond(e.nom)).sort((a, b) =>
+    (fav(b) - fav(a)) || ((b.repas[repasFeuille] || 0) - (a.repas[repasFeuille] || 0)) || (b.fois - a.fois)).slice(0, 25);
+  const section = (titre, lignes) => {
+    if (!lignes.length) return;
+    corps.appendChild(enteteSectionAjout(titre));
+    const bloc = document.createElement('div');
+    bloc.className = 'ajout-liste';
+    lignes.forEach(l => bloc.appendChild(l));
+    corps.appendChild(bloc);
+  };
+  section('Déjà mangé', deja.map(ligneHabituel));
+  section('Mes recettes', recettesPerso.concat(recettesPartagees).filter(r => correspond(r.nom)).slice(0, 8).map(ligneRecettePerso));
+  const askesis = recettesChargees() ? recettesAskesis().filter(r => correspond(r.nom)).slice(0, 5) : [];
+  section('Recettes Askēsis', askesis.map(r => {
+    const t = infosRecette(r).t;
+    return ligneAjout({ nom: r.nom, meta: '1 portion · ' + nombreFr(t.parPortionKcal, 0) + ' kcal · P ' + Math.round(t.parPortionP) + ' g', icone: iconeAliment(r.nom),
+      detailler: () => { const repas = repasFeuille; fermerFeuilleRepas(); ouvrirFicheRecette(r.id, repas); },
+      droite: (() => { const s = document.createElement('span'); s.className = 'ajout-chevron'; s.setAttribute('aria-hidden', 'true'); s.textContent = '›'; return s; })() });
+  }));
+  const attente = document.createElement('p');
+  attente.className = 'ajout-note';
+  attente.textContent = 'Recherche dans la base d’aliments…';
+  corps.appendChild(attente);
+  const libre = ligneAjout({ nom: 'Saisir « ' + q + ' » à la main', meta: 'Calories et macros de l’étiquette', icone: '✏️',
+    detailler: () => ouvrirManuel(repasFeuille || repasDuMoment(), null, q) });
+  libre.classList.add('ajout-libre');
+  corps.appendChild(libre);
+
+  const reponse = await chercherAlimentsSupabase(q);
+  if (monNumero !== numeroRechercheAjout) return;   // une frappe plus récente a pris le relais
+  const nomsDeja = new Set(deja.map(e => normaliserRecherche(e.nom)));
+  const base = (reponse.aliments || []).filter(a => !nomsDeja.has(normaliserRecherche(a.name)));
+  attente.remove();
+  const titres = { perso: 'Mes aliments', partage: 'Créés par les utilisateurs', usda: 'Base USDA' };
+  const groupes = new Map();
+  base.forEach(p => {
+    const t = titres[p.source] || 'Base d’aliments';
+    if (!groupes.has(t)) groupes.set(t, []);
+    groupes.get(t).push(p);
+  });
+  groupes.forEach((produits, titre) => {
+    corps.insertBefore(enteteSectionAjout(titre), libre);
+    const bloc = document.createElement('div');
+    bloc.className = 'ajout-liste';
+    produits.forEach(p => {
+      const kcal = Math.round((p.nutriments && p.nutriments['energy-kcal_100g']) || 0);
+      const meta = kcal + ' kcal/100 g' + (p.source === 'partage' && !p.est_mien ? ' · créé par un utilisateur' : '');
+      bloc.appendChild(ligneAjout({ nom: p.name || 'Produit inconnu', meta, detailler: () => detaillerAliment(p),
+        droite: (() => { const s = document.createElement('span'); s.className = 'ajout-chevron'; s.setAttribute('aria-hidden', 'true'); s.textContent = '›'; return s; })() }));
+    });
+    corps.insertBefore(bloc, libre);
+  });
+  if (!base.length && reponse.probleme) {
+    const p = document.createElement('p');
+    p.className = 'ajout-note';
+    p.textContent = reponse.probleme;
+    corps.insertBefore(p, libre);
+  }
+}
+
+/* Pied : où en est le repas, et le dernier ajout, annulable d'un toucher. */
+function majPiedAjout() {
+  const pied = document.getElementById('ajout-pied');
+  if (!pied || !repasFeuille) return;
+  const items = getDay(currentDate).meals[repasFeuille] || [];
+  const kcal = items.reduce((s, it) => s + (Number(it.kcal) || 0), 0);
+  const ajouts = ajoutsDepuisOuverture();
+  pied.innerHTML = '';
+  const t = document.createElement('span');
+  t.className = 'ajout-pied-texte';
+  const b = document.createElement('b');
+  b.textContent = MEAL_LABELS[repasFeuille];
+  t.append(b, document.createTextNode(' · ' + items.length + ' aliment' + (items.length > 1 ? 's' : '') + ' · ' + nombreFr(kcal, 0) + ' kcal'));
+  pied.appendChild(t);
+  if (ajouts.length) {
+    const dernier = ajouts[ajouts.length - 1];
+    const a = document.createElement('button');
+    a.type = 'button';
+    a.className = 'ajout-annuler';
+    a.textContent = 'Annuler le dernier';
+    a.setAttribute('aria-label', 'Annuler l’ajout de « ' + dernier.name + ' »');
+    a.addEventListener('click', () => { retirerAlimentAjoute(currentDate, dernier); dessinerFeuilleAjout(); });
+    pied.appendChild(a);
+  }
 }
 
 /* Option « Recette » de la feuille-repas (voir depuisFeuille) : liste des
@@ -12142,17 +12518,25 @@ function renderChoixRecette() {
    utilisateur, admin aliments). fermerFeuilles() est défini plus bas ;
    les déclarations de fonction étant remontées, l'appel est sûr. */
 function fermerFeuilleRepas() { fermerFeuilles(); }
+/* Les outils de la feuille d'ajout. Code-barres, photo et saisie s'ouvrent
+   PAR-DESSUS la feuille, qui reste dessous pour enchaîner ; la bibliothèque
+   de recettes, elle, prend la place de la feuille. */
 function depuisFeuille(mode) {
   const mealId = repasFeuille || repasDuMoment();
-  fermerFeuilleRepas();
-  if (mode === 'manuel') ouvrirManuel(mealId);
-  else if (mode === 'photo') ouvrirPhoto(mealId);
-  else if (mode === 'recette') {
+  if (mode === 'recette') {
+    fermerFeuilleRepas();
     repasFeuille = mealId; preparerBibliothequeRecettes(mealId); renderChoixRecette(); ouvrirFeuille('feuille-choix-recette');
     // Rechargées à chaque ouverture : une recette que l'admin vient de
     // partager apparaît tout de suite, sans attendre la prochaine synchro.
     chargerRecettesPartagees();
+    return;
   }
+  if (mode === 'manuel') {
+    const champ = document.getElementById('ajout-q');
+    if (feuilleAjoutOuverte() && champ) { champ.focus(); return; }
+    ouvrirManuel(mealId);
+  }
+  else if (mode === 'photo') ouvrirPhoto(mealId);
   else ouvrirBarcode(mealId);
 }
 
@@ -26772,36 +27156,37 @@ function validerSaisieRapide(verifie) {
   fermerFeuilles();
   renderApp();
 }
-/* « Comme hier » : le même repas du dernier jour (7 jours au plus) où il
-   n'était pas vide, recopié d'un toucher dans le jour affiché. */
-function repasPrecedent(mealId) {
-  for (let k = 1; k <= 7; k++) {
-    const d = shiftDate(currentDate, -k), j = appData[d];
-    if (j && j.meals && Array.isArray(j.meals[mealId]) && j.meals[mealId].length) return { date: d, items: j.meals[mealId] };
-  }
-  return null;
-}
-function majOptionHier() {
-  const b = document.getElementById('opt-hier');
-  if (!b) return;
-  const prec = repasPrecedent(repasFeuille);
-  b.classList.toggle('hidden', !prec);
-  if (!prec) return;
-  const kcal = prec.items.reduce((s, it) => s + (Number(it.kcal) || 0), 0);
-  document.getElementById('opt-hier-titre').textContent = prec.date === shiftDate(currentDate, -1) ? 'Comme hier' : 'Comme le ' + formatDateDisplay(prec.date).toLowerCase();
-  document.getElementById('opt-hier-sous').textContent = prec.items.length + ' aliment' + (prec.items.length > 1 ? 's' : '') + ' · ' + Math.round(kcal) + ' kcal : ' + prec.items.slice(0, 3).map(it => it.name).join(', ') + (prec.items.length > 3 ? '…' : '');
-}
-function copierRepasPrecedent() {
-  const prec = repasPrecedent(repasFeuille);
-  if (!prec) return;
-  const day = getDay(currentDate);
-  day.meals[repasFeuille].push(...prec.items.map(it => JSON.parse(JSON.stringify(it))));
+/* Reprendre un repas déjà pris (feuille d'ajout) : recopié d'un toucher dans
+   le jour affiché, la feuille se ferme, le bandeau permet d'annuler. */
+function reprendreRepas(date) {
+  const cible = repasFeuille, jour = currentDate;
+  const j = appData[date];
+  const source = j && j.meals && Array.isArray(j.meals[cible]) ? j.meals[cible] : [];
+  if (!source.length) return;
+  const day = getDay(jour);
+  const copies = source.map(it => JSON.parse(JSON.stringify(it)));
+  day.meals[cible].push(...copies);
   invaliderHistorique();
-  saveData(currentDate);
-  ajusterEauJour(currentDate, prec.items.reduce((t, it) => t + eauDeLaBoisson(it), 0));
+  saveData(jour);
+  const eau = copies.reduce((t, it) => t + eauDeLaBoisson(it), 0);
+  ajusterEauJour(jour, eau);
   fermerFeuilleRepas();
   renderMeals(day); updateSummary(day); renderSemaine();
+  afficherAnnulation(MEAL_LABELS[cible] + ' repris : ' + copies.length + ' aliment' + (copies.length > 1 ? 's' : ''), () => {
+    const d = getDay(jour), l = d.meals[cible] || [];
+    copies.forEach(c => { const i = l.indexOf(c); if (i >= 0) l.splice(i, 1); });
+    saveData(jour);
+    ajusterEauJour(jour, -eau);
+    invaliderHistorique();
+    if (jour === currentDate) { renderMeals(d); updateSummary(d); renderSemaine(); }
+  });
 }
+// « Comme hier » : le plus récent des repas à reprendre.
+function copierRepasPrecedent() {
+  const prec = repasPrecedent(repasFeuille);
+  if (prec) reprendreRepas(prec.date);
+}
+function majOptionHier() { if (feuilleAjoutOuverte()) dessinerFeuilleAjout(); }
 /* Bandeau « Annuler » (5 s) après une suppression. */
 function afficherAnnulation(texte, annuler) {
   let t = document.getElementById('toast-annuler');
