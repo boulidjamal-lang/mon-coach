@@ -39,7 +39,7 @@ n'importe quel site et renvoyait les jetons au navigateur.
 |---|---|---|
 | `etat` | `{ connecte, autorise }` | La balance est-elle reliée à ce compte, et ce compte peut-il s'en servir ? (L'app iPhone, où Pro n'est pas vendu, ne montre la balance qu'à un compte `autorise` ou déjà relié, et à l'administrateur.) |
 | `connecter` `{ code }` | `{ connecte: true }` | Échange le code OAuth du retour de Withings et garde les jetons |
-| `mesures` | `{ status: 0, body: { measuregrps } }` | Les 10 dernières pesées (format Withings `getmeas`), jeton rafraîchi au besoin ; `409 { connecte: false }` si la connexion a expiré |
+| `mesures` | `{ status: 0, body: { measuregrps } }` | Les 10 dernières pesées (format Withings `getmeas`), jeton rafraîchi au besoin ; avec `depuis` (secondes Unix), toutes les pesées depuis cette date, un an au plus (l'appli demande les 90 derniers jours pour compléter les jours sans pesée et séparer le gras du muscle dans la maintenance réelle) ; `409 { connecte: false }` si la connexion a expiré |
 | `deconnecter` | `{ connecte: false }` | Oublie les jetons |
 | `importer` `{ access_token, refresh_token, expire_le, userid }` | `{ connecte: true }` | Reprend le jeton qu'une ancienne version de l'appli gardait sur l'appareil (une fois ; l'appli l'efface ensuite chez elle) |
 

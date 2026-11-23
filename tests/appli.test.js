@@ -1228,7 +1228,8 @@ test("balance Withings (lot 6) : l'appli ne détient aucun jeton — état, conn
   assert.deepEqual(r.lien, [true, 'https://account.withings.com/oauth2_user/authorize2', true, 'https://boulidjamal-lang.github.io/mon-coach/', 32, true]);
   assert.deepEqual(r.mauvaisState, [0, false, '', null], 'un code avec un autre « state » est ignoré');
   assert.deepEqual(r.connecter, [1, { action: 'connecter', code: 'CODE-2' }, true, '', null]);
-  assert.deepEqual(r.actions, ['withings:importer', 'withings:etat', 'withings:mesures', 'withings:deconnecter', 'withings:connecter']);
+  // Reliée (état, puis connexion) : les pesées des 90 derniers jours arrivent seules ; « Importer » relit la dernière.
+  assert.deepEqual(r.actions, ['withings:importer', 'withings:etat', 'withings:mesures', 'withings:mesures', 'withings:deconnecter', 'withings:connecter', 'withings:mesures']);
   assert.equal(r.jetonSorti, false, 'aucun jeton ne circule hors de la reprise');
   assert.equal(r.appliSansJeton, true, "l'appli n'appelle plus Withings directement");
   assert.deepEqual(r.sansCompte, [false, true]);
@@ -4730,6 +4731,125 @@ test('Progrès : toucher « Ta maintenance réelle » l\'explique avec les chiff
   assert.match(r.texte, /Ce qu'il faut pour la calculer/);
 }));
 
+test('maintenance réelle : le gras (9 440 kcal le kilo) et la masse maigre (1 816) comptés à part quand la balance mesure la masse grasse', () => avecAppli({}, async ({ page }) => {
+  const r = await page.evaluate(() => {
+    const ligne = (n, f) => Array.from({ length: n }, (_, t) => f(t));
+    // Perte de 0,7 kg par semaine, dont 80 % de gras : 28 mesures sur 27 jours.
+    const perte = ligne(28, t => { const w = 90 - 0.1 * t, fm = 18 - 0.08 * t; return [t, w, fm / w * 100]; });
+    const a = partGrasMaigre(-0.1, perte, 28);
+    // Que du muscle (le gras ne bouge pas) : 0,49 kg par semaine.
+    const b = partGrasMaigre(-0.07, ligne(28, t => { const w = 90 - 0.07 * t; return [t, w, 18 / w * 100]; }), 28);
+    const arr = v => Math.round(v * 100) / 100 + 0;
+    return {
+      perte: [arr(a.penteGras), arr(a.penteMaigre), Math.round(a.kcalJour), a.mesures, Math.round(-0.1 * KCAL_PAR_KG)],
+      muscle: [arr(b.penteGras), arr(b.penteMaigre), Math.round(b.kcalJour), Math.round(-0.07 * KCAL_PAR_KG)],
+      peu: partGrasMaigre(-0.1, perte.slice(0, 5), 28),
+      courte: partGrasMaigre(-0.1, perte.slice(0, 12), 28).raison,
+      // ±1,5 kg de gras d'un jour à l'autre : trop de bruit pour une pente.
+      bruit: partGrasMaigre(-0.1, perte.map((p, k) => [p[0], p[1], (18 - 0.08 * p[0] + (k % 2 ? 1.5 : -1.5)) / p[1] * 100]), 28).raison,
+      // 1 kg de masse maigre par semaine : ce n'est pas le corps, c'est la mesure.
+      incoherent: partGrasMaigre(-0.1, ligne(28, t => { const w = 90 - 0.1 * t, fm = 18 + 0.043 * t; return [t, w, fm / w * 100]; }), 28).raison
+    };
+  });
+  // −0,08 kg de gras × 9 440 − 0,02 kg de masse maigre × 1 816 = −792 kcal par jour (7 700 kcal par kilo disaient −770).
+  assert.deepEqual(r.perte, [-0.08, -0.02, -792, 28, -770]);
+  // Perdre du muscle : 127 kcal puisés par jour, pas 539 — la maintenance est 412 kcal plus basse.
+  assert.deepEqual(r.muscle, [0, -0.07, -127, -539]);
+  assert.deepEqual(r.peu, { raison: 'peu', mesures: 5 });
+  assert.equal(r.courte, 'courte');
+  assert.equal(r.bruit, 'bruit');
+  assert.equal(r.incoherent, 'incoherent');
+}));
+
+test('Progrès : avec la masse grasse de la balance, la maintenance sépare le gras puisé et la masse maigre perdue ; sans assez de mesures, la feuille dit pourquoi', () => avecAppli({}, async ({ page }) => {
+  await page.evaluate(() => {
+    const t = todayStr();
+    // 0,06 kg par jour, dont 0,02 de gras : surtout de la masse maigre.
+    for (let k = 0; k <= 29; k++) {
+      const d = shiftDate(t, -k), j = getDay(d), w = Math.round((88 + 0.06 * k) * 1000) / 1000, fm = 18 + 0.02 * k;
+      j.weight = w;
+      j.meals[MEALS[0]].push({ name: 'Poulet rôti', grams: 300, kcal: 2000, p: 100, c: 200, f: 70 });
+      userProfile.mesures = userProfile.mesures || {};
+      userProfile.mesures[d] = { poids: w, grassePct: fm / w * 100 };
+      saveData(d);
+    }
+    saveData();
+    buildMasterArrays();
+    choisirPeriodeStats('30');
+    ouvrirProgres();
+  });
+  await page.waitForTimeout(300);
+  const lire = () => page.evaluate(() => {
+    const f = document.getElementById('feuille-maintenance');
+    const lignes = [...f.querySelectorAll('.mx-calcul li')];
+    return {
+      carte: document.querySelector('#pg-resume .pg-maint').textContent.replace(/\s+/g, ' '),
+      lignes: lignes.map(l => l.querySelector('span').textContent),
+      valeurs: lignes.map(l => (l.querySelector('b').textContent.trim().startsWith('−') ? -1 : 1) * Number(l.querySelector('b').textContent.replace(/[^\d]/g, ''))),
+      details: lignes.map(l => ((l.querySelector('small') || {}).textContent || '').replace(/\u00a0/g, ' ')),
+      note: ((f.querySelector('.mx-calcul + .mx-note') || {}).textContent || '').replace(/\u00a0/g, ' '),
+      conseils: f.querySelector('.mx-conseils').textContent
+    };
+  });
+  await page.click('#pg-resume .pg-maint--lien');
+  await page.waitForSelector('#feuille-maintenance.show');
+  let r = await lire();
+  assert.match(r.carte, /Calculée sur tes pesées, ta masse grasse et ce que tu as noté/);
+  assert.deepEqual(r.lignes, ['Mangé', 'Gras puisé', 'Masse maigre perdue', 'Ta maintenance']);
+  // 0,02 kg de gras par jour × 9 440 = 189 kcal ; le reste, la masse maigre ; les lignes s'additionnent.
+  assert.equal(r.valeurs[0], 2000);
+  assert.equal(r.valeurs[1], 189);
+  assert.equal(r.valeurs[0] + r.valeurs[1] + r.valeurs[2], r.valeurs[3]);
+  // À 7 700 kcal le kilo, la même tendance aurait donné environ 2 420 kcal.
+  assert.ok(r.valeurs[3] >= 2240 && r.valeurs[3] <= 2260, String(r.valeurs[3]));
+  assert.match(r.details[1], /^ta masse grasse a baissé de 0,\d kg en \d+ jours \(1 kg de gras ≈ 9 440 kcal\)$/);
+  assert.match(r.details[2], /^ta masse maigre \(muscle, eau, glycogène\) a baissé de [\d,]+ kg \(1 kg ≈ 1 816 kcal\)$/);
+  assert.match(r.note, /^Calculé avec ta masse grasse : 29 mesures de ta balance sur la période\./);
+  assert.doesNotMatch(r.conseils, /Si ta balance mesure la masse grasse/);
+  // Cinq mesures seulement : 7 700 kcal par kilo, et la feuille dit pourquoi.
+  await page.evaluate(() => {
+    fermerFeuilles();
+    const t = todayStr();
+    for (let k = 5; k <= 29; k++) delete userProfile.mesures[shiftDate(t, -k)].grassePct;
+    saveData(); buildMasterArrays(); majToutesStats();
+  });
+  await page.waitForTimeout(200);
+  await page.click('#pg-resume .pg-maint--lien');
+  await page.waitForSelector('#feuille-maintenance.show');
+  r = await lire();
+  assert.deepEqual(r.lignes, ['Mangé', 'Puisé dans tes réserves', 'Ta maintenance']);
+  assert.match(r.carte, /Calculée sur tes pesées et ce que tu as noté/);
+  assert.equal(r.note, "Ta masse grasse n'est pas prise en compte : 5 mesures sur la période, il en faut 8 étalées sur 21 jours. Le calcul garde 1 kg ≈ 7 700 kcal.");
+  assert.match(r.conseils, /Si ta balance mesure la masse grasse \(Withings, Apple Santé\), pèse-toi dessus presque chaque jour/);
+}));
+
+test('balance Withings : les pesées des 90 derniers jours complètent les jours sans pesée (poids, masse grasse, muscle), sans rien écraser, au plus toutes les 30 minutes', () => avecAppli({}, async ({ page }) => {
+  const r = await page.evaluate(async () => {
+    sessionUtilisateur = { id: 'u-1', email: 'moi@test.fr' };
+    etatWithings = { connecte: true, connu: true };
+    const auj = todayStr(), hier = shiftDate(auj, -1), avant = shiftDate(auj, -2);
+    const ts = (d, h) => Math.floor(new Date(d + 'T' + h).getTime() / 1000);
+    const appels = [];
+    supa = { functions: { invoke: async (nom, o) => { appels.push([nom, o.body]); return { data: { status: 0, body: { measuregrps: [
+      { date: ts(auj, '07:30:00'), measures: [{ type: 1, value: 80430, unit: -3 }, { type: 6, value: 183, unit: -1 }, { type: 76, value: 6250, unit: -2 }] },
+      { date: ts(auj, '06:00:00'), measures: [{ type: 1, value: 81000, unit: -3 }, { type: 6, value: 190, unit: -1 }] },   // plus ancienne le même jour : ignorée
+      { date: ts(hier, '07:00:00'), measures: [{ type: 1, value: 81200, unit: -3 }, { type: 6, value: 185, unit: -1 }] },
+      { date: ts(avant, '07:00:00'), measures: [{ type: 1, value: 81500, unit: -3 }, { type: 6, value: 186, unit: -1 }] }
+    ] } }, error: null }; } } };
+    getDay(hier).weight = 82; saveData(hier);              // saisi à la main : gardé
+    userProfile.mesures = { [avant]: { grassePct: 20 } };  // déjà mesuré : gardé
+    const n = await synchroniserWithings(true);
+    const encore = await synchroniserWithings();           // moins de 30 minutes après : pas d'appel
+    const m = d => userProfile.mesures[d] || {};
+    return { n, encore, appels: appels.map(a => [a[0], a[1].action, Math.round((Date.now() / 1000 - a[1].depuis) / 86400)]),
+      auj: [getDay(auj).weight, m(auj).poids ?? null, m(auj).grassePct ?? null, m(auj).muscleKg ?? null],
+      hier: [getDay(hier).weight, m(hier).poids ?? null, m(hier).grassePct ?? null],
+      avant: [getDay(avant).weight, m(avant).poids ?? null, m(avant).grassePct ?? null] };
+  });
+  assert.deepEqual(r, { n: 3, encore: 0, appels: [['withings', 'mesures', 90]],
+    auj: [80.4, 80.4, 18.3, 62.5], hier: [82, null, 18.5], avant: [81.5, 81.5, 20] });
+}));
+
 test('nouvel utilisateur : « Premiers pas » se coche dès le premier repas noté, le questionnaire écrit ses nombres à la française', () => avecAppli({}, async ({ page }) => {
   // La carte telle qu'elle est juste après le questionnaire.
   await page.evaluate(() => {
@@ -6043,16 +6163,28 @@ test('app iOS : Apple Santé remplit les pas et les pesées, sans jamais écrase
     const a = (d, h) => new Date(d + 'T' + h).toISOString();
     window.__reponsesNatives['Health.isAvailable'] = { available: true };
     window.__reponsesNatives['Health.queryAggregated'] = { samples: [{ startDate: a(hier, '00:00:00'), value: 3000 }, { startDate: a(auj, '00:00:00'), value: 12000.4 }] };
-    window.__reponsesNatives['Health.readSamples'] = { samples: [{ startDate: a(auj, '08:00:00'), value: 80.43 }, { startDate: a(hier, '08:00:00'), value: 81 }] };
+    // Pesées et % de masse grasse (HealthKit le donne de 0 à 1).
+    window.__reponsesNatives['Health.readSamples'] = o => o.dataType === 'bodyFat'
+      ? { samples: [{ startDate: a(auj, '08:00:00'), value: 0.183 }, { startDate: a(hier, '08:00:00'), value: 0.19 }] }
+      : { samples: [{ startDate: a(auj, '08:00:00'), value: 80.43 }, { startDate: a(hier, '08:00:00'), value: 81 }] };
     getDay(hier).steps = 5000; getDay(hier).weight = 82; saveData(hier);
+    userProfile.mesures = { [hier]: { grassePct: 20.5 } };   // déjà mesuré : gardé
     await activerSante();
     const visible = id => !document.getElementById(id).classList.contains('hidden');
-    return { pas: getDay(auj).steps, poids: getDay(auj).weight, mesure: userProfile.mesures[auj].poids,
-      pasHier: getDay(hier).steps, poidsHier: getDay(hier).weight, reglage: localStorage.getItem('mc_sante_apple'),
+    const lu = { pas: getDay(auj).steps, poids: getDay(auj).weight, mesure: userProfile.mesures[auj].poids, gras: userProfile.mesures[auj].grassePct,
+      pasHier: getDay(hier).steps, poidsHier: getDay(hier).weight, grasHier: userProfile.mesures[hier].grassePct, reglage: localStorage.getItem('mc_sante_apple'),
       connecte: visible('sante-active'), aConnecter: visible('sante-inactive') };
+    // Santé reliée par une version qui ne lisait pas la masse grasse : l'accès est redemandé une seule fois.
+    localStorage.removeItem('mc_sante_gras');
+    await lireSante(true); await lireSante(true);
+    return lu;
   });
-  assert.deepEqual(r, { pas: 12000, poids: 80.4, mesure: 80.4, pasHier: 5000, poidsHier: 82, reglage: '1', connecte: true, aConnecter: false });
-  assert.deepEqual((await appelsDe(page, 'Health', 'requestAuthorization'))[0].o, { read: ['steps', 'weight'] });
+  assert.deepEqual(r, { pas: 12000, poids: 80.4, mesure: 80.4, gras: 18.3, pasHier: 5000, poidsHier: 82, grasHier: 20.5, reglage: '1', connecte: true, aConnecter: false });
+  const demandes = await appelsDe(page, 'Health', 'requestAuthorization');
+  assert.deepEqual(demandes.map(d => d.o), [{ read: ['steps', 'weight', 'bodyFat'] }, { read: ['steps', 'weight', 'bodyFat'] }]);
+  const lectures = (await appelsDe(page, 'Health', 'readSamples')).map(x => x.o);
+  assert.deepEqual([...new Set(lectures.map(o => o.dataType))], ['weight', 'bodyFat']);
+  assert.ok(lectures.every(o => { const j = (Date.now() - new Date(o.startDate)) / 864e5; return j > 89.9 && j < 91.1 && o.limit === 500; }), JSON.stringify(lectures));
   await page.evaluate(() => desactiverSante());
   assert.equal(await page.evaluate(() => localStorage.getItem('mc_sante_apple')), null);
 }));

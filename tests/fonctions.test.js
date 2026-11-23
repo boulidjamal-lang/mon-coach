@@ -402,6 +402,38 @@ test("fonction « withings » : l'administrateur y a accès sans abonnement (est
   assert.deepEqual(await lire(h3, 'jeton-libre'), [true, 409, null]);
 });
 
+test('fonction « withings » : avec « depuis », toutes les pesées depuis cette date (un an au plus), page après page ; sans, les 10 dernières', async () => {
+  const base = fausseBase();
+  base.tables.abonnements.push({ utilisateur: 'u-pro', formule: 'an', statut: 'actif', fin: new Date(Date.now() + 864e5).toISOString() });
+  base.tables.withings_jetons.push({ utilisateur: 'u-pro', access_token: 'acces', refresh_token: 'refresh', expire_le: new Date(Date.now() + 36e5).toISOString(), userid: '42' });
+  const urls = [];
+  const groupe = k => ({ date: 1700000000 + k * 86400, measures: [{ type: 1, value: 80000 + k, unit: -3 }] });
+  globalThis.fetch = async url => {
+    urls.push(String(url));
+    const p = new URL(String(url)).searchParams;
+    if (!p.get('startdate')) return new Response(JSON.stringify({ status: 0, body: { measuregrps: Array.from({ length: 12 }, (_, k) => groupe(k)) } }));
+    return new Response(JSON.stringify(p.get('offset')
+      ? { status: 0, body: { measuregrps: [groupe(20), groupe(21)], more: 0 } }
+      : { status: 0, body: { measuregrps: Array.from({ length: 11 }, (_, k) => groupe(k)), more: 1, offset: 11 } }));
+  };
+  const h = await chargerFonction('withings', envWithings, base);
+  // Sans « depuis » : l'appel d'avant, inchangé, et les 10 dernières.
+  let r = await appelWithings(h, 'jeton-pro', { action: 'mesures' });
+  assert.equal(r.corps.body.measuregrps.length, 10);
+  assert.match(urls[0], /\?action=getmeas&meastypes=1%2C6%2C76%2C88%2C77&category=1$/);
+  // Avec : la date de départ, la page suivante, tout, du plus récent au plus ancien.
+  const depuis = Math.floor(Date.now() / 1000) - 90 * 86400;
+  r = await appelWithings(h, 'jeton-pro', { action: 'mesures', depuis });
+  assert.equal(r.status, 200);
+  assert.equal(new URL(urls[1]).searchParams.get('startdate'), String(depuis));
+  assert.equal(new URL(urls[2]).searchParams.get('offset'), '11');
+  assert.deepEqual(r.corps.body.measuregrps.map(g => (g.date - 1700000000) / 86400), [21, 20, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0]);
+  // Plus d'un an en arrière : ramené à un an.
+  await appelWithings(h, 'jeton-pro', { action: 'mesures', depuis: 1 });
+  const an = Number(new URL(urls[3]).searchParams.get('startdate'));
+  assert.ok(Math.abs(an - (Date.now() / 1000 - 366 * 86400)) < 60, String(an));
+});
+
 test('fonction « withings » : le code OAuth est échangé avec l\'URL de retour du serveur, les jetons restent sur le serveur, les pesées sont lues et le jeton rafraîchi sans que l\'appli en voie un', async () => {
   const base = fausseBase();
   base.tables.abonnements.push({ utilisateur: 'u-pro', formule: 'an', statut: 'actif', fin: new Date(Date.now() + 864e5).toISOString() });
