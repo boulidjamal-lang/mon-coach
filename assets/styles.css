@@ -957,6 +957,39 @@ html:root .ajout-entete .feuille-titre { flex: 1; min-width: 0; margin: 0; text-
 .ajout-pied-texte b { color: var(--text); }
 .ajout-annuler { flex: none; min-height: 36px; padding: 0 12px; border: 0; border-radius: 10px; background: var(--verre-creux);
   color: var(--text); font: inherit; font-size: .78rem; font-weight: 700; cursor: pointer; }
+.ajout-reste { display: block; margin-top: 1px; font-size: .72rem; color: var(--text-muted); }
+.ajout-ia .ajout-nom { color: var(--primary); }
+.ajout-ia { margin-bottom: 4px; border-radius: 14px; background: var(--verre-creux); border-bottom: 0; }
+.ajout-ligne.ouverte { border-bottom-color: transparent; }
+.ajout-ligne.ouverte .ajout-chevron { transform: rotate(90deg); }
+.ajout-chevron { transition: transform .2s; }
+/* Réglage de la portion, sous la ligne touchée. */
+.ajout-portion { padding: 4px 12px 12px; border-bottom: 1px solid var(--verre-brd); animation: portionIn .22s ease-out; }
+.ajout-portion:last-child { border-bottom: 0; }
+@keyframes portionIn { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: none; } }
+.ajout-portion-ligne { display: flex; align-items: center; gap: 8px; }
+.ajout-pas { flex: none; width: 40px; height: 40px; border: 0; border-radius: 12px; background: var(--verre-fort); color: var(--text);
+  font: inherit; font-size: 1.3rem; font-weight: 700; line-height: 1; cursor: pointer; }
+.ajout-qte { display: flex; align-items: baseline; gap: 4px; min-width: 0; padding: 0 10px; height: 40px; border-radius: 12px;
+  background: var(--verre-fort); cursor: text; }
+.ajout-qte input { width: 4.2em; height: 38px; padding: 0; border: 0; background: transparent; outline: none; text-align: right;
+  font: inherit; font-size: 1.05rem; font-weight: 800; color: var(--text); }
+.ajout-qte span { font-size: .82rem; font-weight: 700; color: var(--text-muted); }
+.ajout-portion-kcal { margin-left: auto; font-size: .8rem; color: var(--text-muted); white-space: nowrap; }
+.ajout-portion-kcal b { font-size: 1.15rem; color: var(--text); }
+.ajout-choix { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 9px; }
+.ajout-choix button { min-height: 32px; padding: 0 11px; border: 0; border-radius: 99px; background: var(--verre-fort); color: var(--text);
+  font: inherit; font-size: .78rem; font-weight: 700; cursor: pointer; }
+.ajout-choix button[aria-pressed="true"] { background: var(--primary); color: var(--primary-txt, #fff); }
+.ajout-macros { margin: 8px 2px 0; font-size: .74rem; color: var(--text-muted); }
+.ajout-cuit { margin: 8px 2px 0; font-size: .74rem; line-height: 1.5; color: var(--text-muted); }
+.ajout-cuit .pilule { margin-left: 2px; }
+.ajout-portion-actions { display: flex; align-items: center; gap: 10px; margin-top: 10px; }
+.ajout-modifier { padding: 6px 0; border: 0; background: none; cursor: pointer; font: inherit; font-size: .8rem; font-weight: 700; color: var(--text-muted);
+  text-decoration: underline; text-underline-offset: 3px; }
+.ajout-valider { margin-left: auto; min-height: 40px; padding: 0 22px; border: 0; border-radius: 12px; background: var(--primary);
+  color: var(--primary-txt, #fff); font: inherit; font-weight: 800; font-size: .88rem; cursor: pointer; }
+.ajout-valider:disabled { opacity: .4; cursor: default; }
 
 /* --- ADMINISTRATION --- */
 /* --- Premiere connexion (bilan initial) --- */
@@ -4983,6 +5016,12 @@ html.app-ios body .feuille-ajout #opt-barcode { background: #34c759 !important; 
 html.app-ios body .feuille-ajout #opt-photo { background: #af52de !important; color: #fff !important; }
 html.app-ios body .feuille-ajout :is(.ajout-section button, .ajout-libre .ajout-nom) { color: var(--ios-accent) !important; }
 html.app-ios body .feuille-ajout .ajout-plus:not(.fait) { background: var(--ios-accent) !important; color: #fff !important; }
+html.app-ios body .feuille-ajout :is(.ajout-pas, .ajout-qte, .ajout-choix button:not([aria-pressed="true"])) { background: var(--ios-remplir) !important; }
+html.app-ios body .feuille-ajout :is(.ajout-valider, .ajout-choix button[aria-pressed="true"]) { background: var(--ios-accent) !important; color: #fff !important; }
+html.app-ios body .feuille-ajout :is(.ajout-ia .ajout-nom) { color: var(--ios-accent) !important; }
+html.app-ios body .feuille-ajout .ajout-ia { background: var(--s1) !important; }
+html.app-ios:root[data-theme="dark"] body .feuille-ajout .ajout-ia { background: var(--s2) !important; }
+html.app-ios body .feuille-ajout .ajout-portion { border-color: var(--ligne) !important; }
 html.app-ios body .feuille-ajout :is(.ajout-ligne, .ajout-pied) { border-color: var(--ligne) !important; }
 html.app-ios body #opt-seance-jour .ic { background: #ff2d55 !important; }
 html.app-ios body #opt-seance-vide .ic { background: #ff9500 !important; }

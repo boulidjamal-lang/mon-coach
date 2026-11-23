@@ -12168,7 +12168,7 @@ function ligneAjout({ nom, meta, icone, detailler, droite }) {
   info.innerHTML = `<span class="food-initiale food-initiale--icone" aria-hidden="true">${icone || iconeAliment(nom)}</span><span class="ajout-texte"><span class="ajout-nom"></span><span class="ajout-meta"></span></span>`;
   info.querySelector('.ajout-nom').textContent = nom;
   info.querySelector('.ajout-meta').textContent = meta || '';
-  if (detailler) info.addEventListener('click', detailler);
+  if (detailler) info.addEventListener('click', () => detailler(ligne));
   ligne.appendChild(info);
   if (droite) ligne.appendChild(droite);
   return ligne;
@@ -12182,11 +12182,217 @@ function boutonPlusAjout(nom, fait, ajouter) {
   b.addEventListener('click', ev => {
     ev.stopPropagation();
     if (ajouter() === false) return;
-    b.classList.add('fait');
-    b.innerHTML = ICONE_COCHE;
-    b.setAttribute('aria-label', 'Ajouté. Ajouter encore : ' + nom);
+    vibrer('leger');
+    marquerAjoute(b, nom);
   });
   return b;
+}
+function marquerAjoute(b, nom) {
+  if (!b) return;
+  b.classList.add('fait');
+  b.innerHTML = ICONE_COCHE;
+  b.setAttribute('aria-label', 'Ajouté. Ajouter encore : ' + nom);
+}
+
+/* =====================================================================
+   RÉGLAGE DE LA PORTION, SUR PLACE
+   Toucher un aliment ouvre, sous sa ligne, de quoi régler la quantité :
+   − / +, quelques quantités toutes prêtes, les calories et les macros qui
+   suivent, et « Ajouter ». Le formulaire complet (valeurs pour 100 g)
+   n'est plus qu'à un toucher, pour les cas où il sert vraiment.
+   Une « spec » décrit l'aliment : nom, unité (g, ml ou portion), quantité
+   de départ, quantités proposées, valeurs(q) → { kcal, p, c, f },
+   ajouter(q), et modifier(q) pour le formulaire.
+   ===================================================================== */
+function pasQuantite(q, unite) {
+  if (unite === 'portion') return 0.5;
+  if (unite === 'ml') return q < 100 ? 10 : q < 500 ? 25 : 50;
+  return q < 30 ? 5 : q < 300 ? 10 : 25;
+}
+function texteQuantite(q, unite) {
+  if (unite === 'portion') return ({ 0.5: '½', 1.5: '1 ½', 2.5: '2 ½' }[q] || nombreFr(q, 1).replace(/,0$/, '')) + ' portion' + (q > 1 ? 's' : '');
+  return nombreFr(q, 0) + (unite === 'ml' ? ' ml' : ' g');
+}
+function fermerPortions() {
+  document.querySelectorAll('#ajout-corps .ajout-portion').forEach(p => p.remove());
+  document.querySelectorAll('#ajout-corps .ajout-ligne.ouverte').forEach(l => { l.classList.remove('ouverte'); const i = l.querySelector('.ajout-info'); if (i) i.setAttribute('aria-expanded', 'false'); });
+}
+function basculerPortion(ligne, spec) {
+  const dejaOuverte = ligne.classList.contains('ouverte');
+  fermerPortions();
+  if (dejaOuverte) return;
+  ligne.classList.add('ouverte');
+  const info = ligne.querySelector('.ajout-info');
+  if (info) info.setAttribute('aria-expanded', 'true');
+  let q = spec.quantite, cuit = false;
+  const panneau = document.createElement('div');
+  panneau.className = 'ajout-portion';
+  panneau.innerHTML = `<div class="ajout-portion-ligne">
+      <button type="button" class="ajout-pas" data-pas="-1" aria-label="Moins">−</button>
+      <label class="ajout-qte"><input type="text" inputmode="decimal" enterkeyhint="done" aria-label="Quantité"><span></span></label>
+      <button type="button" class="ajout-pas" data-pas="1" aria-label="Plus">+</button>
+      <span class="ajout-portion-kcal" aria-live="polite"><b></b> kcal</span>
+    </div>
+    <div class="ajout-choix" role="group" aria-label="Quantités proposées"></div>
+    <p class="ajout-macros"></p>
+    <p class="ajout-cuit hidden"></p>
+    <div class="ajout-portion-actions">
+      <button type="button" class="ajout-modifier"></button>
+      <button type="button" class="ajout-valider">Ajouter</button>
+    </div>`;
+  const champ = panneau.querySelector('input'), unite = panneau.querySelector('.ajout-qte span');
+  const kcal = panneau.querySelector('.ajout-portion-kcal b'), macros = panneau.querySelector('.ajout-macros');
+  const choix = panneau.querySelector('.ajout-choix'), noteCuit = panneau.querySelector('.ajout-cuit');
+  unite.textContent = spec.unite === 'portion' ? (q > 1 ? 'portions' : 'portion') : spec.unite;
+  const lire = () => { const v = Number(String(champ.value).replace(',', '.').replace(/\s/g, '')); return Number.isFinite(v) && v > 0 ? v : 0; };
+  // Quantité comptée : le poids cru quand « pesé cuit » est coché.
+  const compte = () => cuit && spec.aideCuit ? Math.max(1, Math.round(q / spec.aideCuit.facteur)) : q;
+  const majAffichage = (depuisChamp) => {
+    if (!depuisChamp) champ.value = spec.unite === 'portion' ? nombreFr(q, 1).replace(/,0$/, '') : String(Math.round(q));
+    if (spec.unite === 'portion') unite.textContent = q > 1 ? 'portions' : 'portion';
+    const v = q > 0 ? spec.valeurs(compte()) : { kcal: 0, p: 0, c: 0, f: 0 };
+    kcal.textContent = nombreFr(Number(v.kcal) || 0, 0);
+    macros.textContent = 'P ' + Math.round(Number(v.p) || 0) + ' g · G ' + Math.round(Number(v.c) || 0) + ' g · L ' + Math.round(Number(v.f) || 0) + ' g';
+    choix.querySelectorAll('button').forEach(b => b.setAttribute('aria-pressed', String(Number(b.dataset.q) === q)));
+    if (spec.aideCuit) {
+      const cru = Math.max(1, Math.round(q / spec.aideCuit.facteur));
+      noteCuit.classList.remove('hidden');
+      noteCuit.innerHTML = '';
+      const t = document.createElement('span');
+      t.textContent = cuit ? `${nombreFr(q, 0)} g cuit comptés comme ${nombreFr(cru, 0)} g cru. ` : `Valeurs pour ${spec.aideCuit.nom} cru. Pesé cuit ? `;
+      const b = document.createElement('button');
+      b.type = 'button'; b.className = 'pilule';
+      b.textContent = cuit ? 'Compter cru' : `Compter ${nombreFr(cru, 0)} g cru`;
+      b.setAttribute('aria-pressed', String(cuit));
+      b.addEventListener('click', () => { cuit = !cuit; majAffichage(); });
+      noteCuit.append(t, b);
+    }
+    panneau.querySelector('.ajout-valider').disabled = !(q > 0);
+  };
+  (spec.choix || []).forEach(v => {
+    const b = document.createElement('button');
+    b.type = 'button'; b.dataset.q = String(v);
+    b.textContent = texteQuantite(v, spec.unite);
+    b.addEventListener('click', () => { q = v; majAffichage(); });
+    choix.appendChild(b);
+  });
+  panneau.querySelectorAll('.ajout-pas').forEach(b => b.addEventListener('click', () => {
+    const sens = Number(b.dataset.pas), pas = pasQuantite(sens < 0 ? Math.max(0, q - 0.001) : q, spec.unite);
+    q = Math.max(pas, Math.round((q + sens * pas) / pas) * pas);
+    vibrer('selection');
+    majAffichage();
+  }));
+  champ.addEventListener('input', () => { q = lire(); majAffichage(true); });
+  const valider = () => {
+    if (!(q > 0)) return;
+    if (spec.ajouter(compte(), cuit ? q : null) === false) return;
+    vibrer('leger');
+    marquerAjoute(ligne.querySelector('.ajout-plus'), spec.nom);
+    fermerPortions();
+    majPiedAjout();
+  };
+  champ.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); valider(); } });
+  panneau.querySelector('.ajout-valider').addEventListener('click', valider);
+  const modifier = panneau.querySelector('.ajout-modifier');
+  if (spec.modifier) {
+    modifier.textContent = spec.libelleModifier || 'Modifier les valeurs';
+    modifier.addEventListener('click', () => spec.modifier(compte()));
+  } else modifier.remove();
+  ligne.after(panneau);
+  majAffichage();
+  panneau.scrollIntoView({ block: 'nearest' });
+}
+/* Un aliment noté, à une autre quantité : tout suit (valeurs, détails,
+   ingrédients d'une recette, eau d'une boisson, poids cuit). */
+function itemALaQuantite(ref, q) {
+  const it = JSON.parse(JSON.stringify(ref));
+  const g0 = Number(ref.grams) || 0;
+  if (!(g0 > 0) || !(q > 0)) return it;
+  const f = q / g0;
+  if (Array.isArray(it.ingredients) && it.ingredients.length) {
+    it.ingredients.forEach(ing => { ing.grammes = Math.round((Number(ing.grammes) || 0) * f); });
+    recalculerItemDepuisIngredients(it);
+  } else {
+    ['kcal', 'p', 'c', 'f'].forEach(k => { it[k] = (Number(it[k]) || 0) * f; });
+    ['fib', 'suc', 'sel', 'ags'].forEach(k => { if (it[k] != null) it[k] = Math.round(Number(it[k]) * f * 100) / 100; });
+    it.grams = Math.round(q * 10) / 10;
+  }
+  if (it.cuit) it.cuit = Math.round(Number(it.cuit) * f);
+  if (it.eauMl) it.eauMl = Math.round(Number(it.eauMl) * f);
+  return it;
+}
+/* La quantité habituelle telle quelle, entourée de sa moitié, d'une fois
+   et demie et du double (arrondis au pas). */
+function quantitesAutour(q0, unite) {
+  if (unite === 'portion') return [0.5, 1, 1.5, 2];
+  const arrondi = v => Math.max(1, v < 100 ? Math.round(v / 5) * 5 : Math.round(v / 10) * 10);
+  return [...new Set([arrondi(q0 / 2), Math.round(q0), arrondi(q0 * 1.5), arrondi(q0 * 2)])].sort((a, b) => a - b);
+}
+function specHabituel(e) {
+  const ref = portionHabituelle(e, repasFeuille);
+  const unite = ref && ref.unite === 'ml' ? 'ml' : (e.unite === 'ml' ? 'ml' : 'g');
+  const base = ref && Number(ref.grams) > 0 ? ref : { name: e.nom, grams: 100, unite, kcal: e.kcal100, p: e.p100, c: e.c100, f: e.f100, code: e.code };
+  const q0 = Number(base.grams) || 100;
+  return {
+    nom: e.nom, unite, quantite: q0, choix: quantitesAutour(q0, unite),
+    valeurs: q => itemALaQuantite(base, q),
+    ajouter: q => {
+      const item = itemALaQuantite(base, q);
+      item.name = e.nom;
+      addItemToMeal(repasFeuille, item, { source: 'historique' });
+      if (eauDeLaBoisson(item)) ajouterEau(eauDeLaBoisson(item));
+      return true;
+    },
+    modifier: q => detaillerAliment(Object.assign(entreeVersProduit(e), { grammes: q, unite }))
+  };
+}
+/* Un aliment de la base (CIQUAL, mes aliments, partagés, USDA) : valeurs
+   pour 100 g ; 100 g proposés d'emblée, l'aide cru / cuit s'il y a lieu. */
+function specProduit(p) {
+  const unite = p.unite || uniteProbableParNom(p.name);
+  const n = p.nutriments || {};
+  const num = v => { const x = Number(v); return Number.isFinite(x) ? x : null; };
+  const par100 = {
+    kcal: num(n['energy-kcal_100g']) || (num(n['energy_100g']) ? num(n['energy_100g']) / 4.184 : 0),
+    p: num(n['proteins_100g']) || 0, c: num(n['carbohydrates_100g']) || 0, f: num(n['fat_100g']) || 0,
+    fib: num(n['fiber_100g']), suc: num(n['sugars_100g']),
+    sel: n['salt_100g'] != null ? num(n['salt_100g']) : n['sodium_100g'] != null ? num(n['sodium_100g']) * 2.5 : null,
+    ags: num(n['saturated-fat_100g'])
+  };
+  const item = (q, cuit) => {
+    const f = (unite === 'ml' ? q * densiteLiquide(p.name) : q) / 100;
+    const it = { name: p.name, grams: q, unite: unite === 'ml' ? 'ml' : 'g', kcal: par100.kcal * f, p: par100.p * f, c: par100.c * f, f: par100.f * f };
+    [['fib', par100.fib], ['suc', par100.suc], ['sel', par100.sel], ['ags', par100.ags]].forEach(([k, v]) => { if (v != null) it[k] = Math.round(v * f * 100) / 100; });
+    if (cuit) it.cuit = cuit;
+    if (p.code) it.code = p.code;
+    if (it.unite === 'ml' && !estAlcool(p.name)) it.eauMl = Math.round(q);
+    return it;
+  };
+  const q0 = p.grammes > 0 ? p.grammes : 100;
+  const aide = aideCruCuit(p.name);
+  return {
+    nom: p.name, unite: unite === 'ml' ? 'ml' : 'g', quantite: q0,
+    choix: unite === 'ml' ? [100, 250, 330, 500] : [50, 100, 150, 200],
+    aideCuit: aide && unite !== 'ml' ? aide : null,
+    valeurs: q => item(q),
+    ajouter: (q, cuit) => {
+      const it = item(q, cuit);
+      const dejaEnBase = ['base', 'perso', 'partage'].includes(p.source);
+      addItemToMeal(repasFeuille, it, { partager: !dejaEnBase, source: p.source === 'usda' ? 'usda' : 'manuel' });
+      if (it.eauMl) ajouterEau(it.eauMl);
+      return true;
+    },
+    modifier: q => detaillerAliment(Object.assign({}, p, { grammes: q }))
+  };
+}
+function specRecettePerso(r) {
+  const t = totauxRecettePerso(r);
+  return {
+    nom: r.nom, unite: 'portion', quantite: 1, choix: [0.5, 1, 1.5, 2],
+    valeurs: nb => ({ kcal: t.parPortionKcal * nb, p: t.parPortionP * nb, c: t.parPortionC * nb, f: t.parPortionF * nb }),
+    ajouter: nb => { loguerPortionRecettePerso(r.id, repasFeuille, nb); return true; },
+    modifier: () => depuisFeuille('recette'), libelleModifier: 'Voir la recette'
+  };
 }
 
 /* Feuille sans recherche : repas à reprendre, habituels, recettes. */
@@ -12309,7 +12515,7 @@ function ligneHabituel(e) {
     droite = boutonPlusAjout(e.nom, dejaAjouteIci(e.nom, e.code), () => ajouterHabituel(e));
   }
   return ligneAjout({ nom: (fav ? '★ ' : '') + e.nom, meta, icone: iconeAliment(e.nom), droite,
-    detailler: () => detaillerAliment(Object.assign(entreeVersProduit(e), portion ? { grammes: Number(portion.grams) || e.grammes, unite: portion.unite || e.unite } : {})) });
+    detailler: ligne => basculerPortion(ligne, specHabituel(e)) });
 }
 /* « + » : l'aliment tel qu'il a été noté la dernière fois à ce repas
    (quantité, valeurs, code-barres), sous son nom actuel. */
@@ -12327,7 +12533,7 @@ function ligneRecettePerso(r) {
   const t = totauxRecettePerso(r);
   const nom = r.nom + (r.partageePar ? ' · partagée' : '');
   return ligneAjout({ nom, meta: '1 portion · ' + nombreFr(t.parPortionKcal, 0) + ' kcal · P ' + Math.round(t.parPortionP) + ' g', icone: iconeAliment(r.nom),
-    detailler: () => depuisFeuille('recette'),
+    detailler: ligne => basculerPortion(ligne, specRecettePerso(r)),
     droite: boutonPlusAjout(r.nom, dejaAjouteIci(r.nom), () => { loguerPortionRecettePerso(r.id, repasFeuille); majPiedAjout(); return true; }) });
 }
 /* Toucher un aliment : la saisie détaillée, par-dessus la feuille, remplie,
@@ -12362,6 +12568,13 @@ async function afficherResultatsAjout(q) {
     lignes.forEach(l => bloc.appendChild(l));
     corps.appendChild(bloc);
   };
+  // Plusieurs mots (« 2 œufs et une tartine ») : l'IA peut en faire les aliments et les quantités.
+  if (/\s/.test(q) && typeof iaDisponible === 'function' && iaDisponible()) {
+    const ia = ligneAjout({ nom: 'Demander à l’IA : « ' + q + ' »', meta: 'Elle trouve les aliments et les quantités', icone: '✨',
+      detailler: () => { ouvrirPhoto(repasFeuille || repasDuMoment()); const d = document.getElementById('ai-description'); if (d) { d.value = q; analyserRepasGemini(); } } });
+    ia.classList.add('ajout-ia');
+    corps.appendChild(ia);
+  }
   section('Déjà mangé', deja.map(ligneHabituel));
   section('Mes recettes', recettesPerso.concat(recettesPartagees).filter(r => correspond(r.nom)).slice(0, 8).map(ligneRecettePerso));
   const askesis = recettesChargees() ? recettesAskesis().filter(r => correspond(r.nom)).slice(0, 5) : [];
@@ -12399,7 +12612,8 @@ async function afficherResultatsAjout(q) {
     produits.forEach(p => {
       const kcal = Math.round((p.nutriments && p.nutriments['energy-kcal_100g']) || 0);
       const meta = kcal + ' kcal/100 g' + (p.source === 'partage' && !p.est_mien ? ' · créé par un utilisateur' : '');
-      bloc.appendChild(ligneAjout({ nom: p.name || 'Produit inconnu', meta, detailler: () => detaillerAliment(p),
+      bloc.appendChild(ligneAjout({ nom: p.name || 'Produit inconnu', meta, detailler: ligne => basculerPortion(ligne, specProduit(p)),
+        // Pas de « + » direct : sans quantité habituelle, la ligne ouvre le réglage (100 g proposés).
         droite: (() => { const s = document.createElement('span'); s.className = 'ajout-chevron'; s.setAttribute('aria-hidden', 'true'); s.textContent = '›'; return s; })() }));
     });
     corps.insertBefore(bloc, libre);
@@ -12425,6 +12639,12 @@ function majPiedAjout() {
   const b = document.createElement('b');
   b.textContent = MEAL_LABELS[repasFeuille];
   t.append(b, document.createTextNode(' · ' + items.length + ' aliment' + (items.length > 1 ? 's' : '') + ' · ' + nombreFr(kcal, 0) + ' kcal'));
+  // Ce qu'il reste pour la journée : de quoi choisir la portion en connaissance de cause.
+  const reste = resteKcalRecettes();
+  const r = document.createElement('small');
+  r.className = 'ajout-reste';
+  r.textContent = reste >= 0 ? 'Il te reste ' + nombreFr(reste, 0) + ' kcal aujourd’hui' : 'Objectif du jour dépassé de ' + nombreFr(-reste, 0) + ' kcal';
+  t.appendChild(r);
   pied.appendChild(t);
   if (ajouts.length) {
     const dernier = ajouts[ajouts.length - 1];

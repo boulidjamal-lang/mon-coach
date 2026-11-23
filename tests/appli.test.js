@@ -4519,7 +4519,7 @@ test('repas : annuler une suppression, « Comme hier », favoris, pesée et pas 
     poids: [81.4, 81.4], feuillePas: true, pas: 1000, eau: 330, favoriEnTete: 'Lait demi-écrémé' });
 }));
 
-test("ajout à un repas : une seule feuille — les habituels DU repas en un toucher (quantité de la dernière fois à ce repas), elle reste ouverte, le dernier ajout s'annule, recherche unique, saisie détaillée par-dessus, repas repris et annulable", () => avecAppli({}, async ({ page, erreurs }) => {
+test("ajout à un repas : une seule feuille — les habituels DU repas en un toucher (quantité de la dernière fois à ce repas), portion réglée sur place, elle reste ouverte, le dernier ajout s'annule, recherche unique (base avec cru/cuit, IA), formulaire par-dessus, repas repris et annulable", () => avecAppli({}, async ({ page, erreurs }) => {
   const r = await page.evaluate(async () => {
     const t = todayStr(), j = k => shiftDate(t, -k);
     const al = (name, grams, kcal) => ({ name, grams, unite: 'g', kcal, p: 10, c: 10, f: 2 });
@@ -4565,12 +4565,49 @@ test("ajout à un repas : une seule feuille — les habituels DU repas en un tou
     res.saisieLibre = [ouverte('manual-modal'), ouverte('feuille-repas'), document.getElementById('man-name').value];
     res.dessus = Number(getComputedStyle(document.getElementById('manual-modal')).zIndex) > Number(getComputedStyle(document.getElementById('feuille-repas')).zIndex);
     fermerModal('manual-modal');
-    // Toucher la ligne : la saisie détaillée, remplie à la quantité du dernier déjeuner ; ajoutée, la feuille est toujours là.
+    // Toucher la ligne : le réglage de la portion, sur place (quantité du dernier déjeuner, choix autour, kcal en direct).
     document.querySelector('#ajout-corps .ajout-liste .ajout-info').click();
+    const portion = () => document.querySelector('#ajout-corps .ajout-portion');
+    res.reglage = [portion().querySelector('input').value, [...portion().querySelectorAll('.ajout-choix button')].map(b => b.textContent),
+      portion().querySelector('.ajout-choix [aria-pressed="true"]').textContent, portion().querySelector('.ajout-portion-kcal b').textContent];
+    [...portion().querySelectorAll('.ajout-choix button')].find(b => b.textContent === '90 g').click();
+    res.reglage90 = portion().querySelector('.ajout-portion-kcal b').textContent;
+    portion().querySelector('.ajout-pas[data-pas="1"]').click();
+    res.reglagePlus = portion().querySelector('input').value;
+    portion().querySelector('.ajout-valider').click();
+    res.apresReglage = [dej().map(x => [x.name, x.grams, Math.round(x.kcal)]), !!portion(), ouverte('feuille-repas')];
+    retirerAlimentAjoute(t, dej()[0]);
+    // « Modifier les valeurs » : le formulaire complet, rempli, par-dessus la feuille ; ajouté, la feuille est toujours là.
+    document.querySelector('#ajout-corps .ajout-liste .ajout-info').click();
+    portion().querySelector('.ajout-modifier').click();
     res.detail = [document.getElementById('man-name').value, document.getElementById('man-grams').value];
     document.getElementById('man-grams').value = '200';
     await validerAjoutManuel();
     res.apresDetail = [dej().map(x => [x.name, x.grams]), ouverte('manual-modal'), ouverte('feuille-repas'), pied()];
+    res.reste = /Il te reste|dépassé/.test(document.querySelector('#ajout-pied .ajout-reste').textContent);
+    retirerAlimentAjoute(t, dej()[0]);
+    // Un aliment de la base : 100 g proposés, et pour le riz pesé cuit, compté cru.
+    window.chercherAlimentsSupabase = async () => ({ aliments: [{ name: 'Riz basmati', source: 'base', nutriments: { 'energy-kcal_100g': 350, proteins_100g: 7, carbohydrates_100g: 78, fat_100g: 1 } }] });
+    champ.value = 'riz basm'; majRechercheAjout();
+    await new Promise(ok => setTimeout(ok, 500));
+    const riz = [...document.querySelectorAll('#ajout-corps .ajout-ligne')].find(l => l.querySelector('.ajout-nom').textContent === 'Riz basmati');
+    res.rizSansPlus = !riz.querySelector('.ajout-plus');
+    riz.querySelector('.ajout-info').click();
+    res.riz = [portion().querySelector('input').value, portion().querySelector('.ajout-portion-kcal b').textContent];
+    portion().querySelector('.ajout-cuit .pilule').click();
+    portion().querySelector('.ajout-valider').click();
+    res.rizAjoute = dej().map(x => [x.name, x.grams, x.cuit, Math.round(x.kcal)]);
+    retirerAlimentAjoute(t, dej()[0]);
+    // Plusieurs mots, l'IA prête : « Demander à l'IA » ouvre l'analyse avec la phrase.
+    geminiKey = 'cle-test';
+    window.analyserRepasGemini = () => { window.__phraseIA = document.getElementById('ai-description').value; };
+    champ.value = '2 oeufs et une tartine'; majRechercheAjout();
+    await new Promise(ok => setTimeout(ok, 400));
+    const ia = document.querySelector('#ajout-corps .ajout-ia');
+    res.ia = ia && ia.querySelector('.ajout-nom').textContent;
+    ia.querySelector('.ajout-info').click();
+    res.iaOuverte = [ouverte('ai-modal'), window.__phraseIA];
+    fermerModal('ai-modal'); geminiKey = '';
     // Repas repris : copié d'un toucher, feuille fermée, bandeau pour annuler.
     champ.value = ''; majRechercheAjout();
     res.reprise = document.getElementById('opt-hier-titre').textContent;
@@ -4586,9 +4623,10 @@ test("ajout à un repas : une seule feuille — les habituels DU repas en un tou
   assert.deepEqual(r.ajoute, [['Poulet', 180, 297]]);
   assert.equal(r.resteOuverte, true);
   assert.equal(r.coche, true);
-  assert.match(r.pied, /Déjeuner · 1 aliment · 297 kcal\s*Annuler le dernier/);
+  assert.match(r.pied, /^Déjeuner · 1 aliment · 297 kcalIl te reste [\d\s\u202f]+ kcal aujourd’huiAnnuler le dernier$/);
   assert.equal(r.apresAnnul, 0);
-  assert.deepEqual(r.piedApres, ['Déjeuner · 0 aliment · 0 kcal', false]);
+  assert.match(r.piedApres[0], /^Déjeuner · 0 aliment · 0 kcalIl te reste /);
+  assert.equal(r.piedApres[1], false);
   assert.equal(r.titreMatin, 'Ajouter à : Petit-déjeuner');
   assert.deepEqual(r.matin, ['Banane 130 g · 117 kcal']);
   assert.equal(r.recherche[0], 'Déjà mangé');
@@ -4596,13 +4634,23 @@ test("ajout à un repas : une seule feuille — les habituels DU repas en un tou
   assert.equal(r.libre, 'Saisir « poul » à la main');
   assert.deepEqual(r.saisieLibre, [true, true, 'poul']);
   assert.equal(r.dessus, true);
+  assert.deepEqual(r.reglage, ['180', ['90 g', '180 g', '270 g', '360 g'], '180 g', '297']);
+  assert.equal(r.reglage90, '149');
+  assert.equal(r.reglagePlus, '100');
+  assert.deepEqual(r.apresReglage, [[['Poulet', 100, 165]], false, true]);
   assert.deepEqual(r.detail, ['Poulet', '180']);
+  assert.equal(r.reste, true);
+  assert.equal(r.rizSansPlus, true);
+  assert.deepEqual(r.riz, ['100', '350']);
+  assert.deepEqual(r.rizAjoute, [['Riz basmati', 36, 100, 126]]);
+  assert.equal(r.ia, 'Demander à l’IA : « 2 oeufs et une tartine »');
+  assert.deepEqual(r.iaOuverte, [true, '2 oeufs et une tartine']);
   assert.deepEqual(r.apresDetail.slice(0, 3), [[['Poulet', 200]], false, true]);
   assert.match(r.apresDetail[3], /Déjeuner · 1 aliment/);
   assert.equal(r.reprise, 'Comme le ' + await page.evaluate(() => formatDateDisplay(shiftDate(todayStr(), -2)).toLowerCase()));
-  assert.deepEqual(r.apresReprise.slice(0, 2), [['Poulet', 'Poulet'], false]);
+  assert.deepEqual(r.apresReprise.slice(0, 2), [['Poulet'], false]);
   assert.match(r.apresReprise[2], /Déjeuner repris : 1 aliment/);
-  assert.deepEqual(r.apresAnnulReprise, ['Poulet']);
+  assert.deepEqual(r.apresAnnulReprise, []);
   assert.deepEqual(erreurs, []);
 }));
 
