@@ -2242,7 +2242,7 @@
           <summary style="cursor:pointer;font-size:0.75rem;color:var(--text-muted);font-weight:700;">D'où viennent ces chiffres ?</summary>
           <p class="note" style="margin:10px 0 0;"><b>Métabolisme de base</b> : formule de Mifflin-St Jeor (poids, taille, âge, sexe), ou Katch-McArdle si ton % de masse grasse est noté (calcul sur ta masse maigre, protéines aussi).</p>
           <p class="note" style="margin:6px 0 0;"><b>Vie courante</b> : × 1,2, soit environ 4 000 pas. Seuls les pas au-delà s'ajoutent.</p>
-          <p class="note" style="margin:6px 0 0;"><b>Séances</b> : MET du <em>Compendium of Physical Activities</em> × ton poids, moins ce que tu aurais dépensé au repos. Cardio : selon ta vitesse si la distance est notée. Musculation : 3,5 MET repos compris, 2 à 4 min par série faite.</p>
+          <p class="note" style="margin:6px 0 0;"><b>Séances</b> : MET du <em>Compendium of Physical Activities</em> × ton poids, moins ce que tu aurais dépensé au repos. Cardio : selon ta vitesse si la distance est notée. Musculation : 3,5 MET repos compris, 2 à 4 min par série faite. La séance prévue aujourd'hui compte d'avance, estimée de la même façon ; dès que tu la notes, sa vraie dépense la remplace.</p>
           <p class="note" style="margin:6px 0 0;"><b>Ajustement</b><span class="pastille-pro">Pro</span> : chaque lundi, tes repas notés et ta balance des 4 dernières semaines corrigent la formule (±15 % au plus, 100 kcal par semaine). Il faut 10 jours notés et 4 pesées.</p>
           <p class="note" style="margin:6px 0 0;"><b>Objectif</b> : sèche −20 % (jamais sous le métabolisme de base), masse +15 %. Recomposition : calories du maintien, protéines de sèche.</p>
         </details>
@@ -7082,14 +7082,20 @@ function majDetailDepense(day, t) {
   // Ce bloc vit dans le détail Nutrition (sur une période) : il dit de quel jour il parle.
   const jourDep = document.getElementById('depense-jour');
   if (jourDep) jourDep.textContent = '· ' + (currentDate === todayStr() ? "aujourd'hui" : dateLocale(currentDate).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' }));
+  // Le sport sur une seule ligne : les séances faites et la séance prévue
+  // aujourd'hui, comptée d'avance (voir prochainesSeances). Deux lignes
+  // « séance » faisaient croire à deux séances.
+  // Sans programme, la séance prévue n'a pas de nom (« Séance ») : on ne le répète pas.
+  const prevue = t.seancePrevue, nomPrevu = prevue && prevue.programme ? prevue.nom + ', ' : '';
+  const libSport = !prevue ? 'Séances de sport'
+    : t.workoutKcal > 0 ? 'Séances de sport (dont ' + (nomPrevu ? nomPrevu + 'prévue' : 'une prévue') + ')'
+    : 'Séance de sport (' + nomPrevu + 'prévue)';
   const lignes = [
     ['Métabolisme de base', nombreFr(t.bmr, 0) + ' kcal'],
     ['Vie courante (× 1,2)', nombreFr(Math.round(t.bmr * 0.2), 0) + ' kcal'],
     ['Pas au-delà de 4 000', '+ ' + nombreFr(t.stepsKcal, 0) + ' kcal'],
-    ['Séances de sport', '+ ' + nombreFr(t.workoutKcal, 0) + ' kcal']
+    [libSport, '+ ' + nombreFr(t.workoutKcal + (prevue ? t.prevueKcal : 0), 0) + ' kcal']
   ];
-  // La séance prévue aujourd'hui, comptée d'avance (voir prochainesSeances).
-  if (t.seancePrevue) lignes.push(['Séance prévue (' + t.seancePrevue.nom + ', estimée)', '+ ' + nombreFr(t.prevueKcal, 0) + ' kcal']);
   // L'ajustement de la semaine d'après la balance (voir correctionMaintenance).
   if (t.correction) lignes.push(["Ajustement d'après ta balance", (t.correction > 0 ? '+ ' : '− ') + nombreFr(Math.abs(t.correction), 0) + ' kcal']);
   const nbDetail = lignes.length;
@@ -7106,7 +7112,8 @@ function majDetailDepense(day, t) {
     // son libellé (toutes les autres sont du texte brut) : textContent
     // l'affichait tel quel, markup compris, au lieu de l'afficher comme icône.
     if (g.indexOf('<svg') !== -1) a.innerHTML = g; else a.textContent = g;
-    const b = document.createElement('span'); b.textContent = d;
+    // Le chiffre ne passe jamais à la ligne, même à côté d'un long libellé.
+    const b = document.createElement('span'); b.textContent = d; b.style.whiteSpace = 'nowrap';
     r.appendChild(a); r.appendChild(b); el.appendChild(r);
   });
   // Unité différente (ml, pas kcal), donc séparée du reste plutôt que mêlée

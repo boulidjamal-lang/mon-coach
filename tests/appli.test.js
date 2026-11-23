@@ -2838,9 +2838,24 @@ test('Séances prévues : la séance du soir comptée dès le matin, remplacée 
   assert.equal(journee.lignes.length, 3);
   assert.match(journee.lignes[0], new RegExp(`^${mer.prevue.nom} \\+${mer.prevue.kcal}\\skcal$`));
   assert.match(journee.repere, /^Repérés sur tes 6 dernières semaines\s:\slundi \(Jambes\), mercredi \(Push\) et vendredi \(Pull\)\.$/);
-  assert.match(journee.detail, new RegExp(`Séance prévue \\(${mer.prevue.nom}, estimée\\)\\+ ${mer.prevue.kcal} kcal`));
+  // Ta journée : le sport sur une seule ligne, la séance prévue comprise (plus de ligne « Séance prévue » à part).
+  assert.match(journee.detail, new RegExp(`Séance de sport \\(${mer.prevue.nom}, prévue\\)\\+ ${mer.prevue.kcal} kcal`));
+  assert.equal(journee.detail.match(/[Ss]éances? (de sport|prévue)/g).length, 1, 'une seule ligne pour le sport');
   assert.deepEqual(journee.apres, { exception: false, prevue: false, bouton: true, heros: true });
   assert.deepEqual(journee.retour, { exceptions: null, prevue: true }, 'revenir à la règle efface l\'exception');
+  // Un footing le matin et la séance de muscu ce soir : toujours une seule ligne, les deux additionnées.
+  const avecFooting = await page.evaluate(() => {
+    const j = getDay(todayStr());
+    j.workouts.push({ type: 'course', time: 30, source: 'test' });
+    const t = computeTargets(j, todayStr());
+    majDetailDepense(j, t);
+    const ligne = [...document.querySelectorAll('#detail-depense > div')].map(r => r.textContent).filter(x => /[Ss]éances? (de sport|prévue)/.test(x));
+    const attendu = '+ ' + nombreFr(t.workoutKcal + t.prevueKcal, 0) + ' kcal', footing = t.workoutKcal;
+    j.workouts.pop(); renderApp();
+    return { ligne, attendu, footing, nom: t.seancePrevue && t.seancePrevue.nom };
+  });
+  assert.ok(avecFooting.footing > 0);
+  assert.deepEqual(avecFooting.ligne, [`Séances de sport (dont ${mer.prevue.nom}, prévue)${avecFooting.attendu}`]);
 
   // Mercredi 21 h 30, toujours pas de séance : le coach propose de la retirer d'un geste.
   await page.clock.setFixedTime(new Date('2026-11-04T21:30:00'));
