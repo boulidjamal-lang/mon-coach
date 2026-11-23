@@ -883,6 +883,81 @@ html:root #manual-modal .modal-entete { position: sticky; top: 0; z-index: 40; m
 }
 .feuille-fermer:hover { background: var(--verre-fort); }
 
+/* --- FEUILLE D'AJOUT À UN REPAS ---
+   Haute et fixe : l'en-tête (repas, recherche, code-barres, photo) reste en
+   place, seule la liste défile ; le pied dit où en est le repas. */
+.feuille-ajout .feuille-contenu {
+  display: flex; flex-direction: column; overflow: hidden;
+  height: min(88dvh, 88vh); max-height: min(88dvh, 88vh);
+  padding-bottom: calc(12px + env(safe-area-inset-bottom, 0px));
+}
+/* Ouvertes depuis la feuille d'ajout, la saisie détaillée, le code-barres et
+   la photo se posent par-dessus : la feuille reste dessous pour enchaîner. */
+#manual-modal, #barcode-modal, #ai-modal { z-index: 1200; }
+.feuille-ajout .feuille-contenu:focus { outline: none; }
+.ajout-entete { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+html:root .ajout-entete .feuille-titre { flex: 1; min-width: 0; margin: 0; text-align: left; text-transform: none; letter-spacing: 0;
+  font-size: 1.12rem; font-weight: 800; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ajout-ok { flex: none; min-height: 40px; padding: 0 16px; border: 0; border-radius: 12px; background: var(--verre-creux);
+  color: var(--text); font: inherit; font-weight: 800; font-size: .9rem; cursor: pointer; }
+.ajout-repas { display: grid; grid-template-columns: repeat(4, 1fr); gap: 3px; padding: 3px; margin-bottom: 10px;
+  border-radius: 12px; background: var(--verre-creux); }
+.ajout-repas button { min-height: 34px; padding: 0 4px; border: 0; border-radius: 9px; background: transparent; cursor: pointer;
+  font: inherit; font-size: .78rem; font-weight: 700; color: var(--text-muted); white-space: nowrap; }
+.ajout-repas button[aria-pressed="true"] { background: var(--verre-fort); color: var(--text); box-shadow: 0 1px 4px rgba(0,0,0,.12); }
+.ajout-recherche { display: flex; gap: 8px; margin-bottom: 4px; }
+.ajout-champ { flex: 1; min-width: 0; display: flex; align-items: center; gap: 8px; min-height: 44px; padding: 0 12px;
+  border-radius: 12px; background: var(--verre-creux); color: var(--text-muted); cursor: text; }
+.ajout-champ .icone-ui { flex: none; width: 18px; height: 18px; }
+.ajout-champ input { flex: 1; min-width: 0; height: 42px; padding: 0; border: 0; background: transparent; outline: none;
+  font: inherit; font-size: 16px; color: var(--text); -webkit-appearance: none; appearance: none; }
+.ajout-champ:focus-within { box-shadow: inset 0 0 0 2px var(--primary); }
+.ajout-outil { flex: none; width: 44px; height: 44px; display: flex; align-items: center; justify-content: center;
+  border: 0; border-radius: 12px; background: var(--verre-creux); color: var(--text); cursor: pointer; }
+.ajout-outil .icone-ui { width: 21px; height: 21px; }
+.ajout-corps { flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain; -webkit-overflow-scrolling: touch;
+  margin: 0 -16px; padding: 0 16px 8px; touch-action: pan-y; }
+.ajout-section { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; margin: 16px 2px 7px;
+  font-size: .66rem; font-weight: 800; text-transform: uppercase; letter-spacing: .9px; color: var(--text-muted); }
+.ajout-section button { flex: none; padding: 4px 0; border: 0; background: none; cursor: pointer; font: inherit; font-size: .8rem;
+  font-weight: 700; text-transform: none; letter-spacing: 0; color: var(--primary); }
+.ajout-reprises { display: flex; gap: 8px; overflow-x: auto; scroll-snap-type: x mandatory; margin: 0 -16px; padding: 0 16px 2px;
+  scroll-padding: 0 16px; scrollbar-width: none; }
+.ajout-reprises::-webkit-scrollbar { display: none; }
+.ajout-reprise { flex: 0 0 74%; max-width: 270px; scroll-snap-align: start; display: flex; flex-direction: column; gap: 2px;
+  padding: 11px 13px; border: 0; border-radius: 14px; background: var(--verre-creux); color: var(--text); text-align: left;
+  font: inherit; cursor: pointer; }
+.ajout-reprise b { font-size: .9rem; }
+.ajout-reprise small { font-size: .74rem; color: var(--text-muted); }
+.ajout-reprise .ajout-reprise-noms { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ajout-liste { border-radius: 14px; background: var(--verre-creux); overflow: hidden; }
+.ajout-ligne { display: flex; align-items: center; gap: 6px; min-height: 56px; padding: 0 8px 0 0; border-bottom: 1px solid var(--verre-brd); }
+.ajout-ligne:last-child { border-bottom: 0; }
+.ajout-info { flex: 1; min-width: 0; display: flex; align-items: center; gap: 11px; padding: 8px 0 8px 12px; border: 0;
+  background: none; color: inherit; font: inherit; text-align: left; cursor: pointer; }
+.ajout-texte { flex: 1; min-width: 0; }
+.ajout-nom { display: block; font-weight: 700; font-size: .89rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ajout-meta { display: block; margin-top: 1px; font-size: .74rem; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ajout-plus { flex: none; width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; border: 0;
+  border-radius: 50%; background: var(--primary); color: var(--primary-txt, #fff); font: inherit; font-size: 1.45rem; font-weight: 600; line-height: 1;
+  cursor: pointer; transition: transform .15s, background .2s; }
+.ajout-plus:active { transform: scale(.9); }
+.ajout-plus.fait { background: var(--ok, #30d158); color: #fff; }
+.ajout-plus .icone-ui { width: 18px; height: 18px; }
+.ajout-gestion { flex: none; display: flex; align-items: stretch; align-self: stretch; }
+.ajout-gestion .off-favori, .ajout-gestion .off-retirer { width: 42px; }
+.ajout-chevron { flex: none; width: 24px; text-align: center; font-size: 1.3rem; color: var(--text-muted); }
+.ajout-libre .ajout-nom { color: var(--primary); }
+.ajout-libre { margin-top: 12px; border-radius: 14px; background: var(--verre-creux); border-bottom: 0; }
+.ajout-vide { margin: 14px 4px 4px; font-size: .84rem; line-height: 1.45; color: var(--text-muted); }
+.ajout-note { margin: 8px 4px 0; font-size: .76rem; line-height: 1.4; color: var(--text-muted); }
+.ajout-pied { flex: none; display: flex; align-items: center; gap: 10px; min-height: 44px; padding-top: 8px;
+  border-top: 1px solid var(--verre-brd); font-size: .8rem; color: var(--text-muted); }
+.ajout-pied-texte { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ajout-pied-texte b { color: var(--text); }
+.ajout-annuler { flex: none; min-height: 36px; padding: 0 12px; border: 0; border-radius: 10px; background: var(--verre-creux);
+  color: var(--text); font: inherit; font-size: .78rem; font-weight: 700; cursor: pointer; }
+
 /* --- ADMINISTRATION --- */
 /* --- Premiere connexion (bilan initial) --- */
 .onb-progres {
@@ -2959,11 +3034,10 @@ html:root .feuille-action .sous { font-family: 'Inter', sans-serif; letter-spaci
 html:root .feuille-action .ic { width: 42px; height: 42px; flex: none; border-radius: 14px; display: grid; place-items: center; color: #fff;
   background: linear-gradient(135deg, #94a3b8, #64748b); box-shadow: 0 10px 20px -10px rgba(0,0,0,.55), inset 0 1px 0 rgba(255,255,255,.35); }
 html:root .feuille-action .ic .icone-ui { width: 21px; height: 21px; color: #fff; }
-html:root #opt-recette .ic { background: linear-gradient(135deg, #fbbf24, #f97316); }
-html:root #opt-manuel .ic { background: linear-gradient(135deg, #34d399, #10b981); }
-html:root #opt-photo .ic { background: linear-gradient(135deg, #a78bfa, #6366f1); }
-html:root #opt-barcode .ic { background: linear-gradient(135deg, #22d3ee, #0ea5e9); }
 html:root .modal-entete h3 { font-family: 'Manrope', 'Inter', sans-serif; font-size: 1.25rem; }
+/* Feuille d'ajout : le code-barres et la photo gardent leurs couleurs. */
+html:root .feuille-ajout #opt-barcode { background: linear-gradient(135deg, #22d3ee, #0ea5e9); color: #fff; }
+html:root .feuille-ajout #opt-photo { background: linear-gradient(135deg, #a78bfa, #6366f1); color: #fff; }
 .apercu-macros { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 6px 10px; padding: 14px; margin-bottom: 16px; border-radius: 18px; background: var(--piste); }
 .apercu-macros:empty { display: none; }
 .apercu-macros b { font-family: 'Manrope', 'Inter', sans-serif; font-size: 1.5rem; font-weight: 800; letter-spacing: -.04em; margin-right: 4px; }
@@ -4901,11 +4975,20 @@ html.app-ios body .modal-content .ligne-reglage .pilule { background: none !impo
 /* Les choix d'une feuille d'ajout : une couleur par action. */
 html.app-ios body .feuille-action .ic { border-radius: 9px !important; color: #fff !important; background: #8e8e93 !important; }
 html.app-ios body .feuille-action .ic :is(.icone-ui, svg) { color: #fff !important; stroke: #fff !important; }
-html.app-ios body #opt-hier .ic { background: #5856d6 !important; }
-html.app-ios body #opt-manuel .ic { background: #007aff !important; }
-html.app-ios body #opt-recette .ic { background: #ff9500 !important; }
-html.app-ios body #opt-photo .ic { background: #af52de !important; }
-html.app-ios body #opt-barcode .ic { background: #34c759 !important; }
+/* Feuille d'ajout : même langage (rangées sur le verre, outils en couleur). */
+html.app-ios body .feuille-ajout .feuille-contenu { height: min(88dvh, calc(100dvh - env(safe-area-inset-top, 0px) - 18px - var(--clavier, 0px)));
+  max-height: min(88dvh, calc(100dvh - env(safe-area-inset-top, 0px) - 18px - var(--clavier, 0px))); }
+html.app-ios body .feuille-ajout :is(.ajout-liste, .ajout-reprise, .ajout-libre, .ajout-champ) { background: var(--s1) !important; }
+html.app-ios:root[data-theme="dark"] body .feuille-ajout :is(.ajout-liste, .ajout-reprise, .ajout-libre, .ajout-champ) { background: var(--s2) !important; }
+html.app-ios body .feuille-ajout .ajout-entete .feuille-titre { font-size: 1.25rem !important; font-weight: 700 !important; }
+html.app-ios body .feuille-ajout :is(.ajout-ok, .ajout-repas, .ajout-annuler) { background: var(--ios-remplir) !important; }
+html.app-ios body .feuille-ajout .ajout-repas button[aria-pressed="true"] { background: var(--s1) !important; }
+html.app-ios:root[data-theme="dark"] body .feuille-ajout .ajout-repas button[aria-pressed="true"] { background: var(--s3) !important; }
+html.app-ios body .feuille-ajout #opt-barcode { background: #34c759 !important; color: #fff !important; }
+html.app-ios body .feuille-ajout #opt-photo { background: #af52de !important; color: #fff !important; }
+html.app-ios body .feuille-ajout :is(.ajout-section button, .ajout-libre .ajout-nom) { color: var(--ios-accent) !important; }
+html.app-ios body .feuille-ajout .ajout-plus:not(.fait) { background: var(--ios-accent) !important; color: #fff !important; }
+html.app-ios body .feuille-ajout :is(.ajout-ligne, .ajout-pied) { border-color: var(--ligne) !important; }
 html.app-ios body #opt-seance-jour .ic { background: #ff2d55 !important; }
 html.app-ios body #opt-seance-vide .ic { background: #ff9500 !important; }
 html.app-ios body #opt-cardio .ic { background: #ff3b30 !important; }

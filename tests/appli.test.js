@@ -4234,6 +4234,93 @@ test('repas : annuler une suppression, « Comme hier », favoris, pesée et pas 
     poids: [81.4, 81.4], feuillePas: true, pas: 1000, eau: 330, favoriEnTete: 'Lait demi-écrémé' });
 }));
 
+test("ajout à un repas : une seule feuille — les habituels DU repas en un toucher (quantité de la dernière fois à ce repas), elle reste ouverte, le dernier ajout s'annule, recherche unique, saisie détaillée par-dessus, repas repris et annulable", () => avecAppli({}, async ({ page, erreurs }) => {
+  const r = await page.evaluate(async () => {
+    const t = todayStr(), j = k => shiftDate(t, -k);
+    const al = (name, grams, kcal) => ({ name, grams, unite: 'g', kcal, p: 10, c: 10, f: 2 });
+    const poser = (k, repas, items) => { const d = getDay(j(k)); d.meals[repas].push(...items); saveData(j(k)); };
+    poser(3, 'breakfast', [al('Banane', 120, 108)]);
+    poser(3, 'lunch', [al('Poulet', 150, 248), al('Riz', 200, 260)]);
+    poser(2, 'breakfast', [al('Banane', 100, 90)]);
+    poser(2, 'lunch', [al('Poulet', 180, 297)]);
+    poser(1, 'breakfast', [al('Banane', 130, 117)]);
+    poser(1, 'dinner', [al('Poulet', 120, 198)]);
+    currentDate = t; allerA('repas'); renderApp();
+    const res = {};
+    const noms = () => [...document.querySelectorAll('#ajout-corps .ajout-liste .ajout-nom')].map(n => n.textContent);
+    const sections = () => [...document.querySelectorAll('#ajout-corps .ajout-section > span')].map(n => n.textContent);
+    const pied = () => document.getElementById('ajout-pied').textContent;
+    const ouverte = id => document.getElementById(id).classList.contains('show');
+    ouvrirFeuilleRepas('lunch');
+    res.titre = document.getElementById('feuille-repas-titre').textContent;
+    res.sections = sections();
+    res.habituels = noms();
+    // « + » : le poulet tel qu'au dernier déjeuner (180 g), pas celui du dîner d'hier (120 g).
+    document.querySelector('#ajout-corps .ajout-ligne .ajout-plus').click();
+    const dej = () => getDay(t).meals.lunch;
+    res.ajoute = dej().map(x => [x.name, x.grams, Math.round(x.kcal)]);
+    res.resteOuverte = ouverte('feuille-repas');
+    res.coche = document.querySelector('#ajout-corps .ajout-ligne .ajout-plus').classList.contains('fait');
+    res.pied = pied();
+    document.querySelector('#ajout-pied .ajout-annuler').click();
+    res.apresAnnul = dej().length;
+    res.piedApres = [pied(), !!document.querySelector('#ajout-pied .ajout-annuler')];
+    // Petit-déjeuner : la banane, à la quantité du dernier petit-déjeuner.
+    choisirRepasFeuille('breakfast');
+    res.titreMatin = document.getElementById('feuille-repas-titre').textContent;
+    res.matin = [...document.querySelectorAll('#ajout-corps .ajout-liste .ajout-ligne')].map(l => l.querySelector('.ajout-nom').textContent + ' ' + l.querySelector('.ajout-meta').textContent);
+    // Recherche unique : déjà mangé, recettes, et toujours la saisie à la main.
+    choisirRepasFeuille('lunch');
+    const champ = document.getElementById('ajout-q');
+    champ.value = 'poul'; majRechercheAjout();
+    await new Promise(ok => setTimeout(ok, 700));
+    res.recherche = sections();
+    res.libre = document.querySelector('#ajout-corps .ajout-libre .ajout-nom').textContent;
+    document.querySelector('#ajout-corps .ajout-libre .ajout-info').click();
+    res.saisieLibre = [ouverte('manual-modal'), ouverte('feuille-repas'), document.getElementById('man-name').value];
+    res.dessus = Number(getComputedStyle(document.getElementById('manual-modal')).zIndex) > Number(getComputedStyle(document.getElementById('feuille-repas')).zIndex);
+    fermerModal('manual-modal');
+    // Toucher la ligne : la saisie détaillée, remplie à la quantité du dernier déjeuner ; ajoutée, la feuille est toujours là.
+    document.querySelector('#ajout-corps .ajout-liste .ajout-info').click();
+    res.detail = [document.getElementById('man-name').value, document.getElementById('man-grams').value];
+    document.getElementById('man-grams').value = '200';
+    await validerAjoutManuel();
+    res.apresDetail = [dej().map(x => [x.name, x.grams]), ouverte('manual-modal'), ouverte('feuille-repas'), pied()];
+    // Repas repris : copié d'un toucher, feuille fermée, bandeau pour annuler.
+    champ.value = ''; majRechercheAjout();
+    res.reprise = document.getElementById('opt-hier-titre').textContent;
+    document.getElementById('opt-hier').click();
+    res.apresReprise = [dej().map(x => x.name), ouverte('feuille-repas'), document.getElementById('toast-annuler').textContent];
+    document.querySelector('#toast-annuler button').click();
+    res.apresAnnulReprise = dej().map(x => x.name);
+    return res;
+  });
+  assert.equal(r.titre, 'Ajouter à : Déjeuner');
+  assert.deepEqual(r.sections, ['Reprendre un repas', 'Souvent au déjeuner', 'Recettes']);
+  assert.deepEqual(r.habituels, ['Poulet', 'Riz'], 'au déjeuner, pas la banane du matin');
+  assert.deepEqual(r.ajoute, [['Poulet', 180, 297]]);
+  assert.equal(r.resteOuverte, true);
+  assert.equal(r.coche, true);
+  assert.match(r.pied, /Déjeuner · 1 aliment · 297 kcal\s*Annuler le dernier/);
+  assert.equal(r.apresAnnul, 0);
+  assert.deepEqual(r.piedApres, ['Déjeuner · 0 aliment · 0 kcal', false]);
+  assert.equal(r.titreMatin, 'Ajouter à : Petit-déjeuner');
+  assert.deepEqual(r.matin, ['Banane 130 g · 117 kcal']);
+  assert.equal(r.recherche[0], 'Déjà mangé');
+  assert.ok(r.recherche.includes('Recettes Askēsis'), JSON.stringify(r.recherche));
+  assert.equal(r.libre, 'Saisir « poul » à la main');
+  assert.deepEqual(r.saisieLibre, [true, true, 'poul']);
+  assert.equal(r.dessus, true);
+  assert.deepEqual(r.detail, ['Poulet', '180']);
+  assert.deepEqual(r.apresDetail.slice(0, 3), [[['Poulet', 200]], false, true]);
+  assert.match(r.apresDetail[3], /Déjeuner · 1 aliment/);
+  assert.equal(r.reprise, 'Comme le ' + await page.evaluate(() => formatDateDisplay(shiftDate(todayStr(), -2)).toLowerCase()));
+  assert.deepEqual(r.apresReprise.slice(0, 2), [['Poulet', 'Poulet'], false]);
+  assert.match(r.apresReprise[2], /Déjeuner repris : 1 aliment/);
+  assert.deepEqual(r.apresAnnulReprise, ['Poulet']);
+  assert.deepEqual(erreurs, []);
+}));
+
 test('thème « Auto » : suit le réglage clair/sombre du téléphone, même en cours de route ; flou coupé si moins de transparence', () => avecAppli({}, async ({ page }) => {
   await page.emulateMedia({ colorScheme: 'dark' });
   await page.evaluate(() => choisirTheme('auto'));
