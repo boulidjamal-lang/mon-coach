@@ -8371,6 +8371,21 @@ test('atlas 3D : la peau du corps est un film posé sur les muscles — à 1,5 m
   //    d'origine, ouvert, est refermé par une pièce lisse).
   let ouvertes = 0; for (const [c, nb] of libres) { if (nb === 2) continue; const a = Math.floor(c / 65536), b = c % 65536; if (nb > 2 || !((surCouture.has(a) && surCouture.has(b)) || (corps.sommets[a * 28 + 7] === 0 && corps.sommets[b * 28 + 7] === 0))) ouvertes++; }
   assert.equal(ouvertes, 0, 'arêtes ouvertes dans le film');
+  // 5. L'aisselle. Bras le long du corps, le bras étoffé chevauche le flanc : loin de l'épaule (à plus de 14 cm de son
+  //    centre), la peau du tronc ne tient pas au bras — sinon, bras avancé ou levé, la peau du dos part avec le triceps,
+  //    tendue en toile jusqu'au bras — ni celle du bras au tronc. Tronc ou bras : la part de bras de la peau d'origine.
+  const NJ = H.articulations, X = H.intermediaires, brasG = j => j < NJ && /^(humerus|ulna|radius|main|doigt)/.test(SQ[j].nom) && SQ[j].nom.endsWith('.G');
+  const partBras = j => { if (j < NJ) return brasG(j) ? 1 : 0; const k = j - NJ; if (k >= X.length) return 0; const x = X[k]; return (brasG(x.de) ? 1 - x.part : 0) + (brasG(x.vers) ? x.part : 0); };
+  const cH = SQ.find(a => a.nom === 'humerus.G').centre;
+  let troncAuBras = 0, brasAuTronc = 0;
+  for (let v = 0; v < corps.n; v++) {
+    const [x, y, z] = place(corps, v); if (Math.hypot(x - cH[0], y - cH[1], z - cH[2]) < 0.14) continue;
+    const o = v * 28; let peau = 0, film = 0;
+    for (let k = 0; k < 4; k++) { peau += partBras(corps.sommets[o + 12 + k]) * corps.sommets[o + 16 + k] / 255; if (brasG(corps.sommets[o + 20 + k])) film += corps.sommets[o + 24 + k] / 255; }
+    if (peau < 0.1 && film > 0.5) troncAuBras++;
+    if (peau > 0.9 && film < 0.5) brasAuTronc++;
+  }
+  assert.deepEqual([troncAuBras, brasAuTronc], [0, 0], 'loin de l\'épaule, sommets du film de la peau du tronc tenus au bras, de la peau du bras tenus au tronc');
 });
 
 test('atlas 3D : aucun triangle à cheval sur deux structures ni sur deux zones de peau (le moteur compte dessus)', () => {
