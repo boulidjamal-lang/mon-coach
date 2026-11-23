@@ -427,6 +427,7 @@ sw-tirage-visage-assis | elevation facepull poulie tabouret | Seated Face Pull
 sw-rotation-externe-de-l-x27-epaule-en-position-assise | elevation rotext hal tabouret uni | Seated Shoulder External Rotation
 e1267 | elevation rotint poulie uni | Cable 90° Internal Rotation
 e1268 | elevation rotext poulie uni | Cable 90° External Rotation
+e1269 | elevation rotext poulie corps uni | Cable Standing External Rotation
 sw-developpe-epaules-assis-prise-neutre | developpe epaules hal assis neutre | Seated Shoulder Press Neutral Grip
 sw-rotation-externe-en-decubitus-lateral | elevation rotext hal cote uni | Side Lying External Rotation
 e391 | elevation menton smith | Smith Machine Upright Row

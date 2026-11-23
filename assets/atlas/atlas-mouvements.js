@@ -3076,6 +3076,12 @@
         p = surLeCote(c, { cote: 'D' }); fixe = []; vue = { az: 0, el: 22 };
         a = B(90, 6, -62, 90, 90); b = B(90, 6, 38, 90, 90);
         autre = B(0, 150, 0, 60, 90, { doigts: 'detendu' });
+      } else if (o.corps) {
+        // Coude au corps, debout : coude plié à angle droit contre le flanc, l'avant-bras part en travers du ventre et
+        // tourne vers l'extérieur ; le câble vient de l'autre côté, à hauteur du coude, et passe devant le ventre.
+        pose(); a = B(90, 8, -62, 90, 90); b = B(90, 8, 34, 90, 90);
+        if (o.poulie || o.elas) ancre = s => V(-s * 0.75, 1.05, 0.3);
+        vue = { az: 150, el: 12 };
       } else {
         pose(); a = B(90, 86, 4, 90, 180); b = B(90, 86, 86, 90, 180);
         // À la poulie (rotation externe à 90°) : face à la poulie, à hauteur de la main au départ, un peu en dehors du
@@ -6662,6 +6668,7 @@
     "elevation rotext hal tabouret uni":["sw-rotation-externe-de-l-x27-epaule-en-position-assise"],
     "elevation rotint poulie uni":["e1267"],
     "elevation rotext poulie uni":["e1268"],
+    "elevation rotext poulie corps uni":["e1269"],
     "developpe epaules hal assis neutre":["sw-developpe-epaules-assis-prise-neutre"],
     "elevation rotext hal cote uni":["sw-rotation-externe-en-decubitus-lateral"],
     "elevation menton smith":["e391"],
