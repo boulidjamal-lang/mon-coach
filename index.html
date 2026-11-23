@@ -1082,7 +1082,7 @@
 
     <!-- Fibres, sucres, sel, acides gras saturés : facultatifs, remplis d'eux-mêmes depuis l'étiquette quand elle les donne. -->
     <details class="man-details" id="man-details">
-      <summary>Plus de détails <small>(fibres, sucres, sel, AGS — facultatif)</small></summary>
+      <summary>Plus de détails <small>(fibres, sucres, sel, gras saturés — facultatif)</small></summary>
       <div class="man-details-grille">
         <div class="input-group"><label for="man-fib100">Fibres</label><input type="text" id="man-fib100" placeholder="g/100g" inputmode="decimal"></div>
         <div class="input-group"><label for="man-suc100">dont sucres</label><input type="text" id="man-suc100" placeholder="g/100g" inputmode="decimal"></div>
@@ -1569,7 +1569,7 @@
     <!-- Etape 2 : activite -->
     <div class="onb-etape hidden" data-etape="2">
       <h3><svg class="icone-ui" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 16v-2.38C4 11.5 2.97 10.5 3 8c.03-2.72 1.49-6 4.5-6C9.37 2 10 3.8 10 5.5c0 3.11-2 5.66-2 8.68V16a2 2 0 1 1-4 0Z" /><path d="M20 20v-2.38c0-2.12 1.03-3.12 1-5.62-.03-2.72-1.49-6-4.5-6C14.63 6 14 7.8 14 9.5c0 3.11 2 5.66 2 8.68V20a2 2 0 1 0 4 0Z" /><path d="M16 17h4" /><path d="M4 13h4" /></svg> Ton quotidien</h3>
-      <p class="note note-explicative">Utilisée seulement les jours où tu ne notes pas tes pas.</p>
+      <p class="note note-explicative">Elle sert à estimer ta dépense les jours où tes pas ne sont pas notés.</p>
 
       <div class="onb-choix onb-vertical" id="onb-activite">
         <button type="button" class="onb-option" data-valeur="3000"><span class="onb-ic" style="background:linear-gradient(135deg,#94a3b8,#64748b)"><svg class="icone-ui" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 9V6a2 2 0 0 0-2-2H7a2 2 0 0 0-2 2v3" /><path d="M3 16a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-5a2 2 0 0 0-4 0v1.5a.5.5 0 0 1-.5.5h-9a.5.5 0 0 1-.5-.5V11a2 2 0 0 0-4 0z" /><path d="M5 18v2" /><path d="M19 18v2" /></svg></span>
@@ -1804,7 +1804,7 @@
       <button class="close-modal hidden" id="compte-fermer-x" onclick="fermerModal('compte-modal')" aria-label="Fermer">&times;</button>
     </div>
 
-    <p class="note" id="compte-intro">Connecte-toi pour utiliser Askēsis — un compte par personne.</p>
+    <p class="note" id="compte-intro">Connecte-toi, ou crée ton compte en bas, pour utiliser Askēsis — un compte par personne.</p>
 
     <div id="compte-anonyme">
       <div class="input-group">
@@ -4436,7 +4436,7 @@ function afficherDetailNutri(totals, cibles) {
     const hors = sens === 'max' ? v > r : v < r;
     return `<span class="${hors ? (sens === 'max' ? 'depasse' : 'manque') : ''}" title="${libelle} : ${sens === 'max' ? 'au plus' : 'au moins'} ${g(r, 0)} par jour">${libelle} <b>${g(v, dec)}</b><small>/${g(r, 0)}</small></span>`;
   };
-  el.innerHTML = ligne('fib', 'Fibres', 1, 'min') + ligne('suc', 'Sucres', 1, 'max') + ligne('sel', 'Sel', 2, 'max') + ligne('ags', 'AGS', 1, 'max')
+  el.innerHTML = ligne('fib', 'Fibres', 1, 'min') + ligne('suc', 'Sucres', 1, 'max') + ligne('sel', 'Sel', 2, 'max') + ligne('ags', 'Gras saturés', 1, 'max')
     + `<small class="detail-nutri-source">${totals.renseignes < totals.aliments ? `sur ${accord(totals.renseignes, 'aliment')} sur ${totals.aliments}` : 'tous les aliments renseignés'}</small>`;
   el.classList.remove('hidden');
 }
@@ -6321,6 +6321,7 @@ function updateSummary(day) {
   updateLiquidFill(totals.kcal, t.target);
   majJaugeEau(day);
   majCoach(day, totals, t);
+  majPremiersPasSiChange();
 }
 
 /* Un anneau du résumé : la part de l'objectif atteinte (plein = 100 %).
@@ -7061,25 +7062,25 @@ function quotaEauSuggere(dateStr) {
 var histAjustOuvert = false;
 function majDetailDepense(day, t) {
   const lien = document.getElementById('lien-depense');
-  if (lien && t && t.tdee) lien.textContent = 'Dépense estimée : ' + t.tdee + ' kcal ›';
+  if (lien && t && t.tdee) lien.textContent = 'Dépense estimée : ' + nombreFr(t.tdee, 0) + ' kcal ›';
   const el = document.getElementById('detail-depense');
   if (!el) return;
   // Ce bloc vit dans le détail Nutrition (sur une période) : il dit de quel jour il parle.
   const jourDep = document.getElementById('depense-jour');
   if (jourDep) jourDep.textContent = '· ' + (currentDate === todayStr() ? "aujourd'hui" : dateLocale(currentDate).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' }));
   const lignes = [
-    ['Métabolisme de base', t.bmr + ' kcal'],
-    ['Vie courante (× 1,2)', Math.round(t.bmr * 0.2) + ' kcal'],
-    ['Pas au-delà de 4 000', '+ ' + t.stepsKcal + ' kcal'],
-    ['Séances de sport', '+ ' + t.workoutKcal + ' kcal']
+    ['Métabolisme de base', nombreFr(t.bmr, 0) + ' kcal'],
+    ['Vie courante (× 1,2)', nombreFr(Math.round(t.bmr * 0.2), 0) + ' kcal'],
+    ['Pas au-delà de 4 000', '+ ' + nombreFr(t.stepsKcal, 0) + ' kcal'],
+    ['Séances de sport', '+ ' + nombreFr(t.workoutKcal, 0) + ' kcal']
   ];
   // La séance prévue aujourd'hui, comptée d'avance (voir prochainesSeances).
-  if (t.seancePrevue) lignes.push(['Séance prévue (' + t.seancePrevue.nom + ', estimée)', '+ ' + t.prevueKcal + ' kcal']);
+  if (t.seancePrevue) lignes.push(['Séance prévue (' + t.seancePrevue.nom + ', estimée)', '+ ' + nombreFr(t.prevueKcal, 0) + ' kcal']);
   // L'ajustement de la semaine d'après la balance (voir correctionMaintenance).
-  if (t.correction) lignes.push(["Ajustement d'après ta balance", (t.correction > 0 ? '+ ' : '− ') + Math.abs(t.correction) + ' kcal']);
+  if (t.correction) lignes.push(["Ajustement d'après ta balance", (t.correction > 0 ? '+ ' : '− ') + nombreFr(Math.abs(t.correction), 0) + ' kcal']);
   const nbDetail = lignes.length;
-  lignes.push(['Dépense totale estimée', t.tdee + ' kcal'],
-    ['Objectif (' + ({ seche: 'sèche −20 %', masse: 'masse +15 %', maintien: 'maintien', recomposition: 'recomposition' }[t.goal] || t.goal) + ')', t.target + ' kcal']);
+  lignes.push(['Dépense totale estimée', nombreFr(t.tdee, 0) + ' kcal'],
+    ['Objectif (' + ({ seche: 'sèche −20 %', masse: 'masse +15 %', maintien: 'maintien', recomposition: 'recomposition' }[t.goal] || t.goal) + ')', nombreFr(t.target, 0) + ' kcal']);
   if (t.sousPlancher) lignes.push(['<svg class="icone-ui" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3" /><path d="M12 9v4" /><path d="M12 17h.01" /></svg> Ramené au métabolisme de base', 'plancher']);
   el.innerHTML = '';
   lignes.forEach(([g, d], i) => {
@@ -12294,7 +12295,15 @@ function choisirModeCompte(mode) {
   if (note) note.textContent = '';
 }
 async function connexionOuCreerCompte() {
-  if (!supa) { alert("Renseigne d'abord l'URL et la clé du projet Supabase (section Synchronisation) : la connexion utilise le même projet."); return; }
+  if (!supa) {
+    // Pas de réseau au lancement : la bibliothèque de connexion n'a pas pu se
+    // charger. On la recharge maintenant, plutôt que de parler de projet Supabase.
+    const note = document.getElementById('note-compte');
+    if (note) note.textContent = 'Connexion au serveur…';
+    await chargerSupabaseSiAbsent();
+    if (!supa) { if (note) note.textContent = "Pas de réseau pour l'instant : connecte-toi dès que tu as du signal."; return; }
+    if (note) note.textContent = '';
+  }
   if (modeCompte === 'creation') return creerCompte();
   const email = (document.getElementById('compte-email-input').value || '').trim();
   const mdp = document.getElementById('compte-mdp-input').value || '';
@@ -15391,16 +15400,16 @@ function onbCalculerApercu() {
 
   Object.assign(userProfile, sauvegarde);   // on ne modifie rien tant que ce n'est pas validé
 
-  document.getElementById('onb-cible').textContent = t.target;
+  document.getElementById('onb-cible').textContent = nombreFr(t.target, 0);
 
   const detail = document.getElementById('onb-detail');
   detail.innerHTML = '';
   [
-    ['Métabolisme de base', t.bmr + ' kcal'],
-    ['Dépense estimée', t.tdee + ' kcal'],
-    ['Protéines', t.protein + ' g'],
-    ['Glucides', t.carbs + ' g'],
-    ['Lipides', t.fat + ' g']
+    ['Métabolisme de base', nombreFr(t.bmr, 0) + ' kcal'],
+    ['Dépense estimée', nombreFr(t.tdee, 0) + ' kcal'],
+    ['Protéines', nombreFr(t.protein, 0) + ' g'],
+    ['Glucides', nombreFr(t.carbs, 0) + ' g'],
+    ['Lipides', nombreFr(t.fat, 0) + ' g']
   ].forEach(([g, d]) => {
     const l = document.createElement('div');
     l.className = 'onb-ligne';
@@ -15409,6 +15418,14 @@ function onbCalculerApercu() {
     l.appendChild(a); l.appendChild(b);
     detail.appendChild(l);
   });
+  if (t.sousPlancher) {
+    const n = document.createElement('p');
+    n.className = 'note onb-plancher';
+    n.textContent = t.plancherRaison === 'minimum'
+      ? `Ton objectif ne descend pas sous ${nombreFr(t.target, 0)} kcal, le minimum conseillé pour rester en forme.`
+      : "Ton objectif ne descend pas sous ton métabolisme de base : en dessous, tu perdrais surtout du muscle et de l'énergie.";
+    detail.appendChild(n);
+  }
 }
 
 async function onbTerminer() {
@@ -15506,6 +15523,14 @@ function anneauProgresHTML(n, total) {
   const r = 20, c = 2 * Math.PI * r, f = total ? n / total : 0;
   return `<span class="pp-anneau" aria-hidden="true"><svg viewBox="0 0 46 46"><circle cx="23" cy="23" r="${r}" fill="none" stroke="var(--verre-brd)" stroke-width="5" /><circle cx="23" cy="23" r="${r}" fill="none" stroke="var(--primary)" stroke-width="5" stroke-linecap="round" stroke-dasharray="${(c * f).toFixed(1)} ${c.toFixed(1)}" transform="rotate(-90 23 23)" /></svg><b>${n}/${total}</b></span>`;
 }
+/* Une étape faite (premier repas noté, pas du jour…) se coche tout de suite :
+   la carte ne se redessinait qu'en revenant sur l'écran Repas. */
+function majPremiersPasSiChange() {
+  const avant = renderPremiersPas.faites, pp = userProfile.premiersPas;
+  if (!avant || !pp || pp.masque) return;
+  const faites = etapesPremiersPas().filter(e => e.fait).map(e => e.cle);
+  if (faites.length !== avant.size || faites.some(c => !avant.has(c))) renderPremiersPas();
+}
 function renderPremiersPas() {
   const zone = document.getElementById('premiers-pas');
   if (!zone) return;
@@ -15521,7 +15546,7 @@ function renderPremiersPas() {
   const nouvelle = e => e.fait && avant && !avant.has(e.cle);
   zone.innerHTML = `<div class="bloc-verre pp-carte">
     <div class="pp-tete">${anneauProgresHTML(faites, etapes.length)}
-      <div><h3>${reste ? 'Premiers pas' : 'Bravo, tu es lancé !'}</h3><p>${reste ? `Encore ${reste} étape${reste > 1 ? 's' : ''} pour bien démarrer` : "Tu connais l'essentiel de l'appli."}</p></div>
+      <div><h3>${reste ? 'Premiers pas' : 'Bravo, c\'est parti !'}</h3><p>${reste ? `Encore ${reste} étape${reste > 1 ? 's' : ''} pour bien démarrer` : "Tu connais l'essentiel de l'appli."}</p></div>
       <button type="button" class="pp-masquer" onclick="masquerPremiersPas()">${reste ? 'Masquer' : 'Fermer'}</button></div>
     ${etapes.map(e => `<div class="pp-etape${e.fait ? ' pp-fait' : ''}${nouvelle(e) ? ' pp-nouveau' : ''}"><span class="pp-coche">${e.fait ? coche : ''}</span>
       <span class="pp-texte"><b>${e.titre}</b><small>${e.sous}</small></span>
@@ -15542,13 +15567,8 @@ function reafficherPremiersPas() {
 }
 function faireEtapePremiersPas(cle) {
   if (cle === 'repas') { allerA('repas'); ouvrirFeuilleRepas(repasDuMoment()); return; }
-  if (cle === 'pas') {
-    allerA('seance');
-    const champ = document.getElementById('daily-steps');
-    champ.scrollIntoView({ behavior: 'smooth', block: 'center' });
-    setTimeout(() => champ.focus(), 350);
-    return;
-  }
+  // Les pas se notent par la saisie rapide (le champ de l'écran Activité est masqué).
+  if (cle === 'pas') { allerA('repas'); ouvrirSaisieRapide('pas'); return; }
   if (cle === 'muscu') { allerA('seance'); choisirModeSeance('muscu'); return; }
   if (cle === 'cardio') { allerA('seance'); choisirModeSeance('cardio'); ouvrirCardio(); }
 }
@@ -15966,7 +15986,7 @@ async function validerNouveauMdp() {
     document.getElementById('nouveau-mdp-input').value = '';
     if (note) note.textContent = '';
     nouveauMdpDepuisCompte = false;
-    alert('Mot de passe mis à jour : tu es connecté avec ce nouveau mot de passe.');
+    alert('Mot de passe mis à jour : ton compte utilise maintenant ce nouveau mot de passe.');
   } catch (e) { if (note) note.textContent = messageAuth(e); }
 }
 
@@ -16652,6 +16672,41 @@ async function importerPoidsWithings() {
   }
 }
 
+/* Sans réseau au tout premier lancement, la bibliothèque Supabase (CDN) ne
+   s'est pas chargée : connexion et base d'aliments restaient impossibles
+   jusqu'au lancement suivant. On la recharge (même adresse, même empreinte)
+   quand le réseau revient ou qu'on en a besoin ; une fois là, le client se
+   crée et la connexion reprend. Renvoie une promesse : true si c'est prêt. */
+let chargementSupabase = null;
+function chargerSupabaseSiAbsent() {
+  if (supa) return Promise.resolve(true);
+  if (typeof window.supabase !== 'undefined' && window.supabase.createClient) {
+    if (initSupabase()) { initAuth(); compterAliments(); }
+    return Promise.resolve(!!supa);
+  }
+  if (chargementSupabase) return chargementSupabase;
+  const modele = document.querySelector('script[src*="@supabase/supabase-js"]');
+  if (!modele) return Promise.resolve(false);
+  chargementSupabase = new Promise(fin => {
+    const sc = document.createElement('script');
+    sc.src = modele.src;
+    if (modele.integrity) sc.integrity = modele.integrity;
+    sc.crossOrigin = 'anonymous';
+    sc.onload = () => {
+      chargementSupabase = null;
+      if (!supa && initSupabase()) {
+        initAuth(); compterAliments();
+        const note = document.getElementById('note-compte');
+        if (note && /^Pas de réseau/.test(note.textContent)) note.textContent = '';
+      }
+      fin(!!supa);
+    };
+    sc.onerror = () => { chargementSupabase = null; sc.remove(); fin(false); };
+    document.head.appendChild(sc);
+  });
+  return chargementSupabase;
+}
+
 function initSupabase() {
   const c = confSupabase();
   supa = null;
@@ -17331,11 +17386,15 @@ function nombreSouple(v) {
    injoignable et une base vide donnaient le même écran muet, et il n'y avait
    rien à corriger pour l'utilisateur. */
 async function chercherAlimentsSupabase(q) {
-  if (!supa) {
-    return { aliments: [], probleme: "Base d'aliments non configurée : renseigne ton projet Supabase dans Profil." };
-  }
+  // Projet, table, colonnes : ces détails ne parlent qu'à l'administrateur ;
+  // les autres lisent ce qu'ils peuvent faire.
+  const pourTous = m => estCompteAdmin() ? m : "La base d'aliments ne répond pas pour l'instant. Tes aliments déjà mangés restent proposés, et tu peux saisir les valeurs à la main.";
   if (typeof navigator !== 'undefined' && navigator.onLine === false) {
     return { aliments: [], probleme: "Hors ligne : seuls tes aliments déjà mangés sont disponibles. Tu peux saisir les valeurs à la main." };
+  }
+  if (!supa) {
+    chargerSupabaseSiAbsent();
+    return { aliments: [], probleme: pourTous("Base d'aliments non configurée : renseigne ton projet Supabase dans Profil.") };
   }
   const t = normaliserRecherche(q);
   if (t.length < 2) return { aliments: [], probleme: '' };
@@ -17344,10 +17403,10 @@ async function chercherAlimentsSupabase(q) {
   try {
     const s = await detecterSchemaAliments();
     if (!s || s.vide) {
-      return { aliments: [], probleme: `La table « ${nomTable} » est vide.` };
+      return { aliments: [], probleme: pourTous(`La table « ${nomTable} » est vide.`) };
     }
     if (!s.nom) {
-      return { aliments: [], probleme: `Aucune colonne de nom reconnue dans « ${nomTable} ». Vérifie le nom de la table dans Profil.` };
+      return { aliments: [], probleme: pourTous(`Aucune colonne de nom reconnue dans « ${nomTable} ». Vérifie le nom de la table dans Profil.`) };
     }
 
     /* Si la table porte une colonne normalisée, on cherche dedans : accents et
@@ -17380,10 +17439,10 @@ async function chercherAlimentsSupabase(q) {
     if (cacheAliments.size > 60) cacheAliments.clear();
     cacheAliments.set(t, res);
     if (!res.length && nbAlimentsBase === 0) {
-      return { aliments: [], probleme: `La table « ${nomTable} » est vide : envoie ta base depuis Profil.` };
+      return { aliments: [], probleme: pourTous(`La table « ${nomTable} » est vide : envoie ta base depuis Profil.`) };
     }
     if (!res.length && !s.recherche) {
-      return { aliments: [], probleme: "Aucun résultat. Sans colonne normalisée, la recherche tient compte des accents : essaie « crème » plutôt que « creme »." };
+      return { aliments: [], probleme: estCompteAdmin() ? "Aucun résultat. Sans colonne normalisée, la recherche tient compte des accents : essaie « crème » plutôt que « creme »." : "Aucun résultat : vérifie l'orthographe et les accents (« crème » plutôt que « creme »)." };
     }
     return { aliments: res, probleme: '' };
   } catch (e) {
@@ -17394,7 +17453,7 @@ async function chercherAlimentsSupabase(q) {
     const manquante = /relation|does not exist|schema cache|404/i.test(m);
     return {
       aliments: [],
-      probleme: manquante
+      probleme: !estCompteAdmin() ? pourTous('') : manquante
         ? `La table « ${nomTable} » est introuvable dans ton projet Supabase. Exécute le SQL fourni dans <svg class="icone-ui" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9.671 4.136a2.34 2.34 0 0 1 4.659 0 2.34 2.34 0 0 0 3.319 1.915 2.34 2.34 0 0 1 2.33 4.033 2.34 2.34 0 0 0 0 3.831 2.34 2.34 0 0 1-2.33 4.033 2.34 2.34 0 0 0-3.319 1.915 2.34 2.34 0 0 1-4.659 0 2.34 2.34 0 0 0-3.32-1.915 2.34 2.34 0 0 1-2.33-4.033 2.34 2.34 0 0 0 0-3.831A2.34 2.34 0 0 1 6.35 6.051a2.34 2.34 0 0 0 3.319-1.915" /><circle cx="12" cy="12" r="3" /></svg> Profil <svg class="icone-ui" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 18 6-6-6-6" /></svg> Synchronisation.`
         : "Base d'aliments injoignable (" + m + ")."
     };
@@ -24010,7 +24069,7 @@ function groupeAtlas(s) {
 function ficheAtlas(s, mode) {
   const D = atlasDonnees;
   if (!D) return '';
-  if (!s.app.length) return `<p class="atlas-ligne atlas-ligne--muette">${s.type === 'muscle' ? "Ce muscle n'a pas de suivi dédié dans Anqā : aucun exercice de la base ne le compte à part." : 'Structure fibreuse, montrée pour situer les muscles.'}</p>`;
+  if (!s.app.length) return `<p class="atlas-ligne atlas-ligne--muette">${s.type === 'muscle' ? "Ce muscle n'a pas de suivi dédié dans l'appli : aucun exercice de la base ne le compte à part." : 'Structure fibreuse, montrée pour situer les muscles.'}</p>`;
   const series = n => `${formatSeries(n)} série${arrondiSeries(n) >= 2 ? 's' : ''}`, date = iso => formatDateDisplay(iso).toLowerCase();
   return s.app.map(lien => {
     const g = lien.groupe, fx = lien.faisceau && (FAISCEAUX[g] || []).find(x => x[0] === lien.faisceau);
@@ -24193,7 +24252,7 @@ function renderVitrineMuscu() {
       <div class="hx-k">${libelleSemaine(auj)} · Musculation</div><div class="hx-titre">Ta semaine</div>
       ${total ? `<div class="hx-geant" data-compte="${total}">${total}</div><div class="hx-unite">série${total > 1 ? 's' : ''} · ${seancesSem.length} séance${seancesSem.length > 1 ? 's' : ''}</div>`
         : `<div class="hx-vide">${totalPrec ? `<small>Semaine passée</small><b>${totalPrec}</b> série${totalPrec > 1 ? 's' : ''} · ${seancesPrec.length} séance${seancesPrec.length > 1 ? 's' : ''}` : 'Ta première série de la semaine allume le corps.'}</div>`}
-      <div class="hx-puces">${total ? `<span class="hx-puce"><i style="background:${ZONES_INFO.mav.couleur};color:${ZONES_INFO.mav.couleur}"></i><b>${ideal}</b> en zone idéale</span><span class="hx-puce"><i style="background:${ZONES_INFO.sous.couleur};color:${ZONES_INFO.sous.couleur}"></i><b>${aTravailler}</b> à travailler</span>` : `<span class="hx-puce">Ta semaine démarre à ta première série : le corps s'allume au fil des séances.</span>`}${records ? `<span class="hx-puce hx-puce--record">${ICONE_RECORD}<b>${records}</b> record${records > 1 ? 's' : ''} ce mois</span>` : ''}</div>
+      <div class="hx-puces">${total ? `<span class="hx-puce"><i style="background:${ZONES_INFO.mav.couleur};color:${ZONES_INFO.mav.couleur}"></i><b>${ideal}</b> en zone idéale</span><span class="hx-puce"><i style="background:${ZONES_INFO.sous.couleur};color:${ZONES_INFO.sous.couleur}"></i><b>${aTravailler}</b> à travailler</span>` : totalPrec ? `<span class="hx-puce">Ta semaine démarre à ta première série : le corps s'allume au fil des séances.</span>` : ''}${records ? `<span class="hx-puce hx-puce--record">${ICONE_RECORD}<b>${records}</b> record${records > 1 ? 's' : ''} ce mois</span>` : ''}</div>
       ${total ? `<div class="hx-legende" aria-label="Légende des couleurs">${['sous', 'mv', 'mev', 'mav', 'mrv'].map(k => `<span><i style="background:${ZONES_INFO[k].couleur}"></i>${ZONES_INFO[k].court}</span>`).join('')}</div>` : ''}
     </div>`;
   c.innerHTML = total ? hx + sdj : sdj + hx;
@@ -27056,7 +27115,7 @@ function renderResumeProgres() {
     cases.push(`<i class="${r && sm ? 'rm' : r ? 'r' : sm ? 'm' : ''}" role="img" data-bulle="${escapeHtml(txt)}" aria-label="${escapeHtml(txt)}"></i>`);
   }
   const regularite = `<h3 class="pg-h">Régularité</h3><div class="pg-carte">
-    ${serie.actuelle ? `<div class="pg-serie"><span class="pg-flamme">🔥 ${serie.actuelle} jour${serie.actuelle > 1 ? 's' : ''}</span><span>de suite avec tes repas notés · record ${serie.record}</span></div>` : `<div class="pg-serie"><span>Note tes repas aujourd'hui pour lancer une série de jours (record : ${serie.record}).</span></div>`}
+    ${serie.actuelle ? `<div class="pg-serie"><span class="pg-flamme">🔥 ${serie.actuelle} jour${serie.actuelle > 1 ? 's' : ''}</span><span>de suite avec tes repas notés · record ${serie.record}</span></div>` : `<div class="pg-serie"><span>Note tes repas aujourd'hui pour lancer une série de jours${serie.record ? ` (record : ${serie.record})` : ''}.</span></div>`}
     <div class="pg-cal" role="img" aria-label="Régularité des ${nbCal} derniers jours de la période">${cases.join('')}</div>
     <div class="pg-legende"><span><i class="r"></i>Repas notés · ${nbR} j</span><span><i class="m"></i>Séance · ${nbM}</span><span><i></i>Rien</span></div>
     ${nbCal < n ? `<p class="pg-legende-note">Les ${nbCal} derniers jours de la période.</p>` : ''}
@@ -29223,7 +29282,7 @@ window.addEventListener('load', async () => {
   /* Le réseau revient : on rattrape aussitôt. Et au retour sur l'onglet, car
      un autre appareil a pu écrire pendant ce temps. */
   window.addEventListener('online', () => {
-    if (!supa && initSupabase()) { initAuth(); }
+    if (!supa) { if (initSupabase()) initAuth(); else chargerSupabaseSiAbsent(); }
     synchroniser('réseau');
   });
   window.addEventListener('offline', () => majEtatSync('hors-ligne',
