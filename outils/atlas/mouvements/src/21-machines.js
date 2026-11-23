@@ -236,10 +236,11 @@
         const libre = pivotante(k), paume = libre ? a.paume.clone().lerp(a.paumeB, f).normalize() : a.paume.clone().applyQuaternion(rot), dirMain = libre ? a.dirMain.clone().lerp(a.dirMainB, f).normalize() : a.dirMain.clone().applyQuaternion(rot);
         // (Ce que la famille a écrit de l'épaule et du poignet passe tel quel — épaules haussées ou avancées, part de la
         // ceinture, poignet cassé : sans cela le shrug montait les mains en pliant les coudes, et en haut du développé
-        // épaules l'épaule montait trop, le coude restait plié à 24°.)
+        // épaules l'épaule montait trop, le coude restait plié à 24°. De même la tolérance du poignet (aplomb) : sans elle, au
+        // tirage vertical à la machine, le coude basculait de 18 cm vers l'avant en milieu de descente.)
         const g = q.bras[k] || {};
         q.bras[k] = { prise: surArc(a.P, a.n, a.A, f * a.tot), paume, dirMain, pole, doigts: 'barre', rayon: 0.017 };
-        for (const r of ['hausse', 'avance', 'ceinture', 'casse']) if (g[r] != null) q.bras[k][r] = g[r];
+        for (const r of ['hausse', 'avance', 'ceinture', 'casse', 'aplomb']) if (g[r] != null) q.bras[k][r] = g[r];
         cibles[k] = q.bras[k].prise.clone();
       }
       viser(c, q, cibles);

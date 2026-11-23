@@ -298,7 +298,7 @@
       // Les attaches (ajoutées par le moteur : voir reponderer) : orientation de l'articulation d'origine (de), placées
       // comme le point d'insertion (leur centre) emmené par l'os visé (vers). Elles suivent, elles ne se posent pas.
       this.virtuel = squelette.map(a => a.virtuel || null);
-      this.evase = new Float32Array(nb); this.aEvase = false;
+      this.evase = new Float32Array(nb); this.deport = new Float32Array(nb * 2); this.aEvase = false;
       this.tete = squelette.map(a => V(a.centre[0], a.centre[1], a.centre[2]));
       this.decal = squelette.map((a, k) => (a.parent >= 0 ? this.tete[k].clone().sub(this.tete[a.parent]) : this.tete[k].clone()));
       this.ql = Array.from({ length: nb }, () => new Quat());   // rotation par rapport au parent
@@ -404,7 +404,12 @@
           let an = Math.atan2(l.x - xA, l.z - zA) - Math.atan2(c.x - xA, c.z - zA); if (an > Math.PI) an -= 2 * Math.PI; else if (an < -Math.PI) an += 2 * Math.PI;
           qw[b].copy(qw[vi.de]).multiply(qAxe(AY, an));
           // L'évasement : l'écart à l'axe que prend le muscle quand l'insertion monte (voir le moteur).
-          this.evase[b] = (vi.evase || 0) * Math.max(0, l.y - c.y); if (this.evase[b] > 1e-5) this.aEvase = true;
+          this.evase[b] = (vi.evase || 0) * Math.max(0, l.y - c.y);
+          // Le déport : de combien l'insertion s'est éloignée de l'axe (bras écarté), dans sa direction, à l'horizontale ;
+          // seul le haut du muscle le suit (voir peauPosee).
+          const rI = Math.hypot(l.x - xA, l.z - zA), kD = rI > 1e-6 ? 1 - Math.hypot(c.x - xA, c.z - zA) / rI : 0;
+          this.deport[b * 2] = (l.x - xA) * kD; this.deport[b * 2 + 1] = (l.z - zA) * kD;
+          if (this.evase[b] > 1e-5 || Math.abs(this.deport[b * 2]) + Math.abs(this.deport[b * 2 + 1]) > 1e-5) this.aEvase = true;
           continue;
         }
         if (p < 0) { qw[b].copy(ql[b]); pw[b].copy(this.posRacine); continue; }
@@ -502,11 +507,14 @@
           }
           px += (cx / wt - px) * c; py += (cy / wt - py) * c; pz += (cz / wt - pz) * c;
         }
-        // Les attaches : l'évasement du muscle qui monte avec le bras (voir le programme des sommets du moteur).
+        // Les attaches : l'évasement du muscle qui monte avec le bras, et le déport de l'insertion que seul le haut du
+        // muscle suit — en entier jusqu'à 6 cm sous l'insertion, plus du tout à 14 cm, sauf le bord avant, posé sur le
+        // dentelé (voir le programme des sommets du moteur).
         if (this.aEvase) for (let k = 0; k < 4; k++) {
           const w = pe.W[v * 4 + k]; if (!w) continue;
-          const j = cote ? S[pe.J[v * 4 + k]].jumeau : pe.J[v * 4 + k], e = this.evase[j]; if (!(e > 0)) continue;
-          const a = this.virtuel[j].axe, ex = X - a[0], ez = Z - a[1], g = e * w * Math.min(1, 2 * (1 - w)) / Math.max(Math.hypot(ex, ez), 1e-4), vx = ex * g, vz = ez * g;
+          const j = cote ? S[pe.J[v * 4 + k]].jumeau : pe.J[v * 4 + k]; if (!this.virtuel[j]) continue;
+          const e = this.evase[j], a = this.virtuel[j].axe, ex = X - a[0], ez = Z - a[1], g = e * w * Math.min(1, 2 * (1 - w)) / Math.max(Math.hypot(ex, ez), 1e-4);
+          const sd = w * lisse((this.tete[j].y - Y - 0.06) / 0.08) * (1 - lisse(ez / Math.max(Math.hypot(ex, ez), 1e-4) / 0.5)), vx = ex * g - this.deport[j * 2] * sd, vz = ez * g - this.deport[j * 2 + 1] * sd;
           // (vx, 0, vz) tourné par la rotation mélangée du sommet.
           const tx = -rz * 0 + rw * vx + ry * vz, ty = rz * vx - rx * vz, tz = rx * 0 - ry * vx + rw * vz;
           px += vx + 2 * (ry * tz - rz * ty); py += 2 * (rz * tx - rx * tz); pz += vz + 2 * (rx * ty - ry * tx);
@@ -1571,10 +1579,11 @@
         const libre = pivotante(k), paume = libre ? a.paume.clone().lerp(a.paumeB, f).normalize() : a.paume.clone().applyQuaternion(rot), dirMain = libre ? a.dirMain.clone().lerp(a.dirMainB, f).normalize() : a.dirMain.clone().applyQuaternion(rot);
         // (Ce que la famille a écrit de l'épaule et du poignet passe tel quel — épaules haussées ou avancées, part de la
         // ceinture, poignet cassé : sans cela le shrug montait les mains en pliant les coudes, et en haut du développé
-        // épaules l'épaule montait trop, le coude restait plié à 24°.)
+        // épaules l'épaule montait trop, le coude restait plié à 24°. De même la tolérance du poignet (aplomb) : sans elle, au
+        // tirage vertical à la machine, le coude basculait de 18 cm vers l'avant en milieu de descente.)
         const g = q.bras[k] || {};
         q.bras[k] = { prise: surArc(a.P, a.n, a.A, f * a.tot), paume, dirMain, pole, doigts: 'barre', rayon: 0.017 };
-        for (const r of ['hausse', 'avance', 'ceinture', 'casse']) if (g[r] != null) q.bras[k][r] = g[r];
+        for (const r of ['hausse', 'avance', 'ceinture', 'casse', 'aplomb']) if (g[r] != null) q.bras[k][r] = g[r];
         cibles[k] = q.bras[k].prise.clone();
       }
       viser(c, q, cibles);
@@ -3659,7 +3668,11 @@
     const basP = s => (o.nuque ? V(s * 0.42, 0.03, -0.1) : V(s * Math.max(e, 0.17), -0.1, 0.16));   // devant le haut de la poitrine (l'origine est entre les deux épaules)
     // Une poignée au bout du câble (prise neutre, serrée, à une main) tourne avec la main : le poignet reste droit.
     const libre = o.neutre || o.serre || m !== 'GD';
-    const bras = f => { const r = {}; for (const [k, s] of COTES) { r[k] = { prise: t.duThorax(f(s)), pole: dT(s * 1, -0.5, o.sup || o.serre ? 0.5 : -0.25), paume: dT(...paume(s).xyz()), dirMain: dT(0, 1, 0), doigts: 'barre' }; if (libre) r[k].autour = 'libre'; } return r; };
+    // Les coudes descendent sur les côtés, puis un peu en arrière sous la barre (pôle sur le côté, légèrement derrière, et
+    // le poignet toléré jusqu'à 40° : la barre ne tourne pas dans la main). Avec le pôle d'avant, plus en arrière, ils
+    // reculaient puis basculaient d'un coup de 20 cm vers l'avant en cours de descente. Prise en supination ou serrée :
+    // ils passent devant.
+    const bras = f => { const r = {}; for (const [k, s] of COTES) { r[k] = { prise: t.duThorax(f(s)), pole: o.sup || o.serre ? dT(s * 1, -0.5, 0.5) : dT(s * 1, -0.4, -0.2), paume: dT(...paume(s).xyz()), dirMain: dT(0, 1, 0), doigts: 'barre', ...(o.sup || o.serre ? {} : { aplomb: 40 }) }; if (libre) r[k].autour = 'libre'; } return r; };
     // En haut, les bras sont tendus vers la barre : la hauteur des mains se règle sur le corps posé (l'épaule monte avec le
     // bras ; comptée depuis l'épaule au repos, elle laissait les coudes pliés à 64°).
     const estime = (() => { const dx = e - 0.165; return Math.sqrt(Math.max(0.01, portee * portee - dx * dx - 0.014)); })();

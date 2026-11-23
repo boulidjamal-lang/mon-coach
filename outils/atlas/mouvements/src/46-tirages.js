@@ -193,7 +193,11 @@
     const basP = s => (o.nuque ? V(s * 0.42, 0.03, -0.1) : V(s * Math.max(e, 0.17), -0.1, 0.16));   // devant le haut de la poitrine (l'origine est entre les deux épaules)
     // Une poignée au bout du câble (prise neutre, serrée, à une main) tourne avec la main : le poignet reste droit.
     const libre = o.neutre || o.serre || m !== 'GD';
-    const bras = f => { const r = {}; for (const [k, s] of COTES) { r[k] = { prise: t.duThorax(f(s)), pole: dT(s * 1, -0.5, o.sup || o.serre ? 0.5 : -0.25), paume: dT(...paume(s).xyz()), dirMain: dT(0, 1, 0), doigts: 'barre' }; if (libre) r[k].autour = 'libre'; } return r; };
+    // Les coudes descendent sur les côtés, puis un peu en arrière sous la barre (pôle sur le côté, légèrement derrière, et
+    // le poignet toléré jusqu'à 40° : la barre ne tourne pas dans la main). Avec le pôle d'avant, plus en arrière, ils
+    // reculaient puis basculaient d'un coup de 20 cm vers l'avant en cours de descente. Prise en supination ou serrée :
+    // ils passent devant.
+    const bras = f => { const r = {}; for (const [k, s] of COTES) { r[k] = { prise: t.duThorax(f(s)), pole: o.sup || o.serre ? dT(s * 1, -0.5, 0.5) : dT(s * 1, -0.4, -0.2), paume: dT(...paume(s).xyz()), dirMain: dT(0, 1, 0), doigts: 'barre', ...(o.sup || o.serre ? {} : { aplomb: 40 }) }; if (libre) r[k].autour = 'libre'; } return r; };
     // En haut, les bras sont tendus vers la barre : la hauteur des mains se règle sur le corps posé (l'épaule monte avec le
     // bras ; comptée depuis l'épaule au repos, elle laissait les coudes pliés à 64°).
     const estime = (() => { const dx = e - 0.165; return Math.sqrt(Math.max(0.01, portee * portee - dx * dx - 0.014)); })();

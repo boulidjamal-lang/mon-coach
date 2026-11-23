@@ -8042,6 +8042,71 @@ test('atlas 3D : bras levés, le dos et le flanc ne se déchirent plus (grand do
   assert.ok(flanc / nf > flanc0 / nf + 8, `le flanc sous le bras s'éclaircit : ${(flanc0 / nf).toFixed(0)} → ${(flanc / nf).toFixed(0)}`);
 });
 
+test('atlas 3D : bras écartés, le bas du grand dorsal reste contre les côtes (plus d\'ailes sous les bras)', async () => {
+  const { pathToFileURL } = require('url'), dossier = path.join(RACINE, 'outils', 'atlas', 'mouvements');
+  const { chargerAtlas, chargerMouvements, FICHIER_ATLAS, FICHIER_MOUVEMENTS } = await import(pathToFileURL(path.join(dossier, 'silhouettes.mjs')).href);
+  const M = chargerMouvements(FICHIER_MOUVEMENTS), C = M.TEINTES.clair, atlas = chargerAtlas(FICHIER_ATLAS), E = atlas.E, SQ = E.squelette;
+  const t = atlas.points(1), A = SQ.find(a => a.nom === 'attache.dorsal.G'), jTh = SQ.findIndex(a => a.nom === 'thorax'), ax = A.virtuel.axe, yI = A.centre[1];
+  // Le grand dorsal du côté gauche, à 14 cm ou plus sous son insertion : l'arrière et le côté (pas le bord avant, posé
+  // sur le dentelé antérieur qui pivote avec l'omoplate).
+  const bas = [];
+  for (const st of E.structures) if (st.id === 'grand_dorsal') for (let v = st.sommets; v < st.sommets + st.nbSommets; v++) {
+    if (t.P[v * 3] > 0.005 && yI - t.P[v * 3 + 1] >= 0.14 && t.P[v * 3 + 2] <= ax[1]) bas.push(v);
+  }
+  assert.ok(bas.length > 500, 'le bas du grand dorsal : ' + bas.length + ' sommets');
+  // De combien il s'éloigne de l'axe de son glissement, dans le repère du thorax. Monter le long d'un tronc qui s'élargit
+  // vers l'aisselle l'en écarte un peu (l'évasement) ; suivre l'insertion, qui s'écarte avec le bras, l'en décollait de
+  // 3,6 à 5 cm : le dos gonflait en ailes sous les bras.
+  for (const [spec, u] of [['tirage', 0.3], ['tirage', 0.6], ['traction', 0.5], ['elevation laterale hal', 1]]) {
+    const c = new M.Corps(SQ, atlas.peau); c.peaux.tout = t;
+    const d = M.definir(spec, c, C); c.poser(M.poseA(d, 0, u)); c.appuis = null;
+    const P = new Float32Array(t.n * 3); let i = 0;
+    c.peauPosee(['tout'], (x, y, z) => { if (i < t.n) { P[i * 3] = x; P[i * 3 + 1] = y; P[i * 3 + 2] = z; } i++; }, true);
+    const qi = c.qw[jTh].clone().invert(); let pire = 0;
+    for (const v of bas) {
+      const p = c.pw[jTh].clone().set(P[v * 3], P[v * 3 + 1], P[v * 3 + 2]).sub(c.pw[jTh]).applyQuaternion(qi).add(c.tete[jTh]);
+      pire = Math.max(pire, Math.hypot(p.x - ax[0], p.z - ax[1]) - Math.hypot(t.P[v * 3] - ax[0], t.P[v * 3 + 2] - ax[1]));
+    }
+    assert.ok(pire < 0.026, `${spec} (u=${u}) : le bas du grand dorsal s'écarte des côtes de ${(pire * 100).toFixed(1)} cm`);
+  }
+});
+
+/* Bras écarté, la peau fine se tend du bras au flanc par-dessus le creux de l'aisselle : très étirée, loin des muscles,
+   elle restait opaque et cachait le haut du grand dorsal sous une membrane grise. Elle laisse maintenant voir les
+   muscles derrière elle. Vérifié sur l'image de la fiche du tirage vertical, à mi-tirage, sous l'aisselle gauche. */
+test('atlas 3D : bras écartés, la peau tendue sous l\'aisselle laisse voir le grand dorsal (plus de voile gris)', async () => {
+  const nav = await lancerNavigateur(['--use-gl=angle', '--use-angle=swiftshader', '--enable-unsafe-swiftshader']);
+  try {
+    const { page, erreurs, ctx } = await ouvrirAppli(nav, { https: true });
+    if (!await page.evaluate(() => !!document.createElement('canvas').getContext('webgl2'))) { await ctx.close(); return; }   // pas de rendu 3D ici
+    await page.evaluate(() => afficherFicheExerciceBiblio('sw-tirage-vertical-a-la-poulie'));
+    await page.waitForFunction(() => ficheMouvement && document.querySelector('#fiche-exo-3d canvas'), null, { timeout: 120000 });
+    // Le corps à mi-tirage, vu comme dans la fiche (de derrière, à gauche) ; le point regardé est sous l'aisselle
+    // gauche, là où la peau se tend du bras au flanc. Le grand dorsal y est rose (muscle principal), le voile gris.
+    const px = await page.evaluate(() => new Promise(fin => {
+      if (ficheMouvement.voulu) basculerLectureFiche();
+      const at = ficheMouvement.apercu.atlas, anim = AnqaMouvements.creerAnimation(at, { spec: AnqaMouvements.specDe('sw-tirage-vertical-a-la-poulie') }, {});
+      const e = anim.rendre(0, 0.5).epaules.G, avant = at.surImage;
+      at.placer({ az: 150, el: 8, cible: [e.x, e.y - 0.1, e.z], dist: 0.75 });
+      at.surImage = cam => {
+        if (avant) avant(cam);
+        const toile = at.toile, c = document.createElement('canvas'); c.width = toile.width; c.height = toile.height;
+        const x = c.getContext('2d'); x.drawImage(toile, 0, 0);
+        const k = toile.width / toile.clientWidth, p = at.projeter([e.x + 0.06, e.y - 0.13, e.z]);
+        const d = x.getImageData(Math.round(p.x * k) - 4, Math.round(p.y * k) - 4, 9, 9).data, m = [0, 0, 0, 0];
+        for (let i = 0; i < d.length; i += 4) for (let q = 0; q < 4; q++) m[q] += d[i + q] / 81;
+        at.surImage = avant; anim.quitter();
+        fin(m.map(Math.round));
+      };
+      at.redessiner();
+    }));
+    const vif = Math.max(px[0], px[1], px[2]) - Math.min(px[0], px[1], px[2]);
+    assert.equal(px[3], 255, 'le point est sur le corps');
+    assert.ok(vif > 80, `sous l'aisselle, le grand dorsal se voit sous la peau (vivacité ${vif} : ${px})`);
+    assert.deepEqual(erreurs, []);
+  } finally { await nav.close(); }
+});
+
 /* La préparation écrite d'avance dans atlas.bin (outils/atlas/preparer-modele.mjs) est exactement ce que le moteur
    calculerait au chargement : sinon, elle est à refaire (après une retouche de eclaircirContacts, reponderer ou
    etoffer). Le moteur l'applique pour la carrure prévue ; pour une autre, il calcule. */

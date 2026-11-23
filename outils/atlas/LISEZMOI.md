@@ -106,8 +106,11 @@ dessinée ensuite, opaque, et laisse voir cette image là où le muscle est just
 du regard). Le relief des muscles se lit sous la peau, les muscles colorés d'une carte ou d'un exercice ressortent
 (`film: [0.2, 0.8]` : part visible d'un muscle neutre, d'un muscle coloré), et un membre qui passe devant un autre le
 cache normalement, puisque la peau est opaque. Le film ne montre que son endroit (faces arrière écartées : aux plis
-du coude et de l'aisselle, son envers se voyait en taches sombres). `&ecarts=1` sur la page d'essai colore l'écart
-entre la peau et le muscle.
+du coude et de l'aisselle, son envers se voyait en taches sombres). Là où il est très étiré (sa surface plus que
+doublée par rapport au repos, mesurée point par point), c'est un voile tendu d'un membre à l'autre par-dessus un
+creux — l'aisselle quand le bras s'écarte, du bras au flanc : il laisse alors voir les muscles jusqu'à 12 cm derrière
+lui, comme une peau qui s'y serait couchée (bras levés, il cachait le haut du grand dorsal sous une membrane grise).
+`&ecarts=1` sur la page d'essai colore l'écart entre la peau et le muscle.
 
 ## Ce que le corps devient au chargement, et comment il se déforme
 
@@ -144,7 +147,14 @@ entre la peau et le muscle.
   fichier ; `E.articulationsFichier` dit combien il y en a) dont le moteur calcule lui-même la pose : l'orientation du
   thorax, tournée autour d'un axe vertical — celui de l'arrondi du flanc, mesuré sur le muscle — jusqu'à suivre le
   point d'insertion du tendon sur l'humérus ; le muscle monte et tourne avec lui, et s'écarte de l'axe d'autant que le
-  tronc s'élargit vers l'aisselle (l'évasement, aussi mesuré sur le muscle, rangé dans un troisième texel de la pose).
+  tronc s'élargit vers l'aisselle (l'évasement, aussi mesuré sur le muscle). Quand l'insertion s'éloigne elle-même de
+  l'axe (bras écarté du corps : son déport), seul le haut du muscle la suit — en entier jusqu'à 6 cm sous l'insertion,
+  plus du tout à 14 cm, là où il quitte les côtes pour l'aisselle et couvre le grand rond ; plus bas, l'arrière et le
+  côté du muscle restent contre les côtes : ils s'en écartaient de 3,6 à 5 cm au tirage vertical, aux tractions, aux
+  élévations latérales, et le dos gonflait en ailes sous les bras (1,4 à 2,3 cm désormais, l'évasement compris). Son
+  bord avant, posé sur le dentelé antérieur qui pivote avec l'omoplate, suit toujours (sinon le dentelé passait à
+  travers). L'évasement et le déport du moment sont rangés dans un troisième texel de la pose ; l'axe et la hauteur de
+  l'insertion, fixes, dans `u_attache`.
   La part de chaque sommet qui suit l'attache dépend de sa place le long de ses fibres (distances de proche en proche
   sur le muscle, dont les faisceaux séparés sont reliés à moins de 12 mm) : entière au bout du tendon, nulle à son
   origine le long de la colonne ; là où le trapèze le recouvre, il reste tenu (sinon il sortait à travers) ; (3) les
@@ -231,7 +241,8 @@ de 28 mm, disque de 45 cm, banc à 44 cm.
   sur l'arc de la poignée (`surMachine` : le palier se cherche sur la médiatrice de la course, ou dans l'axe de
   l'articulation ; `pivotEgal` et `pivotCercle` gardent le rayon constant ; poignées pivotantes quand le bras tourne
   de plus de 45°, et aux développés en prise neutre). La machine ne décide que de la main : ce que le mouvement écrit
-  de l'épaule et du poignet (`hausse`, `avance`, `ceinture`, `casse`) passe tel quel. Chaque machine note ses
+  de l'épaule et du poignet (`hausse`, `avance`, `ceinture`, `casse`, et la tolérance du poignet `aplomb`) passe tel
+  quel. Chaque machine note ses
   paliers (`d.paliers` : point et axe de chaque bras, que les tests confrontent à l'articulation qui travaille).
   Chaque machine a son poste (`posteAssis` : assise, dossier, colonne et goupille de réglage ;
   boudins de poitrine ou de cuisses), son bâti en profilés (`batiBras`, `batiCoudes`, `batiPoteaux`) et sa pile de
@@ -373,6 +384,10 @@ poignet incliné jusqu'à 30° autour de la poignée) : ils s'ouvraient à l'hor
 derrière, faisait des « ailes ». En haut, la poitrine vient à la hauteur des poignées (épaules 12 cm dessous).
 Tirage vertical : la barre descend devant le haut de la poitrine, 10 cm sous la ligne des épaules (elle s'arrêtait au
 menton, 3 cm sous elle) ; toutes les variantes assises, à genoux, à un bras, à l'élastique et à la machine en profitent.
+Les coudes descendent sur les côtés, puis un peu en arrière sous la barre (pôle sur le côté, légèrement derrière ; le
+poignet toléré jusqu'à 40°, la barre ne tournant pas dans la main) : ils reculaient, puis basculaient d'un coup d'une
+vingtaine de centimètres vers l'avant en milieu de descente (à la machine aussi). En supination et en prise serrée, ils
+passent devant.
 
 Pendu, les mains ne bougent pas : quand le bassin bascule (relevés de jambes) les épaules restent sous la barre ; en
 vrille (genoux obliques, essuie-glaces), ce sont le bassin et les jambes qui tournent sous des épaules qui restent
