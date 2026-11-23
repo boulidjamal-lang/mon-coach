@@ -8727,11 +8727,13 @@ test('atlas 3D : bras levés, le dos et le flanc ne se déchirent plus (grand do
   const fichier = chargerAtlas(FICHIER_ATLAS);
   if (avant == null) delete process.env.POIDS; else process.env.POIDS = avant;
   const atlas = chargerAtlas(FICHIER_ATLAS), E = atlas.E, SQ = E.squelette, n0 = fichier.E.squelette.length;
-  // Les attaches : une de chaque côté, après les articulations du fichier, de l'os du thorax vers l'humérus.
+  // Les attaches : une de chaque côté, après les articulations du fichier, de l'os du thorax vers l'humérus ; et le bout
+  // du tendon, la sienne (avec le thorax bras bas, collé à l'humérus bras levé).
   const att = SQ.filter(a => a.virtuel), num = nom => SQ.findIndex(a => a.nom === nom);
-  assert.deepEqual(att.map(a => a.nom), ['attache.dorsal.G', 'attache.dorsal.D']);
+  assert.deepEqual(att.map(a => a.nom), ['attache.dorsal.G', 'attache.dorsal.D', 'tendon.dorsal.G', 'tendon.dorsal.D']);
   assert.equal(E.articulationsFichier, n0, 'les articulations du fichier restent les premières');
-  assert.equal(SQ.length, n0 + 2);
+  assert.equal(SQ.length, n0 + 4);
+  assert.ok(att[2].virtuel.tendon && att[2].virtuel.de === num('thorax') && att[2].virtuel.vers === num('humerus.G') && SQ[att[2].jumeau] === att[3], 'le bout du tendon, en miroir à droite');
   assert.ok(att[0].virtuel.de === num('thorax') && att[0].virtuel.vers === num('humerus.G') && att[1].virtuel.vers === num('humerus.D'));
   assert.ok(att[0].virtuel.axe.length === 2 && att[0].virtuel.evase > 0 && att[0].virtuel.evase < 0.36 && att[1].virtuel.axe[0] === -att[0].virtuel.axe[0], 'un axe de glissement mesuré sur le muscle, en miroir à droite');
   assert.equal(SQ[att[0].jumeau], att[1]);
@@ -8816,6 +8818,41 @@ test('atlas 3D : bras écartés, le bas du grand dorsal reste contre les côtes 
       pire = Math.max(pire, Math.hypot(p.x - ax[0], p.z - ax[1]) - Math.hypot(t.P[v * 3] - ax[0], t.P[v * 3 + 2] - ax[1]));
     }
     assert.ok(pire < 0.026, `${spec} (u=${u}) : le bas du grand dorsal s'écarte des côtes de ${(pire * 100).toFixed(1)} cm`);
+  }
+});
+
+/* Bras bas — barre tenue devant (abduction de la hanche à la poulie), soulevé de terre, curl — le haut du grand dorsal
+   restait accroché au bras : il partait avec l'insertion et passait du dos au bras en pont, la peau avec lui (vu dans
+   l'appli). L'attache ne suit plus l'insertion qu'à mesure que le bras se lève : bras bas, le haut du muscle bouge avec
+   le thorax ; bras levé (tractions, tirage vertical), il suit toujours son attache. */
+test('atlas 3D : bras bas, le grand dorsal reste sur le dos (plus de pont jusqu\'au bras) ; bras levé, il suit son attache', async () => {
+  const { pathToFileURL } = require('url'), dossier = path.join(RACINE, 'outils', 'atlas', 'mouvements');
+  const { chargerAtlas, chargerMouvements, FICHIER_ATLAS, FICHIER_MOUVEMENTS } = await import(pathToFileURL(path.join(dossier, 'silhouettes.mjs')).href);
+  const M = chargerMouvements(FICHIER_MOUVEMENTS), C = M.TEINTES.clair, atlas = chargerAtlas(FICHIER_ATLAS), E = atlas.E, SQ = E.squelette;
+  const t = atlas.points(1), I = SQ.find(a => a.nom === 'attache.dorsal.G').centre, jTh = SQ.findIndex(a => a.nom === 'thorax');
+  // Le haut du grand dorsal gauche : à moins de 14 cm de son insertion.
+  const haut = [];
+  for (const st of E.structures) if (st.id === 'grand_dorsal') for (let v = st.sommets; v < st.sommets + st.nbSommets; v++) {
+    if (t.P[v * 3] > 0.005 && Math.hypot(t.P[v * 3] - I[0], t.P[v * 3 + 1] - I[1], t.P[v * 3 + 2] - I[2]) < 0.14) haut.push(v);
+  }
+  assert.ok(haut.length > 500, 'le haut du grand dorsal : ' + haut.length + ' sommets');
+  // De combien il quitte le thorax : sa place posée, comparée à celle que le thorax seul lui donnerait (9 sur 10).
+  const quitte = (spec, u) => {
+    const c = new M.Corps(SQ, atlas.peau); c.peaux.tout = t;
+    const d = M.definir(spec, c, C); c.poser(M.poseA(d, 0, u)); c.appuis = null;
+    const P = new Float32Array(t.n * 3); let i = 0;
+    c.peauPosee(['tout'], (x, y, z) => { if (i < t.n) { P[i * 3] = x; P[i * 3 + 1] = y; P[i * 3 + 2] = z; } i++; }, true);
+    const l = haut.map(v => { const r = c.pw[jTh].clone().set(t.P[v * 3], t.P[v * 3 + 1], t.P[v * 3 + 2]).sub(c.tete[jTh]).applyQuaternion(c.qw[jTh]).add(c.pw[jTh]); return Math.hypot(P[v * 3] - r.x, P[v * 3 + 1] - r.y, P[v * 3 + 2] - r.z); }).sort((a, b) => a - b);
+    return l[Math.floor(0.9 * (l.length - 1))];
+  };
+  // (Avant : 8,8 cm à l'abduction de la hanche, 6,6 cm au soulevé de terre, 1,5 cm au curl.)
+  for (const [spec, u] of [['hanche poulie', 0.5], ['souleve de terre', 0.5], ['curl hal', 0.5]]) {
+    const q = quitte(spec, u);
+    assert.ok(q < 0.01, `${spec} (u=${u}) : le haut du grand dorsal quitte le thorax de ${(q * 100).toFixed(1)} cm (bras bas, il reste sur le dos)`);
+  }
+  for (const [spec, u] of [['traction', 0], ['tirage', 0]]) {
+    const q = quitte(spec, u);
+    assert.ok(q > 0.15, `${spec} (u=${u}) : le haut du grand dorsal ne suit le bras que de ${(q * 100).toFixed(1)} cm (bras levé, il suit son attache)`);
   }
 });
 
@@ -9133,7 +9170,7 @@ test('atlas 3D : sans WebGL 2, aucun accès ; avec, la fenêtre s\'ouvre, anime 
     await page.waitForFunction(() => document.querySelector('.atlas-fiche[data-ouverte]'), null, { timeout: 60000 });
     assert.equal(await page.evaluate(() => atlasMonte.etat().choisi), 'pectoral_sternal');
     const fiche = await page.evaluate(() => document.querySelector('.atlas-fiche[data-ouverte]').textContent.replace(/\s+/g, ' '));
-    assert.match(fiche, /Grand pectoral · faisceau sternal.*Pars sternocostalis.*Thorax.*Couche 1.*Pectoraux.*4 séries/);
+    assert.match(fiche, /Grand pectoral · faisceau sternal.*Pars sternocostalis.*Thorax.*Superficiel.*Pectoraux.*4 séries/);
     // Fermer libère le moteur 3D (plus de toile, plus de contexte graphique).
     await page.click('#atlas-modal .close-modal');
     assert.deepEqual(await page.evaluate(() => [atlasMonte, document.querySelectorAll('#atlas-scene canvas').length, document.getElementById('atlas-modal').classList.contains('show')]), [null, 0, false]);
@@ -9151,6 +9188,20 @@ test('atlas 3D : sans WebGL 2, aucun accès ; avec, la fenêtre s\'ouvre, anime 
       return r;
     });
     assert.deepEqual(peau, [1, 0, null, 0, 1]);
+    // Trois couches : la peau, les muscles superficiels (sans la peau), les muscles profonds (les superficiels retirés) ;
+    // le squelette seul à part. Chaque bouton dit la sienne.
+    const couches = await page.evaluate(async () => {
+      const pile = [...document.querySelectorAll('#atlas-scene .atlas-pile button')], r = { boutons: pile.map(b => b.textContent), etats: [] };
+      for (const b of [...pile, document.querySelector('#atlas-scene .atlas-couches .atlas-rond:not(.atlas-fantomes)')]) {
+        b.click(); await new Promise(f => requestAnimationFrame(f));
+        const s = atlasMonte.etat(); r.etats.push([s.niveau, s.couche, s.peau, pile.filter(x => x.getAttribute('aria-pressed') === 'true').map(x => x.textContent).join()]);
+      }
+      atlasMonte.niveau('peau'); r.retour = [atlasMonte.etat().niveau, atlasMonte.etat().peau];
+      return r;
+    });
+    assert.deepEqual(couches.boutons, ['Peau', 'Superficiels', 'Profonds']);
+    assert.deepEqual(couches.etats, [['peau', 1, 1, 'Peau'], ['superficiels', 1, 0, 'Superficiels'], ['profonds', 2, 0, 'Profonds'], ['squelette', 5, 0, '']]);
+    assert.deepEqual(couches.retour, ['peau', 1]);
     assert.ok(e.pose, 'le bassin est descendu : le corps est en plein squat');
     assert.ok(e.colores > 10);
     // Un autre exercice de la bibliothèque, d'une autre famille de mouvements : animé lui aussi, rien à signaler.

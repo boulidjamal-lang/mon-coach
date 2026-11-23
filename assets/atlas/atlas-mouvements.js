@@ -400,14 +400,23 @@
           // Où va le point d'insertion (emmené par l'os visé) ; vu de l'articulation d'origine, de combien il a tourné
           // autour de l'axe du tronc : l'attache prend l'orientation de l'origine, tournée d'autant (voir le moteur).
           const c = this.tete[b], w = pw[b].copy(c).sub(this.tete[vi.vers]).applyQuaternion(qw[vi.vers]).add(pw[vi.vers]);
-          const l = w.clone().sub(pw[vi.de]).applyQuaternion(qw[vi.de].clone().invert()).add(this.tete[vi.de]), xA = vi.axe[0], zA = vi.axe[1];
+          const l = w.clone().sub(pw[vi.de]).applyQuaternion(qw[vi.de].clone().invert()).add(this.tete[vi.de]);
+          // Bras bas, l'attache reste avec le tronc ; elle ne suit l'insertion qu'à mesure que le bras se lève
+          // (l'insertion monte de 1,5 à 6 cm dans le repère de l'origine ; voir le moteur).
+          const monte = l.y - c.y, suit = lisse((monte - 0.015) / 0.045);
+          // Où l'origine porterait l'insertion, puis, à mesure que le bras se lève, jusqu'où l'os visé l'emmène.
+          const wOs = w.clone(); pw[b].copy(c).sub(this.tete[vi.de]).applyQuaternion(qw[vi.de]).add(pw[vi.de]).lerp(wOs, suit);
+          this.evase[b] = 0; this.deport[b * 2] = 0; this.deport[b * 2 + 1] = 0;
+          // Le bout du tendon : l'orientation de l'origine bras bas, celle de l'os visé bras levé (il y est collé).
+          if (vi.tendon) { qw[b].copy(qw[vi.de]).slerp(qw[vi.vers], suit); continue; }
+          const xA = vi.axe[0], zA = vi.axe[1];
           let an = Math.atan2(l.x - xA, l.z - zA) - Math.atan2(c.x - xA, c.z - zA); if (an > Math.PI) an -= 2 * Math.PI; else if (an < -Math.PI) an += 2 * Math.PI;
-          qw[b].copy(qw[vi.de]).multiply(qAxe(AY, an));
+          qw[b].copy(qw[vi.de]).multiply(qAxe(AY, suit * an));
           // L'évasement : l'écart à l'axe que prend le muscle quand l'insertion monte (voir le moteur).
-          this.evase[b] = (vi.evase || 0) * Math.max(0, l.y - c.y);
+          this.evase[b] = suit * (vi.evase || 0) * Math.max(0, monte);
           // Le déport : de combien l'insertion s'est éloignée de l'axe (bras écarté), dans sa direction, à l'horizontale ;
           // seul le haut du muscle le suit (voir peauPosee).
-          const rI = Math.hypot(l.x - xA, l.z - zA), kD = rI > 1e-6 ? 1 - Math.hypot(c.x - xA, c.z - zA) / rI : 0;
+          const rI = Math.hypot(l.x - xA, l.z - zA), kD = rI > 1e-6 ? suit * (1 - Math.hypot(c.x - xA, c.z - zA) / rI) : 0;
           this.deport[b * 2] = (l.x - xA) * kD; this.deport[b * 2 + 1] = (l.z - zA) * kD;
           if (this.evase[b] > 1e-5 || Math.abs(this.deport[b * 2]) + Math.abs(this.deport[b * 2 + 1]) > 1e-5) this.aEvase = true;
           continue;
@@ -512,7 +521,7 @@
         // dentelé (voir le programme des sommets du moteur).
         if (this.aEvase) for (let k = 0; k < 4; k++) {
           const w = pe.W[v * 4 + k]; if (!w) continue;
-          const j = cote ? S[pe.J[v * 4 + k]].jumeau : pe.J[v * 4 + k]; if (!this.virtuel[j]) continue;
+          const j = cote ? S[pe.J[v * 4 + k]].jumeau : pe.J[v * 4 + k]; if (!this.virtuel[j] || this.virtuel[j].tendon) continue;
           const e = this.evase[j], a = this.virtuel[j].axe, ex = X - a[0], ez = Z - a[1], g = e * w * Math.min(1, 2 * (1 - w)) / Math.max(Math.hypot(ex, ez), 1e-4);
           const sd = w * lisse((this.tete[j].y - Y - 0.06) / 0.08) * (1 - lisse(ez / Math.max(Math.hypot(ex, ez), 1e-4) / 0.5)), vx = ex * g - this.deport[j * 2] * sd, vz = ez * g - this.deport[j * 2 + 1] * sd;
           // (vx, 0, vz) tourné par la rotation mélangée du sommet.
