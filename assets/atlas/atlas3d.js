@@ -634,7 +634,8 @@ void main() {
      un bit par sommet (son ombre change), ces ombres ; un bit par sommet (ses poids changent), ces poids (4 articulations,
      4 poids). Un test vérifie qu'il est exactement ce que le moteur calculerait. Rend vrai s'il a été appliqué. */
   // 2 : la cuisse ne suit plus le bassin loin de la hanche (voir reponderer) ; un bloc de la version 1 est ignoré.
-  const PREPARATION_VERSION = 2;
+  // 3 : le bout du tendon du grand dorsal suit son attache, plus l'humérus (voir reponderer).
+  const PREPARATION_VERSION = 3;
   function appliquerPreparation(sommets, pas, E, tampon) {
     const P = E.preparation;
     if (!P || P.version !== PREPARATION_VERSION || !(P.debut + P.octets <= tampon.byteLength) || !E.squelette || E.squelette.some(a => a.virtuel)) return false;
@@ -985,7 +986,11 @@ void main() {
       const g = SQ.length, d = g + 1, deD = SQ[at.de].jumeau, huD = SQ[jHu].jumeau;
       SQ.push({ nom: 'attache.' + at.cle + '.G', parent: at.de, centre: I, jumeau: d, virtuel: { de: at.de, vers: jHu, axe, evase } });
       SQ.push({ nom: 'attache.' + at.cle + '.D', parent: deD, centre: [-I[0], I[1], I[2]], jumeau: g, virtuel: { de: deD, vers: huD, axe: [-axe[0], axe[1]], evase } });
-      for (const ch of champs) attacheDe.set(ch.st, { j: g, de: at.de, m: ch.m, part: ch.part, tenu: ch.tenu });
+      // Le bout du tendon a la sienne : avec l'origine bras bas, collé à l'humérus bras levé (voir ecrireQuaternions).
+      const tg = SQ.length, td = tg + 1;
+      SQ.push({ nom: 'tendon.' + at.cle + '.G', parent: at.de, centre: I, jumeau: td, virtuel: { de: at.de, vers: jHu, tendon: true } });
+      SQ.push({ nom: 'tendon.' + at.cle + '.D', parent: deD, centre: [-I[0], I[1], I[2]], jumeau: tg, virtuel: { de: deD, vers: huD, tendon: true } });
+      for (const ch of champs) attacheDe.set(ch.st, { j: g, jt: tg, de: at.de, m: ch.m, part: ch.part, tenu: ch.tenu });
     }
     const aLisser = [];
     for (const st of S) {
@@ -1007,12 +1012,14 @@ void main() {
         if (att) {
           // Grand dorsal : la part qui suit le bras ne vient plus des poids du fichier (irréguliers d'un sommet à
           // l'autre : le muscle se plissait) mais de sa place le long de ses fibres (voir partsDe). Elle va à
-          // l'attache ; seul le bout du tendon (part presque entière) reste collé à l'humérus.
+          // l'attache ; le bout du tendon (part presque entière) à la sienne, qui le colle à l'humérus bras levé. Bras
+          // bas, l'une et l'autre restent avec le tronc, et le muscle avec elles : il ne passe plus du dos au bras en pont
+          // (voir ecrireQuaternions).
           const part = att.part[att.m.uid[v - st.sommets]], colle = part * lisse((part - 0.94) / 0.06);
           let wt = 0, wa = 0; for (let i = 0; i < n; i++) { wt += ws[i]; if (!estBras[js[i]]) wa += ws[i]; }
           for (let i = 0; i < n; i++) ws[i] = estBras[js[i]] ? 0 : (wa > 0 ? ws[i] / wa : 0) * wt * (1 - part);
           if (!(wa > 0)) n = plus(att.de, wt * (1 - part), n);
-          n = plus(jAt, wt * (part - colle), n); n = plus(jHu, wt * colle, n); change = true;
+          n = plus(jAt, wt * (part - colle), n); n = plus(att.jt, wt * colle, n); change = true;
         }
         if (tronc && jAt < 0) {
           // Le bras : borné d'après la distance à l'épaule ; ce qui est retiré revient aux autres os du sommet (au thorax s'il n'y en a pas).
@@ -1339,6 +1346,32 @@ void main() {
       }
       return R;
     }
+    // La rotation d'une matrice (3 × 4 par lignes, à partir de o) en quaternion [x, y, z, w], unitaire ; et l'inverse.
+    function quatDeMatrice(M, o) {
+      const m00 = M[o], m01 = M[o + 1], m02 = M[o + 2], m10 = M[o + 4], m11 = M[o + 5], m12 = M[o + 6], m20 = M[o + 8], m21 = M[o + 9], m22 = M[o + 10], tr = m00 + m11 + m22;
+      let x, y, z, w;
+      if (tr > 0) { const s = 0.5 / Math.sqrt(tr + 1); w = 0.25 / s; x = (m21 - m12) * s; y = (m02 - m20) * s; z = (m10 - m01) * s; }
+      else if (m00 > m11 && m00 > m22) { const s = 2 * Math.sqrt(1 + m00 - m11 - m22); w = (m21 - m12) / s; x = 0.25 * s; y = (m01 + m10) / s; z = (m02 + m20) / s; }
+      else if (m11 > m22) { const s = 2 * Math.sqrt(1 + m11 - m00 - m22); w = (m02 - m20) / s; x = (m01 + m10) / s; y = 0.25 * s; z = (m12 + m21) / s; }
+      else { const s = 2 * Math.sqrt(1 + m22 - m00 - m11); w = (m10 - m01) / s; x = (m02 + m20) / s; y = (m12 + m21) / s; z = 0.25 * s; }
+      const n = Math.hypot(x, y, z, w) || 1;
+      return [x / n, y / n, z / n, w / n];
+    }
+    function versMatrice(q, M, o) {
+      const [x, y, z, w] = q;
+      M[o] = 1 - 2 * (y * y + z * z); M[o + 1] = 2 * (x * y - z * w); M[o + 2] = 2 * (x * z + y * w);
+      M[o + 4] = 2 * (x * y + z * w); M[o + 5] = 1 - 2 * (x * x + z * z); M[o + 6] = 2 * (y * z - x * w);
+      M[o + 8] = 2 * (x * z - y * w); M[o + 9] = 2 * (y * z + x * w); M[o + 10] = 1 - 2 * (x * x + y * y);
+    }
+    // Entre deux rotations, par le plus court chemin (t = 0 : la première, 1 : la seconde).
+    function slerpQ(a, b, t) {
+      let d = a[0] * b[0] + a[1] * b[1] + a[2] * b[2] + a[3] * b[3], s = 1;
+      if (d < 0) { d = -d; s = -1; }
+      let k0 = 1 - t, k1 = t;
+      if (d < 0.9995) { const th = Math.acos(d), si = Math.sin(th); k0 = Math.sin((1 - t) * th) / si; k1 = Math.sin(t * th) / si; }
+      const r = [0, 1, 2, 3].map(i => k0 * a[i] + s * k1 * b[i]), n = Math.hypot(r[0], r[1], r[2], r[3]) || 1;
+      return r.map(v => v / n);
+    }
     /* Les quaternions duaux des articulations. Chaque rotation est prise du même côté que celle de son parent : le
        mélange passe ainsi par le chemin que l'articulation a vraiment suivi, sans saut quand un os dépasse le demi-tour
        par rapport à un os éloigné (le bras levé, vu du thorax). */
@@ -1349,24 +1382,37 @@ void main() {
         // Les attaches : l'orientation de l'articulation d'origine, déplacée comme le point d'insertion sur l'os visé.
         const m = matsQ; for (let k = 0; k < NJ * 12; k++) m[k] = mats[k];
         for (let i = NJ; i < NQ; i++) {
-          const a = SQ[i], A = a.virtuel.de * 12, B = a.virtuel.vers * 12, c = a.centre, o = i * 12, xA = a.virtuel.axe[0], zA = a.virtuel.axe[1];
+          const a = SQ[i], A = a.virtuel.de * 12, B = a.virtuel.vers * 12, c = a.centre, o = i * 12;
           // Où va le point d'insertion (emmené par l'os visé), dans le monde puis dans le repère de l'articulation d'origine.
           const w = [0, 0, 0], l = [0, 0, 0];
           for (let r = 0; r < 3; r++) w[r] = m[B + r * 4] * c[0] + m[B + r * 4 + 1] * c[1] + m[B + r * 4 + 2] * c[2] + m[B + r * 4 + 3];
           for (let r = 0; r < 3; r++) l[r] = m[A + r] * (w[0] - m[A + 3]) + m[A + 4 + r] * (w[1] - m[A + 7]) + m[A + 8 + r] * (w[2] - m[A + 11]);
+          // Bras bas — le long du corps, avancé ou reculé — le muscle reste sur le tronc : il ne suit son attache qu'à
+          // mesure que le bras se lève (l'insertion monte de 1,5 à 6 cm dans le repère de l'origine). Sans cela, bras
+          // avancé, le haut du grand dorsal partait avec l'insertion et passait du dos au bras en pont, la peau avec lui.
+          const monte = l[1] - c[1], t = Math.max(0, Math.min(1, (monte - 0.015) / 0.045)), suit = t * t * (3 - 2 * t);
+          // Où l'origine porterait c ; l'attache l'emmène de là jusqu'à w à mesure que le bras se lève.
+          const cA = [0, 0, 0]; for (let r = 0; r < 3; r++) cA[r] = m[A + r * 4] * c[0] + m[A + r * 4 + 1] * c[1] + m[A + r * 4 + 2] * c[2] + m[A + r * 4 + 3];
+          if (a.virtuel.tendon) {
+            // Le bout du tendon : l'origine bras bas, l'os visé bras levé (il y est alors collé), entre les deux en douceur.
+            versMatrice(slerpQ(quatDeMatrice(m, A), quatDeMatrice(m, B), suit), m, o);
+            for (let r = 0; r < 3; r++) m[o + r * 4 + 3] = cA[r] + suit * (w[r] - cA[r]) - (m[o + r * 4] * c[0] + m[o + r * 4 + 1] * c[1] + m[o + r * 4 + 2] * c[2]);
+            continue;
+          }
+          const xA = a.virtuel.axe[0], zA = a.virtuel.axe[1];
           // Autour de l'axe du glissement (vertical, par x = xA et z = zA) : de combien l'insertion a tourné.
-          const da = Math.atan2(l[0] - xA, l[2] - zA) - Math.atan2(c[0] - xA, c[2] - zA), an = da > Math.PI ? da - 2 * Math.PI : da < -Math.PI ? da + 2 * Math.PI : da, co = Math.cos(an), si = Math.sin(an);
+          const da = Math.atan2(l[0] - xA, l[2] - zA) - Math.atan2(c[0] - xA, c[2] - zA), an = suit * (da > Math.PI ? da - 2 * Math.PI : da < -Math.PI ? da + 2 * Math.PI : da), co = Math.cos(an), si = Math.sin(an);
           // L'évasement : l'écart à l'axe que prend le muscle quand l'insertion monte (voir reponderer et le programme des sommets).
-          evases[i] = (a.virtuel.evase || 0) * Math.max(0, l[1] - c[1]);
+          evases[i] = suit * (a.virtuel.evase || 0) * Math.max(0, monte);
           // Le déport : de combien l'insertion s'est éloignée de l'axe (bras écarté du corps), dans sa direction, à l'horizontale
           // (repère de l'origine) ; seul le haut du muscle le suit (voir le programme des sommets).
-          const rI = Math.hypot(l[0] - xA, l[2] - zA), kD = rI > 1e-6 ? 1 - Math.hypot(c[0] - xA, c[2] - zA) / rI : 0;
+          const rI = Math.hypot(l[0] - xA, l[2] - zA), kD = rI > 1e-6 ? suit * (1 - Math.hypot(c[0] - xA, c[2] - zA) / rI) : 0;
           deports[i * 2] = (l[0] - xA) * kD; deports[i * 2 + 1] = (l[2] - zA) * kD;
-          // La rotation de l'attache : celle de l'origine, puis ce tour autour de l'axe vertical ; elle emmène c sur w.
+          // La rotation de l'attache : celle de l'origine, puis ce tour autour de l'axe vertical.
           for (let r = 0; r < 3; r++) {
             const r0 = m[A + r * 4], r1 = m[A + r * 4 + 1], r2 = m[A + r * 4 + 2];
             m[o + r * 4] = r0 * co - r2 * si; m[o + r * 4 + 1] = r1; m[o + r * 4 + 2] = r0 * si + r2 * co;
-            m[o + r * 4 + 3] = w[r] - (m[o + r * 4] * c[0] + m[o + r * 4 + 1] * c[1] + m[o + r * 4 + 2] * c[2]);
+            m[o + r * 4 + 3] = cA[r] + suit * (w[r] - cA[r]) - (m[o + r * 4] * c[0] + m[o + r * 4 + 1] * c[1] + m[o + r * 4 + 2] * c[2]);
           }
         }
         mats = m;
@@ -2233,10 +2279,9 @@ void main() {
 .atlas-puce{flex:none;height:36px;padding:0 14px;border-radius:18px;color:var(--a-muet);font-size:13px;font-weight:600;letter-spacing:-.01em;white-space:nowrap;scroll-snap-align:center;transition:background .18s,color .18s}
 .atlas-puce[aria-pressed="true"]{background:var(--a-inv);color:var(--a-sur-inv);border-color:transparent;-webkit-backdrop-filter:none;backdrop-filter:none}
 .atlas-note{margin:8px 16px 0;font-size:12px;line-height:1.35;color:var(--a-muet);text-align:center;pointer-events:none;text-wrap:balance}
-.atlas-couches{position:absolute;right:10px;top:50%;transform:translateY(-50%);display:flex;flex-direction:column;align-items:center;gap:6px;transition:opacity .2s}
-.atlas-couches-titre{font-size:10px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--a-muet)}
-.atlas-pile{display:flex;flex-direction:column;border-radius:22px;padding:3px;gap:1px}
-.atlas-pile button{width:38px;height:38px;border:0;border-radius:19px;background:transparent;color:var(--a-muet);font-size:13px;font-weight:700;display:grid;place-items:center;transition:background .18s,color .18s}
+.atlas-couches{display:flex;align-items:center;gap:6px;max-width:100%}
+.atlas-pile{display:flex;border-radius:22px;padding:3px;gap:1px;min-width:0}
+.atlas-pile button{height:38px;padding:0 10px;border:0;border-radius:19px;background:transparent;color:var(--a-muet);font-size:13px;font-weight:600;letter-spacing:-.01em;white-space:nowrap;transition:background .18s,color .18s}
 .atlas-pile button[aria-pressed="true"]{background:var(--a-inv);color:var(--a-sur-inv)}
 .atlas-pile svg,.atlas-rond svg{width:17px;height:17px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
 .atlas-rond{width:44px;height:44px;border-radius:22px;display:grid;place-items:center;color:var(--a-muet);flex:none}
@@ -2304,7 +2349,6 @@ void main() {
     isoler: '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9" stroke-dasharray="3 3.2"/><circle cx="12" cy="12" r="3.5"/></svg>',
     masquer: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 3l18 18"/><path d="M10.6 5.1A10.6 10.6 0 0 1 12 5c6.5 0 10 7 10 7a17 17 0 0 1-3.1 3.9M6.6 6.6A16.6 16.6 0 0 0 2 12s3.5 7 10 7a10 10 0 0 0 4.3-1"/></svg>'
   };
-  const NOMS_COUCHES = ['', 'Surface', 'Intermédiaire', 'Profonde', 'Très profonde'];
   const echap = t => String(t == null ? '' : t).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   const sansAccent = t => String(t).normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
 
@@ -2328,18 +2372,21 @@ void main() {
     haut.appendChild(modes); haut.appendChild(note);
     if (o.modes.length < 2) modes.hidden = true;
 
-    /* ----- Côté : les couches de profondeur ----- */
+    /* ----- Bas : les couches ----- */
+    // Trois couches, de la surface vers la profondeur : la peau (le corps sous sa peau fine), les muscles superficiels
+    // (sans la peau), les muscles profonds (les superficiels retirés). Le squelette seul, à part. (Le modèle range ses
+    // muscles en quatre couches : les profonds sont les trois dernières ; choisir dans l'index un muscle très profond
+    // descend jusqu'à la sienne.)
+    const NIVEAUX = [['peau', 'Peau', 'La peau : le corps sous sa peau fine, qui laisse voir les muscles'], ['superficiels', 'Superficiels', 'Les muscles superficiels, sans la peau'], ['profonds', 'Profonds', 'Les muscles profonds : les muscles superficiels retirés']];
     const couches = el('div', 'atlas-couches');
-    couches.setAttribute('role', 'group'); couches.setAttribute('aria-label', 'Profondeur des muscles affichés');
+    couches.setAttribute('role', 'group'); couches.setAttribute('aria-label', 'Couches');
     const pile = el('div', 'atlas-pile atlas-verre');
-    for (let k = 1; k <= nbCouches + 1; k++) {
-      const b = el('button', '', k <= nbCouches ? String(k) : IC.os); b.type = 'button'; b.dataset.couche = k;
-      b.setAttribute('aria-label', k === 1 ? 'Tous les muscles, depuis la surface' : k <= nbCouches ? `Retirer les couches 1 à ${k - 1} : couche ${NOMS_COUCHES[k].toLowerCase()}` : 'Squelette seul');
-      pile.appendChild(b);
-    }
+    for (const [id, nom, aria] of NIVEAUX) { const b = el('button', '', nom); b.type = 'button'; b.dataset.niveau = id; b.setAttribute('aria-label', aria); pile.appendChild(b); }
+    const bOs = el('button', 'atlas-rond atlas-verre', IC.os); bOs.type = 'button';
+    bOs.setAttribute('aria-label', 'Le squelette seul');
     const bVoile = el('button', 'atlas-rond atlas-verre atlas-fantomes', IC.voile); bVoile.type = 'button';
     bVoile.setAttribute('aria-label', 'Garder en transparence les muscles retirés');
-    couches.appendChild(el('span', 'atlas-couches-titre', 'Couches')); couches.appendChild(pile); couches.appendChild(bVoile);
+    couches.appendChild(pile); couches.appendChild(bOs); couches.appendChild(bVoile);
 
     /* ----- Bas : légende, vues, index ----- */
     const bas = el('div', 'atlas-bas');
@@ -2353,7 +2400,7 @@ void main() {
     const bLecture = el('button', 'atlas-rond atlas-verre', IC.pause); bLecture.type = 'button'; bLecture.hidden = true; bLecture.setAttribute('aria-label', 'Mettre le mouvement en pause');
     barre.appendChild(bIndex); barre.appendChild(vues); barre.appendChild(bLecture); barre.appendChild(bRetour);
     const credit = el('p', 'atlas-credit', echap(o.credit || 'Modèle 3D : Z-Anatomy, BodyParts3D — CC BY-SA 4.0'));
-    bas.appendChild(retablir); bas.appendChild(legende); bas.appendChild(barre); bas.appendChild(credit);
+    bas.appendChild(retablir); bas.appendChild(legende); bas.appendChild(couches); bas.appendChild(barre); bas.appendChild(credit);
 
     /* ----- Fiche du muscle choisi ----- */
     const fiche = el('div', 'atlas-fiche'); fiche.setAttribute('role', 'region'); fiche.setAttribute('aria-label', 'Muscle choisi'); fiche.setAttribute('aria-live', 'polite');
@@ -2361,7 +2408,7 @@ void main() {
     const index = el('div', 'atlas-index'); index.setAttribute('role', 'dialog'); index.setAttribute('aria-label', 'Index des muscles');
     index.innerHTML = `<div class="atlas-index-tete"><input type="search" placeholder="Chercher un muscle" aria-label="Chercher un muscle" autocomplete="off" autocapitalize="off" spellcheck="false"><button type="button" class="atlas-fermer" aria-label="Fermer l'index">${IC.croix}</button></div><div class="atlas-index-liste"></div>`;
     const indice = el('div', 'atlas-indice atlas-verre', 'Touche un muscle · glisse pour tourner');
-    [haut, couches, bas, indice, fiche, index].forEach(n => racine.appendChild(n));
+    [haut, bas, indice, fiche, index].forEach(n => racine.appendChild(n));
 
     let mode = null, carte = {}, choisi = null, coteChoisi = null, isoleGroupe = false;   // coteChoisi : le côté touché ('gauche' ou 'droit'), s'il y en a un
     // Un exercice à montrer ({ exercice: identifiant }, ou { mouvement } pour un mouvement nommé) : dans le mode
@@ -2382,17 +2429,29 @@ void main() {
       bLecture.hidden = !anim;
       majLecture();
     }
-    const etat = () => ({ mode, choisi: choisi && choisi.id, couche: a.couche(), fantomes: a.fantomes(), isoles: a.isoles(), masques: a.masques(), peau: a.niveauPeau() });
     /* La peau : une seule apparence — le corps sous sa peau fine, qui laisse voir les muscles ; pleine sur la tête,
-       les mains et les pieds (o.niveauPeau: 0 pour l'écorché). Dès qu'on retire des couches, qu'on isole un muscle
-       ou qu'on en choisit un sous la peau pleine, elle s'efface : on regarde en profondeur. */
-    const NIVEAU_PEAU = o.niveauPeau === 0 ? 0 : 1;
+       les mains et les pieds (o.niveauPeau: 0 pour l'écorché). La couche « Superficiels » l'enlève ; dès qu'on retire
+       des muscles, qu'on en isole un ou qu'on en choisit un sous la peau pleine, elle s'efface aussi : on regarde en
+       profondeur. Sans peau (fichier absent, ou écorché demandé), pas de couche « Peau ». */
+    const NIVEAU_PEAU = o.niveauPeau === 0 ? 0 : 1, avecPeau = !!a.aPeau && NIVEAU_PEAU > 0;
     const SOUS_PEAU = new Set(['tete', 'main', 'pied']);   // régions dont les muscles sont cachés par la peau pleine
+    let sansPeau = !avecPeau;   // la couche « Superficiels » est choisie (ou il n'y a pas de peau)
+    pile.querySelector('[data-niveau="peau"]').hidden = !avecPeau;
+    const niveauActuel = () => (a.couche() > nbCouches ? 'squelette' : a.couche() > 1 ? 'profonds' : sansPeau ? 'superficiels' : 'peau');
     function majPeau() {
       if (!a.aPeau) return;
-      const enProfondeur = a.couche() > 1 || !!a.isoles() || (!!choisi && SOUS_PEAU.has(choisi.region));
+      const enProfondeur = sansPeau || a.couche() > 1 || !!a.isoles() || (!!choisi && SOUS_PEAU.has(choisi.region));
       a.niveauPeau(enProfondeur ? 0 : NIVEAU_PEAU);
     }
+    // 'peau', 'superficiels', 'profonds' ou 'squelette'.
+    function choisirNiveau(n) {
+      if (n === 'squelette') a.couche(nbCouches + 1);
+      else if (n === 'profonds') a.couche(2);
+      else { sansPeau = n !== 'peau' || !avecPeau; a.couche(1); }
+      majCouches();
+      if (choisi && choisi.couche < a.couche()) choisir(null);
+    }
+    const etat = () => ({ mode, choisi: choisi && choisi.id, niveau: niveauActuel(), couche: a.couche(), fantomes: a.fantomes(), isoles: a.isoles(), masques: a.masques(), peau: a.niveauPeau() });
     try { localStorage.removeItem('anqa-atlas-peau'); } catch (e) { /* l'ancien réglage du bouton « Peau » n'a plus d'objet */ }
 
     function majMarges(immediat) {
@@ -2400,8 +2459,9 @@ void main() {
       a.marges({ haut: haut.getBoundingClientRect().height + 4, bas: choisi ? hFiche : bas.getBoundingClientRect().height + 4 }, immediat);
     }
     function majCouches() {
-      const k = a.couche();
-      pile.querySelectorAll('button').forEach(b => b.setAttribute('aria-pressed', String(+b.dataset.couche === k)));
+      const n = niveauActuel();
+      pile.querySelectorAll('button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.niveau === n)));
+      bOs.setAttribute('aria-pressed', String(n === 'squelette'));
       bVoile.setAttribute('aria-pressed', String(a.fantomes()));
       const nM = a.masques().length, iso = a.isoles();
       retablir.hidden = !(nM || iso);
@@ -2434,7 +2494,7 @@ void main() {
       const sorte = s.type === 'muscle' ? '' : `<span>${s.type === 'aponevrose' ? 'Aponévrose' : 'Tendon'}</span>`;
       fiche.innerHTML = `<div class="atlas-fiche-tete"><div><h3>${echap(s.nom)}</h3><p class="atlas-latin"><i lang="la">${echap(s.latin || '')}</i>${s.anglais ? ` · <span lang="en">${echap(s.anglais)}</span>` : ''}</p></div>
         <button type="button" class="atlas-fermer" data-action="fermer" aria-label="Fermer la fiche">${IC.croix}</button></div>
-        <div class="atlas-defile"><div class="atlas-etiquettes"><span>${echap(a.regions[s.region] || s.region)}</span><span>Couche <b>${s.couche}</b> · ${NOMS_COUCHES[s.couche].toLowerCase()}</span>${sorte}</div>
+        <div class="atlas-defile"><div class="atlas-etiquettes"><span>${echap(a.regions[s.region] || s.region)}</span><span>${s.couche > 1 ? 'Profond' : 'Superficiel'}</span>${sorte}</div>
         <div class="atlas-donnees">${(o.fiche && o.fiche(s, mode)) || ''}</div>
         <div class="atlas-actions"><button type="button" data-action="centrer">${IC.centrer}Centrer</button>
         <button type="button" data-action="isoler" aria-pressed="${seul}">${IC.isoler}Isoler</button>
@@ -2472,14 +2532,11 @@ void main() {
     a.surImage = cam => { majVues(cam); if (o.surImage) o.surImage(cam); };
 
     modes.addEventListener('click', e => { const b = e.target.closest('button'); if (b) choisirMode(b.dataset.mode); });
-    pile.addEventListener('click', e => {
-      const b = e.target.closest('button'); if (!b) return;
-      a.couche(+b.dataset.couche); majCouches();
-      if (choisi && choisi.couche < a.couche()) choisir(null);
-    });
+    pile.addEventListener('click', e => { const b = e.target.closest('button'); if (b) choisirNiveau(b.dataset.niveau); });
+    bOs.addEventListener('click', () => choisirNiveau(niveauActuel() === 'squelette' ? (sansPeau ? 'superficiels' : 'peau') : 'squelette'));
     bVoile.addEventListener('click', () => { a.fantomes(!a.fantomes()); majCouches(); });
     vues.addEventListener('click', e => { const b = e.target.closest('button'); if (b) a.vue(b.dataset.vue); });
-    bRetour.addEventListener('click', () => { a.toutAfficher(); isoleGroupe = false; majCouches(); if (anim) anim.cadrer(); else a.reinitialiser(); });
+    bRetour.addEventListener('click', () => { a.toutAfficher(); sansPeau = !avecPeau; isoleGroupe = false; majCouches(); if (anim) anim.cadrer(); else a.reinitialiser(); });
     bLecture.addEventListener('click', () => { lecture = !lecture; majLecture(); });
     retablir.addEventListener('click', () => { const k = a.couche(); a.toutAfficher(); a.couche(k); isoleGroupe = false; majCouches(); if (choisi) dessinerFiche(); });
     fiche.addEventListener('click', e => {
@@ -2529,6 +2586,7 @@ void main() {
     return {
       atlas: a, racine, etat, choisirMode, choisir, montrer, ouvrirIndex,
       couche(k) { a.couche(k); majCouches(); if (choisi && choisi.couche < a.couche()) choisir(null); },
+      niveau(n) { if (n != null) choisirNiveau(n); return niveauActuel(); },
       fantomes(v) { a.fantomes(v); majCouches(); },
       niveauPeau: () => a.niveauPeau(),
       rafraichir: appliquerCarte,

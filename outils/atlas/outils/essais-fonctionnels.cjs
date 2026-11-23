@@ -90,18 +90,18 @@ const MVT = { squat: 'squat', developpeCouche: 'développé couché', curl: 'cur
   const xg = cg['pectoral_sternal|gauche'], xd = cg['pectoral_sternal|droit'];
   noter('le repérage distingue le côté gauche du côté droit', g > 30 && d > 30 && xg && xd && xg.x > xd.x, `${g} structures côté gauche, ${d} côté droit ; pectoral gauche du sujet à droite de l'écran (x = ${xg.x.toFixed(0)} contre ${xd.x.toFixed(0)})`);
 
-  // 10. Couches : la couche 2 retire les muscles de surface ; le repérage passe à travers les fantômes.
+  // 10. Couches : « Profonds » retire les muscles superficiels ; le repérage passe à travers les fantômes.
   const avantC = await carte(3);
-  await p.click('.atlas-pile [data-couche="2"]'); await repos();
+  await p.click('.atlas-pile [data-niveau="profonds"]'); await repos();
   const c2c = await carte(3), couchesVues = await ev(ids => ids.map(k => monte.atlas.structures[monte.atlas.indice(k.split('|')[0])].couche), Object.keys(c2c));
-  noter('couche 2 : seuls les muscles de couche 2 et plus se touchent (à travers les fantômes)', couchesVues.length > 20 && couchesVues.every(c => c >= 2), `${Object.keys(avantC).length} structures touchables en surface, ${couchesVues.length} en couche 2, couche minimale ${Math.min(...couchesVues)}`);
+  noter('« Profonds » : seuls les muscles profonds (couche 2 et plus) se touchent (à travers les fantômes)', couchesVues.length > 20 && couchesVues.every(c => c >= 2), `${Object.keys(avantC).length} structures touchables en surface, ${couchesVues.length} en couche 2, couche minimale ${Math.min(...couchesVues)}`);
   await p.click('.atlas-fantomes'); await repos();
   noter('le bouton de transparence retire les fantômes', (await ev(() => monte.atlas.fantomes())) === false && (await ev(() => monte.atlas.mesures().appelsDeDessin)) === 3, `fantômes ${(await ev(() => monte.atlas.fantomes())) ? 'encore là' : 'retirés'}, ${await ev(() => monte.atlas.mesures().appelsDeDessin)} appels de dessin (5 avec eux)`);
   await p.click('.atlas-fantomes');
-  await p.click(`.atlas-pile [data-couche="${await ev(() => monte.atlas.entete.couches + 1)}"]`); await repos();
+  await p.click('.atlas-couches .atlas-rond:not(.atlas-fantomes)'); await repos();
   const cOs = await carte(3);
-  noter('dernier cran : squelette seul', Object.keys(cOs).length === 0, `${Object.keys(cOs).length} muscle touchable`);
-  await p.click('.atlas-pile [data-couche="1"]'); await repos();
+  noter('le bouton du squelette : squelette seul', Object.keys(cOs).length === 0, `${Object.keys(cOs).length} muscle touchable`);
+  await p.click('.atlas-pile [data-niveau="peau"]'); await repos();
 
   // 11. Masquer puis réafficher ; isoler.
   pt = await pointDe('pectoral_sternal', 'gauche'); await toucher(pt.x, pt.y); await attendre(500);

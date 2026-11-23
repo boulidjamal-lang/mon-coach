@@ -162,6 +162,18 @@ lui, comme une peau qui s'y serait couchée (bras levés, il cachait le haut du 
   bord avant, posé sur le dentelé antérieur qui pivote avec l'omoplate, suit toujours (sinon le dentelé passait à
   travers). L'évasement et le déport du moment sont rangés dans un troisième texel de la pose ; l'axe et la hauteur de
   l'insertion, fixes, dans `u_attache`.
+  L'attache ne suit l'insertion qu'à mesure que le bras se lève : bras bas — le long du corps, avancé, reculé —
+  elle reste avec le thorax, et le muscle entier avec elle ; elle suit pleinement quand l'insertion est montée de
+  6 cm dans le repère du thorax (rien en dessous de 1,5 cm, en douceur entre les deux). Le bout du tendon a sa propre
+  articulation (`tendon.dorsal.G`, `.D`) : avec le thorax bras bas, collé à l'humérus bras levé (la rotation passe de
+  l'un à l'autre, et le point d'insertion de la place que lui donnerait le thorax à celle où l'humérus l'emmène).
+  Sans cela, bras avancé (abduction de la hanche à la poulie, barre tenue devant), le haut du grand dorsal partait
+  avec l'insertion et passait du dos au bras en pont, la peau avec lui : le haut du muscle quittait le thorax de
+  8,8 cm (0,3 cm désormais ; 6,6 → 0,1 cm au soulevé de terre). Mesuré : abduction de la hanche 2 cm de montée
+  (l'attache ne suit pas), curl et soulevé de terre 0, développé couché 6 à 7 cm, tractions et tirage vertical 14 à
+  24 cm (elle suit entièrement : rien ne change bras levé). Bras tiré en arrière (curl « drag », good morning), le
+  bout du tendon reste avec le thorax, à 2 à 3 cm de l'humérus, caché sous l'aisselle. `Corps.majMonde` fait le
+  même calcul pour les outils.
   La part de chaque sommet qui suit l'attache dépend de sa place le long de ses fibres (distances de proche en proche
   sur le muscle, dont les faisceaux séparés sont reliés à moins de 12 mm) : entière au bout du tendon, nulle à son
   origine le long de la colonne ; là où le trapèze le recouvre, il reste tenu (sinon il sortait à travers) ; (3) les
@@ -203,8 +215,14 @@ lui, comme une peau qui s'y serait couchée (bras levés, il cachait le haut du 
   reçoit la même transformation. Les outils de contrôle (`mouvements/silhouettes.mjs`) chargent le modèle par la même
   fonction : `CARRURE=0` pour s'en passer. Les fichiers `atlas.bin` et `atlas-peau.bin` ne sont pas modifiés.
 - **Une seule apparence.** L'appli montre toujours le corps sous sa peau fine : le film sur le corps, la peau
-  d'origine sur la tête, les mains et les pieds (`niveauPeau: 1` ; pas de bouton « Peau »). `niveauPeau: 0` montre
-  l'écorché, pour les contrôles. L'ancienne peau entière, épaisse, avec ses fenêtres au pochoir, n'existe plus.
+  d'origine sur la tête, les mains et les pieds (`niveauPeau: 1`). `niveauPeau: 0` montre l'écorché, pour les
+  contrôles. L'ancienne peau entière, épaisse, avec ses fenêtres au pochoir, n'existe plus.
+- **Trois couches.** Dans l'atlas, en bas, au-dessus des vues : « Peau » (le corps sous sa peau fine, au départ),
+  « Superficiels » (les muscles, sans la peau), « Profonds » (les muscles superficiels retirés — la couche 1 du
+  modèle ; en fantômes si la transparence est gardée), puis le squelette seul et la transparence, en boutons ronds.
+  Le modèle range ses muscles en quatre couches : les profonds sont les trois dernières ; choisir dans l'index un
+  muscle très profond descend jusqu'à la sienne. La fiche d'un muscle dit « Superficiel » ou « Profond ».
+  `monter(…).niveau('peau' | 'superficiels' | 'profonds' | 'squelette')` les choisit, `etat().niveau` les lit.
 - **La teinte de la peau.** Sur une carte comme pendant un exercice, le corps est gris et les muscles en couleur : la
   peau gardée prend la teinte du corps (un gris entre celui des muscles au repos et celui des tendons, voir
   `avecPeauAtlas` dans `index.html`), cheveux et sourcils dans la même teinte, plus sombre. La carte la donne au moteur
