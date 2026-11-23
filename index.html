@@ -4326,6 +4326,8 @@ function computeTargets(day, dateStr, options) {
    qui s'est vraiment passé les 28 jours d'avant :
      maintenance réelle = ce que tu as mangé en moyenne
                           − pente de ton poids (kg/jour) × 7 700 kcal
+   (ou le gras et la masse maigre chacun à sa valeur quand la balance
+   mesure la masse grasse assez souvent : partGrasMaigre)
    L'écart avec la formule, sur les mêmes jours, devient la correction de la
    semaine. Garde-fous :
    - seulement les jours vraiment notés (au moins la moitié de la dépense
@@ -4377,12 +4379,14 @@ function correctionMaintenance(dateStr) {
   };
   let res = null;
   for (; w <= lundi; w = shiftDate(w, 7)) {
-    const notes = [], pesees = [];
+    const notes = [], pesees = [], gras = [];
     for (let i = AJUST_FENETRE; i >= 1; i--) {
       const d = shiftDate(w, -i), x = infosJour(d);
       if (!x) continue;
       if (x.formule && x.kcal >= x.formule * 0.5) notes.push(x);
       if (x.poids) pesees.push([AJUST_FENETRE - i, x.poids]);
+      const m = (userProfile.mesures || {})[d];
+      if (m && Number(m.grassePct) > 0) gras.push([AJUST_FENETRE - i, Number(m.poids) > 0 ? Number(m.poids) : x.poids, Number(m.grassePct)]);
     }
     const etendue = pesees.length ? pesees[pesees.length - 1][0] - pesees[0][0] : 0;
     let kcal, info = { jours: notes.length, pesees: pesees.length };
@@ -4392,11 +4396,12 @@ function correctionMaintenance(dateStr) {
       const pente = pesees.reduce((a, p) => a + (p[0] - mx) * (p[1] - my), 0) / pesees.reduce((a, p) => a + (p[0] - mx) ** 2, 0);
       const conso = notes.reduce((a, x) => a + x.kcal, 0) / notes.length;
       const formule = notes.reduce((a, x) => a + x.formule, 0) / notes.length;
-      const reelle = conso - pente * KCAL_PAR_KG;
+      const compo = partGrasMaigre(pente, gras, AJUST_FENETRE);
+      const reelle = conso - (compo.kcalJour != null ? compo.kcalJour : pente * KCAL_PAR_KG);
       const confiance = Math.min(1, notes.length / AJUST_FENETRE);
       const cible = Math.max(-AJUST_PLAFOND * formule, Math.min(AJUST_PLAFOND * formule, (reelle - formule) * confiance));
       kcal = Math.max(prec - AJUST_PAS_SEMAINE, Math.min(prec + AJUST_PAS_SEMAINE, cible));
-      info = Object.assign(info, { reelle: Math.round(reelle), conso: Math.round(conso), formule: Math.round(formule), pente, confiance });
+      info = Object.assign(info, { reelle: Math.round(reelle), conso: Math.round(conso), formule: Math.round(formule), pente, confiance, gras: compo.kcalJour != null });
       ref = formule;
     } else {
       // Pas assez de données : on revient vers 0, au même pas.
@@ -10313,6 +10318,49 @@ function rythmeTendance(tendance) {
    Tout ce que les courbes ne disent pas d'un coup d'oeil.
    ===================================================================== */
 const KCAL_PAR_KG = 7700; // équivalent énergétique approximatif d'1 kg de masse
+
+/* Gras ou muscle ? Un kilo de gras vaut environ 9 440 kcal, un kilo de
+   masse maigre (muscle, eau, glycogène) 1 816 (Hall, 2008) : les 7 700 kcal
+   par kilo supposent une perte faite surtout de gras. Quand la balance
+   mesure la masse grasse (Withings, Apple Santé) assez souvent sur la
+   période, on suit sa tendance (moindres carrés : une mesure isolée ne la
+   fausse pas) et on compte le gras et la masse maigre chacun à sa valeur.
+   Sinon on garde 7 700 : trop peu de mesures, des mesures qui varient trop
+   d'un jour à l'autre (l'impédance bouge avec l'eau du corps), ou un
+   résultat impossible (plus d'un demi-kilo de masse maigre ou d'un kilo et
+   demi de gras par semaine : ce n'est plus le corps, c'est la mesure). */
+const KCAL_KG_GRAS = 9440, KCAL_KG_MAIGRE = 1816;
+const COMPO_MESURES_MIN = 8, COMPO_ETENDUE_MIN = 21, COMPO_INCERTITUDE_MAX = 150;
+/* pentePoids : tendance du poids (kg par jour) ; points : [[jour, poids, % de
+   gras]] ; fenetre : jours de la période. → { kcalJour (stockés par jour,
+   négatif : puisés), penteGras, penteMaigre, mesures } ou { raison: 'peu' |
+   'courte' | 'bruit' | 'incoherent', mesures }. */
+function partGrasMaigre(pentePoids, points, fenetre) {
+  const pts = points.filter(p => p[1] > 0 && p[2] > 2 && p[2] < 70).map(p => [p[0], p[1] * p[2] / 100]).sort((a, b) => a[0] - b[0]);
+  const n = pts.length;
+  if (n < COMPO_MESURES_MIN) return { raison: 'peu', mesures: n };
+  if (pts[n - 1][0] - pts[0][0] < Math.max(COMPO_ETENDUE_MIN, fenetre / 2)) return { raison: 'courte', mesures: n };
+  const mx = pts.reduce((a, p) => a + p[0], 0) / n, my = pts.reduce((a, p) => a + p[1], 0) / n;
+  const sxx = pts.reduce((a, p) => a + (p[0] - mx) ** 2, 0);
+  const penteGras = pts.reduce((a, p) => a + (p[0] - mx) * (p[1] - my), 0) / sxx;
+  const residus = pts.reduce((a, p) => a + (p[1] - my - penteGras * (p[0] - mx)) ** 2, 0);
+  // L'incertitude sur la pente du gras, en kcal par jour.
+  if ((KCAL_KG_GRAS - KCAL_KG_MAIGRE) * Math.sqrt(residus / (n - 2) / sxx) > COMPO_INCERTITUDE_MAX) return { raison: 'bruit', mesures: n };
+  const penteMaigre = pentePoids - penteGras;
+  if (Math.abs(penteMaigre) * 7 > 0.5 || Math.abs(penteGras) * 7 > 1.5) return { raison: 'incoherent', mesures: n };
+  return { kcalJour: penteGras * KCAL_KG_GRAS + penteMaigre * KCAL_KG_MAIGRE, penteGras, penteMaigre, mesures: n };
+}
+/* Les mesures de masse grasse entre deux jours du graphique de Progrès. */
+function pointsGrasStats(i0, i1) {
+  const mesures = userProfile.mesures || {}, pts = [];
+  for (let i = i0; i <= i1; i++) {
+    const m = mesures[dateIsoPourIndexStats(i)];
+    if (!m || !(Number(m.grassePct) > 0)) continue;
+    const p = Number(m.poids) > 0 ? Number(m.poids) : globalMasterWeight[i];
+    if (p > 0) pts.push([i, p, Number(m.grassePct)]);
+  }
+  return pts;
+}
 
 /* Journée comptée dans les moyennes : des repas notés, et terminée.
    Aujourd'hui, encore en cours, tirait les moyennes vers le bas (un
@@ -17085,7 +17133,58 @@ async function rafraichirEtatWithings() {
   const r = await appelWithings('etat');
   if (!r.erreur) etatWithings = { connecte: !!r.connecte, autorise: r.autorise === true, connu: true };
   majUIWithings();
+  synchroniserWithings();
 }
+
+/* Les pesées de la balance arrivent seules : à la connexion du compte et au
+   retour dans l'appli (au plus toutes les 30 minutes), celles des 90 derniers
+   jours complètent les jours qui n'en ont pas — poids, % de masse grasse,
+   muscle, os, eau. Ce qui est déjà noté ne change jamais. C'est ce qui
+   permet à la maintenance réelle de séparer le gras du muscle. Un serveur
+   qui ne connaît pas encore « depuis » renvoie ses 10 dernières pesées :
+   l'historique se complète alors au fil des ouvertures. */
+const WITHINGS_SYNC_MS = 30 * 60000, WITHINGS_SYNC_JOURS = 90;
+let derniereSyncWithings = 0;
+async function synchroniserWithings(forcer) {
+  if (!etatWithings.connecte || !sessionUtilisateur) return 0;
+  if (!forcer && Date.now() - derniereSyncWithings < WITHINGS_SYNC_MS) return 0;
+  derniereSyncWithings = Date.now();
+  const data = await appelWithings('mesures', { depuis: Math.floor(Date.now() / 1000) - WITHINGS_SYNC_JOURS * 86400 });
+  if (!data || data.erreur || data.status !== 0 || !data.body || !Array.isArray(data.body.measuregrps)) return 0;
+  return rangerPeseesWithings(data.body.measuregrps);
+}
+/* Une pesée par jour, la plus récente, comme pour Apple Santé. Renvoie le nombre de jours complétés. */
+function rangerPeseesWithings(groupes) {
+  const parJour = new Map();
+  groupes.slice().sort((a, b) => (Number(b.date) || 0) - (Number(a.date) || 0)).forEach(g => {
+    const d = dateEnChaine(new Date(Number(g.date) * 1000));
+    if (!parJour.has(d)) parJour.set(d, g);
+  });
+  if (!userProfile.mesures) userProfile.mesures = {};
+  const jours = new Set(), completes = new Set();
+  parJour.forEach((g, d) => {
+    const val = type => { const m = (g.measures || []).find(x => x.type === type); return m ? valeurMesureWithings(m) : null; };
+    const m = Object.assign({}, userProfile.mesures[d]);
+    let change = false;
+    const kg = Math.round(val(WITHINGS_MEASTYPES.poids) * 10) / 10;
+    if (kg > 20 && kg < 400) {
+      const jour = appData[d];
+      if (!(jour && Number(jour.weight) > 0)) { getDay(d).weight = kg; jours.add(d); if (m.poids == null) { m.poids = kg; change = true; } }
+    }
+    [['grassePct', 2, 70], ['muscleKg', 5, 200], ['osKg', 0.3, 15], ['eauPct', 20, 90]].forEach(([cle, min, max]) => {
+      const v = Math.round(val(WITHINGS_MEASTYPES[cle]) * 10) / 10;
+      if (v > min && v < max && m[cle] == null) { m[cle] = v; change = true; }
+    });
+    if (change) { userProfile.mesures[d] = m; completes.add(d); }
+    if (jours.has(d)) completes.add(d);
+  });
+  if (!completes.size) return 0;
+  jours.forEach(d => saveData(d));
+  saveData();
+  afficherResumeMesures(); buildMasterArrays(); renderApp();
+  return completes.size;
+}
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') synchroniserWithings(); });
 
 /* Sur le web, la balance se montre toujours (Pro se propose au besoin). Dans
    l'app iPhone, où Pro n'est ni vendu ni mentionné, seulement quand elle sert
@@ -17136,6 +17235,9 @@ async function deconnexionWithings() {
    à ce téléphone (localStorage) : les données, elles, se synchronisent.
    ===================================================================== */
 const SANTE_LS = 'mc_sante_apple';
+// Santé reliée avant que l'appli lise la masse grasse : l'accès est demandé une fois de plus.
+const SANTE_GRAS_LS = 'mc_sante_gras';
+const SANTE_LECTURE = ['steps', 'weight', 'bodyFat'];
 let derniereLectureSante = 0;
 function santeActive() {
   try { return !!NATIF && localStorage.getItem(SANTE_LS) === '1'; } catch (e) { return false; }
@@ -17150,8 +17252,8 @@ async function activerSante() {
   if (!NATIF) return;
   const dispo = await appelNatif('Health', 'isAvailable');
   if (!dispo || !dispo.available) { informer("Apple Santé n'est pas disponible sur cet appareil."); return; }
-  await appelNatif('Health', 'requestAuthorization', { read: ['steps', 'weight'] });
-  try { localStorage.setItem(SANTE_LS, '1'); } catch (e) {}
+  await appelNatif('Health', 'requestAuthorization', { read: SANTE_LECTURE });
+  try { localStorage.setItem(SANTE_LS, '1'); localStorage.setItem(SANTE_GRAS_LS, '1'); } catch (e) {}
   majUISante();
   const n = await lireSante(true);
   informer(n ? `Apple Santé est connecté : ${n} journée${n > 1 ? 's' : ''} complétée${n > 1 ? 's' : ''}.`
@@ -17161,10 +17263,17 @@ function desactiverSante() {
   try { localStorage.removeItem(SANTE_LS); } catch (e) {}
   majUISante();
 }
-// 7 derniers jours de pas, pesées des 30 derniers jours. Renvoie le nombre de journées complétées.
+// 7 derniers jours de pas, pesées et % de masse grasse des 90 derniers jours
+// (la maintenance réelle sépare le gras du muscle). Renvoie le nombre de journées complétées.
 async function lireSante(forcer) {
   if (!santeActive() || (!forcer && Date.now() - derniereLectureSante < 60000)) return 0;
   derniereLectureSante = Date.now();
+  let grasDemande = false;
+  try { grasDemande = localStorage.getItem(SANTE_GRAS_LS) === '1'; } catch (e) {}
+  if (!grasDemande) {
+    await appelNatif('Health', 'requestAuthorization', { read: SANTE_LECTURE });
+    try { localStorage.setItem(SANTE_GRAS_LS, '1'); } catch (e) {}
+  }
   const maintenant = new Date();
   const debutJour = k => new Date(maintenant.getFullYear(), maintenant.getMonth(), maintenant.getDate() - k).toISOString();
   const pasModifies = new Set(), poidsModifies = new Set();
@@ -17174,7 +17283,7 @@ async function lireSante(forcer) {
     const jour = getDay(d);
     if (n > (Number(jour.steps) || 0)) { jour.steps = n; pasModifies.add(d); }
   });
-  const poids = await appelNatif('Health', 'readSamples', { dataType: 'weight', startDate: debutJour(30), endDate: maintenant.toISOString(), limit: 200, ascending: false });
+  const poids = await appelNatif('Health', 'readSamples', { dataType: 'weight', startDate: debutJour(90), endDate: maintenant.toISOString(), limit: 500, ascending: false });
   const vus = new Set();
   ((poids && poids.samples) || []).forEach(e => {
     const d = dateEnChaine(new Date(e.startDate)), kg = Math.round(Number(e.value) * 10) / 10;
@@ -17187,10 +17296,25 @@ async function lireSante(forcer) {
     userProfile.mesures[d] = Object.assign({}, userProfile.mesures[d], { poids: kg });
     poidsModifies.add(d);
   });
-  const tous = new Set([...pasModifies, ...poidsModifies]);
+  // % de masse grasse (HealthKit le donne de 0 à 1) : seulement les jours qui n'en ont pas.
+  const grasModifies = new Set(), vusGras = new Set();
+  const gras = await appelNatif('Health', 'readSamples', { dataType: 'bodyFat', startDate: debutJour(90), endDate: maintenant.toISOString(), limit: 500, ascending: false });
+  ((gras && gras.samples) || []).forEach(e => {
+    const d = dateEnChaine(new Date(e.startDate));
+    let v = Number(e.value);
+    if (v > 0 && v <= 1) v *= 100;
+    v = Math.round(v * 10) / 10;
+    if (vusGras.has(d) || !(v > 2 && v < 70)) return;
+    vusGras.add(d);
+    if (!userProfile.mesures) userProfile.mesures = {};
+    if (userProfile.mesures[d] && userProfile.mesures[d].grassePct != null) return;
+    userProfile.mesures[d] = Object.assign({}, userProfile.mesures[d], { grassePct: v });
+    grasModifies.add(d);
+  });
+  const tous = new Set([...pasModifies, ...poidsModifies, ...grasModifies]);
   if (!tous.size) return 0;
-  tous.forEach(d => saveData(d));
-  if (poidsModifies.size) { saveData(); afficherResumeMesures(); buildMasterArrays(); renderApp(); }
+  new Set([...pasModifies, ...poidsModifies]).forEach(d => saveData(d));
+  if (poidsModifies.size || grasModifies.size) { saveData(); afficherResumeMesures(); buildMasterArrays(); renderApp(); }
   else if (pasModifies.has(currentDate)) {
     const champ = document.getElementById('daily-steps');
     if (champ) champ.value = getDay(currentDate).steps;
@@ -17373,6 +17497,7 @@ async function terminerConnexionWithings(params) {
   etatWithings = Object.assign({}, etatWithings, { connecte: true, connu: true });
   majUIWithings();
   informer('Balance Withings connectée !');
+  synchroniserWithings(true);
 }
 
 /* Convertit une mesure Withings brute ({value, unit}) en nombre décimal :
@@ -27635,7 +27760,9 @@ function lundisPeriode(debut, fin, max) {
   return l;
 }
 /* Maintenance réelle : ce que tu manges en moyenne, corrigé de ce que ta
-   tendance de poids a fait pendant ce temps (1 kg ≈ KCAL_PAR_KG kcal). */
+   tendance de poids a fait pendant ce temps (1 kg ≈ KCAL_PAR_KG kcal, ou le
+   gras et la masse maigre chacun à sa valeur quand la balance mesure la
+   masse grasse : partGrasMaigre). */
 const MAINTENANCE_JOURS_MIN = 14, MAINTENANCE_REPAS_MIN = 10, MAINTENANCE_PESEES_MIN = 4;
 function maintenanceReelle(s, e) {
   const lisse = moyenneGlissante(globalMasterWeight, 7);
@@ -27651,8 +27778,9 @@ function maintenanceReelle(s, e) {
   }
   const moyConso = remplis.reduce((t, i) => t + globalMasterConsumed[i], 0) / remplis.length;
   const delta = lisse[i1] - lisse[i0];
-  const kcal = moyConso - delta * KCAL_PAR_KG / span;
-  return Object.assign(base, { kcal: Math.round(kcal / 10) * 10, moyConso: Math.round(moyConso), delta, debut: i0, fin: i1 });
+  const compo = partGrasMaigre(delta / span, pointsGrasStats(i0, i1), span);
+  const kcal = moyConso - (compo.kcalJour != null ? compo.kcalJour : delta * KCAL_PAR_KG / span);
+  return Object.assign(base, { kcal: Math.round(kcal / 10) * 10, moyConso: Math.round(moyConso), delta, debut: i0, fin: i1, compo });
 }
 /* Toucher la carte « Ta maintenance réelle » l'explique, avec les chiffres
    de la période : ce qu'elle veut dire, le calcul pas à pas (ce que tu as
@@ -27679,11 +27807,26 @@ function htmlMaintenanceCalculee(mt, b) {
   const bouge = Math.abs(mt.delta) >= 0.05, kg = nombreFr(Math.abs(mt.delta), 1), kcalKg = nombreFr(KCAL_PAR_KG, 0);
   const tendance = !bouge ? `ton poids n'a presque pas bougé en ${mt.jours} jours`
     : `ta tendance a ${mt.delta < 0 ? 'baissé' : 'monté'} de ${kg} kg en ${mt.jours} jours (1 kg ≈ ${kcalKg} kcal)`;
-  const lignes = [
-    ['Mangé', `en moyenne, sur ${mt.joursNotes} jours notés en entier`, nombreFr(mt.moyConso, 0) + ' kcal'],
-    ecart >= 0 ? ['Puisé dans tes réserves', tendance, '+ ' + nombreFr(ecart, 0) + ' kcal']
-      : ['Mis en réserve', tendance, '− ' + nombreFr(-ecart, 0) + ' kcal']
-  ];
+  const signe = v => (v >= 0 ? '+ ' : '− ') + nombreFr(Math.abs(v), 0) + ' kcal';
+  const lignes = [['Mangé', `en moyenne, sur ${mt.joursNotes} jours notés en entier`, nombreFr(mt.moyConso, 0) + ' kcal']];
+  const c = mt.compo || {};
+  let noteGras = '';
+  if (c.kcalJour != null) {
+    // Le gras et la masse maigre, chacun à sa valeur ; arrondis pour que les lignes s'additionnent.
+    const dGras = c.penteGras * mt.jours, dMaigre = c.penteMaigre * mt.jours;
+    const gras = Math.round(-c.penteGras * KCAL_KG_GRAS), maigre = ecart - gras;
+    const bougeKg = (v, quoi) => Math.abs(v) < 0.05 ? `${quoi} n'a presque pas bougé` : `${quoi} a ${v < 0 ? 'baissé' : 'monté'} de ${nombreFr(Math.abs(v), 1)} kg`;
+    lignes.push([gras >= 0 ? 'Gras puisé' : 'Gras mis en réserve', `${bougeKg(dGras, 'ta masse grasse')} en ${mt.jours} jours (1 kg de gras ≈ ${nombreFr(KCAL_KG_GRAS, 0)} kcal)`, signe(gras)]);
+    lignes.push([maigre >= 0 ? 'Masse maigre perdue' : 'Masse maigre prise', `${bougeKg(dMaigre, 'ta masse maigre (muscle, eau, glycogène)')} (1 kg ≈ ${nombreFr(KCAL_KG_MAIGRE, 0)} kcal)`, signe(maigre)]);
+    noteGras = `<p class="mx-note">Calculé avec ta masse grasse : ${accord(c.mesures, 'mesure', 'mesures')} de ta balance sur la période. Un kilo de gras vaut cinq fois plus qu'un kilo de muscle : perdre du muscle plutôt que du gras ne fait pas la même maintenance.</p>`;
+  } else {
+    lignes.push(ecart >= 0 ? ['Puisé dans tes réserves', tendance, signe(ecart)] : ['Mis en réserve', tendance, signe(ecart)]);
+    const pourquoi = { peu: `${accord(c.mesures, 'mesure', 'mesures')} sur la période, il en faut ${COMPO_MESURES_MIN} étalées sur ${COMPO_ETENDUE_MIN} jours`,
+      courte: `tes mesures couvrent moins de ${COMPO_ETENDUE_MIN} jours de la période`,
+      bruit: "tes mesures varient trop d'un jour à l'autre sur cette période (l'impédance bouge avec l'eau du corps)",
+      incoherent: "tes mesures donnent un résultat impossible sur cette période (trop de muscle pris ou perdu en si peu de temps)" }[c.raison];
+    if (c.mesures > 0 && pourquoi) noteGras = `<p class="mx-note">Ta masse grasse n'est pas prise en compte : ${escapeHtml(pourquoi)}. Le calcul garde 1 kg ≈ ${kcalKg} kcal.</p>`;
+  }
   const zone = pct < 75 ? 0 : pct < 95 ? 1 : pct <= 105 ? 2 : 3;
   // Le repère sur l'échelle : 4 zones de même largeur, de 50 % à 130 %.
   const bornes = [50, 75, 95, 105, 130], p = Math.max(50, Math.min(130, pct));
@@ -27701,9 +27844,9 @@ function htmlMaintenanceCalculee(mt, b) {
   const balance = r == null || zone === 2 ? '' : ` Sur ta balance, ça donne ${fmtSigne(r, '\u00a0kg par semaine', 1)}.`;
   const du = dateCourtePg(dateIsoPourIndexStats(mt.debut)), au = dateCourtePg(dateIsoPourIndexStats(mt.fin));
   return `<div class="mx-tete"><b>${nombreFr(mt.kcal, 0)} kcal</b><p>C'est ce que tu peux manger chaque jour sans prendre ni perdre de poids. Elle vient de ce qui s'est vraiment passé, tes repas notés et ta balance, pas d'une formule d'âge et de taille qui se trompe souvent de 10 %.</p></div>
-<section><h4>Le calcul, du ${escapeHtml(du)} au ${escapeHtml(au)}</h4><ul class="mx-calcul">${lignes.map(l => `<li><span>${l[0]}</span><small>${escapeHtml(l[1])}</small><b>${l[2]}</b></li>`).join('')}<li class="mx-total"><span>Ta maintenance</span><small>ce que ton corps a dépensé chaque jour</small><b>${nombreFr(mt.kcal, 0)} kcal</b></li></ul></section>
+<section><h4>Le calcul, du ${escapeHtml(du)} au ${escapeHtml(au)}</h4><ul class="mx-calcul">${lignes.map(l => `<li><span>${l[0]}</span><small>${escapeHtml(l[1])}</small><b>${l[2]}</b></li>`).join('')}<li class="mx-total"><span>Ta maintenance</span><small>ce que ton corps a dépensé chaque jour</small><b>${nombreFr(mt.kcal, 0)} kcal</b></li></ul>${noteGras}</section>
 <section><h4>Tu en manges ${pct} %</h4><div class="mx-echelle" role="img" aria-label="Tu manges ${pct} % de ta maintenance : zone ${MAINT_ZONES[zone][0].toLowerCase()}, ${MAINT_ZONES[zone][1]}"><span class="mx-repere" style="left:${x.toFixed(1)}%">${pct} %</span><div class="mx-barre">${MAINT_ZONES.map((z, i) => `<i${i === zone ? ' class="ici"' : ''}></i>`).join('')}</div><div class="mx-zones">${MAINT_ZONES.map((z, i) => `<span${i === zone ? ' class="ici"' : ''}>${z[0]}<small>${z[1]}</small></span>`).join('')}</div></div><p>${escapeHtml(verdict + balance)}</p></section>
-${conseilsMaintenanceHTML()}`;
+${conseilsMaintenanceHTML(c.kcalJour != null)}`;
 }
 function htmlMaintenanceAVenir(mt, n) {
   const etapes = [
@@ -27716,9 +27859,10 @@ function htmlMaintenanceAVenir(mt, n) {
 <section><h4>Ce qu'il faut pour la calculer</h4><ul class="mx-calcul mx-etapes">${etapes.map(([t, v, ok]) => `<li${ok ? ' class="fait"' : ''}><span>${t}</span><b>${ok ? '✓ ' : ''}${v}</b></li>`).join('')}</ul>${courte}</section>
 ${conseilsMaintenanceHTML()}`;
 }
-function conseilsMaintenanceHTML() {
+function conseilsMaintenanceHTML(avecGras) {
   return `<section><h4>Pour un chiffre juste</h4><ul class="mx-conseils">
-<li>Pèse-toi le matin, à jeun, au moins deux fois par semaine : la tendance gomme les écarts d'un jour à l'autre.</li>
+<li>Pèse-toi le matin, à jeun, au moins deux fois par semaine : la tendance gomme les écarts d'un jour à l'autre.</li>${avecGras ? '' : `
+<li>Si ta balance mesure la masse grasse (Withings, Apple Santé), pèse-toi dessus presque chaque jour : au bout de ${COMPO_ETENDUE_MIN} jours, le calcul sépare le gras du muscle, et ta maintenance reste juste même si tu perds du muscle.</li>`}
 <li>Note tout ce que tu manges, grignotages et boissons compris : un oubli fait croire que tu manges moins, et ta maintenance paraît plus basse qu'en vrai. Les jours notés à moins de 60 % de ton objectif sont laissés de côté.</li>
 <li>Au début d'une perte, une partie des kilos est de l'eau : ta maintenance paraît alors plus haute. Elle devient plus juste au fil des semaines.</li>
 </ul></section>`;
@@ -27900,7 +28044,7 @@ function renderResumeProgres() {
   const mt = maintenanceReelle(s, e);
   const lienMaint = quoi => ` role="button" tabindex="0" onclick="ouvrirExplicationMaintenance()" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();this.click()}" aria-label="Ta maintenance réelle : ${escapeHtml(quoi)}. Voir l'explication"><span class="pg-chev" aria-hidden="true">›</span>`;
   const maint = mt.kcal
-    ? `<div class="pg-carte pg-maint pg-maint--lien pro-seulement"${lienMaint(`${nombreFr(mt.kcal, 0)} kcal par jour, tu en manges ${Math.round(mt.moyConso / mt.kcal * 100)} %`)}${pgAnneau(mt.moyConso / mt.kcal, 'var(--text)', Math.round(mt.moyConso / mt.kcal * 100) + ' %')}<div><small>Ta maintenance réelle</small><b>${nombreFr(mt.kcal, 0)} kcal</b><p>Calculée sur tes pesées et ce que tu as noté, pas sur une formule. Tu manges ${Math.round(mt.moyConso / mt.kcal * 100)} % de ta maintenance${b.rythmeSemaine != null ? ' → ' + escapeHtml(fmtSigne(b.rythmeSemaine, ' kg par semaine', 1)) : ''}.</p></div></div>`
+    ? `<div class="pg-carte pg-maint pg-maint--lien pro-seulement"${lienMaint(`${nombreFr(mt.kcal, 0)} kcal par jour, tu en manges ${Math.round(mt.moyConso / mt.kcal * 100)} %`)}${pgAnneau(mt.moyConso / mt.kcal, 'var(--text)', Math.round(mt.moyConso / mt.kcal * 100) + ' %')}<div><small>Ta maintenance réelle</small><b>${nombreFr(mt.kcal, 0)} kcal</b><p>Calculée sur tes pesées${mt.compo && mt.compo.kcalJour != null ? ', ta masse grasse' : ''} et ce que tu as noté, pas sur une formule. Tu manges ${Math.round(mt.moyConso / mt.kcal * 100)} % de ta maintenance${b.rythmeSemaine != null ? ' → ' + escapeHtml(fmtSigne(b.rythmeSemaine, ' kg par semaine', 1)) : ''}.</p></div></div>`
     : `<div class="pg-carte pg-maint pg-maint--vide pg-maint--lien pro-seulement"${lienMaint('bientôt calculée')}${pgAnneau(0, 'var(--text)', '…')}<div><small>Ta maintenance réelle</small><b>Bientôt</b><p>${mt.manque ? `Encore ${mt.manque} jour${mt.manque > 1 ? 's' : ''} de repas notés et ${MAINTENANCE_PESEES_MIN} pesées` : `Encore ${MAINTENANCE_PESEES_MIN - mt.pesees} pesée${MAINTENANCE_PESEES_MIN - mt.pesees > 1 ? 's' : ''}`} pour la calculer d'après ta balance.</p></div></div>`;
 
   // Ce qui a bougé

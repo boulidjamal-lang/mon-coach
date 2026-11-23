@@ -15,7 +15,8 @@
 // Actions (POST JSON { action, ... }) :
 //   etat        → { connecte, autorise } la balance est-elle reliée à ce compte, et ce compte peut-il s'en servir ?
 //   connecter   → { connecte: true }   échange le code OAuth du retour de Withings et garde les jetons
-//   mesures     → { status, body }     les dernières pesées (format Withings « getmeas »), jeton rafraîchi au besoin
+//   mesures     → { status, body }     les dernières pesées (format Withings « getmeas »), jeton rafraîchi au besoin ;
+//                                      avec { depuis } (secondes Unix), toutes celles depuis cette date (un an au plus)
 //   deconnecter → { connecte: false }  oublie les jetons
 //   importer    → { connecte: true }   reprend un jeton qu'une ancienne version de l'appli gardait sur l'appareil
 //
@@ -31,6 +32,8 @@ const ORIGINES = ['https://boulidjamal-lang.github.io', 'capacitor://localhost',
 // Poids, masse grasse, muscle, os, eau (WITHINGS_MEASTYPES dans index.html).
 const MEASTYPES = '1,6,76,88,77';
 const PESEES_MAX = 10;
+// Historique (« depuis ») : un an au plus, quelques pages Withings au plus.
+const HISTORIQUE_JOURS_MAX = 366, HISTORIQUE_MAX = 1000, PAGES_MAX = 5;
 const TAILLE_MAX = 10_000;
 
 function cors(req: Request) {
@@ -191,20 +194,34 @@ Deno.serve(async (req: Request) => {
     await garder(moi, neuf);
     j = neuf;
   }
-  const r = await fetch('https://wbsapi.withings.net/measure?' + new URLSearchParams({ action: 'getmeas', meastypes: MEASTYPES, category: '1' }), {
-    headers: { Authorization: 'Bearer ' + j.access_token },
-  });
+  // Sans « depuis » : les dernières pesées. Avec : toutes celles depuis cette date (un an au plus),
+  // page après page tant que Withings en annonce d'autres (« more », « offset »).
+  const depuis = Number(demande.depuis);
+  const historique = Number.isFinite(depuis) && depuis > 0;
+  const base: Record<string, string> = { action: 'getmeas', meastypes: MEASTYPES, category: '1' };
+  if (historique) base.startdate = String(Math.max(Math.floor(depuis), Math.floor(Date.now() / 1000) - HISTORIQUE_JOURS_MAX * 86400));
   // deno-lint-ignore no-explicit-any
-  const data: any = await r.json().catch(() => ({}));
-  if (data.status === 401) {
-    await oublier(moi);
-    return json({ erreur: 'Withings ne reconnaît plus la connexion : relie à nouveau ta balance dans Réglages.', connecte: false }, 409);
+  let tous: any[] = [];
+  let offset = '';
+  for (let page = 0; page < (historique ? PAGES_MAX : 1); page++) {
+    const r = await fetch('https://wbsapi.withings.net/measure?' + new URLSearchParams(offset ? { ...base, offset } : base), {
+      headers: { Authorization: 'Bearer ' + j.access_token },
+    });
+    // deno-lint-ignore no-explicit-any
+    const data: any = await r.json().catch(() => ({}));
+    if (data.status === 401) {
+      await oublier(moi);
+      return json({ erreur: 'Withings ne reconnaît plus la connexion : relie à nouveau ta balance dans Réglages.', connecte: false }, 409);
+    }
+    if (data.status !== 0 || !data.body || !Array.isArray(data.body.measuregrps)) {
+      console.error('withings getmeas', r.status, data && data.status, data && data.error);
+      if (page > 0) break;   // les pages déjà lues restent bonnes
+      return json({ erreur: 'Withings ne répond pas pour le moment. Réessaie dans un instant.' }, 502);
+    }
+    tous = tous.concat(data.body.measuregrps);
+    if (!data.body.more || data.body.offset == null) break;
+    offset = String(data.body.offset);
   }
-  if (data.status !== 0 || !data.body || !Array.isArray(data.body.measuregrps)) {
-    console.error('withings getmeas', r.status, data && data.status, data && data.error);
-    return json({ erreur: 'Withings ne répond pas pour le moment. Réessaie dans un instant.' }, 502);
-  }
-  // deno-lint-ignore no-explicit-any
-  const groupes = (data.body.measuregrps as any[]).slice().sort((a, b) => (Number(b.date) || 0) - (Number(a.date) || 0)).slice(0, PESEES_MAX);
+  const groupes = tous.slice().sort((a, b) => (Number(b.date) || 0) - (Number(a.date) || 0)).slice(0, historique ? HISTORIQUE_MAX : PESEES_MAX);
   return json({ status: 0, body: { measuregrps: groupes } });
 });
