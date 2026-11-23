@@ -800,6 +800,19 @@
    },
    "cle": "54b923f00c85bed4"
   },
+  "e1269": {
+   "mouvement": "elevation rotext poulie corps uni",
+   "instant": 1,
+   "depart": 1.371,
+   "periode": 2.8,
+   "images": 42,
+   "octets": {
+    "image": 8268,
+    "clair": 5882,
+    "sombre": 5742
+   },
+   "cle": "e85bd4b7a8e54c1b"
+  },
   "e127": {
    "mouvement": "traction pendu",
    "instant": 1,
