@@ -4659,6 +4659,84 @@ test('Progrès : pesées sur une partie de la période, le rythme se rapporte au
   assert.match(r.phrase, new RegExp('^Tu perds ' + m[3] + ',' + m[4] + ' kg par semaine'));
 }));
 
+test('Progrès : toucher « Ta maintenance réelle » l\'explique avec les chiffres de la période, ou dit ce qu\'il manque', () => avecAppli({}, async ({ page }) => {
+  await page.evaluate(() => {
+    const t = todayStr();
+    for (let k = 0; k <= 29; k++) {
+      const d = shiftDate(t, -k), j = getDay(d);
+      if (k <= 18) j.weight = Math.round((90 + k / 7) * 100) / 100;
+      j.meals[MEALS[0]].push({ name: 'Poulet rôti', grams: 300, kcal: 2000, p: 100, c: 200, f: 70 });
+      saveData(d);
+    }
+    buildMasterArrays();
+    choisirPeriodeStats('30');
+    ouvrirProgres();
+  });
+  await page.waitForTimeout(300);
+  const carte = '#pg-resume .pg-maint--lien';
+  assert.match(await page.getAttribute(carte, 'aria-label'), /^Ta maintenance réelle : [\d\s  ]+ kcal par jour, tu en manges \d+ %\. Voir l'explication$/);
+  await page.click(carte);
+  await page.waitForSelector('#feuille-maintenance.show');
+  const lire = () => page.evaluate(() => {
+    const f = document.getElementById('feuille-maintenance');
+    const kcal = el => Number(el.textContent.replace(/[^\d]/g, ''));
+    const lignes = [...f.querySelectorAll('.mx-calcul li')];
+    return {
+      tete: f.querySelector('.mx-tete b').textContent,
+      carte: document.querySelector('#pg-resume .pg-maint b').textContent,
+      lignes: lignes.map(l => [l.querySelector('span').textContent, l.querySelector('b').textContent.trim()]),
+      valeurs: lignes.map(l => kcal(l.querySelector('b'))),
+      anneau: document.querySelector('#pg-resume .pg-maint .pg-anneau text').textContent,
+      repere: (f.querySelector('.mx-repere') || {}).textContent,
+      zone: (f.querySelector('.mx-zones .ici') || {}).textContent,
+      barre: f.querySelectorAll('.mx-barre i.ici').length,
+      texte: f.querySelector('.mx').textContent.replace(/\s+/g, ' '),
+      focus: document.activeElement === f.querySelector('.feuille-fermer'),
+      large: f.querySelector('.feuille-contenu').scrollWidth <= f.querySelector('.feuille-contenu').clientWidth
+    };
+  });
+  let r = await lire();
+  assert.equal(r.tete, r.carte);
+  // Le calcul s'additionne : mangé + puisé dans les réserves = maintenance.
+  assert.deepEqual(r.lignes.map(l => l[0]), ['Mangé', 'Puisé dans tes réserves', 'Ta maintenance']);
+  assert.match(r.lignes[1][1], /^\+ /);
+  assert.equal(r.valeurs[0] + r.valeurs[1], r.valeurs[2]);
+  assert.equal(r.valeurs[2], Number(r.carte.replace(/[^\d]/g, '')));
+  assert.match(r.texte, /ta tendance a baissé de \d+,\d kg en \d+ jours/);
+  // Le pourcentage de la carte, placé sur l'échelle, avec la zone et le rythme de la balance.
+  assert.equal(r.repere, r.anneau);
+  assert.equal(r.barre, 1);
+  const pct = Number(r.anneau.replace(/[^\d]/g, ''));
+  assert.match(r.zone, pct < 75 ? /^Gros déficit/ : pct < 95 ? /^Déficit/ : /./);
+  assert.match(r.texte, /Sur ta balance, ça donne −\d,\d\s?kg par semaine\./);
+  // 100 g de protéines pour 92 kg environ : sous 1,6 g par kilo, la feuille le dit.
+  assert.match(r.texte, /Tu es à 1,\d g de protéines par kilo : vise au moins 1,6 g, soit environ 1\d5 g par jour/);
+  assert.match(r.texte, /Pour un chiffre juste/);
+  assert.ok(r.focus, 'la croix prend le focus');
+  assert.ok(r.large, 'rien ne dépasse sur le côté');
+  // Se ferme par sa croix ; s'ouvre aussi au clavier.
+  await page.click('#feuille-maintenance .feuille-fermer');
+  assert.equal(await page.$('#feuille-maintenance.show'), null);
+  await page.focus(carte);
+  await page.keyboard.press('Enter');
+  await page.waitForSelector('#feuille-maintenance.show');
+  // Sans pesées : la carte attend, la feuille dit ce qu'il manque.
+  await page.evaluate(() => {
+    fermerFeuilles();
+    const t = todayStr();
+    for (let k = 0; k <= 29; k++) { const d = shiftDate(t, -k); delete getDay(d).weight; saveData(d); }
+    buildMasterArrays();
+    majToutesStats();
+  });
+  await page.waitForTimeout(200);
+  await page.click(carte);
+  await page.waitForSelector('#feuille-maintenance.show');
+  r = await lire();
+  assert.equal(r.tete, 'Bientôt');
+  assert.deepEqual(r.lignes.map(l => l[1]), ['0 / 4', '0 / 14 j', '0 / 10']);
+  assert.match(r.texte, /Ce qu'il faut pour la calculer/);
+}));
+
 test('profil : le formulaire suit le profil enregistré et une saisie vide ne remplace rien', () => avecAppli({}, async ({ page }) => {
   const r = await page.evaluate(async () => {
     onbReponses.gender = 'f'; onbReponses.goal = 'seche'; onbReponses.pasHabituels = 6000;

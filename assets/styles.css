@@ -3405,6 +3405,42 @@ html:root .pg-h { display: flex; align-items: center; justify-content: space-bet
 .pg-maint b { display: block; margin-top: 2px; font: 800 1.55rem/1.15 'Manrope', 'Inter', sans-serif; letter-spacing: -.03em; }
 .pg-maint .pg-sur { font: 700 .85rem 'Inter', sans-serif; color: var(--text-muted); letter-spacing: 0; }
 .pg-maint p { margin: 3px 0 0; font-size: .78rem; line-height: 1.4; color: var(--text-muted); }
+/* La carte de la maintenance réelle s'ouvre sur son explication, comme une tuile. */
+.pg-maint--lien { position: relative; cursor: pointer; transition: transform .15s; }
+.pg-maint--lien:active { transform: scale(.985); }
+.pg-maint--lien > div { padding-right: 14px; }
+.pg-maint--lien .pg-chev { top: 12px; right: 14px; }
+
+/* Feuille « Ta maintenance réelle » : l'explication, avec tes chiffres. */
+.mx { display: grid; gap: 22px; padding-bottom: 4px; }
+.mx section { display: grid; gap: 10px; min-width: 0; }
+.mx h4 { margin: 0; font-size: .78rem; font-weight: 600; color: var(--text-muted); }
+.mx p { margin: 0; font-size: .9rem; line-height: 1.5; color: var(--text); }
+.mx-tete b { display: block; font: 800 2.1rem/1.1 'Manrope', 'Inter', sans-serif; letter-spacing: -.035em; color: var(--text); }
+.mx-tete p { margin-top: 8px; color: var(--text-muted); }
+.mx-calcul { margin: 0; padding: 2px 14px; border-radius: 18px; background: var(--piste); list-style: none; }
+.mx-calcul li { display: grid; grid-template-columns: minmax(0, 1fr) auto; column-gap: 12px; row-gap: 2px; padding: 11px 0; border-top: 1px solid var(--trait); }
+.mx-calcul li:first-child { border-top: 0; }
+.mx-calcul li.mx-total { border-top: 2px solid var(--text); }
+.mx-calcul span { min-width: 0; font-size: .92rem; font-weight: 700; color: var(--text); }
+.mx-calcul small { grid-column: 1; min-width: 0; font-size: .78rem; line-height: 1.4; color: var(--text-muted); }
+.mx-calcul b { grid-column: 2; grid-row: 1 / span 2; align-self: center; font: 800 1.02rem 'Manrope', 'Inter', sans-serif; white-space: nowrap; color: var(--text); }
+.mx-etapes li { align-items: center; }
+.mx-etapes span { font-weight: 600; line-height: 1.4; }
+.mx-etapes b { font-size: .9rem; color: var(--text-muted); }
+.mx-etapes li.fait b { color: var(--pg-bon); }
+.mx-echelle { position: relative; padding-top: 30px; }
+.mx-repere { position: absolute; top: 0; transform: translateX(-50%); font: 800 .85rem/1 'Manrope', 'Inter', sans-serif; white-space: nowrap; color: var(--text); }
+.mx-repere::after { content: ''; display: block; width: 2px; height: 9px; margin: 4px auto 0; border-radius: 2px; background: var(--text); }
+.mx-barre { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 3px; height: 10px; }
+.mx-barre i { border-radius: 99px; background: var(--piste); }
+.mx-barre i.ici { background: var(--text); }
+.mx-zones { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 3px; margin-top: 7px; text-align: center; }
+.mx-zones span { min-width: 0; font-size: .75rem; font-weight: 600; line-height: 1.25; color: var(--text-muted); }
+.mx-zones span.ici { font-weight: 800; color: var(--text); }
+.mx-zones small { display: block; margin-top: 1px; font-size: .75rem; font-weight: 500; }
+.mx-note { color: var(--text-muted); }
+.mx-conseils { display: grid; gap: 8px; margin: 0; padding-left: 18px; font-size: .88rem; line-height: 1.45; color: var(--text-muted); }
 .pg-fait { display: flex; gap: 10px; align-items: flex-start; padding: 10px 0; border-top: 1px solid var(--trait); font-size: .84rem; line-height: 1.35; }
 .pg-fait:first-child { border-top: 0; padding-top: 0; }
 .pg-fait:last-child { padding-bottom: 0; }
