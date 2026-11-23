@@ -517,11 +517,6 @@
         <span class="pg-photos-ic" aria-hidden="true"><svg class="icone-ui" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z" /><circle cx="12" cy="13" r="3" /></svg></span>
         <div><b>Avant / après</b><span>Même pose, même lumière, une photo par mois : compare-les côte à côte.</span></div>
       </div>
-      <h3 class="pg-h">Pas</h3>
-      <div class="pg-carte">
-        <div class="pg-pas-tete" id="pg-pas-tete"></div>
-        <div class="chart-container chart-container--bas"><canvas id="stepsChart"></canvas></div>
-      </div>
     </div>
 
     <div class="stats-tab" data-tab="nutrition">
@@ -562,13 +557,21 @@
 
       <div class="titre-section"><svg class="icone-ui" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6" /><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18" /><path d="M4 22h16" /><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22" /><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22" /><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z" /></svg> Records</div>
       <div class="cardio-records" id="cardio-records"></div>
+
+      <!-- Les pas : de l'activité, pas du corps (ils étaient dans Corps, dessinés
+           seulement par l'onglet Repas : la courbe restait vide). -->
+      <h3 class="pg-h">Pas</h3>
+      <div class="pg-carte">
+        <div class="pg-pas-tete" id="pg-pas-tete"></div>
+        <div class="chart-container chart-container--bas"><canvas id="stepsChart"></canvas></div>
+      </div>
     </div>
 
     <div class="stats-tab" data-tab="muscu">
       <div class="stats-grille" id="muscu-stats-totaux"></div>
       <h3 class="pg-h">Ta force <button type="button" class="pg-lien" onclick="ouvrirRepliMuscu('progression')">Tous les exercices ›</button></h3>
       <div class="pg-carte" id="pg-force"></div>
-      <h3 class="pg-h">Séries par muscle, semaine par semaine</h3>
+      <h3 class="pg-h">Séries par muscle</h3>
       <div class="pg-carte pro-seulement" id="pg-grille-muscu"></div>
       <details class="pg-repli" data-repli="semaine" ontoggle="replieMuscuBascule(this)">
         <summary>Cette semaine, muscle par muscle</summary>
@@ -10490,28 +10493,11 @@ function afficherChiffresClesPoids(s, e) {
     g.appendChild(el);
   });
 
-  /* La carte la plus intéressante : la théorie confrontée à la balance.
-     Si l'écart est gros, c'est que les portions sont mal estimées ou que la
-     dépense est mal calibrée — dans les deux cas, c'est bon à savoir. Écart
-     calorique cumulé sur CETTE période (Poids) : prévision et réel doivent
-     porter sur la même fenêtre de temps pour rester comparables — n'existe
-     que si des repas ont aussi été notés sur cette période (deltaPrevu). */
-  if (b.deltaPrevu != null && b.deltaPoids != null && b.pesees >= 2) {
-    const el = document.createElement('div');
-    el.className = 'cle large';
-    const l = document.createElement('div'); l.className = 'cle-lbl'; l.textContent = 'Prévision vs réalité';
-    const v = document.createElement('div'); v.className = 'cle-val';
-    v.innerHTML = fmtSigne(b.deltaPrevu, ' kg') + ' <svg class="icone-ui" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 18 6-6-6-6" /></svg> ' + fmtSigne(b.deltaPoids, ' kg');
-    const ecart = Math.abs(b.deltaPrevu - b.deltaPoids);
-    v.className += ecart <= 0.7 ? ' pos' : ' att';
-    const sx = document.createElement('div'); sx.className = 'cle-sous';
-    sx.textContent = ecart <= 0.7
-      ? 'Ta balance suit le calcul : les portions et la dépense estimée sont cohérentes.'
-      : 'Écart de ' + ecart.toFixed(1).replace('.', ',') + ' kg avec la prévision. Portions sous-estimées, dépense mal calibrée, ou variations d’eau sur une période courte.';
-    el.appendChild(l); el.appendChild(v); el.appendChild(sx);
-    g.appendChild(el);
-  }
-
+  /* « Prévision vs réalité » (la perte prévue par les repas notés face à la
+     balance) n'est plus ici : elle redisait « Ta maintenance réelle » (Résumé),
+     qui chiffre la même comparaison en calories par jour, et elle expliquait
+     toujours l'écart par des portions sous-estimées, même quand la balance
+     baissait plus vite que prévu. b.deltaPrevu sert encore au bilan IA. */
   majNoteTendance(b);
   return b;
 }
@@ -10671,7 +10657,7 @@ function rendreOngletStats(nom) {
   if (nom === 'resume') renderResumeProgres();
   else if (nom === 'poids') mettreAJourStats();
   else if (nom === 'nutrition') mettreAJourStatsNutrition();
-  else if (nom === 'activite') { renderStatsCardio(); renderExtrasCardio(); }
+  else if (nom === 'activite') { renderStatsCardio(); renderExtrasCardio(); renderPasProgres(); }
   else if (nom === 'muscu') mettreAJourStatsMuscu();
 }
 function majToutesStats() {
@@ -11121,7 +11107,6 @@ function renderChartsNutrition(s, e) {
      lecture à la main pour chaque graphique. */
   const p = paletteGraphique();
   const cPrimaire = p.primaire, cAccent = p.accent, cProt = p.protein, cGluc = p.carbs, cLip = p.fat;
-  const baseOpts = optionsGraphiqueBase(p, { avecLegende: false });
 
   if (caloriesChartInstance) caloriesChartInstance.destroy();
   caloriesChartInstance = new Chart(document.getElementById('caloriesChart'), {
@@ -11151,17 +11136,6 @@ function renderChartsNutrition(s, e) {
       ] }, options: avecWeekEnds(optionsGraphiqueBase(p, { avecLegende: true }), s, e), plugins: [pluginWeekEnds]
     });
   });
-  // Même traitement visuel que le graphique Calories juste au-dessus : une
-  // ligne lissée avec aire remplie, plutôt que des barres plates — pour une
-  // lecture de tendance cohérente entre les deux courbes de la page.
-  if (stepsChartInstance) stepsChartInstance.destroy();
-  stepsChartInstance = new Chart(document.getElementById('stepsChart'), {
-    type: 'line',
-    data: { labels, datasets: [
-      { label: 'Pas', data: globalMasterSteps.slice(s, e + 1), borderColor: cPrimaire, backgroundColor: couleurAlpha(cPrimaire, 0.14), tension: 0.35, fill: true, pointRadius: 0, borderWidth: 2, spanGaps: false }
-    ] }, options: baseOpts
-  });
-
   // Même logique que le graphique Calories : la valeur réelle en aire pleine,
   // l'objectif en pointillés — sauf qu'ici l'objectif varie lui aussi jour
   // après jour (poids, âge, sport de ce jour-là), plutôt qu'une ligne plate.
@@ -27845,7 +27819,8 @@ function renderResumeProgres() {
   const pr = projectionPoids(b);
   const objectif = dernierObjectifConnu(todayStr());
 
-  // Héros
+  // Héros. La variation du poids n'y est plus en chiffre : la tuile Poids,
+  // juste dessous, la donne déjà (elle apparaissait deux fois).
   const courbe = b.pesees >= 2 ? courbePoidsHeros(s, e, pr) : '';
   const projTxt = texteProjection(pr, true);
   const sousTitre = b.pesees >= 2
@@ -27857,7 +27832,6 @@ function renderResumeProgres() {
     <p>${sousTitre}</p>
     ${courbe}
     <div class="pg-heros-puces">
-      <div><b>${b.deltaPoids == null ? '—' : escapeHtml(fmtSigne(b.deltaPoids, ' kg'))}</b><span>tendance</span></div>
       <div><b>${escapeHtml(texteForce(f))}</b><span>force (1RM est.)</span></div>
       <div><b>${b.joursRemplis ? b.dansLaCible + ' / ' + b.joursRemplis : '—'}</b><span>jours dans la cible</span></div>
     </div>
@@ -27947,7 +27921,7 @@ function renderResumeProgres() {
   c.innerHTML = heros + `<div class="pg-grille2">${tuiles}</div>` + maint + ceQuiABouge + regularite;
 }
 
-/* --- Corps : projection, mensurations, pas --- */
+/* --- Corps : projection, mensurations --- */
 const MENSURATIONS = [['tailleCm', 'mes-taille-cm', 'Tour de taille'], ['hanchesCm', 'mes-hanches-cm', 'Hanches'], ['poitrineCm', 'mes-poitrine-cm', 'Poitrine'], ['brasCm', 'mes-bras-cm', 'Bras'], ['cuisseCm', 'mes-cuisse-cm', 'Cuisse']];
 function remplirChampsMensurations(existante) {
   MENSURATIONS.forEach(([cle, id]) => { const el = document.getElementById(id); if (el) el.value = existante && existante[cle] != null ? existante[cle] : ''; });
@@ -27980,6 +27954,14 @@ function renderExtrasCorps(s, e) {
       ? lignes.join('') + '<p class="pg-legende-note">Écart depuis le début de la période (ou ta première mesure).</p>'
       : `<p class="pg-vide">Aucune mensuration pour l'instant. Le tour de taille dit souvent mieux que la balance si tu perds du gras en gagnant du muscle. <button type="button" class="pg-lien" onclick="ouvrirMesuresModal()">Ajouter</button></p>`;
   }
+}
+
+/* --- Pas (onglet Cardio) : la moyenne par jour, l'écart avec la période
+   d'avant et la courbe. Ils étaient dans Corps mais dessinés par l'onglet
+   Repas : ouvert avant Repas, Corps montrait une carte Pas sans courbe. --- */
+function renderPasProgres() {
+  const { s, e } = bornesPlage();
+  const b = bilanPeriode(s, e);
   const pt = document.getElementById('pg-pas-tete');
   if (pt) {
     const n = e - s + 1;
@@ -27989,6 +27971,17 @@ function renderExtrasCorps(s, e) {
       ? `<b>${nombreFr(b.moyPas, 0)}</b><span>pas / jour</span>${d ? `<em class="${d > 0 ? 'bon' : 'mauvais'}">${d > 0 ? '↗ +' : '↘ −'}${nombreFr(Math.abs(d), 0)}</em>` : ''}`
       : '<span>Aucun pas noté sur la période.</span>';
   }
+  const cv = document.getElementById('stepsChart');
+  if (!cv || typeof Chart === 'undefined') return;
+  // Même dessin que la courbe des calories : ligne lissée, aire remplie.
+  const p = paletteGraphique();
+  if (stepsChartInstance) stepsChartInstance.destroy();
+  stepsChartInstance = new Chart(cv, {
+    type: 'line',
+    data: { labels: globalMasterLabels.slice(s, e + 1), datasets: [
+      { label: 'Pas', data: globalMasterSteps.slice(s, e + 1), borderColor: p.primaire, backgroundColor: couleurAlpha(p.primaire, 0.14), tension: 0.35, fill: true, pointRadius: 0, borderWidth: 2, spanGaps: false }
+    ] }, options: optionsGraphiqueBase(p, { avecLegende: false })
+  });
 }
 
 /* --- Repas : constat, série affichée, répartition, aliments --- */
@@ -28129,6 +28122,14 @@ function renderForceProgres(idCible, seances, avant) {
     </div>`;
   }).join('') + '<p class="pg-legende-note">1RM estimé : la charge que tu pourrais soulever une fois, calculée sur tes séries.</p>';
 }
+/* Les 8 grands groupes (GROUPES_PRINCIPAUX) d'abord ; les autres (mollets,
+   abdominaux, avant-bras…) derrière un bouton : les 14 lignes d'un coup
+   prenaient presque tout l'onglet Muscu. */
+let grilleMuscuComplete = false;
+function basculerGrilleMuscu(idCible) {
+  grilleMuscuComplete = !grilleMuscuComplete;
+  renderGrilleMuscu(idCible);
+}
 function renderGrilleMuscu(idCible) {
   const c = document.getElementById(idCible);
   if (!c) return;
@@ -28140,10 +28141,17 @@ function renderGrilleMuscu(idCible) {
   const groupes = ORDRE_GROUPES.filter(g => ZONES_VOLUME[g]);
   const lignes = groupes.filter(g => parSemaine.some(s => s[g] > 0));
   if (!lignes.length) { c.innerHTML = '<p class="pg-vide">Aucune série sur les 8 dernières semaines.</p>'; return; }
+  const principales = lignes.filter(g => GROUPES_PRINCIPAUX.includes(g)), autres = lignes.filter(g => !GROUPES_PRINCIPAUX.includes(g));
+  const repli = principales.length > 0 && autres.length > 0;
+  const montrees = !repli ? lignes : grilleMuscuComplete ? principales.concat(autres) : principales;
+  const bouton = !repli ? '' : `<button type="button" class="pg-lien zones-grille-plus" aria-expanded="${grilleMuscuComplete}" onclick="basculerGrilleMuscu('${idCible}')">${grilleMuscuComplete
+    ? 'Seulement les grands muscles' : `Voir ${autres.length > 1 ? 'les ' + autres.length + ' autres muscles' : "l'autre muscle"}`}</button>`;
   const chrono = semaines.slice().reverse(), parChrono = parSemaine.slice().reverse();
   c.innerHTML = `<div class="zones-grille" role="table" aria-label="Zone de chaque muscle sur les 8 dernières semaines">
-      <div class="zones-grille-ligne zones-grille-tete" role="row"><span role="columnheader">Muscle</span>${chrono.map((l, i) => `<span role="columnheader">${i === chrono.length - 1 ? 'Sem.' : fmt(l).split(' ')[0]}</span>`).join('')}</div>
-      ${lignes.map(g => `<div class="zones-grille-ligne" role="row"><span role="rowheader">${escapeHtml(GROUPES_MUSCULAIRES[g])}</span>${parChrono.map((s, i) => {
+      <div class="zones-grille-ligne zones-grille-tete" role="row"><span role="columnheader">Muscle</span>${chrono.map((l, i) => i === chrono.length - 1
+        ? `<span role="columnheader" class="zones-grille-encours" aria-label="Cette semaine">${fmt(l).split(' ')[0]}</span>`
+        : `<span role="columnheader">${fmt(l).split(' ')[0]}</span>`).join('')}</div>
+      ${montrees.map(g => `<div class="zones-grille-ligne" role="row"><span role="rowheader">${escapeHtml(GROUPES_MUSCULAIRES[g])}</span>${parChrono.map((s, i) => {
         const n = s[g] || 0;
         const nomSem = i === chrono.length - 1 ? 'cette semaine' : 'semaine du ' + fmt(chrono[i]);
         if (!n) return `<i class="zones-case vide" role="cell" aria-label="${escapeHtml(GROUPES_MUSCULAIRES[g] + ' · ' + nomSem)} : aucune série"></i>`;
@@ -28151,8 +28159,9 @@ function renderGrilleMuscu(idCible) {
         const conseil = z === 'sous' || z === 'mv' ? ` (vise ${ZONES_VOLUME[g].mev})` : z === 'mrv' ? ' (allège un peu)' : '';
         return `<i class="zones-case zones-case--${z}" role="cell" style="background:${info.couleur}" aria-label="${escapeHtml(GROUPES_MUSCULAIRES[g] + ' · ' + nomSem)} : ${formatSeries(n)} série${n >= 2 ? 's' : ''} · ${escapeHtml(info.nom.toLowerCase())}${conseil}">${formatSeries(n)}</i>`;
       }).join('')}</div>`).join('')}
-      <div class="zones-grille-legende">${ORDRE_ZONES.concat('sous').map(k => `<span><i style="background:${ZONES_INFO[k].couleur}"></i>${escapeHtml(ZONES_INFO[k].nom)}</span>`).join('')}</div>
-    </div><p class="pg-legende-note">Touche une case pour son détail.</p>`;
+    </div>${bouton}
+    <div class="zones-grille-legende">${ORDRE_ZONES.concat('sous').map(k => `<span><i style="background:${ZONES_INFO[k].couleur}"></i>${escapeHtml(ZONES_INFO[k].nom)}</span>`).join('')}</div>
+    <p class="pg-legende-note">Une colonne par semaine (date du lundi) ; soulignée, la semaine en cours. Touche une case pour son détail.</p>`;
 }
 function ouvrirRepliMuscu(nom) {
   const d = document.querySelector(`#ecran-stats details.pg-repli[data-repli="${nom}"]`);
