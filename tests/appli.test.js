@@ -4715,6 +4715,10 @@ test("ajout à un repas : une seule feuille — les habituels DU repas en un tou
     poser(2, 'lunch', [al('Poulet', 180, 297)]);
     poser(1, 'breakfast', [al('Banane', 130, 117)]);
     poser(1, 'dinner', [al('Poulet', 120, 198)]);
+    // Repas posés directement, sans passer par l'ajout : l'historique des
+    // aliments (gardé en cache) est à refaire. Selon l'heure, le démarrage l'a
+    // déjà construit, vide, et la liste « Souvent au déjeuner » manquait la nuit.
+    invaliderHistorique();
     currentDate = t; allerA('repas'); renderApp();
     const res = {};
     const noms = () => [...document.querySelectorAll('#ajout-corps .ajout-liste .ajout-nom')].map(n => n.textContent);
