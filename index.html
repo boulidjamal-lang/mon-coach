@@ -27875,7 +27875,7 @@ function lundisPeriode(debut, fin, max) {
    gras et la masse maigre chacun à sa valeur quand la balance mesure la
    masse grasse : partGrasMaigre). */
 const MAINTENANCE_JOURS_MIN = 14, MAINTENANCE_REPAS_MIN = 10, MAINTENANCE_PESEES_MIN = 4;
-function maintenanceReelle(s, e) {
+function maintenanceSur(s, e) {
   const lisse = moyenneGlissante(globalMasterWeight, 7);
   let i0 = -1, i1 = -1;
   for (let i = s; i <= e; i++) if (lisse[i] != null) { if (i0 < 0) i0 = i; i1 = i; }
@@ -27893,25 +27893,51 @@ function maintenanceReelle(s, e) {
   const kcal = moyConso - (compo.kcalJour != null ? compo.kcalJour : delta * KCAL_PAR_KG / span);
   return Object.assign(base, { kcal: Math.round(kcal / 10) * 10, moyConso: Math.round(moyConso), delta, debut: i0, fin: i1, compo });
 }
-/* Toucher la carte « Ta maintenance réelle » l'explique, avec les chiffres
-   de la période : ce qu'elle veut dire, le calcul pas à pas (ce que tu as
-   mangé + ce que ton corps a puisé dans ses réserves), ce que dit le
-   pourcentage et comment rendre le chiffre juste. Sans assez de données :
+/* Elle ne dépend pas de la période affichée : sur 7 jours, il n'y avait
+   jamais assez de recul (14 jours de tendance au moins), et chaque période
+   donnait son chiffre. Calculée sur les 3 mois qui finissent avec la période
+   (aujourd'hui, sauf une période « Perso » plus ancienne) ; sur 6 mois puis
+   un an seulement s'il manque des pesées ou des repas. Pas tout l'historique
+   d'emblée : la maintenance suit le poids, celle d'il y a un an n'est plus
+   la tienne. Ce que tu en manges, lui, reste celui de la période. */
+const MAINTENANCE_FENETRES = [[91, 3], [182, 6], [365, 12]];
+function maintenanceReelle(e) {
+  let mt = null;
+  for (const [jours, mois] of MAINTENANCE_FENETRES) {
+    const s = Math.max(0, e - jours + 1);
+    mt = Object.assign(maintenanceSur(s, e), { mois, finFenetre: e });
+    if (mt.kcal || s === 0) break;
+  }
+  return mt;
+}
+// « tes 3 derniers mois », ou « les 3 mois jusqu'au 12 mars » pour une période passée.
+function libFenetreMaintenance(mt, mois) {
+  const m = mois || mt.mois;
+  return mt.finFenetre >= globalMasterLabels.length - 1 ? `tes ${m} derniers mois`
+    : `les ${m} mois jusqu'au ${dateCourtePg(dateIsoPourIndexStats(mt.finFenetre))}`;
+}
+// « Sur ces 7 jours » : ce que tu manges se lit sur la période affichée.
+function libPeriodeMaintenance(n) { return n === 1 ? 'Ce jour-là' : `Sur ces ${n} jours`; }
+/* Toucher la carte « Ta maintenance réelle » l'explique, avec tes chiffres :
+   ce qu'elle veut dire, le calcul pas à pas sur ses 3 mois (ce que tu as
+   mangé + ce que ton corps a puisé dans ses réserves), ce que tu en manges
+   sur la période et comment rendre le chiffre juste. Sans assez de données :
    ce qu'il manque pour la calculer. */
 function ouvrirExplicationMaintenance() {
   const c = document.getElementById('maintenance-explication');
   if (!c || !globalMasterLabels.length || !document.getElementById('slider-start')) return;
   const { s, e } = bornesPlage();
-  const mt = maintenanceReelle(s, e);
-  c.innerHTML = mt.kcal ? htmlMaintenanceCalculee(mt, bilanPeriode(s, e)) : htmlMaintenanceAVenir(mt, e - s + 1);
+  const mt = maintenanceReelle(e);
+  c.innerHTML = mt.kcal ? htmlMaintenanceCalculee(mt, bilanPeriode(s, e), e - s + 1) : htmlMaintenanceAVenir(mt);
   if (!ouvrirFeuille('feuille-maintenance')) return;
   const f = document.getElementById('feuille-maintenance');
   f.querySelector('.feuille-contenu').scrollTop = 0;
   f.querySelector('.feuille-fermer').focus({ preventScroll: true });
 }
 const MAINT_ZONES = [['Gros déficit', 'sous 75 %'], ['Déficit', '75 à 95 %'], ['Équilibre', '95 à 105 %'], ['Surplus', 'plus de 105 %']];
-function htmlMaintenanceCalculee(mt, b) {
-  const pct = Math.round(mt.moyConso / mt.kcal * 100);
+function htmlMaintenanceCalculee(mt, b, n) {
+  // Ce que tu en manges : sur la période affichée (la maintenance, elle, vient de ses 3 mois).
+  const pct = b.joursRemplis ? Math.round(b.moyConso / mt.kcal * 100) : null, ecartP = pct != null ? mt.kcal - b.moyConso : 0;
   // Ce que le corps a puisé dans ses réserves chaque jour (négatif : mis en réserve).
   // Calculé sur les chiffres affichés, pour que les trois lignes s'additionnent.
   const ecart = mt.kcal - mt.moyConso;
@@ -27929,16 +27955,16 @@ function htmlMaintenanceCalculee(mt, b) {
     const bougeKg = (v, quoi) => Math.abs(v) < 0.05 ? `${quoi} n'a presque pas bougé` : `${quoi} a ${v < 0 ? 'baissé' : 'monté'} de ${nombreFr(Math.abs(v), 1)} kg`;
     lignes.push([gras >= 0 ? 'Gras puisé' : 'Gras mis en réserve', `${bougeKg(dGras, 'ta masse grasse')} en ${mt.jours} jours (1 kg de gras ≈ ${nombreFr(KCAL_KG_GRAS, 0)} kcal)`, signe(gras)]);
     lignes.push([maigre >= 0 ? 'Masse maigre perdue' : 'Masse maigre prise', `${bougeKg(dMaigre, 'ta masse maigre (muscle, eau, glycogène)')} (1 kg ≈ ${nombreFr(KCAL_KG_MAIGRE, 0)} kcal)`, signe(maigre)]);
-    noteGras = `<p class="mx-note">Calculé avec ta masse grasse : ${accord(c.mesures, 'mesure', 'mesures')} de ta balance sur la période. Un kilo de gras vaut cinq fois plus qu'un kilo de muscle : perdre du muscle plutôt que du gras ne fait pas la même maintenance.</p>`;
+    noteGras = `<p class="mx-note">Calculé avec ta masse grasse : ${accord(c.mesures, 'mesure', 'mesures')} de ta balance sur ces jours-là. Un kilo de gras vaut cinq fois plus qu'un kilo de muscle : perdre du muscle plutôt que du gras ne fait pas la même maintenance.</p>`;
   } else {
     lignes.push(ecart >= 0 ? ['Puisé dans tes réserves', tendance, signe(ecart)] : ['Mis en réserve', tendance, signe(ecart)]);
-    const pourquoi = { peu: `${accord(c.mesures, 'mesure', 'mesures')} sur la période, il en faut ${COMPO_MESURES_MIN} étalées sur ${COMPO_ETENDUE_MIN} jours`,
-      courte: `tes mesures couvrent moins de ${COMPO_ETENDUE_MIN} jours de la période`,
-      bruit: "tes mesures varient trop d'un jour à l'autre sur cette période (l'impédance bouge avec l'eau du corps)",
-      incoherent: "tes mesures donnent un résultat impossible sur cette période (trop de muscle pris ou perdu en si peu de temps)" }[c.raison];
+    const pourquoi = { peu: `${accord(c.mesures, 'mesure', 'mesures')} sur ces jours-là, il en faut ${COMPO_MESURES_MIN} étalées sur ${COMPO_ETENDUE_MIN} jours`,
+      courte: `tes mesures couvrent moins de ${COMPO_ETENDUE_MIN} jours`,
+      bruit: "tes mesures varient trop d'un jour à l'autre sur ces jours-là (l'impédance bouge avec l'eau du corps)",
+      incoherent: "tes mesures donnent un résultat impossible sur ces jours-là (trop de muscle pris ou perdu en si peu de temps)" }[c.raison];
     if (c.mesures > 0 && pourquoi) noteGras = `<p class="mx-note">Ta masse grasse n'est pas prise en compte : ${escapeHtml(pourquoi)}. Le calcul garde 1 kg ≈ ${kcalKg} kcal.</p>`;
   }
-  const zone = pct < 75 ? 0 : pct < 95 ? 1 : pct <= 105 ? 2 : 3;
+  const zone = pct == null ? 0 : pct < 75 ? 0 : pct < 95 ? 1 : pct <= 105 ? 2 : 3;
   // Le repère sur l'échelle : 4 zones de même largeur, de 50 % à 130 %.
   const bornes = [50, 75, 95, 105, 130], p = Math.max(50, Math.min(130, pct));
   const x = Math.max(7, Math.min(93, (zone + (p - bornes[zone]) / (bornes[zone + 1] - bornes[zone])) * 25));
@@ -27946,28 +27972,30 @@ function htmlMaintenanceCalculee(mt, b) {
   const prot = b.protParKg != null && b.protParKg < 1.6
     ? ` Tu es à ${nombreFr(b.protParKg, 1)} g de protéines par kilo : vise au moins 1,6 g${g ? `, soit environ ${g} g par jour` : ''}, pour garder ton muscle.` : '';
   const verdict = [
-    `Un gros déficit : ${nombreFr(ecart, 0)} kcal de moins que ta maintenance chaque jour. Tu perds vite, mais c'est dur à tenir et ton muscle est en jeu.${prot || ' Garde tes protéines hautes (au moins 1,6 g par kilo) et continue la muscu.'}`,
-    `Un déficit de ${nombreFr(ecart, 0)} kcal par jour : le bon rythme pour perdre du gras en gardant ton muscle.${prot}`,
+    `Un gros déficit : ${nombreFr(ecartP, 0)} kcal de moins que ta maintenance chaque jour. Tu perds vite, mais c'est dur à tenir et ton muscle est en jeu.${prot || ' Garde tes protéines hautes (au moins 1,6 g par kilo) et continue la muscu.'}`,
+    `Un déficit de ${nombreFr(ecartP, 0)} kcal par jour : le bon rythme pour perdre du gras en gardant ton muscle.${prot}`,
     'Tu manges à peu près ce que tu dépenses : ton poids reste stable.',
-    `Un surplus de ${nombreFr(-ecart, 0)} kcal par jour : c'est ce qui te fait prendre du poids. Pour prendre du muscle sans trop de gras, 105 à 110 % suffisent.`
+    `Un surplus de ${nombreFr(-ecartP, 0)} kcal par jour : c'est ce qui te fait prendre du poids. Pour prendre du muscle sans trop de gras, 105 à 110 % suffisent.`
   ][zone];
   const r = b.rythmeSemaine;
   const balance = r == null || zone === 2 ? '' : ` Sur ta balance, ça donne ${fmtSigne(r, '\u00a0kg par semaine', 1)}.`;
   const du = dateCourtePg(dateIsoPourIndexStats(mt.debut)), au = dateCourtePg(dateIsoPourIndexStats(mt.fin));
   return `<div class="mx-tete"><b>${nombreFr(mt.kcal, 0)} kcal</b><p>C'est ce que tu peux manger chaque jour sans prendre ni perdre de poids. Elle vient de ce qui s'est vraiment passé, tes repas notés et ta balance, pas d'une formule d'âge et de taille qui se trompe souvent de 10 %.</p></div>
-<section><h4>Le calcul, du ${escapeHtml(du)} au ${escapeHtml(au)}</h4><ul class="mx-calcul">${lignes.map(l => `<li><span>${l[0]}</span><small>${escapeHtml(l[1])}</small><b>${l[2]}</b></li>`).join('')}<li class="mx-total"><span>Ta maintenance</span><small>ce que ton corps a dépensé chaque jour</small><b>${nombreFr(mt.kcal, 0)} kcal</b></li></ul>${noteGras}</section>
-<section><h4>Tu en manges ${pct} %</h4><div class="mx-echelle" role="img" aria-label="Tu manges ${pct} % de ta maintenance : zone ${MAINT_ZONES[zone][0].toLowerCase()}, ${MAINT_ZONES[zone][1]}"><span class="mx-repere" style="left:${x.toFixed(1)}%">${pct} %</span><div class="mx-barre">${MAINT_ZONES.map((z, i) => `<i${i === zone ? ' class="ici"' : ''}></i>`).join('')}</div><div class="mx-zones">${MAINT_ZONES.map((z, i) => `<span${i === zone ? ' class="ici"' : ''}>${z[0]}<small>${z[1]}</small></span>`).join('')}</div></div><p>${escapeHtml(verdict + balance)}</p></section>
+<section><h4>Le calcul, du ${escapeHtml(du)} au ${escapeHtml(au)}</h4><ul class="mx-calcul">${lignes.map(l => `<li><span>${l[0]}</span><small>${escapeHtml(l[1])}</small><b>${l[2]}</b></li>`).join('')}<li class="mx-total"><span>Ta maintenance</span><small>ce que ton corps a dépensé chaque jour</small><b>${nombreFr(mt.kcal, 0)} kcal</b></li></ul>${noteGras}<p class="mx-note mx-fenetre">${escapeHtml(mt.mois === 3
+    ? `Toujours calculée sur ${libFenetreMaintenance(mt)}, quelle que soit la période affichée : sur quelques jours, la balance bouge surtout avec l'eau.`
+    : `Calculée sur ${libFenetreMaintenance(mt)} : sur 3 mois, il manquait des pesées ou des repas notés.`)}</p></section>
+${pct == null ? `<section><h4>${escapeHtml(libPeriodeMaintenance(n))}</h4><p>Pas de journée notée en entier : note tes repas pour voir ce que tu manges par rapport à ta maintenance.</p></section>` : `<section><h4>${escapeHtml(libPeriodeMaintenance(n))}, tu en manges ${pct} %</h4><div class="mx-echelle" role="img" aria-label="Tu manges ${pct} % de ta maintenance : zone ${MAINT_ZONES[zone][0].toLowerCase()}, ${MAINT_ZONES[zone][1]}"><span class="mx-repere" style="left:${x.toFixed(1)}%">${pct} %</span><div class="mx-barre">${MAINT_ZONES.map((z, i) => `<i${i === zone ? ' class="ici"' : ''}></i>`).join('')}</div><div class="mx-zones">${MAINT_ZONES.map((z, i) => `<span${i === zone ? ' class="ici"' : ''}>${z[0]}<small>${z[1]}</small></span>`).join('')}</div></div><p>${escapeHtml(verdict + balance)}</p></section>`}
 ${conseilsMaintenanceHTML(c.kcalJour != null)}`;
 }
-function htmlMaintenanceAVenir(mt, n) {
+function htmlMaintenanceAVenir(mt) {
   const etapes = [
-    [`Au moins ${MAINTENANCE_PESEES_MIN} pesées sur la période`, `${Math.min(mt.pesees, MAINTENANCE_PESEES_MIN)} / ${MAINTENANCE_PESEES_MIN}`, mt.pesees >= MAINTENANCE_PESEES_MIN],
+    [`Au moins ${MAINTENANCE_PESEES_MIN} pesées`, `${Math.min(mt.pesees, MAINTENANCE_PESEES_MIN)} / ${MAINTENANCE_PESEES_MIN}`, mt.pesees >= MAINTENANCE_PESEES_MIN],
     [`Une tendance de poids sur ${MAINTENANCE_JOURS_MIN} jours : deux pesées par semaine suffisent`, `${Math.min(mt.jours, MAINTENANCE_JOURS_MIN)} / ${MAINTENANCE_JOURS_MIN} j`, mt.jours >= MAINTENANCE_JOURS_MIN],
     [`${MAINTENANCE_REPAS_MIN} jours de repas notés en entier pendant ces jours-là`, `${Math.min(mt.joursNotes, MAINTENANCE_REPAS_MIN)} / ${MAINTENANCE_REPAS_MIN}`, mt.joursNotes >= MAINTENANCE_REPAS_MIN]
   ];
-  const courte = n <= MAINTENANCE_JOURS_MIN ? `<p class="mx-note">Sur ${n} jours, la période est trop courte : choisis 30 jours ou plus en haut de Progrès.</p>` : '';
+  const fenetre = `<p class="mx-note mx-fenetre">${escapeHtml(`Elle se calcule sur ${libFenetreMaintenance(mt, 3)} (jusqu'à un an s'il le faut), quelle que soit la période affichée.`)}</p>`;
   return `<div class="mx-tete"><b>Bientôt</b><p>Ta maintenance réelle, c'est ce que tu peux manger chaque jour sans prendre ni perdre de poids. Elle se calcule d'après tes repas notés et ta balance, pas d'après une formule.</p></div>
-<section><h4>Ce qu'il faut pour la calculer</h4><ul class="mx-calcul mx-etapes">${etapes.map(([t, v, ok]) => `<li${ok ? ' class="fait"' : ''}><span>${t}</span><b>${ok ? '✓ ' : ''}${v}</b></li>`).join('')}</ul>${courte}</section>
+<section><h4>Ce qu'il faut pour la calculer</h4><ul class="mx-calcul mx-etapes">${etapes.map(([t, v, ok]) => `<li${ok ? ' class="fait"' : ''}><span>${t}</span><b>${ok ? '✓ ' : ''}${v}</b></li>`).join('')}</ul>${fenetre}</section>
 ${conseilsMaintenanceHTML()}`;
 }
 function conseilsMaintenanceHTML(avecGras) {
@@ -28151,11 +28179,12 @@ function renderResumeProgres() {
       dessin: pgBarres(cardioSem, 'var(--text)', OBJECTIF_CARDIO.cible), onglet: 'activite' })
   ].join('');
 
-  // Maintenance réelle
-  const mt = maintenanceReelle(s, e);
+  // Maintenance réelle : la même quelle que soit la période (ses 3 mois) ; ce que tu en manges, celui de la période.
+  const mt = maintenanceReelle(e);
+  const pctM = mt.kcal && b.joursRemplis ? Math.round(b.moyConso / mt.kcal * 100) : null;
   const lienMaint = quoi => ` role="button" tabindex="0" onclick="ouvrirExplicationMaintenance()" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();this.click()}" aria-label="Ta maintenance réelle : ${escapeHtml(quoi)}. Voir l'explication"><span class="pg-chev" aria-hidden="true">›</span>`;
   const maint = mt.kcal
-    ? `<div class="pg-carte pg-maint pg-maint--lien pro-seulement"${lienMaint(`${nombreFr(mt.kcal, 0)} kcal par jour, tu en manges ${Math.round(mt.moyConso / mt.kcal * 100)} %`)}${pgAnneau(mt.moyConso / mt.kcal, 'var(--text)', Math.round(mt.moyConso / mt.kcal * 100) + ' %')}<div><small>Ta maintenance réelle</small><b>${nombreFr(mt.kcal, 0)} kcal</b><p>Calculée sur tes pesées${mt.compo && mt.compo.kcalJour != null ? ', ta masse grasse' : ''} et ce que tu as noté, pas sur une formule. Tu manges ${Math.round(mt.moyConso / mt.kcal * 100)} % de ta maintenance${b.rythmeSemaine != null ? ' → ' + escapeHtml(fmtSigne(b.rythmeSemaine, ' kg par semaine', 1)) : ''}.</p></div></div>`
+    ? `<div class="pg-carte pg-maint pg-maint--lien pro-seulement"${lienMaint(`${nombreFr(mt.kcal, 0)} kcal par jour${pctM != null ? `, tu en manges ${pctM} %` : ''}`)}${pgAnneau(pctM != null ? pctM / 100 : 0, 'var(--text)', pctM != null ? pctM + ' %' : '–')}<div><small>Ta maintenance réelle</small><b>${nombreFr(mt.kcal, 0)} kcal</b><p>Calculée sur ${escapeHtml(libFenetreMaintenance(mt))} (pesées${mt.compo && mt.compo.kcalJour != null ? ', masse grasse' : ''}, repas notés), pas sur une formule. ${pctM != null ? `${escapeHtml(libPeriodeMaintenance(e - s + 1))}, tu manges ${pctM}\u00a0% de ta maintenance${b.rythmeSemaine != null ? ' → ' + escapeHtml(fmtSigne(b.rythmeSemaine, ' kg par semaine', 1)) : ''}.` : `Pas de journée notée en entier sur ${e - s + 1 === 1 ? 'ce jour' : 'ces ' + (e - s + 1) + ' jours'}.`}</p></div></div>`
     : `<div class="pg-carte pg-maint pg-maint--vide pg-maint--lien pro-seulement"${lienMaint('bientôt calculée')}${pgAnneau(0, 'var(--text)', '…')}<div><small>Ta maintenance réelle</small><b>Bientôt</b><p>${mt.manque ? `Encore ${mt.manque} jour${mt.manque > 1 ? 's' : ''} de repas notés et ${MAINTENANCE_PESEES_MIN} pesées` : `Encore ${MAINTENANCE_PESEES_MIN - mt.pesees} pesée${MAINTENANCE_PESEES_MIN - mt.pesees > 1 ? 's' : ''}`} pour la calculer d'après ta balance.</p></div></div>`;
 
   // Ce qui a bougé

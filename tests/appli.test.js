@@ -4917,7 +4917,7 @@ test('Progrès : pesées sur une partie de la période, le rythme se rapporte au
     phrase: document.querySelector('.pg-heros h3').textContent,
     maint: document.querySelector('#pg-resume .pg-maint').textContent.replace(/\s+/g, ' ')
   }));
-  const m = r.maint.match(/([\d ]+) kcal.*Tu manges (\d+) % de ta maintenance → −(\d+),(\d) kg par semaine/);
+  const m = r.maint.match(/([\d ]+) kcal.*Sur ces 30 jours, tu manges (\d+) % de ta maintenance → −(\d+),(\d) kg par semaine/);
   assert.ok(m, r.maint);
   const kcal = Number(m[1].replace(/\D/g, '')), pct = Number(m[2]), rythme = Number(m[3] + '.' + m[4]);
   // Le déficit que donne la maintenance réelle, converti en kilos par semaine, est le rythme affiché.
@@ -5005,6 +5005,73 @@ test('Progrès : toucher « Ta maintenance réelle » l\'explique avec les chiff
   assert.match(r.texte, /Ce qu'il faut pour la calculer/);
 }));
 
+test("maintenance réelle : la même sur 7 jours, 30 jours et 3 mois (calculée sur les 3 derniers mois), ce qu'on en mange suit la période ; 6 mois seulement s'il manque des pesées", () => avecAppli({}, async ({ page }) => {
+  await page.evaluate(() => {
+    const t = todayStr();
+    // 60 jours pesés et notés (−0,05 kg par jour), un peu moins mangé les 7 derniers.
+    for (let k = 1; k <= 60; k++) {
+      const d = shiftDate(t, -k), j = getDay(d);
+      j.weight = Math.round((85 + 0.05 * k) * 100) / 100;
+      j.meals[MEALS[0]].push({ name: 'Poulet rôti', grams: 300, kcal: k <= 7 ? 1800 : 2100, p: 150, c: 200, f: 70 });
+      saveData(d);
+    }
+    buildMasterArrays();
+    choisirPeriodeStats('30');
+    ouvrirProgres();
+  });
+  await page.waitForTimeout(300);
+  const lire = cle => page.evaluate(cle => {
+    choisirPeriodeStats(cle);
+    const { s, e } = bornesPlage(), b = bilanPeriode(s, e);
+    const c = document.querySelector('#pg-resume .pg-maint');
+    return { kcal: Number(c.querySelector('b').textContent.replace(/\D/g, '')), texte: c.textContent.replace(/\s+/g, ' '), moy: b.moyConso, jours: e - s + 1 };
+  }, cle);
+  const r7 = await lire('7'), r30 = await lire('30'), r90 = await lire('90');
+  // Sur 7 jours, plus de « Bientôt » : le même chiffre qu'à 30 jours et 3 mois.
+  assert.ok(r7.kcal > 2000 && r7.kcal < 3000, r7.texte);
+  assert.deepEqual([r30.kcal, r90.kcal], [r7.kcal, r7.kcal]);
+  assert.match(r7.texte, /Calculée sur tes 3 derniers mois \(pesées, repas notés\), pas sur une formule\. Sur ces 7 jours, tu manges (\d+) % de ta maintenance/);
+  // Ce qu'on en mange, lui, est celui de la période affichée.
+  const pct = r => Number(r.texte.match(/tu manges (\d+) %/)[1]);
+  assert.equal(pct(r7), Math.round(r7.moy / r7.kcal * 100));
+  assert.equal(pct(r30), Math.round(r30.moy / r30.kcal * 100));
+  assert.ok(pct(r7) < pct(r30), `${pct(r7)} % sur 7 jours, ${pct(r30)} % sur 30`);
+  assert.match(r30.texte, /Sur ces 30 jours, tu manges/);
+  // La feuille, sur 7 jours : le calcul sur les 3 mois, ce qu'on en mange sur les 7 jours.
+  await page.evaluate(() => choisirPeriodeStats('7'));
+  await page.click('#pg-resume .pg-maint--lien');
+  await page.waitForSelector('#feuille-maintenance.show');
+  let f = await page.evaluate(() => {
+    const f = document.getElementById('feuille-maintenance');
+    return { tete: f.querySelector('.mx-tete b').textContent, h4: [...f.querySelectorAll('h4')].map(h => h.textContent), fenetre: (f.querySelector('.mx-fenetre') || {}).textContent };
+  });
+  assert.equal(Number(f.tete.replace(/\D/g, '')), r7.kcal);
+  assert.match(f.h4[0], /^Le calcul, du /);
+  assert.equal(f.h4[1], `Sur ces 7 jours, tu en manges ${pct(r7)} %`);
+  assert.equal(f.fenetre, "Toujours calculée sur tes 3 derniers mois, quelle que soit la période affichée : sur quelques jours, la balance bouge surtout avec l'eau.");
+  // Deux pesées seulement sur les 3 derniers mois, assez avant : la maintenance va chercher 6 mois.
+  await page.evaluate(() => {
+    fermerFeuilles();
+    const t = todayStr();
+    for (let k = 1; k <= 60; k++) if (k !== 1 && k !== 30) { delete getDay(shiftDate(t, -k)).weight; saveData(shiftDate(t, -k)); }
+    for (let k = 100; k <= 140; k++) {
+      const d = shiftDate(t, -k), j = getDay(d);
+      j.weight = Math.round((90 + 0.05 * (k - 100)) * 100) / 100;
+      j.meals[MEALS[0]].push({ name: 'Poulet rôti', grams: 300, kcal: 2100, p: 150, c: 200, f: 70 });
+      saveData(d);
+    }
+    buildMasterArrays();
+    choisirPeriodeStats('7');
+  });
+  await page.waitForTimeout(200);
+  const r6 = await lire('7');
+  assert.match(r6.texte, /Calculée sur tes 6 derniers mois \(pesées, repas notés\)/);
+  await page.click('#pg-resume .pg-maint--lien');
+  await page.waitForSelector('#feuille-maintenance.show');
+  f = await page.evaluate(() => document.querySelector('#feuille-maintenance .mx-fenetre').textContent);
+  assert.equal(f, 'Calculée sur tes 6 derniers mois : sur 3 mois, il manquait des pesées ou des repas notés.');
+}));
+
 test('maintenance réelle : le gras (9 440 kcal le kilo) et la masse maigre (1 816) comptés à part quand la balance mesure la masse grasse', () => avecAppli({}, async ({ page }) => {
   const r = await page.evaluate(() => {
     const ligne = (n, f) => Array.from({ length: n }, (_, t) => f(t));
@@ -5068,7 +5135,7 @@ test('Progrès : avec la masse grasse de la balance, la maintenance sépare le g
   await page.click('#pg-resume .pg-maint--lien');
   await page.waitForSelector('#feuille-maintenance.show');
   let r = await lire();
-  assert.match(r.carte, /Calculée sur tes pesées, ta masse grasse et ce que tu as noté/);
+  assert.match(r.carte, /Calculée sur tes 3 derniers mois \(pesées, masse grasse, repas notés\), pas sur une formule\./);
   assert.deepEqual(r.lignes, ['Mangé', 'Gras puisé', 'Masse maigre perdue', 'Ta maintenance']);
   // 0,02 kg de gras par jour × 9 440 = 189 kcal ; le reste, la masse maigre ; les lignes s'additionnent.
   assert.equal(r.valeurs[0], 2000);
@@ -5078,7 +5145,7 @@ test('Progrès : avec la masse grasse de la balance, la maintenance sépare le g
   assert.ok(r.valeurs[3] >= 2240 && r.valeurs[3] <= 2260, String(r.valeurs[3]));
   assert.match(r.details[1], /^ta masse grasse a baissé de 0,\d kg en \d+ jours \(1 kg de gras ≈ 9 440 kcal\)$/);
   assert.match(r.details[2], /^ta masse maigre \(muscle, eau, glycogène\) a baissé de [\d,]+ kg \(1 kg ≈ 1 816 kcal\)$/);
-  assert.match(r.note, /^Calculé avec ta masse grasse : 29 mesures de ta balance sur la période\./);
+  assert.match(r.note, /^Calculé avec ta masse grasse : 29 mesures de ta balance sur ces jours-là\./);
   assert.doesNotMatch(r.conseils, /Si ta balance mesure la masse grasse/);
   // Cinq mesures seulement : 7 700 kcal par kilo, et la feuille dit pourquoi.
   await page.evaluate(() => {
@@ -5092,8 +5159,8 @@ test('Progrès : avec la masse grasse de la balance, la maintenance sépare le g
   await page.waitForSelector('#feuille-maintenance.show');
   r = await lire();
   assert.deepEqual(r.lignes, ['Mangé', 'Puisé dans tes réserves', 'Ta maintenance']);
-  assert.match(r.carte, /Calculée sur tes pesées et ce que tu as noté/);
-  assert.equal(r.note, "Ta masse grasse n'est pas prise en compte : 5 mesures sur la période, il en faut 8 étalées sur 21 jours. Le calcul garde 1 kg ≈ 7 700 kcal.");
+  assert.match(r.carte, /Calculée sur tes 3 derniers mois \(pesées, repas notés\), pas sur une formule\./);
+  assert.equal(r.note, "Ta masse grasse n'est pas prise en compte : 5 mesures sur ces jours-là, il en faut 8 étalées sur 21 jours. Le calcul garde 1 kg ≈ 7 700 kcal.");
   assert.match(r.conseils, /Si ta balance mesure la masse grasse \(Withings, Apple Santé\), pèse-toi dessus presque chaque jour/);
 }));
 
