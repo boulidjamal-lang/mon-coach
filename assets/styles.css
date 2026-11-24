@@ -3104,7 +3104,7 @@ html:not(.ia-active) .duo-ia { grid-template-columns: 1fr !important; }
 .celebration-ic .icone-ui { width: 24px; height: 24px; color: #fff; transform: rotate(8deg); }
 .celebration-txt { display: flex; flex-direction: column; min-width: 0; }
 .celebration-txt b { font-family: 'Manrope', 'Inter', sans-serif; font-size: 1.05rem; font-weight: 800; letter-spacing: -.02em; }
-.celebration-txt small { font-size: .76rem; font-weight: 600; color: var(--text-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.celebration-txt small { font-size: .76rem; font-weight: 600; color: var(--text-muted); overflow: hidden; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; line-clamp: 2; }
 .confettis { position: absolute; left: 35px; top: 50%; }
 /* L'XP qu'on vient de gagner : la barre du palier, et ce qu'il reste. */
 .celebration-barre { display: flex; align-items: center; gap: 8px; margin-top: 6px; }

@@ -3771,6 +3771,9 @@ test("saison exploitée : défis de la semaine dans Activité (un toucher ouvre 
     await attendre(900);
     const res = { xp: c().classList.contains('celebration--xp'), barre: !!c().querySelector('.celebration-barre i') };
     res.cardio = lire();
+    // Le bandeau d'Activité (caché, on est dans Profil) a suivi, sans nouveau rendu.
+    const bandeau = () => document.querySelector('#vitrine-muscu .saison-bandeau').textContent.replace(/\s+/g, ' ');
+    res.bandeau1 = bandeau();
     // Une séance mardi : 160 → 260, le palier 1 est fêté (pas l'XP).
     musculationHistorique.push(__seance('m1', '2026-11-24')); sauvegarderHistorique();
     await attendre(900);
@@ -3779,6 +3782,7 @@ test("saison exploitée : défis de la semaine dans Activité (un toucher ouvre 
     musculationHistorique.push(__seance('m2', '2026-11-25')); sauvegarderHistorique();
     await attendre(900);
     res.defi = lire();
+    res.bandeau2 = bandeau();
     // Des données qui arrivent d'un coup (synchronisation) : rien.
     for (let k = 4; k <= 12; k++) musculationHistorique.push(__seance('s' + k, shiftDate('2026-11-26', -k)));
     sauvegarderHistorique();
@@ -3794,6 +3798,8 @@ test("saison exploitée : défis de la semaine dans Activité (un toucher ouvre 
   assert.match(r2.cardio, /^\+60 XPSéance de cardio90 XP → palier 1$/);
   assert.match(r2.palier, /^Palier 1 atteint !/);
   assert.match(r2.defi, /^Défi réussi : 3 séances de muscu\+250 XP · palier 2 atteint$/);
+  assert.match(r2.bandeau1, /90 XP avant le palier 1.*Muscu1 \/ 3/, 'le bandeau suit l\'XP sans attendre un rendu d\'Activité');
+  assert.match(r2.bandeau2, /240 XP avant le palier 3.*Muscu\+150 XP/);
   assert.equal(r2.synchro, '', 'une arrivée de données n\'est pas annoncée');
   assert.equal(r2.baisse, '', 'une baisse ne se dit pas');
 }));
