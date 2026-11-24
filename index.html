@@ -25563,8 +25563,9 @@ function anneauDefi(d) {
   return `<svg class="sb-anneau" viewBox="0 0 34 34" aria-hidden="true"><circle class="sb-piste" cx="17" cy="17" r="${r}"/>`
     + (part > 0 ? `<circle class="sb-val" cx="17" cy="17" r="${r}" stroke-dasharray="${(tour * part).toFixed(1)} ${tour.toFixed(1)}" transform="rotate(-90 17 17)"/>` : '') + '</svg>';
 }
-function bandeauSaisonHTML() {
-  const p = passeSaison(), s = p.saison, defis = p.semaine || [];
+function bandeauSaisonHTML(p) {
+  p = p || passeSaison();
+  const s = p.saison, defis = p.semaine || [];
   const dans = p.palier >= PALIERS ? XP_PALIER : p.xp - p.palier * XP_PALIER;
   const suite = p.palier >= PALIERS ? 'dernier palier atteint' : `${nombreFr(XP_PALIER - dans, 0)} XP avant le palier ${p.palier + 1}`;
   const faits = defis.filter(d => d.ok).length;
@@ -25575,6 +25576,16 @@ function bandeauSaisonHTML() {
     ${defis.length ? `<span class="sb-defis" aria-hidden="true">${defis.map(d => `<span class="sb-defi${d.ok ? ' ok' : ''}">${anneauDefi(d)}<span class="sb-ic">${svgV(d.ok ? 'check' : d.ic, 2.4)}</span>`
       + `<span class="sb-lib">${escapeHtml(COURTS_DEFIS[d.cle] || d.nom)}<em>${d.ok ? '+' + XP_GAINS.defiSemaine + ' XP' : d.fait + ' / ' + d.but}</em></span></span>`).join('')}</span>` : ''}
   </button>`;
+}
+// Les bandeaux déjà affichés suivent l'XP : passer de Cardio à Musculation,
+// ou une synchronisation, ne redessinent pas Activité.
+function majBandeauxSaison(p) {
+  try {
+    const els = document.querySelectorAll('.saison-bandeau');
+    if (!els.length) return;
+    const html = bandeauSaisonHTML(p);
+    els.forEach(el => { el.outerHTML = html; });
+  } catch (e) {}
 }
 // Le passe de saison, en bas du Profil.
 function ouvrirPasseSaison() {
@@ -27581,7 +27592,7 @@ function etatXP() {
 }
 function recalerXP() {
   clearTimeout(suivreXP.minuteur);
-  try { xpRepere = etatXP(); } catch (e) { xpRepere = null; }
+  try { xpRepere = etatXP(); majBandeauxSaison(xpRepere.p); } catch (e) { xpRepere = null; }
 }
 function raisonsXP(avant, apres) {
   const r = RAISONS_XP.map(([cle, lib]) => { const d = (apres[cle] || 0) - (avant[cle] || 0); return d > 0 ? lib(Math.max(1, Math.round(d / XP_GAINS[cle]))) : null; }).filter(Boolean).join(' · ');
@@ -27599,6 +27610,7 @@ function suivreXP() {
     try { apres = etatXP(); } catch (e) { return; }
     const avant = xpRepere;
     xpRepere = apres;
+    majBandeauxSaison(apres.p);
     if (!avant || avant.saison !== apres.saison) return;
     const gain = apres.xp - avant.xp;
     if (gain <= 0 || gain > XP_MAX_MOMENT) return;
