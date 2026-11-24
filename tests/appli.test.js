@@ -3739,6 +3739,142 @@ test('trophées : l\'arrivée des données au démarrage n\'est pas fêtée', ()
   assert.deepEqual(r, { avant: null, premier: '', saut: '' });
 }));
 
+test("saison exploitée : défis de la semaine dans Activité (un toucher ouvre le passe), l'XP annoncée sur le moment, palier et défi fêtés, arrivée de données et baisse muettes", () => avecAppli({}, async ({ page }) => {
+  // Jeudi 26 novembre 2026 : lundi, mardi et mercredi sont dans la semaine.
+  await page.clock.setFixedTime(new Date('2026-11-26T12:00:00'));
+  const r1 = await page.evaluate(() => {
+    const exo = toutesLesExercices().find(e => e.groupe === 'pectoraux');
+    window.__seance = (id, date) => ({ id, date, programmeNom: 'Test', debut: Date.now(), fin: Date.now(), dureeMin: 45, maj: Date.now(),
+      exercices: [{ exerciceId: exo.id, nom: exo.nom, series: [{ poids: 50, reps: 8, fait: true }] }] });
+    musculationHistorique.push(__seance('l1', '2026-11-23'));
+    sauvegarderHistorique();
+    allerA('seance'); choisirModeSeance('muscu'); renderApp();
+    const b = document.querySelector('#vitrine-muscu .saison-bandeau');
+    const res = { muscu: !!b, defis: b ? b.querySelectorAll('.sb-defi').length : 0, texte: b ? b.textContent.replace(/\s+/g, ' ') : '' };
+    choisirModeSeance('cardio'); renderApp();
+    res.cardio = !!document.querySelector('#seance-cardio .saison-bandeau');
+    choisirModeSeance('muscu'); renderApp();
+    return res;
+  });
+  assert.deepEqual([r1.muscu, r1.cardio, r1.defis], [true, true, 3]);
+  assert.match(r1.texte, /Défis de la semaine.*150 XP avant le palier 1.*Muscu1 \/ 3/);
+  await page.click('#vitrine-muscu .saison-bandeau');
+  await page.waitForTimeout(300);
+  assert.equal(await page.evaluate(() => ecranActif), 'reglages', 'le bandeau ouvre le passe, dans Profil');
+  const r2 = await page.evaluate(async () => {
+    const attendre = ms => new Promise(f => setTimeout(f, ms));
+    const c = () => document.getElementById('celebration');
+    const lire = () => { const z = c(); const t = z ? z.textContent : ''; if (z) z.textContent = ''; celebrer.derniere = 0; return t; };
+    await attendre(900); lire(); recalerXP();
+    // Un cardio aujourd'hui : +60 XP (100 → 160), sans palier.
+    const j = getDay(todayStr()); j.workouts.push({ type: 'course', time: 30, distance: 5, intensite: 2 }); saveData(todayStr());
+    await attendre(900);
+    const res = { xp: c().classList.contains('celebration--xp'), barre: !!c().querySelector('.celebration-barre i') };
+    res.cardio = lire();
+    // Une séance mardi : 160 → 260, le palier 1 est fêté (pas l'XP).
+    musculationHistorique.push(__seance('m1', '2026-11-24')); sauvegarderHistorique();
+    await attendre(900);
+    res.palier = lire();
+    // Une séance mercredi : 3 séances dans la semaine, défi bouclé (+100 +150) et palier 2, dans une seule fête.
+    musculationHistorique.push(__seance('m2', '2026-11-25')); sauvegarderHistorique();
+    await attendre(900);
+    res.defi = lire();
+    // Des données qui arrivent d'un coup (synchronisation) : rien.
+    for (let k = 4; k <= 12; k++) musculationHistorique.push(__seance('s' + k, shiftDate('2026-11-26', -k)));
+    sauvegarderHistorique();
+    await attendre(900);
+    res.synchro = lire();
+    // Une séance supprimée : rien.
+    musculationHistorique = musculationHistorique.filter(h => h.id !== 'm2'); sauvegarderHistorique();
+    await attendre(900);
+    res.baisse = lire();
+    return res;
+  });
+  assert.deepEqual([r2.xp, r2.barre], [true, true]);
+  assert.match(r2.cardio, /^\+60 XPSéance de cardio90 XP → palier 1$/);
+  assert.match(r2.palier, /^Palier 1 atteint !/);
+  assert.match(r2.defi, /^Défi réussi : 3 séances de muscu\+250 XP · palier 2 atteint$/);
+  assert.equal(r2.synchro, '', 'une arrivée de données n\'est pas annoncée');
+  assert.equal(r2.baisse, '', 'une baisse ne se dit pas');
+}));
+
+test("vitrine vivante : un badge se touche (comment l'obtenir, où on en est), progression d'un badge à gagner, niveaux bronze → légende, un nouveau niveau fêté une fois, rien à la première fois", () => avecAppli({}, async ({ page }) => {
+  const r = await page.evaluate(() => {
+    const exo = toutesLesExercices().find(e => e.groupe === 'pectoraux');
+    // Des séances d'il y a un an (saisons passées) : le palier en cours ne bouge pas.
+    // (Espacées pour qu'aucune saison passée n'atteigne le palier 25 : le badge Explosif serait gagné.)
+    const ajouter = (de, a, pas = 1, depart = 300) => { for (let k = de; k < a; k++) musculationHistorique.push({ id: 'v' + k, date: shiftDate(todayStr(), -depart - (k - de) * pas), programmeNom: 'T', exercices: [{ exerciceId: exo.id, nom: exo.nom, series: [{ poids: 40, reps: 10, fait: true }] }] }); };
+    const fete = () => { const c = document.getElementById('celebration'); const t = c ? c.textContent : ''; if (c) c.textContent = ''; return t; };
+    ajouter(0, 12);
+    allerA('reglages'); renderVitrineProfil();
+    const badge = cle => document.querySelectorAll('#vitrine-badges .badge')[badgesVitrine.findIndex(x => x.cle === cle)];
+    const res = {
+      seances: [badge('seances').tagName, badge('seances').querySelector('.med em').textContent, badge('seances').querySelector('.med').hasAttribute('data-metal')],
+      hydrate: [badge('eau').classList.contains('verrou'), !!badge('eau').querySelector('.badge-barre')]
+    };
+    badge('seances').click();
+    res.fiche = [document.getElementById('feuille-badge').classList.contains('show'), document.getElementById('badge-fiche').textContent.replace(/\s+/g, ' ')];
+    fermerFeuilles(); fete();
+    // 50 séances : niveau Argent, fêté une fois.
+    ajouter(12, 50, 1, 312);
+    renderVitrineProfil(); res.argent = fete();
+    renderVitrineProfil(); res.encore = fete();
+    res.memo = JSON.parse(localStorage.getItem('anqaa_trophees')).niveaux.seances;
+    // Mémoire d'avant les niveaux (version précédente) : 100 séances, rien n'est fêté.
+    const m = JSON.parse(localStorage.getItem('anqaa_trophees')); delete m.niveaux; localStorage.setItem('anqaa_trophees', JSON.stringify(m));
+    ajouter(50, 100, 3, 360);
+    renderVitrineProfil(); res.premiere = fete();
+    res.or = [badgesVitrine.find(x => x.cle === 'seances').nom, JSON.parse(localStorage.getItem('anqaa_trophees')).niveaux.seances];
+    return res;
+  });
+  assert.deepEqual(r.seances, ['BUTTON', 'Bronze', true]);
+  assert.deepEqual(r.hydrate, [true, true], 'un badge à gagner montre sa progression');
+  assert.equal(r.fiche[0], true);
+  assert.match(r.fiche[1], /SéancesNiveau Bronze · 1 sur 5 Chaque séance de musculation enregistrée compte.*12 \/ 50 séances pour le niveau Argent/);
+  assert.match(r.argent, /^Séances : niveau Argent/);
+  assert.equal(r.encore, '');
+  assert.equal(r.memo, 2);
+  assert.equal(r.premiere, '', 'la première fois avec les niveaux, rien n\'est fêté');
+  assert.deepEqual(r.or, ['Centurion', 3]);
+}));
+
+test("bilan de saison : depuis le passe (saison en cours et passées), et ouvert une seule fois à l'arrivée d'une nouvelle saison", () => avecAppli({}, async ({ page }) => {
+  const r = await page.evaluate(async () => {
+    const attendre = ms => new Promise(f => setTimeout(f, ms));
+    const exo = toutesLesExercices().find(e => e.groupe === 'pectoraux');
+    const seance = (id, date) => ({ id, date, programmeNom: 'T', exercices: [{ exerciceId: exo.id, nom: exo.nom, series: [{ poids: 40, reps: 10, fait: true }] }] });
+    const prec = saisonDe(shiftDate(saisonDe(todayStr()).debut, -1));
+    // La saison d'avant : 4 séances et 2 pesées ; celle-ci : une séance.
+    for (let k = 0; k < 4; k++) musculationHistorique.push(seance('p' + k, shiftDate(prec.debut, 2 * k)));
+    for (const k of [1, 3]) { const d = shiftDate(prec.debut, k), j = getDay(d); j.weight = 80; saveData(d); }
+    musculationHistorique.push(seance('c1', todayStr()));
+    allerA('reglages'); renderVitrineProfil();
+    const res = { prec: prec.nom + ' ' + prec.annee, pilules: [...document.querySelectorAll('#vitrine-badges .sp-bilan')].map(b => b.textContent.replace(/\s+/g, ' ').trim()) };
+    document.querySelectorAll('#vitrine-badges .sp-bilan')[1].click();
+    res.fiche = [document.getElementById('feuille-bilan-saison').classList.contains('show'), document.getElementById('bilan-saison-contenu').textContent.replace(/\s+/g, ' ')];
+    fermerFeuilles();
+    // La saison change : la dernière vue était la précédente.
+    const m = JSON.parse(localStorage.getItem('anqaa_trophees')); m.saison = prec.id; m.palier = 3; localStorage.setItem('anqaa_trophees', JSON.stringify(m));
+    renderVitrineProfil();
+    res.fete = document.getElementById('celebration').textContent;
+    await attendre(1300);
+    res.auto = [document.getElementById('feuille-bilan-saison').classList.contains('show'), document.getElementById('bilan-saison-contenu').textContent.replace(/\s+/g, ' ')];
+    fermerFeuilles();
+    renderVitrineProfil(); await attendre(1300);
+    res.uneFois = document.getElementById('feuille-bilan-saison').classList.contains('show');
+    return res;
+  });
+  assert.equal(r.pilules.length, 2);
+  assert.match(r.pilules[0], /^\S+En cours · palier 0 ›$/);
+  assert.ok(r.pilules[1].startsWith(r.prec), r.pilules[1]);
+  assert.equal(r.fiche[0], true);
+  assert.match(r.fiche[1], new RegExp(`Saison terminée.*Saison ${r.prec}.*4séances de muscu.*2pesées`));
+  assert.match(r.fete, /^Nouvelle saison/);
+  assert.equal(r.auto[0], true, 'le bilan de la saison passée s\'ouvre de lui-même');
+  assert.match(r.auto[1], new RegExp(`Saison ${r.prec}.*C'est parti`));
+  assert.equal(r.uneFois, false, 'une seule fois');
+}));
+
 test('animations : les chiffres défilent jusqu\'à leur valeur exacte', () => avecAppli({ animations: true }, async ({ page }) => {
   await page.evaluate(() => { const j = getDay(todayStr()); j.meals[MEALS[1]].push({ name: 'Riz', grams: 100, kcal: 1234, p: 3, c: 28, f: 0 }); saveData(todayStr()); allerA('repas'); renderApp(); });
   await page.waitForFunction(() => document.getElementById('total-kcals').textContent.replace(/\s/g, '') === '1234');
