@@ -506,6 +506,18 @@ ne donnaient leur `hausse` que dans la pose du haut et restaient figés, épaule
 se confondre avec la ligne de l'épaule à la main (le coude y bascule) ; une main qui passerait contre l'épaule en
 ligne droite reçoit une pose de passage, ou s'écrit en angles.
 
+### Le curl : un poids par main, les avant-bras montent parallèles
+
+Debout ou assis, la famille `curl` pliait le coude dans le plan du bras : en haut du geste les mains arrivaient à 33 cm
+l'une de l'autre (l'écart des épaules) quand les coudes sont à 42 cm — les avant-bras convergeaient et les deux
+haltères se rejoignaient devant la poitrine (6 cm entre leurs têtes). Avec un poids dans chaque main (haltères,
+kettlebells), l'humérus tourne maintenant de 13° vers le dehors à mesure que le coude plie (`ouvert`, dans
+`src/42-curl.js`) : avant-bras parallèles, les mains à 41 cm, chaque haltère devant son épaule, 14 cm entre eux. En
+prise marteau, 6° seulement : les haltères, tenus dans l'axe, ne se touchent pas, et assis une ouverture plus grande
+faisait passer l'haltère au ras de la cuisse (le coude s'écartait d'un coup : `sauts.mjs` le relève à partir de 10°).
+Barre, poulie, élastique, pupitre, banc incliné, curl concentré, croisé : inchangés. 14 exercices sont concernés ; les
+poses des 751 autres mouvements de la table, comparées avant et après à cinq instants, sont identiques.
+
 ## Les mouvements des exercices
 
 Chaque exercice de la bibliothèque (`EXERCICES_BASE` dans `index.html`) a son mouvement. Tout est dans `mouvements/` :

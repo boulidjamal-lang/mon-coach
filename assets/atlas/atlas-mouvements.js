@@ -2860,7 +2860,8 @@
   /* Curl des biceps et ses variantes.
      Matériel : hal (défaut), barre, ez, kb, poulie, elas, machine, disque. Prise : (supination), marteau, pro, zottman.
      Posture : voir postureDe, plus pupitre, araignee (à plat ventre sur banc incliné), concentre, drag, bayesien,
-     hercule, croise, accroupi, mur, allonge. Côtés : alt, uni. */
+     hercule, croise, accroupi, mur, allonge. Côtés : alt, uni. ouvert=<degrés> : l'ouverture des avant-bras en haut
+     du geste, debout ou assis avec un poids par main (13 par défaut, 6 en prise marteau). */
   FAM.curl = (c, o, C) => {
     const pron = o.marteau ? 90 : o.pro ? 180 : 0;
     const m = coteDe(o);
@@ -2921,7 +2922,12 @@
     } else {
       // Debout ou assis : coudes au corps ; ils avancent un peu en haut du mouvement.
       const ecart = o.large ? 14 : o.serre ? -16 : 0;
-      a = B(90, 6, ecart, 12, pron); b = B(35, 16, ecart, 142, pron);
+      // Un poids dans chaque main (haltères, kettlebells) : les avant-bras montent parallèles, chaque main devant son
+      // épaule. Sans cette ouverture les mains se rejoignent devant la poitrine et les haltères se touchent. En prise
+      // marteau les haltères, tenus dans l'axe, ne se touchent pas : une ouverture légère suffit (assis, une plus
+      // grande fait passer l'haltère au ras de la cuisse et le coude s'écarte d'un coup).
+      const ouvert = (o.hal || o.kb) && !o.croise ? (o.ouvert == null ? (o.marteau ? 6 : 13) : +o.ouvert) : 0;
+      a = B(90, 6, ecart, 12, pron); b = B(35, 16, ecart + ouvert, 142, pron);
       if (o.haute) { a = B(0, 80, 0, 20, pron); b = B(0, 86, 0, 120, pron); ancre = V(0, 1.9, 0.9); }   // poulie haute, bras devant
     }
     if (o.mur) fixe = fixe.concat(poseFixe(MAT.mur(C, -c.L.dos - 0.06)));
