@@ -692,6 +692,8 @@ Tout est dans `video/mannequin/` ; `<travail>` est un dossier hors du dépôt.
      sillon. Les aponévroses ne comptent pas (le relief des muscles se lirait mal dessous). La peau du bras ne cherche
      que les muscles du bras et de l'épaule, celle du tronc que ceux du tronc et de l'épaule (la « part de bras » de la
      peau d'origine dit de quel côté elle est) ; les membres ne voient pas ceux d'en face.
+   - `GONFLE=<mm>` (facultatif, 0 par défaut) épaissit les muscles sous la peau, plus ou moins selon la région
+     (épaules, bras, pectoraux, cuisses surtout ; presque rien au ventre). Essayé à 10 mm, non retenu.
    - **Le muscle de chaque sommet** (pour la couleur) : celui que le rayon touche ; le muscle suivant, plus profond,
      est gardé aussi. Un muscle aperçu au fond d'une fente n'est pas celui que la peau recouvre : ces sommets-là
      reprennent le muscle de leurs voisins. Le sens des fibres vient du muscle (vers le tendon où elles convergent).
@@ -709,7 +711,11 @@ Tout est dans `video/mannequin/` ; `<travail>` est un dossier hors du dépôt.
      mélange s'étale sur toute sa longueur (6,5 cm).
 4. `python video/mannequin/etape2.py video/mannequin <travail>/mannequin.npz <travail>/mannequin.blend` : le fichier
    Blender du personnage. L'armature n'a pas de hiérarchie : chaque os reçoit sa pose du moteur. Mélange en
-   quaternions duaux (le volume se garde aux torsions), puis **lissage correcteur** (12 tours, relief du repos
+   quaternions duaux (le volume se garde aux torsions : épaule, avant-bras, hanche) — sauf aux **charnières** : au
+   coude et au genou ce mélange gonfle le pli quand l'articulation se ferme (l'avant-bras et le bas de la cuisse
+   « grossissaient » en haut du curl et en bas du squat) ; là où la peau tient autant à l'os du dessus qu'à celui du
+   dessous, il laisse la place au mélange ordinaire (deux modificateurs d'armature mêlés par un groupe de sommets ;
+   `CHARNIERES=0` pour revenir aux quaternions duaux partout). Puis **lissage correcteur** (12 tours, relief du repos
    gardé) sur le corps — ni le visage ni les doigts. Le **short** : les faces de la peau entre la taille et le haut
    des cuisses, doublées, gonflées de 4 mm et détendues (le relief des muscles ne se lit pas à travers le tissu), le
    bord ramené sur une ligne nette ; mêmes attaches que la peau, qui est cachée dessous.
@@ -719,6 +725,11 @@ Tout est dans `video/mannequin/` ; `<travail>` est un dossier hors du dépôt.
    les muscles que l'appli colore pour ces exercices.
 6. `PYTHON=<python avec bpy> DONNEES=<travail> bash video/mannequin/tout-rendre.sh e338 e39 e265` : rend chaque boucle
    (`rendre.py` : une image, une liste ou une plage ; `DEBUG=os` colore la peau par os, pour lire les attaches).
+   Deux rendus, au choix (`STYLE`) : **`argile`**, celui qui a été retenu et que le script prend par défaut — corps et
+   matériel de la même argile grise (le matériel sombre en vrai, fonte, gomme, coussins, un peu plus foncé), yeux de
+   statue, pas de grain de fibres, muscles qui travaillent rouge orangé et légèrement lumineux (ils restent lisibles
+   dans l'ombre), lumière plus enveloppante, pensé pour le fond clair ; **`studio`**, le premier rendu — peau claire,
+   matériel à ses teintes (acier, fonte noire), grain des fibres, yeux peints.
    - **La pose** (`poses.py`). Un os simple prend la pose de son articulation. Les tronçons du bras et de la cuisse
      partagent la **torsion** : la rotation de l'os par rapport à son parent est séparée en un balancement et une
      torsion autour de l'os, mesurée depuis une direction de référence qu'un bras ou une cuisse n'atteint jamais à
@@ -729,19 +740,27 @@ Tout est dans `video/mannequin/` ; `<travail>` est un dossier hors du dépôt.
    - **La couleur** : l'intensité que l'appli donne à chaque muscle, les moins sollicités ramenés au neutre (seuil
      0,4) ; un muscle profond se devine sous un muscle neutre (45 %) ; un muscle du bras ne colore que la peau du bras.
      Les bords sont adoucis sur deux sommets. Sous le short, la couleur se devine en nappe douce.
-   - **Le studio** : lumières placées d'après la vue (principale en haut à gauche, débouchage, deux contre-jours), fond
-     transparent, le sol ne reçoit que l'ombre. Cadrage : la boîte de la répétition entière, comme dans l'appli.
+   - **Le studio** : lumières placées d'après la vue — deux bandes verticales devant, de chaque côté (un éclairage
+     croisé, qui creuse le relief), une lumière haute derrière, un débouchage. Fond transparent ; le sol ne reçoit que
+     l'ombre d'une lumière douce au zénith (les autres ne l'éclairent pas : une seule ombre, ramassée sous le corps).
+     Cadrage : la boîte de la répétition entière, comme dans l'appli.
 7. `node video/mannequin/fonds.cjs <travail> 800` (les fonds clair et sombre de la fiche, peints par le navigateur
    d'après le CSS), puis `DONNEES=<travail> bash video/mannequin/assembler.sh <travail>/images-e338 <sortie>` : les
    boucles `-sombre.mp4` et `-clair.mp4` (H.264).
 
 Mesuré ici (4 cœurs, sans carte graphique) : construire le mannequin prend 40 s (643 000 sommets, 1,29 million de
-triangles) ; une image de 800 × 800 à 36 échantillons, 23 s ; une boucle de 70 images, 27 min.
+triangles) ; une image de 800 × 800 à 36 échantillons, 18 à 23 s ; une boucle de 70 images, 21 à 27 min, qui pèse 150
+à 230 ko par thème (H.264). Pour les 800 exercices de la bibliothèque (61 000 images à 25 par seconde) : de l'ordre de
+390 heures de calcul sur une machine comme celle-ci — à répartir sur plusieurs machines.
 
 Contrôlé en image fixe sur 21 exercices (départ et milieu de la répétition) : curl, squat, développé militaire,
 gainage, rowing barre, traction, élévations latérales, relevé de bassin, balancé de kettlebell, posture du pigeon,
 soulevé de terre, développé couché, pompe, extension des jambes à la machine, fente, dips, crunch, presse à cuisses,
-tirage vertical, rowing à la poulie, écarté à la poulie. Rendu en vidéo : les trois premiers.
+tirage vertical, rowing à la poulie, écarté à la poulie. Rendu en vidéo : les trois premiers (rendu `studio`), puis le
+curl corrigé dans le rendu `argile`.
+
+Essayé puis écarté : un corps lisse de synthèse (MakeHuman, CC0) posé sur le même squelette, avec cheveux, sourcils et
+short — propre aux articulations, mais sans le dessin des muscles ; le mannequin anatomique a été préféré.
 
 Ce qui reste imparfait : l'épaule dans ses positions extrêmes (bas des dips, bras tout en haut) reste un peu raide ;
 la carrure est celle de l'appli (plus fine que les mannequins de culturistes du commerce) ; les gestes sont ceux du

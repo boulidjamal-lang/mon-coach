@@ -3,8 +3,10 @@
 #   PYTHON=<python avec bpy> DONNEES=<dossier de travail> bash tout-rendre.sh e338 e39 e265
 # DONNEES contient mannequin.blend, mannequin.npz (étapes 1 et 2), couleurs.json et mv-<id>.json (exporter-mouvement.mjs).
 ici="$(cd "$(dirname "$0")" && pwd)"; D="${DONNEES:-.}"; PY="${PYTHON:-python3}"
-export MARGE=1.0 EXPO=-5.05 TRANSFO=Standard LOOK=None FIBRE=0.5 FIBRE_K=400 REPRISE=1
-RES=${RES:-800}; ECH=${ECH:-36}
+# STYLE=argile (par défaut : corps et matériel d'argile grise, muscles rouge orangé) ou STYLE=studio (le premier rendu).
+export STYLE="${STYLE:-argile}" MARGE=1.0 TRANSFO=Standard LOOK=None REPRISE=1
+if [ "$STYLE" = studio ]; then export EXPO=-5.05 FIBRE=0.5 FIBRE_K=400; fi
+RES=${RES:-800}; ECH=${ECH:-32}
 for e in "$@"; do
   n=$(python3 -c "import json,sys;print(len(json.load(open(sys.argv[1]))['images']))" "$D/mv-$e.json")
   echo "DEBUT $e ($n images) $(date -u +%H:%M:%S)"

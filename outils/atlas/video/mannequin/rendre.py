@@ -19,6 +19,11 @@ os.makedirs(SORTIE, exist_ok=True)
 t0 = time.time()
 def chrono(m): print(f'{time.time() - t0:7.1f} s  {m}', flush=True)
 
+STYLE = os.environ.get('STYLE', 'studio')
+if STYLE == 'argile':
+    # Mannequin d'argile grise sur fond clair : tout est de la même matière, seuls les muscles qui travaillent rougeoient.
+    for k, v in {'NEUTRE': '#8d9295', 'FORT': '#f03a16', 'MOYEN': '#f58a4a', 'FIBRE': '0', 'AO_MIN': '0.55', 'AO_D': '0.05', 'CREUX_MIN': '1.0', 'EXPO': '-4.45',
+                 'LAMPES': '700,420,420,380,420', 'ZENITH': '1400', 'AMBIANCE': '0.5', 'LUEUR': '0.9', 'SEUIL_ACTIF': '0.4', 'ADOUCIR': '3', 'PROFOND': '0.6'}.items(): os.environ.setdefault(k, v)
 bpy.ops.wm.open_mainfile(filepath=os.path.abspath(BLEND))
 sc = bpy.context.scene
 D = np.load(NPZ); meta = json.loads(str(D['meta']))
@@ -117,7 +122,12 @@ def mat_peau(m, ongle=False):
     for i in range(3): L.new(mu.outputs[0], comb.inputs[i])
     L.new(ramp.outputs['Color'], mix.inputs['A']); L.new(comb.outputs['Color'], mix.inputs['B'])
     L.new(mix.outputs['Result'], bs.inputs['Base Color'])
-    bs.inputs['Roughness'].default_value = 0.3 if ongle else 0.52
+    LUEUR = float(os.environ.get('LUEUR', '0'))
+    if LUEUR > 0:
+        # Les muscles qui travaillent émettent un peu de leur couleur : ils restent lisibles dans l'ombre.
+        em = N.new('ShaderNodeMath'); em.operation = 'MULTIPLY'; em.inputs[1].default_value = LUEUR; L.new(att.outputs['Fac'], em.inputs[0])
+        L.new(ramp.outputs['Color'], bs.inputs['Emission Color']); L.new(em.outputs[0], bs.inputs['Emission Strength'])
+    bs.inputs['Roughness'].default_value = 0.3 if ongle else (0.62 if STYLE == 'argile' else 0.52)
     bs.inputs['Subsurface Weight'].default_value = 0.12
     bs.inputs['Subsurface Radius'].default_value = (1.0, 0.4, 0.3)
     bs.inputs['Subsurface Scale'].default_value = 0.004
@@ -176,7 +186,9 @@ def mat_tissu(m):
 
 mat_peau(me.materials[0]); mat_peau(me.materials[1], ongle=True)
 mat_simple(me.materials[2], srgb(os.environ.get('CHEVEUX', '#2b2724')), rough=0.6)
-mat_oeil(me.materials[3])
+# (argile : des yeux de statue, de la matière du corps)
+if STYLE == 'argile': mat_simple(me.materials[3], tuple(x * 0.92 for x in C_NEUTRE), rough=0.5)
+else: mat_oeil(me.materials[3])
 if short is not None: mat_tissu(short.data.materials[0])
 
 if os.environ.get('DEBUG') == 'os':
@@ -269,6 +281,12 @@ def forme_maillage(f):
 
 MATS = {}
 def mat_materiel(f):
+    if STYLE == 'argile':
+        # Le matériel est de la même argile, un peu plus sombre pour ce qui est noir en vrai (fonte, gomme, coussins).
+        sombre = max(f['couleur']) < 90
+        cle = ('argile', sombre)
+        if cle not in MATS: MATS[cle] = mat_simple(bpy.data.materials.new('argile'), tuple(x * (0.62 if sombre else 0.95) for x in C_NEUTRE), rough=0.6)
+        return MATS[cle]
     cle = (tuple(f['couleur']), round(f.get('metal') or 0, 2), f.get('appui', 0))
     if cle in MATS: return MATS[cle]
     c = lin(f['couleur']); metal = f.get('metal') or 0; sombre = max(f['couleur']) < 70

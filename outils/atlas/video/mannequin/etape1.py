@@ -427,6 +427,22 @@ for k, i in enumerate(ic):
     fibre[i] = d * [s, 1, 1]
 chrono(f'muscles : {int((muscle >= 0).sum())} sommets sur un muscle, {len(np.unique(muscle[muscle >= 0]))} structures visibles en surface')
 
+# ---------------------------------------------------------------- carrure (facultatif)
+# GONFLE (mm) : les muscles épaissis sous la peau — la surface avance le long de sa normale, plus ou moins selon la
+# région du muscle recouvert (épaules, bras, pectoraux et cuisses surtout ; presque rien au ventre, rien aux
+# articulations, à la tête, aux mains et aux pieds). Le champ est lissé : le relief garde son dessin.
+GONFLE = float(os.environ.get('GONFLE', '0')) / 1000
+if GONFLE > 0:
+    PART = {'epaule': 1.0, 'bras': 1.0, 'thorax': 0.9, 'dos': 0.7, 'avant_bras': 0.65, 'cuisse': 0.8, 'jambe': 0.55, 'bassin': 0.45, 'abdomen': 0.12, 'cou': 0.25}
+    part_st = np.array([PART.get(s_['region'], 0.0) for s_ in H['structures']] + [0.0])
+    g = np.where(corpsV, part_st[muscle], 0.0) * rac
+    for _ in range(int(os.environ.get('GONFLE_LISSE', '60'))): g = 0.5 * g + 0.5 * (Af @ g) / degf
+    Nl = normales(Vrel, Tf, planf)
+    for _ in range(8): Nl = 0.5 * Nl + 0.5 * (Af @ Nl) / degf[:, None]
+    Nl /= np.maximum(np.linalg.norm(Nl, axis=1, keepdims=True), 1e-20)
+    Vrel = Vrel + Nl * (g * GONFLE)[:, None]; Vrel[planf, 0] = 0
+    chrono(f'carrure : jusqu\'à {g.max() * GONFLE * 1000:.1f} mm, {float((g * GONFLE)[corpsV].mean()) * 1000:.1f} mm en moyenne sur le corps')
+
 # ---------------------------------------------------------------- le corps entier : gauche + miroir + cheveux
 vers_d = np.arange(NVF) + NVF; vers_d[planf] = np.flatnonzero(planf)
 garde_d = ~planf                                              # les sommets de la couture ne sont pas doublés

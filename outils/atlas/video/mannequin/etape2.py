@@ -65,7 +65,25 @@ def attacher(ob, osi, osw):
             q = np.round(w * 1000).astype(np.int64)
             for val in np.unique(q):
                 g.add(sel[q == val].tolist(), float(val) / 1000, 'ADD')
-    m = ob.modifiers.new('armature', 'ARMATURE'); m.object = arm; m.use_deform_preserve_volume = os.environ.get('VOLUME', '1') == '1'
+    # La peau suit les os en gardant son volume (quaternions duaux) : sans cela l'épaule et l'avant-bras se vrillent
+    # en s'amincissant. Mais aux charnières (coude, genou) ce mélange gonfle le pli quand l'articulation se ferme :
+    # là, il est mêlé au mélange ordinaire (CHARNIERES : la part ordinaire au cœur de l'articulation).
+    vol = os.environ.get('VOLUME', '1') == '1'; K = float(os.environ.get('CHARNIERES', '1'))
+    m = ob.modifiers.new('armature', 'ARMATURE'); m.object = arm; m.use_deform_preserve_volume = vol and K <= 0
+    if vol and K > 0:
+        noms = [o['nom'] for o in OS]; charn = np.zeros(len(osi))
+        for cote in ('.G', '.D'):
+            for haut, bas in ((('bras',), ('avantbras', 'main', 'doigt')), (('cuisse',), ('jambe', 'pied', 'orteils'))):
+                eh = np.array([n.endswith(cote) and n.startswith(haut) and not n.startswith('avantbras') for n in noms])
+                eb = np.array([n.endswith(cote) and n.startswith(bas) for n in noms])
+                wh, wb = (osw * eh[osi]).sum(1), (osw * eb[osi]).sum(1)
+                charn = np.maximum(charn, 2 * np.minimum(wh, wb))
+        t = np.clip(charn, 0, 1); part = 1 - K * t * t * (3 - 2 * t)
+        gv = ob.vertex_groups.new(name='volume'); q = np.round(part * 50).astype(np.int64)
+        for val in np.unique(q):
+            if val > 0: gv.add(np.flatnonzero(q == val).tolist(), float(val) / 50, 'REPLACE')
+        m2 = ob.modifiers.new('armature_volume', 'ARMATURE'); m2.object = arm; m2.use_deform_preserve_volume = True
+        m2.vertex_group = 'volume'; m2.use_multi_modifier = True
     return m
 attacher(corps, OSI, OSW)
 chrono('groupes de sommets')
