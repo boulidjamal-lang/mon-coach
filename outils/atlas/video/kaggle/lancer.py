@@ -2,10 +2,10 @@
 # -*- coding: utf-8 -*-
 """Lanceur local du notebook Kaggle « anqa-video ».
 
-La clé Kaggle n'est jamais dans ce fichier ni dans l'environnement : elle est enregistrée par le formulaire
-sécurisé de la session et ajoutée aux requêtes vers api.kaggle.com par le mandataire réseau. L'outil Kaggle
-exige malgré tout une valeur locale : on lui donne une valeur factice, et on lui indique le nom du compte
-(public) au lieu de le laisser interroger le service avec cette valeur factice.
+La clé Kaggle n'est jamais dans ce fichier ni dans le dépôt. Soit elle est sur la machine qui lance
+(fichier ~/.kaggle/access_token ou variable KAGGLE_API_TOKEN), soit c'est un secret réseau de l'environnement,
+ajouté aux requêtes vers api.kaggle.com par le mandataire : l'outil Kaggle exige alors une valeur locale, on lui
+en donne une factice avec le nom du compte (KAGGLE_UTILISATEUR, public).
 
 Usage :
   KAGGLE_UTILISATEUR=<nom> python lancer.py quota
@@ -26,13 +26,20 @@ JEU, NOYAU = "anqa-entrees", "anqa-video"
 
 
 def api():
-    if not UTILISATEUR:
-        sys.exit("KAGGLE_UTILISATEUR manquant (nom du compte Kaggle, public)")
-    os.environ.setdefault("KAGGLE_API_TOKEN", "KGAT_valeur_factice_remplacee_par_le_mandataire")
+    """Ouvre la connexion. Deux cas : une vraie clé est disponible sur cette machine (fichier ~/.kaggle/access_token
+    ou variable KAGGLE_API_TOKEN, jamais dans le dépôt) et l'outil trouve seul le nom du compte ; ou bien la clé est
+    un secret réseau de l'environnement, et on donne à l'outil une valeur factice avec le nom du compte."""
+    global UTILISATEUR
     from kaggle.api.kaggle_api_extended import KaggleApi
-    KaggleApi._introspect_token = lambda self, jeton: UTILISATEUR
+    reelle = bool(os.environ.get("KAGGLE_API_TOKEN")) or os.path.exists(os.path.expanduser("~/.kaggle/access_token"))
+    if not reelle:
+        if not UTILISATEUR:
+            sys.exit("KAGGLE_UTILISATEUR manquant (nom du compte Kaggle, public)")
+        os.environ["KAGGLE_API_TOKEN"] = "KGAT_valeur_factice_remplacee_par_le_mandataire"
+        KaggleApi._introspect_token = lambda self, jeton: UTILISATEUR
     a = KaggleApi()
     a.authenticate()
+    UTILISATEUR = UTILISATEUR or a.config_values.get(a.CONFIG_NAME_USER, "")
     return a
 
 
@@ -70,6 +77,7 @@ def main():
         return
     a = api()
     if ordre == "quota":
+        print("compte :", UTILISATEUR)
         print(a.quota_view())
     elif ordre == "jeu":
         dossier = os.path.abspath(sys.argv[2])
@@ -87,7 +95,7 @@ def main():
         print(a.dataset_status(f"{UTILISATEUR}/{JEU}"))
     elif ordre == "envoi":
         d, c, g = construire(sys.argv[2], UTILISATEUR)
-        r = a.kernels_push(d, acc="NvidiaTeslaT4" if g else None)
+        r = a.kernels_push(d, timeout=str(c.get("delai_noyau_s", 5400)) if g else None, acc="NvidiaTeslaT4" if g else None)
         print("envoyé :", r)
     elif ordre == "etat":
         print(a.kernels_status(f"{UTILISATEUR}/{NOYAU}"))

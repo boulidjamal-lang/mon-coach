@@ -35,16 +35,20 @@ VERSIONS = {
     "ComfyUI-WanAnimatePreprocess": ("https://github.com/kijai/ComfyUI-WanAnimatePreprocess.git", "0e0b6a2a555625acf4d4aefb780e27d06937132f"),
 }
 
-# (dépôt Hugging Face, chemin dans le dépôt, dossier ComfyUI, nom local, lourd ?)
+# (jeu, dépôt Hugging Face, chemin dans le dépôt, dossier ComfyUI, nom local, lourd ?)
+# « gguf » : modèle compressé (11,5 Go, tient dans une T4). « natif » : format compressé de ComfyUI (18,4 Go),
+# pris en secours si le chargeur GGUF ne s'entend pas avec cette version de ComfyUI.
 MODELES = [
-    ("QuantStack/Wan2.2-Animate-14B-GGUF", "Wan2.2-Animate-14B-{quant}.gguf", "unet", "Wan2.2-Animate-14B-{quant}.gguf", True),
-    ("city96/umt5-xxl-encoder-gguf", "umt5-xxl-encoder-Q5_K_M.gguf", "text_encoders", "umt5-xxl-encoder-Q5_K_M.gguf", True),
-    ("Comfy-Org/Wan_2.2_ComfyUI_Repackaged", "split_files/vae/wan_2.1_vae.safetensors", "vae", "wan_2.1_vae.safetensors", True),
-    ("Comfy-Org/Wan_2.1_ComfyUI_repackaged", "split_files/clip_vision/clip_vision_h.safetensors", "clip_vision", "clip_vision_h.safetensors", True),
-    ("Kijai/WanVideo_comfy", "Lightx2v/lightx2v_I2V_14B_480p_cfg_step_distill_rank64_bf16.safetensors", "loras", "lightx2v_I2V_14B_480p_cfg_step_distill_rank64_bf16.safetensors", True),
-    ("Comfy-Org/Wan_2.2_ComfyUI_Repackaged", "split_files/loras/wan2.2_animate_14B_relight_lora_bf16.safetensors", "loras", "wan2.2_animate_14B_relight_lora_bf16.safetensors", True),
-    ("Wan-AI/Wan2.2-Animate-14B", "process_checkpoint/det/yolov10m.onnx", "detection", "yolov10m.onnx", False),
-    ("JunkyByte/easy_ViTPose", "onnx/wholebody/vitpose-l-wholebody.onnx", "detection", "vitpose-l-wholebody.onnx", False),
+    ("gguf", "QuantStack/Wan2.2-Animate-14B-GGUF", "Wan2.2-Animate-14B-{quant}.gguf", "unet", "Wan2.2-Animate-14B-{quant}.gguf", True),
+    ("gguf", "city96/umt5-xxl-encoder-gguf", "umt5-xxl-encoder-Q5_K_M.gguf", "text_encoders", "umt5-xxl-encoder-Q5_K_M.gguf", True),
+    ("natif", "Comfy-Org/Wan_2.2_ComfyUI_Repackaged", "split_files/diffusion_models/wan2.2_animate_14B_int8_convrot.safetensors", "diffusion_models", "wan2.2_animate_14B_int8_convrot.safetensors", True),
+    ("natif", "Comfy-Org/Wan_2.2_ComfyUI_Repackaged", "split_files/text_encoders/umt5_xxl_fp8_e4m3fn_scaled.safetensors", "text_encoders", "umt5_xxl_fp8_e4m3fn_scaled.safetensors", True),
+    ("base", "Comfy-Org/Wan_2.2_ComfyUI_Repackaged", "split_files/vae/wan_2.1_vae.safetensors", "vae", "wan_2.1_vae.safetensors", True),
+    ("base", "Comfy-Org/Wan_2.1_ComfyUI_repackaged", "split_files/clip_vision/clip_vision_h.safetensors", "clip_vision", "clip_vision_h.safetensors", True),
+    ("base", "Kijai/WanVideo_comfy", "Lightx2v/lightx2v_I2V_14B_480p_cfg_step_distill_rank64_bf16.safetensors", "loras", "lightx2v_I2V_14B_480p_cfg_step_distill_rank64_bf16.safetensors", True),
+    ("relumiere", "Comfy-Org/Wan_2.2_ComfyUI_Repackaged", "split_files/loras/wan2.2_animate_14B_relight_lora_bf16.safetensors", "loras", "wan2.2_animate_14B_relight_lora_bf16.safetensors", True),
+    ("base", "Wan-AI/Wan2.2-Animate-14B", "process_checkpoint/det/yolov10m.onnx", "detection", "yolov10m.onnx", False),
+    ("base", "JunkyByte/easy_ViTPose", "onnx/wholebody/vitpose-l-wholebody.onnx", "detection", "vitpose-l-wholebody.onnx", False),
 ]
 
 NEGATIF = ("色调艳丽，过曝，静态，细节模糊不清，字幕，风格，作品，画作，画面，静止，整体发灰，最差质量，低质量，JPEG压缩残留，丑陋的，残缺的，"
@@ -148,7 +152,10 @@ def installer(racine):
     # torch est déjà dans l'image Kaggle (version CUDA) : on ne le réinstalle pas.
     req = [l.strip() for l in open(os.path.join(comfy, "requirements.txt")) if l.strip() and not l.startswith("#")]
     req = [l for l in req if l.split("=")[0].split(">")[0].split("<")[0].strip().lower() not in ("torch", "torchvision", "torchaudio")]
-    open(os.path.join(racine, "req.txt"), "w").write("\n".join(req + ["gguf", "onnx", "onnxruntime", "opencv-python-headless", "matplotlib", "huggingface_hub", "hf_transfer"]) + "\n")
+    plus = ["gguf", "onnx", "opencv-python-headless", "matplotlib", "huggingface_hub"]
+    if subprocess.run([sys.executable, "-c", "import onnxruntime"], capture_output=True).returncode != 0:
+        plus.append("onnxruntime")
+    open(os.path.join(racine, "req.txt"), "w").write("\n".join(req + plus) + "\n")
     cmd([sys.executable, "-m", "pip", "install", "-q", "--disable-pip-version-check", "-r", os.path.join(racine, "req.txt")])
     cmd([sys.executable, "-c", "import torch, onnxruntime, gguf, cv2, av; print('torch', torch.__version__, '| onnxruntime', onnxruntime.__version__, onnxruntime.get_available_providers())"], verifier=False)
     return comfy
@@ -157,11 +164,15 @@ def installer(racine):
 # --------------------------------------------------------------------------------------------------
 # 3. Modèles
 # --------------------------------------------------------------------------------------------------
-def telecharger(comfy, quant, reel):
-    os.environ.setdefault("HF_HUB_ENABLE_HF_TRANSFER", "1")
+def telecharger(comfy, quant, reel, jeux=("base", "gguf")):
+    """Télécharge les jeux demandés. reel=False : les fichiers lourds sont remplacés par des fichiers vides,
+    qui suffisent à ComfyUI pour valider un montage (un fichier vide est remplacé au prochain appel réel)."""
+    os.environ.setdefault("HF_XET_HIGH_PERFORMANCE", "1")
     from huggingface_hub import hf_hub_download
     total = 0
-    for depot, chemin, dossier, nom, lourd in MODELES:
+    for jeu, depot, chemin, dossier, nom, lourd in MODELES:
+        if jeu not in jeux:
+            continue
         chemin, nom = chemin.format(quant=quant), nom.format(quant=quant)
         cible_dir = os.path.join(comfy, "models", dossier)
         os.makedirs(cible_dir, exist_ok=True)
@@ -169,8 +180,9 @@ def telecharger(comfy, quant, reel):
         if os.path.exists(cible) and os.path.getsize(cible) > 0:
             continue
         if lourd and not reel:
-            open(cible, "wb").close()      # fichier factice : sert seulement à la validation du montage
-            dire("factice :", dossier + "/" + nom)
+            if not os.path.lexists(cible):
+                open(cible, "wb").close()      # fichier factice : sert seulement à la validation du montage
+                dire("factice :", dossier + "/" + nom)
             continue
         t = time.time()
         for essai in range(4):
@@ -193,9 +205,11 @@ def telecharger(comfy, quant, reel):
         for f in glob.glob(os.path.join(comfy, "models", src, "*")):
             d = os.path.join(comfy, "models", dst, os.path.basename(f))
             os.makedirs(os.path.dirname(d), exist_ok=True)
+            if os.path.islink(d) and os.path.realpath(d) != os.path.realpath(f):
+                os.remove(d)
             if not os.path.lexists(d) and os.path.isfile(f):
                 os.symlink(os.path.realpath(f), d)
-    BILAN["modeles_go"] = round(total, 2)
+    BILAN["modeles_go"] = round(BILAN.get("modeles_go", 0) + total, 2)
     cmd("df -h / /kaggle/temp /tmp 2>/dev/null | sort -u", verifier=False)
 
 
@@ -203,6 +217,7 @@ def telecharger(comfy, quant, reel):
 # 4. Serveur ComfyUI
 # --------------------------------------------------------------------------------------------------
 SERVEUR = None
+ETAT = {}
 
 
 def http(chemin, corps=None, delai=30):
@@ -304,13 +319,25 @@ def lancer(graphe, nom, attendre=True, delai_max=6 * 3600):
 # --------------------------------------------------------------------------------------------------
 # 5. Montages
 # --------------------------------------------------------------------------------------------------
+FOURNISSEUR_ONNX = "CPUExecutionProvider"
+
+
+def choisir_fournisseur(gpu):
+    """Détection de pose sur la carte graphique quand onnxruntime le permet (sinon processeur, plus lent)."""
+    global FOURNISSEUR_ONNX
+    code, s = cmd([sys.executable, "-c", "import onnxruntime; print(','.join(onnxruntime.get_available_providers()))"], verifier=False, silencieux=True)
+    if gpu and code == 0 and "CUDAExecutionProvider" in s:
+        FOURNISSEUR_ONNX = "CUDAExecutionProvider"
+    dire("détection de pose :", FOURNISSEUR_ONNX)
+
+
 def montage_pretraitement(larg, haut, prefixe):
-    """Vidéo guide -> poses détectées (images) + visages. Tourne sur le processeur."""
+    """Vidéo guide -> poses détectées (images) + visages."""
     return {
         "12": {"class_type": "LoadVideo", "inputs": {"file": "guide.mp4"}},
         "13": {"class_type": "GetVideoComponents", "inputs": {"video": ["12", 0]}},
         "14": {"class_type": "ImageScale", "inputs": {"image": ["13", 0], "upscale_method": "lanczos", "width": larg, "height": haut, "crop": "center"}},
-        "15": {"class_type": "OnnxDetectionModelLoader", "inputs": {"vitpose_model": "vitpose-l-wholebody.onnx", "yolo_model": "yolov10m.onnx", "onnx_device": "CPUExecutionProvider"}},
+        "15": {"class_type": "OnnxDetectionModelLoader", "inputs": {"vitpose_model": "vitpose-l-wholebody.onnx", "yolo_model": "yolov10m.onnx", "onnx_device": FOURNISSEUR_ONNX}},
         "16": {"class_type": "PoseAndFaceDetection", "inputs": {"model": ["15", 0], "images": ["14", 0], "width": larg, "height": haut, "face_padding": 0}},
         "17": {"class_type": "DrawViTPose", "inputs": {"pose_data": ["16", 0], "width": larg, "height": haut, "retarget_padding": 16, "body_stick_width": -1, "hand_stick_width": -1, "draw_head": True}},
         "90": {"class_type": "SaveImage", "inputs": {"images": ["17", 0], "filename_prefix": prefixe + "-pose"}},
@@ -318,8 +345,9 @@ def montage_pretraitement(larg, haut, prefixe):
     }
 
 
-def montage_generation(t, quant, prefixe):
-    """Montage complet « animation » : le personnage de l'image exécute le mouvement de la vidéo guide."""
+def montage_generation(t, quant, prefixe, natif=False):
+    """Montage complet « animation » : le personnage de l'image exécute le mouvement de la vidéo guide.
+    natif=True : modèle et encodeur de texte au format compressé de ComfyUI au lieu de GGUF (secours)."""
     larg, haut, longueur = t["largeur"], t["hauteur"], t["longueur"]
     g = montage_pretraitement(larg, haut, prefixe)
     del g["91"]
@@ -345,6 +373,9 @@ def montage_generation(t, quant, prefixe):
         "22": {"class_type": "ImageFromBatch", "inputs": {"image": ["21", 0], "batch_index": ["18", 4], "length": 4096}},
         "92": {"class_type": "SaveImage", "inputs": {"images": ["22", 0], "filename_prefix": prefixe + "-clip"}},
     })
+    if natif:
+        g["1"] = {"class_type": "UNETLoader", "inputs": {"unet_name": "wan2.2_animate_14B_int8_convrot.safetensors", "weight_dtype": "default"}}
+        g["4"] = {"class_type": "CLIPLoader", "inputs": {"clip_name": "umt5_xxl_fp8_e4m3fn_scaled.safetensors", "type": "wan", "device": "default"}}
     if t.get("visage", True):
         g["18"]["inputs"]["face_video"] = ["16", 1]
     if t.get("relumiere"):
@@ -355,7 +386,7 @@ def montage_generation(t, quant, prefixe):
 
 NOEUDS = ["LoadVideo", "GetVideoComponents", "ImageScale", "OnnxDetectionModelLoader", "PoseAndFaceDetection", "DrawViTPose", "SaveImage", "UnetLoaderGGUF",
           "LoraLoaderModelOnly", "ModelSamplingSD3", "CLIPLoaderGGUF", "CLIPTextEncode", "VAELoader", "CLIPVisionLoader", "LoadImage", "CLIPVisionEncode",
-          "WanAnimateToVideo", "KSampler", "TrimVideoLatent", "VAEDecode", "ImageFromBatch"]
+          "WanAnimateToVideo", "KSampler", "TrimVideoLatent", "VAEDecode", "ImageFromBatch", "UNETLoader", "CLIPLoader"]
 
 
 # --------------------------------------------------------------------------------------------------
@@ -414,12 +445,30 @@ def executer(comfy, gpu):
                 res["validation_montage_complet"] = {"ok": ok2, **({} if ok2 else d2)}
                 http("/interrupt", {})
                 http("/queue", {"clear": True})
+                ok3, d3 = lancer(montage_generation(t, quant, prefixe, natif=True), nom + " (validation du secours natif)", attendre=False)
+                res["validation_montage_natif"] = {"ok": ok3, **({} if ok3 else d3)}
+                http("/interrupt", {})
+                http("/queue", {"clear": True})
                 continue
             mem = Memoire()
             mem.start()
-            ok, d = lancer(montage_generation(t, quant, prefixe), nom)
+            delai = CONFIG.get("delai_tache_s", 3600)
+            natif = ETAT.get("natif", False)
+            ok, d = lancer(montage_generation(t, quant, prefixe, natif=natif), nom + (" (natif)" if natif else ""), delai_max=delai)
+            if not ok and not natif and CONFIG.get("secours_natif", True) and "validation" not in d:
+                dire("échec avec le modèle GGUF : nouvel essai avec le format compressé de ComfyUI")
+                res["echec_gguf"] = {k: v for k, v in d.items() if k != "sorties"}
+                http("/interrupt", {})
+                http("/queue", {"clear": True})
+                http("/free", {"unload_models": True, "free_memory": True})
+                with Etape("modèles (secours natif)"):
+                    telecharger(comfy, quant, reel=True, jeux=("natif",))
+                ETAT["natif"] = natif = True
+                for vieux in glob.glob(os.path.join(sortie_comfy, "anqa", nom + "-*")):
+                    os.remove(vieux)
+                ok, d = lancer(montage_generation(t, quant, prefixe, natif=True), nom + " (natif)", delai_max=delai)
             mem.actif = False
-            res.update({"ok": ok, "memoire_carte_max_mo": mem.maxi, **{k: v for k, v in d.items() if k != "sorties"}})
+            res.update({"ok": ok, "natif": natif, "memoire_carte_max_mo": mem.maxi, **{k: v for k, v in d.items() if k != "sorties"}})
             n_pose = images_vers_video(os.path.join(sortie_comfy, "anqa", nom + "-pose_*.png"), os.path.join(SORTIES, nom + "-pose.mp4"), ips)
             n_clip = images_vers_video(os.path.join(sortie_comfy, "anqa", nom + "-clip_*.png"), os.path.join(SORTIES, nom + ".mp4"), ips)
             res.update({"images_pose": n_pose, "images_clip": n_clip})
@@ -442,8 +491,11 @@ def main():
         racine = base()
         with Etape("installation"):
             comfy = installer(racine)
+        jeux = ["base", "gguf"] + (["relumiere"] if any(t.get("relumiere") for t in CONFIG["taches"]) else [])
         with Etape("modèles"):
-            telecharger(comfy, CONFIG.get("quant", "Q4_K_M"), reel=gpu)
+            telecharger(comfy, CONFIG.get("quant", "Q4_K_M"), reel=gpu, jeux=jeux)
+            telecharger(comfy, CONFIG.get("quant", "Q4_K_M"), reel=False, jeux=("natif",))   # factices, pour valider le secours
+        choisir_fournisseur(gpu)
         with Etape("démarrage de ComfyUI"):
             demarrer(comfy, gpu)
             decrire_noeuds(NOEUDS)

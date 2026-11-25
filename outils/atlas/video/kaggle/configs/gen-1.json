@@ -3,18 +3,6 @@
  "quant": "Q4_K_M",
  "taches": [
   {
-   "nom": "curl-gris",
-   "guide": "curl-guide.mp4",
-   "image": "ref-gris.png",
-   "largeur": 480,
-   "hauteur": 832,
-   "longueur": 73,
-   "ips": 25,
-   "etapes": 6,
-   "graine": 1,
-   "texte": "A very muscular man doing dumbbell biceps curls in a clean light grey studio, fixed camera, full body."
-  },
-  {
    "nom": "curl-anime",
    "guide": "curl-guide.mp4",
    "image": "ref-anime-halteres.png",
@@ -25,6 +13,20 @@
    "etapes": 6,
    "graine": 1,
    "texte": "Anime style, cel shading, clean line art. A muscular young man with spiky black hair, white sleeveless top and black shorts, doing dumbbell biceps curls, plain white background, fixed camera, full body."
+  },
+  {
+   "nom": "curl-gris",
+   "guide": "curl-guide.mp4",
+   "image": "ref-gris.png",
+   "largeur": 480,
+   "hauteur": 832,
+   "longueur": 73,
+   "ips": 25,
+   "etapes": 6,
+   "graine": 1,
+   "texte": "A very muscular man doing dumbbell biceps curls in a clean light grey studio, fixed camera, full body."
   }
- ]
+ ],
+ "delai_tache_s": 2400,
+ "delai_noyau_s": 5400
 }
