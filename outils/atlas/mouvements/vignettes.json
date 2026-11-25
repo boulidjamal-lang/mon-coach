@@ -1197,11 +1197,11 @@
    "periode": 2.8,
    "images": 42,
    "octets": {
-    "image": 5442,
-    "clair": 7449,
-    "sombre": 7415
+    "image": 5632,
+    "clair": 7372,
+    "sombre": 7095
    },
-   "cle": "499403c36c72f8ac"
+   "cle": "5d54b0e8ce69659c"
   },
   "e172": {
    "mouvement": "curl barre drag",
@@ -1626,11 +1626,11 @@
    "periode": 4.6,
    "images": 48,
    "octets": {
-    "image": 4946,
-    "clair": 7985,
-    "sombre": 7906
+    "image": 5118,
+    "clair": 7779,
+    "sombre": 7767
    },
-   "cle": "50e201ccbdba3b83"
+   "cle": "def985abdf85c9c9"
   },
   "e247": {
    "mouvement": "curl hal incline alt",
@@ -2003,11 +2003,11 @@
    "periode": 4.6,
    "images": 48,
    "octets": {
-    "image": 5190,
-    "clair": 7516,
-    "sombre": 7689
+    "image": 5184,
+    "clair": 7440,
+    "sombre": 7394
    },
-   "cle": "7b1ef4476b430a76"
+   "cle": "38182fbe4aa1d780"
   },
   "e338": {
    "mouvement": "curl hal",
@@ -2016,11 +2016,11 @@
    "periode": 2.8,
    "images": 42,
    "octets": {
-    "image": 5238,
-    "clair": 7266,
-    "sombre": 7275
+    "image": 5320,
+    "clair": 7305,
+    "sombre": 7150
    },
-   "cle": "79b0da9f59996589"
+   "cle": "3bf48bf4d4e92be7"
   },
   "e341": {
    "mouvement": "poignet pronation couche uni",
@@ -2406,11 +2406,11 @@
    "periode": 2.8,
    "images": 42,
    "octets": {
-    "image": 5360,
-    "clair": 7979,
-    "sombre": 7627
+    "image": 5438,
+    "clair": 7793,
+    "sombre": 7501
    },
-   "cle": "734358fba6bbeaf1"
+   "cle": "44a5210865f65a15"
   },
   "e6": {
    "mouvement": "developpe hal decline",
@@ -3459,11 +3459,11 @@
    "periode": 2.8,
    "images": 42,
    "octets": {
-    "image": 7378,
-    "clair": 8139,
-    "sombre": 7899
+    "image": 7396,
+    "clair": 8229,
+    "sombre": 8026
    },
-   "cle": "ba5ab42d1b2b2224"
+   "cle": "f20ef676747d8605"
   },
   "sw-curl-au-pupitre-a-un-bras-a-la-machine": {
    "mouvement": "curl machine pupitre uni",
@@ -3524,11 +3524,11 @@
    "periode": 2.8,
    "images": 42,
    "octets": {
-    "image": 5112,
-    "clair": 5734,
-    "sombre": 5904
+    "image": 5102,
+    "clair": 5754,
+    "sombre": 5704
    },
-   "cle": "fc7ba1838961eb3b"
+   "cle": "07fd226533bb4dc9"
   },
   "sw-curl-bayesien-a-la-poulie": {
    "mouvement": "curl poulie bayesien uni",
@@ -3589,11 +3589,11 @@
    "periode": 2.8,
    "images": 42,
    "octets": {
-    "image": 5238,
-    "clair": 7266,
-    "sombre": 7275
+    "image": 5320,
+    "clair": 7305,
+    "sombre": 7150
    },
-   "cle": "79b0da9f59996589"
+   "cle": "3bf48bf4d4e92be7"
   },
   "sw-curl-biceps-avec-kettlebell": {
    "mouvement": "curl kb",
@@ -3602,11 +3602,11 @@
    "periode": 2.8,
    "images": 42,
    "octets": {
-    "image": 5254,
-    "clair": 7430,
-    "sombre": 7602
+    "image": 5338,
+    "clair": 7419,
+    "sombre": 7572
    },
-   "cle": "55d1c7b1f7851d64"
+   "cle": "21ab7d68adf1dd29"
   },
   "sw-curl-biceps-avec-trx": {
    "mouvement": "suspension curl sangles",
@@ -3875,11 +3875,11 @@
    "periode": 2.8,
    "images": 42,
    "octets": {
-    "image": 5634,
-    "clair": 7268,
-    "sombre": 7480
+    "image": 5582,
+    "clair": 7488,
+    "sombre": 7486
    },
-   "cle": "d301e8419ec37893"
+   "cle": "d75320c5274550bf"
   },
   "sw-curl-inverse-des-poignets-assis-avec-barre-ez": {
    "mouvement": "poignet ez inverse",
@@ -3953,11 +3953,11 @@
    "periode": 4.6,
    "images": 48,
    "octets": {
-    "image": 6872,
-    "clair": 8594,
-    "sombre": 8425
+    "image": 6858,
+    "clair": 8675,
+    "sombre": 8293
    },
-   "cle": "2680e6ef1690a0cd"
+   "cle": "fd431af424cc4377"
   },
   "sw-curl-marteau-araignee": {
    "mouvement": "curl hal araignee marteau",
@@ -3979,11 +3979,11 @@
    "periode": 2.8,
    "images": 42,
    "octets": {
-    "image": 7400,
-    "clair": 8732,
-    "sombre": 8329
+    "image": 7420,
+    "clair": 8858,
+    "sombre": 8240
    },
-   "cle": "99b04fdc3ee51bff"
+   "cle": "674365711c8eb14a"
   },
   "sw-curl-marteau-au-pupitre": {
    "mouvement": "curl hal pupitre marteau",
