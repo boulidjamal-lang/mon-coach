@@ -5945,8 +5945,8 @@ test("app iPhone : pas de barre de titre en haut, même une fois la page défil�
       accords: ['accord-conditions', 'accord-sante', 'compte-accord-conditions', 'compte-accord-sante'].map(largeur),
       selection: [getComputedStyle(document.body).userSelect, getComputedStyle(document.getElementById('compte-email-input')).userSelect] };
   });
-  assert.deepEqual(r.interrupteurs, ['ajustement-balance', 'partage-masquer-charges', 'profil-partage', 'profil-partage-direct', 'rappel-eau', 'rappel-pesee', 'rappel-proteines',
-    'rappel-seance', 'reglage-demander-rir', 'vitrine-ajustement'].map(id => id + ':switch:51px').sort());
+  assert.deepEqual(r.interrupteurs, ['ajustement-balance', 'partage-masquer-charges', 'profil-partage', 'profil-partage-direct', 'rappel-avant', 'rappel-defi', 'rappel-eau', 'rappel-pesee', 'rappel-proteines',
+    'rappel-seance', 'rappel-serie', 'reglage-demander-rir', 'vitrine-ajustement'].map(id => id + ':switch:51px').sort());
   // Les cases d'accord (conditions, données de santé) restent des cases.
   assert.deepEqual(r.accords, ['22px', '22px', '22px', '22px']);
   assert.deepEqual(r.selection, ['none', 'text']);
@@ -6481,7 +6481,9 @@ test('app iOS : en séance, écran gardé allumé, retour tactile, et rappel de 
   assert.equal((await appelsDe(page, 'KeepAwake', 'keepAwake')).length, 1);
   assert.ok((await appelsDe(page, 'Haptics', 'impact')).some(a => a.o.style === 'MEDIUM'), 'un petit choc quand la série est cochée');
   // (addListener : toucher un rappel ouvre le bon écran, branché au démarrage.)
-  assert.deepEqual((await appelsDe(page, 'LocalNotifications')).map(a => a.f).filter(f => f !== 'cancel' && f !== 'addListener'), ['checkPermissions', 'requestPermissions', 'schedule']);
+  // (Le rappel « Séance en pause », n° 42700, a son propre test.)
+  const deRepos = a => a.f !== 'schedule' || a.o.notifications[0].id < 42000;
+  assert.deepEqual((await appelsDe(page, 'LocalNotifications')).filter(deRepos).map(a => a.f).filter(f => f !== 'cancel' && f !== 'addListener'), ['checkPermissions', 'requestPermissions', 'schedule']);
   const n = (await appelsDe(page, 'LocalNotifications', 'schedule'))[0].o.notifications[0];
   assert.equal(n.id, 41000);
   assert.equal(n.title, 'Repos terminé');
@@ -6492,7 +6494,7 @@ test('app iOS : en séance, écran gardé allumé, retour tactile, et rappel de 
   // Repos arrêté : la notification part ; séance finie : l'écran peut s'éteindre.
   await page.evaluate(() => arreterRepos(0, 0));
   await page.waitForFunction(() => window.__appelsNatifs.some(a => a[0] === 'LocalNotifications' && a[1] === 'cancel'));
-  assert.deepEqual((await appelsDe(page, 'LocalNotifications', 'cancel'))[0].o, { notifications: [{ id: 41000 }] });
+  assert.deepEqual((await appelsDe(page, 'LocalNotifications', 'cancel')).map(a => a.o).find(o => o.notifications[0].id < 42000), { notifications: [{ id: 41000 }] });
   await page.evaluate(() => terminerSeance());
   await page.waitForTimeout(300);
   assert.equal((await appelsDe(page, 'KeepAwake', 'allowSleep')).length, 1);
@@ -7684,10 +7686,517 @@ test('rappels sur l\'iPhone : activés avec l\'autorisation, recalculés à chaq
   assert.equal(r.proteines[0][4], 'proteines');
   assert.deepEqual(r.proteines.map(x => x[0]), [42000, 42001, 42002, 42003, 42004, 42005, 42006]);
   assert.deepEqual(r.apresRepas, [42001, 42002, 42003, 42004, 42005, 42006], 'protéines atteintes : plus de rappel aujourd\'hui');
-  assert.equal(r.annules, 28, 'tous les rappels sont annulés avant d\'être reprogrammés');
+  assert.equal(r.annules, 49, 'tous les rappels (7 sortes, 7 jours) sont annulés avant d\'être reprogrammés');
   assert.equal(r.toucheSeance, true);
   assert.equal(r.touchePesee, true);
   assert.deepEqual(r.coupe, { dernier: 'cancel', programmes: null });
+}));
+
+/* ---------- Audit : données mal formées, séries sans charge, séance oubliée, rappels, cadre, zones de toucher ---------- */
+
+/* Le tour des écrans : chaque étape rend l'erreur qu'elle lève, s'il y en a une. */
+const TOUR_ECRANS = () => {
+  const etapes = [
+    ['repas', () => { allerA('repas'); currentDate = todayStr(); renderApp(); }],
+    ['veille', () => { changerDate(-1); changerDate(1); }],
+    ['feuille', () => { ouvrirFeuilleRepas('lunch'); fermerFeuilles(); }],
+    ['activité', () => { allerA('seance'); choisirModeSeance('muscu'); renderApp(); }],
+    ['cardio', () => { choisirModeSeance('cardio'); }],
+    ['progrès', () => { ouvrirStats('resume'); }],
+    ['poids', () => { choisirOngletStats('poids'); }],
+    ['nutrition', () => { choisirOngletStats('nutrition'); }],
+    ['activité (progrès)', () => { choisirOngletStats('activite'); }],
+    ['muscu (progrès)', () => { choisirOngletStats('muscu'); }],
+    ['profil', () => { allerA('reglages'); renderApp(); }],
+    ['saison', () => { passeSaison(); verifierTrophees({ muet: true }); badgesUtilisateur(); }],
+    ['rappels', () => { rappelsPrevus(); }],
+    ['bibliothèque', () => { ouvrirBibliotheque(); document.querySelectorAll('.modal.show').forEach(m => m.classList.remove('show')); }],
+    ['retour', () => { allerA('repas'); renderApp(); }]
+  ];
+  const res = [];
+  for (const [nom, f] of etapes) { try { f(); } catch (e) { res.push(nom + ' : ' + (e && e.message || e)); } }
+  return res;
+};
+
+test("données mal formées dans le stockage : l'appli démarre, répare ce qui se lit, et tous les écrans s'affichent", () => avecAppli({ https: true }, async ({ page }) => {
+  const { preparer } = require('./outils');
+  const relancer = async () => {
+    await page.waitForTimeout(500);
+    await page.reload({ waitUntil: 'domcontentloaded' });
+    await page.waitForFunction(() => typeof donneesPretes !== 'undefined' && donneesPretes === true && typeof Chart !== 'undefined', null, { timeout: 20000 });
+    await page.waitForTimeout(400);
+    await preparer(page);
+  };
+  // Des données saines, puis une valeur de la mauvaise forme à chaque endroit qui bloquait le démarrage.
+  await page.evaluate(() => {
+    const t = todayStr(), j = k => shiftDate(t, -k);
+    for (let k = 7; k >= 0; k--) { const d = getDay(j(k)); d.weight = 80; d.meals.lunch.push({ name: 'Riz', grams: 100, unite: 'g', kcal: 130, p: 3, c: 28, f: 0 }); d.workouts.push({ type: 'course', time: 30, distance: 5 }); }
+    const exo = toutesLesExercices()[0];
+    musculationProgrammes = [{ id: 'p1', nom: 'Push', creeLe: Date.now(), maj: Date.now(), exercices: [{ exerciceId: exo.id, series: [{ poids: 50, reps: 8 }] }] }];
+    musculationHistorique = [{ id: 'h1', programmeId: 'p1', programmeNom: 'Push', date: j(1), debut: Date.now() - 9e7, fin: Date.now() - 8.7e7, dureeMin: 50, maj: Date.now(),
+      exercices: [{ exerciceId: exo.id, nom: exo.nom, series: [{ poids: 50, reps: 8, fait: true }] }] }];
+    appData[j(8)] = 'x'; appData[j(9)] = null; appData[j(10)] = [];
+    appData[j(2)].meals = 'x';
+    appData[j(3)].meals.lunch = 'x';
+    appData[j(4)].meals.lunch = {};
+    appData[j(5)].meals.lunch.push(null, 'pomme', { name: 42, grams: 100, kcal: 100, p: 1, c: 1, f: 1 });
+    appData[j(6)].workouts = 'x';
+    appData[t].workouts = [null, { type: 'course', time: 20 }];
+    musculationHistorique.unshift(null, 'x', { id: 'h2', date: t, exercices: null },
+      { id: 'h3', date: t, exercices: [null, { exerciceId: exo.id, series: null }, { exerciceId: exo.id, series: [null, { poids: 60, reps: 5, fait: true }] }] });
+    musculationProgrammes.unshift(null, { id: 'p2', nom: 'X' }, { id: 'p3', nom: 'Y', exercices: [null] });
+    musculationExosPerso.push(null);
+    userProfile.ajustements = [null, 'x', { l: 'abc', k: 'x' }];
+    ecrireBloc(STORAGE_KEY, appData); ecrireBloc(PROFILE_KEY, userProfile); ecrireBloc(MUSCU_PROGRAMMES_KEY, musculationProgrammes);
+    ecrireBloc(MUSCU_HISTORIQUE_KEY, musculationHistorique); ecrireBloc(MUSCU_EXOS_PERSO_KEY, musculationExosPerso);
+    localStorage.setItem(MUSCU_SESSION_KEY, '[null]');
+  });
+  await relancer();
+  const r = await page.evaluate(tour => {
+    const t = todayStr(), j = k => shiftDate(t, -k);
+    return {
+      illisibles: [8, 9, 10].filter(k => j(k) in appData),
+      repas: [2, 3, 4].map(k => [typeof appData[j(k)].meals, Array.isArray(appData[j(k)].meals.lunch) ? appData[j(k)].meals.lunch.length : 'pas une liste']),
+      aliments: appData[j(5)].meals.lunch.map(i => i.name),
+      sport: [appData[j(6)].workouts, appData[t].workouts.length],
+      seances: musculationHistorique.map(h => h.id), h2: musculationHistorique.find(h => h.id === 'h2').exercices,
+      h3: musculationHistorique.find(h => h.id === 'h3').exercices.map(e => e.series.length),
+      programmes: musculationProgrammes.map(p => [p.id, p.exercices.length]),
+      perso: musculationExosPerso.length, session: musculationSessionActive, ajustements: userProfile.ajustements,
+      tour: (0, eval)('(' + tour + ')')()
+    };
+  }, TOUR_ECRANS.toString());
+  assert.deepEqual(r.illisibles, [], 'une journée qui n\'est pas un objet est retirée');
+  assert.deepEqual(r.repas, [['object', 0], ['object', 0], ['object', 0]], 'un repas de la mauvaise forme redevient une liste vide');
+  assert.deepEqual(r.aliments, ['Riz', '42'], 'les aliments illisibles sont retirés, un nom qui n\'est pas du texte le devient');
+  assert.deepEqual(r.sport, [[], 1]);
+  assert.deepEqual(r.seances, ['h2', 'h3', 'h1']);
+  assert.deepEqual(r.h2, []);
+  assert.deepEqual(r.h3, [0, 1]);
+  assert.deepEqual(r.programmes, [['p2', 0], ['p3', 0], ['p1', 1]]);
+  assert.deepEqual([r.perso, r.session, r.ajustements], [0, null, []]);
+  assert.deepEqual(r.tour, [], 'aucun écran ne lève d\'erreur');
+  // Des blocs entiers de la mauvaise forme (une liste là où il faut un objet, du texte là où il faut une liste).
+  await page.evaluate(() => {
+    ecrireBloc(MUSCU_HISTORIQUE_KEY, {}); ecrireBloc(MUSCU_PROGRAMMES_KEY, 'x'); ecrireBloc(MUSCU_EXOS_PERSO_KEY, [null]);
+    ecrireBloc(STORAGE_KEY, [null]); ecrireBloc(PROFILE_KEY, 'x');
+    localStorage.setItem(MUSCU_SESSION_KEY, '{"a":{"b":null},"0":7}');
+  });
+  await relancer();
+  const r2 = await page.evaluate(tour => ({ jours: estObjetSimple(appData), listes: [musculationHistorique, musculationProgrammes, musculationExosPerso].map(l => Array.isArray(l) && l.length),
+    session: musculationSessionActive, tour: (0, eval)('(' + tour + ')')() }), TOUR_ECRANS.toString());
+  assert.deepEqual(r2, { jours: true, listes: [0, 0, 0], session: null, tour: [] });
+}));
+
+test("démarrage : une étape qui lève une erreur est signalée sans arrêter les suivantes", async () => {
+  const appli = await ouvrirAppli(navigateur, { https: true });
+  try {
+    const { page, erreurs } = appli;
+    // Au prochain démarrage, le calcul de l'XP lève une erreur (comme le ferait une donnée inattendue).
+    await page.addInitScript(() => { window.addEventListener('DOMContentLoaded', () => { window.recalerXP = () => { throw new Error('étape cassée'); }; }); });
+    await page.reload({ waitUntil: 'domcontentloaded' });
+    await page.waitForFunction(() => typeof donneesPretes !== 'undefined' && donneesPretes === true, null, { timeout: 20000 });
+    await page.waitForTimeout(300);
+    const r = await page.evaluate(() => ({ pretes: donneesPretes, ecran: ecranActif, resume: !!document.querySelector('#ecran-repas .summary-card') }));
+    assert.deepEqual(r, { pretes: true, ecran: 'repas', resume: true }, 'le reste du démarrage a bien eu lieu');
+    assert.ok(erreurs.some(e => /étape cassée/.test(e)), 'l\'erreur reste signalée : ' + erreurs.join(' | '));
+  } finally { await appli.ctx.close(); }
+});
+
+test("synchronisation : des lignes mal formées sur le serveur n'arrêtent ni la synchronisation ni l'affichage", async () => {
+  const serveur = creerServeur();
+  const appli = await ouvrirAppli(navigateur, {});
+  try {
+    const { page, erreurs } = appli;
+    const [j1, j2, j3, j4] = await page.evaluate(() => [1, 2, 3, 4].map(k => shiftDate(todayStr(), -k)));
+    const maj = Date.now() - 1000, u = 'u1';
+    const table = (nom, lignes) => serveur.tables.set(nom, new Map(lignes.map((l, i) => [String(i), l])));
+    table('journees', [
+      { utilisateur: u, jour: j1, donnees: 'x', maj },
+      { utilisateur: u, jour: j2, donnees: { weight: 80, meals: 'x', workouts: 'x' }, maj },
+      { utilisateur: u, jour: j3, donnees: { meals: { lunch: [null, 'pomme', { name: 'Riz', grams: 100, kcal: 130, p: 3, c: 28, f: 0 }] }, workouts: [null] }, maj },
+      { utilisateur: u, jour: j4, donnees: { weight: 79.5, meals: { lunch: [{ name: 'Pâtes', grams: 200, kcal: 300, p: 10, c: 60, f: 2 }] }, workouts: [] }, maj }
+    ]);
+    table('profil', [{ utilisateur: u, donnees: { height: 181, age: 31, gender: 'm', onboarding: '2026-01-01T00:00:00.000Z', ajustements: [null, 'x', { l: 'abc' }] }, maj }]);
+    table('seances_musculation', [
+      { utilisateur: u, id: 's1', donnees: 'x', maj },
+      { utilisateur: u, id: 's2', donnees: { date: j4, exercices: [null, { exerciceId: 'e1', series: null }, { exerciceId: 'e1', series: [null, { poids: 50, reps: 8, fait: true }] }] }, maj },
+      { utilisateur: u, id: 's3', donnees: null, maj }
+    ]);
+    table('programmes_musculation', [{ utilisateur: u, id: 'p1', donnees: { nom: 'Sans exercices' }, maj }, { utilisateur: u, id: 'p2', donnees: [1, 2], maj }]);
+    table('exercices_perso_musculation', [{ utilisateur: u, id: 'x1', donnees: 'x', maj }]);
+    await brancherServeur(page, serveur, u);
+    const r = await page.evaluate(async tour => {
+      await synchroniser('manuel');
+      const jour = d => appData[d];
+      return {
+        etat: document.getElementById('puce-sync').getAttribute('data-etat'),
+        recues: Object.keys(appData).sort(),
+        j2: jour(shiftDate(todayStr(), -2)) && [jour(shiftDate(todayStr(), -2)).weight, jour(shiftDate(todayStr(), -2)).meals.lunch, jour(shiftDate(todayStr(), -2)).workouts],
+        j3: jour(shiftDate(todayStr(), -3)) && [jour(shiftDate(todayStr(), -3)).meals.lunch.map(i => i.name), jour(shiftDate(todayStr(), -3)).workouts],
+        j4: jour(shiftDate(todayStr(), -4)) && jour(shiftDate(todayStr(), -4)).meals.lunch.map(i => i.name),
+        profil: [userProfile.height, userProfile.ajustements],
+        seances: musculationHistorique.map(h => [h.id, h.exercices.map(e => e.series.length)]),
+        programmes: musculationProgrammes.map(p => [p.id, p.exercices]),
+        perso: musculationExosPerso.length,
+        tour: (0, eval)('(' + tour + ')')()
+      };
+    }, TOUR_ECRANS.toString());
+    assert.equal(r.etat, 'ok', 'la synchronisation aboutit');
+    assert.ok(!r.recues.includes(j1), 'une journée illisible est ignorée');
+    assert.deepEqual(r.j2, [80, [], []], 'une journée mal formée est réparée');
+    assert.deepEqual(r.j3, [['Riz'], []]);
+    assert.deepEqual(r.j4, ['Pâtes'], 'les journées saines arrivent');
+    assert.deepEqual(r.profil, [181, []]);
+    assert.deepEqual(r.seances, [['s2', [0, 1]]]);
+    assert.deepEqual(r.programmes, [['p1', []]]);
+    assert.equal(r.perso, 0);
+    assert.deepEqual(r.tour, [], 'aucun écran ne lève d\'erreur');
+    // Une deuxième synchronisation (comparaison avec ce qui est déjà là) aboutit aussi.
+    assert.equal(await page.evaluate(async () => { await synchroniser('manuel'); return document.getElementById('puce-sync').getAttribute('data-etat'); }), 'ok');
+    assert.deepEqual(erreurs, [], 'erreurs JavaScript dans la page');
+  } finally { await appli.ctx.close(); }
+});
+
+test("Progrès › Musculation : des séries cochées sans charge ne vident plus l'onglet (force, séries par muscle)", () => avecAppli({}, async ({ page }) => {
+  const r = await page.evaluate(async () => {
+    const t = todayStr(), tous = toutesLesExercices();
+    const barre = tous.find(e => e.materiel === 'barre' && e.groupe === 'pectoraux'), haltere = tous.find(e => e.materiel === 'haltere' && e.groupe === 'biceps');
+    const seance = (k, id, series) => ({ id: 'h' + k, programmeNom: 'Test', date: shiftDate(t, -k), debut: Date.now() - k * 864e5, fin: Date.now() - k * 864e5 + 36e5, dureeMin: 60, maj: Date.now(),
+      exercices: [{ exerciceId: id, nom: 'x', series }] });
+    // Deux séances où les séries sont cochées sans charge ni répétitions.
+    musculationHistorique = [seance(1, barre.id, [{ poids: null, reps: null, fait: true }, { poids: 0, reps: 0, fait: true }]), seance(3, barre.id, [{ fait: true }])];
+    sauvegarderHistorique();
+    if (typeof invaliderHistorique === 'function') invaliderHistorique();
+    choisirPeriodeStats('30'); allerA('stats'); choisirOngletStats('muscu');
+    await new Promise(ok => setTimeout(ok, 500));
+    const res = { force: document.getElementById('pg-force').textContent.trim(), grille: !!document.querySelector('#pg-grille-muscu .zones-grille'),
+      lignes: document.querySelectorAll('#pg-grille-muscu .zones-grille-ligne').length };
+    // Une séance mesurable s'ajoute : seul cet exercice est classé.
+    musculationHistorique.unshift(seance(2, haltere.id, [{ poids: 14, reps: 10, fait: true }]));
+    sauvegarderHistorique();
+    if (typeof invaliderHistorique === 'function') invaliderHistorique();
+    renderStatsMuscu();
+    res.classes = document.querySelectorAll('#pg-force .pg-lift').length;
+    res.serie = document.querySelector('#pg-force .pg-lift span').textContent;
+    return res;
+  });
+  assert.match(r.force, /^Tes séries sont cochées sans charge ni répétitions/);
+  assert.equal(r.grille, true, 'la grille des séries par muscle est dessinée');
+  assert.ok(r.lignes >= 2, 'avec au moins un muscle');
+  assert.equal(r.classes, 1);
+  assert.match(r.serie, /meilleure série 14 kg × 10/);
+}));
+
+test("séance oubliée : terminée le lendemain, elle est rangée au jour où elle a commencé et ne compte que le temps d'entraînement ; la question est posée au retour dans l'appli", () => avecAppli({}, async ({ page, dialogues }) => {
+  await page.clock.setFixedTime(new Date('2026-11-18T08:00:00'));
+  const r = await page.evaluate(async () => {
+    const attendre = ms => new Promise(ok => setTimeout(ok, ms));
+    const t = todayStr(), hier = shiftDate(t, -1), res = {};
+    const exo = toutesLesExercices().find(e => e.groupe === 'pectoraux' && e.materiel === 'barre');
+    const nouvelle = () => {
+      allerA('seance'); choisirModeSeance('muscu'); demarrerSeanceLibre(); ajouterExerciceASession(exo.id);
+      document.querySelectorAll('.modal.show').forEach(m => m.classList.remove('show'));
+      return musculationSessionActive;
+    };
+    // Commencée hier à 18 h 30, dernière série cochée à 19 h 20, appli jamais rouverte depuis.
+    const s = nouvelle();
+    s.exercices[0].series.forEach(x => { x.poids = 60; x.reps = 8; x.fait = true; });
+    s.debut = new Date(hier + 'T18:30:00').getTime();
+    s.derniereAction = new Date(hier + 'T19:20:00').getTime();
+    delete s.tempsMort;
+    majChronoSession();
+    res.chrono = document.getElementById('session-chrono').textContent;
+    res.duree = Math.round(dureeSeanceEnCours(s) / 60000);
+    // Au retour dans l'appli : la question (acceptée d'office dans les tests : « Terminer »).
+    await proposerFinSeanceOubliee(); await attendre(300);
+    const h = musculationHistorique[0];
+    res.seance = h && [h.date === hier, h.dureeMin, new Date(h.fin).getHours() + ':' + String(new Date(h.fin).getMinutes()).padStart(2, '0')];
+    res.sportHier = getDay(hier).workouts.filter(w => w.type === 'musculation').map(w => w.time);
+    res.sportAuj = getDay(t).workouts.filter(w => w.type === 'musculation').length;
+    res.encore = !!musculationSessionActive;
+    document.querySelectorAll('.modal.show').forEach(m => fermerModal(m.id));
+    // Reprise : le temps mort est mis de côté, le chrono repart d'où il en était.
+    const s2 = nouvelle();
+    s2.debut = Date.now() - 180 * 60000;
+    s2.derniereAction = Date.now() - 150 * 60000;
+    delete s2.tempsMort;
+    const garde = confirmer;
+    confirmer = texte => { window.__noterDialogue(String(texte)); return Promise.resolve(false); };
+    await proposerFinSeanceOubliee(); await attendre(100);
+    res.reprise = [Math.round(s2.tempsMort / 60000), Math.round(tempsActifSeance(s2) / 60000), s2.derniereAction === Date.now(), musculationSessionActive === s2];
+    await proposerFinSeanceOubliee();   // plus rien à demander : une action vient d'avoir lieu
+    // Laissée ouverte sans rien cocher : on propose de l'abandonner.
+    s2.derniereAction = Date.now() - 200 * 60000;
+    confirmer = texte => { window.__noterDialogue(String(texte)); return Promise.resolve(true); };
+    await proposerFinSeanceOubliee(); await attendre(100);
+    res.abandon = [!!musculationSessionActive, musculationHistorique.length];
+    confirmer = garde;
+    return res;
+  });
+  assert.equal(r.chrono, '1:00:00', 'le chrono montre le temps d\'entraînement : 50 min, plus 10 min après la dernière action');
+  assert.equal(r.duree, 60);
+  assert.deepEqual(r.seance, [true, 60, '19:30'], 'rangée à hier, 60 min, finie à 19 h 30');
+  assert.deepEqual(r.sportHier, [60]);
+  assert.equal(r.sportAuj, 0);
+  assert.equal(r.encore, false);
+  assert.deepEqual(r.reprise, [140, 40, true, true], '150 min sans action : 140 min de temps mort, 40 min d\'entraînement');
+  assert.deepEqual(r.abandon, [false, 1], 'abandonnée : rien de plus dans l\'historique');
+  const questions = dialogues.filter(d => /Ta séance « Séance libre »/.test(d));
+  assert.equal(questions.length, 3, dialogues.join(' | '));
+  assert.match(questions[0], /est en pause depuis hier 19:20\.\n\nLa terminer \? Elle comptera 60 minutes : le temps passé sans rien toucher n'est pas compté\./);
+  assert.match(questions[2], /est restée ouverte depuis \d\d:\d\d, sans série cochée\.\n\nL'abandonner \? Rien ne sera enregistré\./);
+}));
+
+test("app iOS, séance oubliée : rappel « Séance en pause » 30 min après la dernière action, activité en direct périmée au même moment, chrono sans temps mort", () => avecAppli({ natif: true }, async ({ page }) => {
+  await page.clock.setFixedTime(new Date('2026-11-18T18:30:20'));
+  const r = await page.evaluate(async () => {
+    window.__reponsesNatives['LocalNotifications.checkPermissions'] = { display: 'granted' };
+    const file = async () => { await new Promise(ok => setTimeout(ok, 150)); await fileRappelsRepos; await new Promise(ok => setTimeout(ok, 50)); };
+    const appels = (m, f) => window.__appelsNatifs.filter(a => a[0] === m && (!f || a[1] === f)).map(a => a[2]);
+    allerA('seance'); choisirModeSeance('muscu');
+    demarrerSeanceLibre();
+    ajouterExerciceASession(toutesLesExercices().find(e => e.groupe === 'pectoraux' && e.materiel === 'barre').id);
+    document.querySelectorAll('.modal.show').forEach(m => m.classList.remove('show'));
+    modifierSerieSession(0, 0, 'poids', '60'); modifierSerieSession(0, 0, 'reps', '10');
+    await file();
+    const res = { avantRepos: appels('LocalNotifications', 'schedule').length };
+    // Première série cochée : le repos demande l'autorisation ; elle est connue, le rappel de pause suit.
+    basculerSerieSession(0, 0); await file();
+    const pauses = () => appels('LocalNotifications', 'schedule').map(o => o.notifications[0]).filter(n => n.id === 42700);
+    const p = pauses().pop();
+    res.pause = p && [p.title, p.body, new Date(p.schedule.at).getHours() + ':' + String(new Date(p.schedule.at).getMinutes()).padStart(2, '0'), p.extra];
+    res.drapeau = localStorage.getItem('mc_rappel_pause');
+    const act = appels('ActiviteSeance').pop();
+    res.activite = [act.depuis === musculationSessionActive.debut, new Date(act.perimeLe).getHours() + ':' + String(new Date(act.perimeLe).getMinutes()).padStart(2, '0')];
+    // Toucher la notification ouvre l'écran Activité.
+    allerA('repas'); ouvrirDepuisRappel({ rappel: 'pause' }); await new Promise(ok => setTimeout(ok, 200));
+    res.touche = ecranActif;
+    // Séance terminée : le rappel est retiré.
+    await terminerSeance(); await file();
+    res.annule = appels('LocalNotifications', 'cancel').some(o => o.notifications.some(n => n.id === 42700));
+    res.drapeauFin = localStorage.getItem('mc_rappel_pause');
+    return res;
+  });
+  assert.equal(r.avantRepos, 0, 'aucune notification tant que l\'autorisation n\'est pas connue');
+  assert.deepEqual(r.pause, ['Séance en pause', "Séance libre : tu as fini ? Touche pour la terminer, seul ton temps d'entraînement est compté.", '19:01', { rappel: 'pause' }]);
+  assert.equal(r.drapeau, '1');
+  assert.deepEqual(r.activite, [true, '19:01'], 'l\'activité en direct est périmée 30 min après la dernière action');
+  assert.equal(r.touche, 'seance');
+  assert.equal(r.annule, true);
+  assert.equal(r.drapeauFin, null);
+}));
+
+test("rappels : une heure avant la séance, série de jours en danger, défi de la semaine à portée, protéines et eau en un seul message", () => avecAppli({ natif: true }, async ({ page }) => {
+  await page.clock.setFixedTime(new Date('2026-11-04T09:00:00'));   // un mercredi
+  const r = await page.evaluate(async () => {
+    window.__reponsesNatives['LocalNotifications.checkPermissions'] = { display: 'granted' };
+    const t = todayStr(), res = {};
+    userProfile.height = 180; userProfile.age = 30; userProfile.gender = 'm';
+    // Cinq jours d'affilée avec un repas noté, rien aujourd'hui.
+    for (let k = 5; k >= 1; k--) getDay(shiftDate(t, -k)).meals.lunch.push({ name: 'Repas', grams: 500, kcal: 2000, p: 150, c: 200, f: 60 });
+    // Deux séances de muscu cette semaine (lundi et mardi, à 18 h 30) : il en manque une pour le défi.
+    const exo = toutesLesExercices().find(e => e.groupe === 'pectoraux' && e.materiel === 'barre');
+    musculationProgrammes = [{ id: 'p1', nom: 'Push', creeLe: Date.now(), maj: Date.now(), exercices: [{ exerciceId: exo.id, series: [{ poids: 60, reps: 8 }, { poids: 60, reps: 8 }] }] }];
+    [1, 2].forEach(k => {
+      const d = shiftDate(t, -k), debut = new Date(d + 'T18:30:00').getTime();
+      musculationHistorique.unshift({ id: 'h' + k, programmeId: 'p1', programmeNom: 'Push', date: d, debut, fin: debut + 36e5, dureeMin: 60, maj: debut,
+        exercices: [{ exerciceId: exo.id, nom: 'x', series: [{ poids: 60, reps: 8, fait: true }] }] });
+      getDay(d).workouts.push({ type: 'musculation', time: 60, seriesFaites: 1, source: 'seance', nom: 'Push' });
+    });
+    // Une séance prévue aujourd'hui.
+    userProfile.seancesPrevues = { mode: 'jours', jours: [dateLocale(t).getDay()], exceptions: {}, programmes: {} };
+    sauvegarderProgrammes(); sauvegarderHistorique(); saveData();
+    if (typeof invaliderHistorique === 'function') invaliderHistorique();
+    const regler = r => localStorage.setItem('mc_rappels', JSON.stringify(r));
+    const TOUS = { proteines: { on: true, heure: '18:00' }, eau: { on: true, heure: '16:00' }, avant: { on: true }, serie: { on: true, heure: '20:30' }, defi: { on: true, heure: '10:00' } };
+    regler(TOUS);
+    const hm = d => String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0');
+    const lire = () => rappelsPrevus().map(p => ({ id: p.id, jour: Math.round((new Date(p.date + 'T12:00:00') - new Date(t + 'T12:00:00')) / 864e5), heure: hm(p.at), titre: p.titre, texte: p.texte, type: p.type }));
+    const un = (liste, type, jour) => liste.filter(p => p.type === type && (jour == null || p.jour === jour));
+    let l = lire();
+    res.types = [...new Set(l.map(p => p.type))].sort();
+    res.fusion = un(l, 'proteines', 0)[0];
+    res.eauSeule = un(l, 'eau').length;
+    res.avant = un(l, 'avant');
+    res.serie = un(l, 'serie');
+    res.defi = un(l, 'defi');
+    // Programmés pour de bon, et le toucher ouvre le bon écran.
+    rappelsSignature = ''; majRappels(); await new Promise(ok => setTimeout(ok, 1000)); await fileRappels;
+    const programmes = window.__appelsNatifs.filter(a => a[0] === 'LocalNotifications' && a[1] === 'schedule').pop()[2].notifications;
+    res.programmes = programmes.filter(n => ['avant', 'serie', 'defi'].includes(n.extra.rappel)).map(n => n.id).sort();
+    allerA('repas'); ouvrirDepuisRappel({ rappel: 'avant' }); await new Promise(ok => setTimeout(ok, 200));
+    res.toucheAvant = ecranActif;
+    allerA('repas'); ouvrirDepuisRappel({ rappel: 'defi' }); await new Promise(ok => setTimeout(ok, 200));
+    res.toucheDefi = ecranActif;
+    // Déjà en séance : plus de rappel de séance pour aujourd'hui ; séance abandonnée, il revient.
+    demarrerSeanceLibre(); document.querySelectorAll('.modal.show').forEach(m => m.classList.remove('show'));
+    res.enSeance = un(lire(), 'avant').length;
+    abandonnerSeanceMaintenant();
+    res.apresSeance = un(lire(), 'avant').length;
+    // L'eau est bue, les protéines manquent : le rappel de protéines seul, à son heure.
+    getDay(t).eauMl = 3000; saveData(t);
+    l = lire(); res.proteinesSeules = un(l, 'proteines', 0).map(p => [p.heure, p.titre]);
+    // Les protéines y sont, l'eau manque : l'hydratation seule, à son heure. Et la journée notée : la série passe à demain.
+    getDay(t).eauMl = 0; getDay(t).meals.lunch.push({ name: 'Poulet', grams: 600, kcal: 900, p: 190, c: 0, f: 20 }); saveData(t);
+    l = lire(); res.eauApres = un(l, 'eau', 0).map(p => [p.heure, p.titre, p.texte]); res.proteinesApres = un(l, 'proteines', 0).length;
+    res.serieApres = un(l, 'serie').map(p => [p.jour, p.id, p.titre]);
+    // Heure de l'eau après celle des protéines : le message commun part à la plus tardive.
+    getDay(t).meals.lunch.pop(); saveData(t);
+    regler(Object.assign({}, TOUS, { eau: { on: true, heure: '19:15' } }));
+    res.fusionTardive = un(lire(), 'proteines', 0).map(p => p.heure);
+    return res;
+  });
+  assert.deepEqual(r.types, ['avant', 'defi', 'proteines', 'serie']);
+  assert.deepEqual([r.fusion.id, r.fusion.heure, r.fusion.titre], [42000, '18:00', 'Protéines et eau']);
+  assert.match(r.fusion.texte, /^Rien de noté aujourd'hui : il te reste \d+ g de protéines et \d(,\d)? L d'eau\.$/);
+  assert.equal(r.eauSeule, 0, 'pas de deuxième notification pour l\'eau');
+  assert.equal(r.avant.length, 1, JSON.stringify(r.avant));
+  assert.deepEqual([r.avant[0].id, r.avant[0].jour, r.avant[0].heure, r.avant[0].titre], [42400, 0, '17:30', 'Séance Push']);
+  assert.match(r.avant[0].texte, /^Dans 1 h, comme d'habitude : environ \d+ min, \d+ séries?\.$/);
+  assert.deepEqual(r.serie.map(p => [p.id, p.jour, p.heure, p.titre, p.texte]), [[42500, 0, '20:30', "Ta série de 5 jours s'arrête ce soir", "Rien de noté aujourd'hui : note un repas avant minuit pour la garder."]]);
+  assert.deepEqual(r.defi.map(p => [p.id, p.jour, p.heure, p.titre, p.texte]), [
+    [42603, 3, '10:00', 'Défi de la semaine', 'Plus que 1 séance de muscu pour réussir « 3 séances de muscu » : +150 XP. Fin dimanche soir.'],
+    [42604, 4, '10:00', 'Défi de la semaine', 'Plus que 1 séance de muscu pour réussir « 3 séances de muscu » : +150 XP. Fin ce soir.']]);
+  assert.deepEqual(r.programmes, [42400, 42500, 42603, 42604]);
+  assert.equal(r.toucheAvant, 'seance');
+  assert.equal(r.toucheDefi, 'seance');
+  assert.deepEqual([r.enSeance, r.apresSeance], [0, 1], 'pas de « dans 1 h » pendant une séance');
+  assert.deepEqual(r.proteinesSeules, [['18:00', 'Protéines']]);
+  assert.equal(r.proteinesApres, 0);
+  assert.equal(r.eauApres.length, 1);
+  assert.deepEqual(r.eauApres[0].slice(0, 2), ['16:00', 'Hydratation']);
+  assert.deepEqual(r.serieApres, [[1, 42501, "Ta série de 6 jours s'arrête ce soir"]]);
+  assert.deepEqual(r.fusionTardive, ['19:15']);
+}));
+
+test("rappels activés mais notifications coupées dans l'iPhone : le Profil le dit, et rien n'est programmé dans le vide", () => avecAppli({ natif: true }, async ({ page }) => {
+  const r = await page.evaluate(async () => {
+    let accord = 'denied';
+    window.__reponsesNatives['LocalNotifications.checkPermissions'] = () => ({ display: accord });
+    localStorage.setItem('mc_rappels', JSON.stringify({ proteines: { on: true, heure: '18:00' } }));
+    const note = document.getElementById('rappels-coupes');
+    const visible = () => !note.classList.contains('hidden') && getComputedStyle(note).display !== 'none';
+    const programmes = () => window.__appelsNatifs.filter(a => a[0] === 'LocalNotifications' && a[1] === 'schedule').length;
+    const passer = async () => { rappelsSignature = ''; majRappels(); await new Promise(ok => setTimeout(ok, 1000)); await fileRappels; };
+    const res = { auDepart: visible() };
+    allerA('reglages'); renderApp(); await passer();
+    res.coupees = [visible(), document.getElementById('rappel-proteines').checked, programmes()];
+    res.texte = note.textContent;
+    // Notifications rétablies dans les réglages de l'iPhone : l'alerte part, les rappels sont programmés.
+    accord = 'granted'; await passer();
+    res.retablies = [visible(), programmes() > 0];
+    // Plus aucun rappel activé : pas d'alerte, même notifications coupées.
+    accord = 'denied'; document.getElementById('rappel-proteines').checked = false; await changerRappel('proteines'); await passer();
+    res.sansRappel = visible();
+    return res;
+  });
+  assert.equal(r.auDepart, false);
+  assert.deepEqual(r.coupees, [true, true, 0]);
+  assert.match(r.texte, /^Les notifications sont coupées pour Askēsis sur cet iPhone : aucun rappel ne sonnera\./);
+  assert.deepEqual(r.retablies, [false, true]);
+  assert.equal(r.sansRappel, false);
+}));
+
+test("le site ne s'affiche pas dans le cadre d'un autre site", async () => {
+  const appli = await ouvrirAppli(navigateur, { https: true });
+  try {
+    const { page, ctx } = appli;
+    assert.notEqual(await page.evaluate(() => getComputedStyle(document.documentElement).display), 'none', 'en pleine fenêtre, la page s\'affiche');
+    const html = fs.readFileSync(path.join(RACINE, 'index.html'), 'utf8');
+    assert.doesNotMatch(html.match(/<meta http-equiv="Content-Security-Policy"[^>]*>/)[0], /frame-ancestors/, 'ignorée dans une balise meta : la protection est dans la page');
+    // La même page dans le cadre d'un autre site.
+    const hote = await ctx.newPage();
+    await hote.route('https://autre-site.test/', r => r.fulfill({ contentType: 'text/html', body: '<!doctype html><iframe src="https://appli.test/index.html" style="width:390px;height:700px"></iframe>' }));
+    await hote.goto('https://autre-site.test/');
+    await hote.waitForFunction(() => location.host === 'appli.test' || (window.frames.length === 1), null, { timeout: 15000 });
+    if (new URL(hote.url()).host !== 'appli.test') {
+      const cadre = hote.frames().find(f => f.url().includes('appli.test'));
+      await cadre.waitForFunction(() => typeof allerA === 'function', null, { timeout: 20000 });
+      assert.equal(await cadre.evaluate(() => getComputedStyle(document.documentElement).display), 'none', 'encadrée, la page ne s\'affiche pas');
+    }
+  } finally { await appli.ctx.close(); }
+});
+
+test("zones de toucher : les petits boutons repérés par l'audit se touchent sur 44 px", () => avecAppli({}, async ({ page }) => {
+  const mesurer = sel => page.evaluate(async sel => {
+    await new Promise(ok => setTimeout(ok, 350));
+    const el = [...document.querySelectorAll(sel)].find(e => { const r = e.getBoundingClientRect(); return r.width > 0 && r.height > 0; });
+    if (!el) return null;
+    el.scrollIntoView({ block: 'center', inline: 'center' });
+    const r = el.getBoundingClientRect(), cx = r.left + r.width / 2, cy = r.top + r.height / 2;
+    const dedans = (x, y) => { const e = document.elementFromPoint(x, y); return !!e && (e === el || el.contains(e)); };
+    if (!dedans(cx, cy)) return [0, 0];
+    let haut = 0, bas = 0, gauche = 0, droite = 0;
+    while (haut < 60 && dedans(cx, cy - haut - 1)) haut++;
+    while (bas < 60 && dedans(cx, cy + bas + 1)) bas++;
+    while (gauche < 200 && dedans(cx - gauche - 1, cy)) gauche++;
+    while (droite < 200 && dedans(cx + droite + 1, cy)) droite++;
+    return [gauche + droite + 1, haut + bas + 1];
+  }, sel);
+  await page.evaluate(() => {
+    const t = todayStr(), exo = toutesLesExercices().find(e => e.groupe === 'pectoraux' && e.materiel === 'barre');
+    for (let k = 3; k >= 0; k--) getDay(shiftDate(t, -k)).meals.lunch.push({ name: 'Riz', grams: 100, unite: 'g', kcal: 130, p: 3, c: 28, f: 0 });
+    musculationProgrammes = [{ id: 'p1', nom: 'Push', creeLe: Date.now(), maj: Date.now(), exercices: [{ exerciceId: exo.id, series: [{ poids: 60, reps: 8 }, { poids: 60, reps: 8 }] }] }];
+    musculationHistorique = [1, 4].map(k => { const d = shiftDate(t, -k), debut = new Date(d + 'T18:30:00').getTime();
+      return { id: 'h' + k, programmeId: 'p1', programmeNom: 'Push', date: d, debut, fin: debut + 36e5, dureeMin: 60, maj: debut, exercices: [{ exerciceId: exo.id, nom: 'x', series: [{ poids: 60, reps: 8, fait: true }, { poids: 60, reps: 7, fait: true }] }] }; });
+    sauvegarderProgrammes(); sauvegarderHistorique(); saveData();
+    if (typeof invaliderHistorique === 'function') invaliderHistorique();
+    allerA('repas'); changerDate(-1);
+  });
+  const z = {};
+  z.aujourdhui = await mesurer('#semaine-aujourdhui');
+  await page.evaluate(() => { changerDate(1); ouvrirFeuilleRepas('lunch'); });
+  z.section = await mesurer('#feuille-repas .ajout-section button');
+  await page.evaluate(() => { fermerFeuilles(); depuisFeuille('recette'); });
+  z.tri = await mesurer('.recette-tri button');
+  await page.evaluate(() => { fermerFeuilles(); document.querySelectorAll('.modal.show').forEach(m => fermerModal(m.id)); allerA('seance'); choisirModeSeance('muscu'); renderApp(); });
+  z.dos = await mesurer('.hx--pivot > .cp-bouton:not(.cp-bouton--atlas)');
+  z.atlas = await mesurer('.hx--pivot > .cp-bouton--atlas');
+  await page.evaluate(() => { renderStatsMuscu(); voirDetailHistorique(musculationHistorique[0].id); });
+  z.courbe = await mesurer('#historique-detail-modal .hd-exo-courbe');
+  await page.evaluate(() => { document.querySelectorAll('.modal.show').forEach(m => fermerModal(m.id)); renderStatsMuscu(); ouvrirHistoriqueExercice(musculationHistorique[0].exercices[0].exerciceId); });
+  await page.waitForTimeout(900);
+  z.puce = await mesurer('#fiche-exercice-modal .fh-chip');
+  z.agrandir = await mesurer('#fiche-exercice-modal .fh-agrandir');
+  await page.evaluate(async () => { document.querySelectorAll('.modal.show').forEach(m => fermerModal(m.id)); await demarrerSeance('p1'); });
+  await page.waitForTimeout(700);
+  z.nom = await mesurer('button.session-exo-nom');
+  z.prec = await mesurer('.serie-prec');
+  await page.evaluate(() => { musculationSessionActive = null; sauvegarderSessionActive(); afficherVueSeance(); });
+  for (const [nom, zone] of Object.entries(z)) {
+    assert.ok(zone, 'bouton introuvable : ' + nom);
+    // « Préc. » tient dans la ligne d'une série, haute de 38 px.
+    const mini = nom === 'prec' ? 38 : 44;
+    assert.ok(zone[0] >= 44 && zone[1] >= mini, `${nom} : zone de ${zone[0]} × ${zone[1]} px`);
+  }
+}));
+
+test("Progrès › Musculation : le graphique des groupes musculaires affiche le nom de chaque groupe", () => avecAppli({}, async ({ page }) => {
+  const r = await page.evaluate(async () => {
+    const t = todayStr(), tous = toutesLesExercices();
+    // Une séance qui touche dix groupes musculaires.
+    const groupes = [...new Set(tous.map(e => e.groupe))].filter(g => GROUPES_MUSCULAIRES[g]).slice(0, 10);
+    const debut = Date.now() - 864e5;
+    musculationHistorique = [{ id: 'h1', programmeNom: 'Complet', date: shiftDate(t, -1), debut, fin: debut + 36e5, dureeMin: 60, maj: debut,
+      exercices: groupes.map(g => ({ exerciceId: tous.find(e => e.groupe === g).id, nom: 'x', series: [{ poids: 20, reps: 10, fait: true }] })) }];
+    sauvegarderHistorique();
+    if (typeof invaliderHistorique === 'function') invaliderHistorique();
+    choisirPeriodeStats('30'); allerA('stats'); choisirOngletStats('muscu');
+    await new Promise(ok => setTimeout(ok, 700));
+    const g = window.muscuGroupeChartInstance;
+    // Le graphique est dans une section repliée : on l'ouvre, comme pour le lire.
+    g.canvas.closest('details').open = true;
+    await new Promise(ok => setTimeout(ok, 400));
+    return { groupes: groupes.length, etiquettes: g.data.labels.length, affichees: g.scales.y.ticks.length, sansSaut: g.options.scales.y.ticks.autoSkip === false,
+      police: g.options.scales.y.ticks.font.size, hauteur: g.canvas.parentElement.getBoundingClientRect().height };
+  });
+  assert.equal(r.groupes, 10);
+  assert.equal(r.etiquettes, 10);
+  assert.equal(r.affichees, 10, 'un nom par barre');
+  assert.equal(r.sansSaut, true);
+  assert.ok(r.police >= 11);
+  assert.ok(r.hauteur >= 10 * 26, `hauteur ${r.hauteur}`);
 }));
 
 test('objectif adapté : réservé à Pro (cadenas et fenêtre Pro pour un compte gratuit, actif pour un fondateur)', () => avecAppli({}, async ({ page }) => {
