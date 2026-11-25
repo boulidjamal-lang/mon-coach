@@ -1,0 +1,145 @@
+# Mannequin, étape 2 : le fichier Blender du personnage — maillage, matières, armature (un os par segment, sans
+# hiérarchie : chaque os reçoit sa pose du moteur), groupes de sommets, lissage correcteur, short.
+#   python etape2.py <outils> <mannequin.npz> <sortie.blend>
+import sys, os, json, math, time
+import numpy as np
+import bpy
+from mathutils import Matrix, Vector
+sys.path.insert(0, sys.argv[1])
+from lire import app_vers_blender
+
+t0 = time.time()
+def chrono(m): print(f'{time.time() - t0:7.1f} s  {m}', flush=True)
+NPZ, SORTIE = sys.argv[2], sys.argv[3]
+D = np.load(NPZ); meta = json.loads(str(D['meta']))
+ZONES = meta['zones']; Z = {n: i for i, n in enumerate(ZONES)}
+V = app_vers_blender(D['V'].astype(np.float64)); T = D['T'].astype(np.int64); zoneT = D['zoneT'].astype(np.int64); zoneV = D['zoneV'].astype(np.int64)
+OSI = D['os_i'].astype(np.int64); OSW = D['os_w'].astype(np.float64); OS = meta['os']; NB = len(OS)
+NV, NT = len(V), len(T)
+
+bpy.ops.wm.read_factory_settings(use_empty=True)
+sc = bpy.context.scene
+
+def maillage(nom, P, Tr, mat_idx=None):
+    me = bpy.data.meshes.new(nom)
+    me.vertices.add(len(P)); me.vertices.foreach_set('co', P.astype(np.float32).ravel())
+    nt = len(Tr)
+    me.loops.add(nt * 3); me.loops.foreach_set('vertex_index', Tr.astype(np.int32).ravel())
+    me.polygons.add(nt); me.polygons.foreach_set('loop_start', np.arange(0, nt * 3, 3, dtype=np.int32)); me.polygons.foreach_set('loop_total', np.full(nt, 3, np.int32))
+    me.polygons.foreach_set('use_smooth', np.ones(nt, bool))
+    if mat_idx is not None: me.polygons.foreach_set('material_index', mat_idx.astype(np.int32))
+    me.update(calc_edges=True); me.validate(clean_customdata=False)
+    ob = bpy.data.objects.new(nom, me); sc.collection.objects.link(ob)
+    return ob
+
+FENTE = {Z['corps']: 0, Z['tete']: 0, Z['main']: 0, Z['pied']: 0, Z['ongle']: 1, Z['poil']: 2, Z['cheveux']: 2, Z['oeil']: 3}
+corps = maillage('corps', V, T, np.array([FENTE[z] for z in zoneT]))
+me = corps.data
+for nom in ('peau', 'ongle', 'cheveux', 'oeil'):
+    me.materials.append(bpy.data.materials.new(nom))
+a = me.attributes.new('repos', 'FLOAT_VECTOR', 'POINT'); a.data.foreach_set('vector', V.astype(np.float32).ravel())
+a = me.attributes.new('fibre', 'FLOAT_VECTOR', 'POINT'); a.data.foreach_set('vector', app_vers_blender(D['fibre'].astype(np.float64)).astype(np.float32).ravel())
+a = me.attributes.new('creux', 'FLOAT', 'POINT'); a.data.foreach_set('value', D['profondeur'].astype(np.float32))
+a = me.attributes.new('actif', 'FLOAT', 'POINT'); a.data.foreach_set('value', np.zeros(NV, np.float32))
+chrono(f'maillage : {NV} sommets, {NT} triangles')
+
+# ---------- L'armature : un os par segment de corps, sans parent ----------
+arm_d = bpy.data.armatures.new('squelette'); arm = bpy.data.objects.new('squelette', arm_d); sc.collection.objects.link(arm)
+bpy.context.view_layer.objects.active = arm
+bpy.ops.object.mode_set(mode='EDIT')
+for o in OS:
+    a, b = app_vers_blender(np.array(o['segs'][0][0])), app_vers_blender(np.array(o['segs'][0][1]))
+    eb = arm_d.edit_bones.new(o['nom']); eb.head = Vector(a); eb.tail = Vector(b)
+    if (eb.tail - eb.head).length < 1e-4: eb.tail = eb.head + Vector((0, 0, 0.02))
+bpy.ops.object.mode_set(mode='OBJECT')
+chrono(f'armature : {len(arm_d.bones)} os')
+
+def attacher(ob, osi, osw):
+    groupes = [ob.vertex_groups.new(name=o['nom']) for o in OS]
+    for k in range(osi.shape[1]):
+        for b in np.unique(osi[:, k]):
+            sel = np.flatnonzero((osi[:, k] == b) & (osw[:, k] > 0))
+            if not len(sel): continue
+            g = groupes[b]; w = osw[sel, k]
+            # (par paquets de même poids arrondi : bien plus rapide qu'un appel par sommet)
+            q = np.round(w * 1000).astype(np.int64)
+            for val in np.unique(q):
+                g.add(sel[q == val].tolist(), float(val) / 1000, 'ADD')
+    m = ob.modifiers.new('armature', 'ARMATURE'); m.object = arm; m.use_deform_preserve_volume = os.environ.get('VOLUME', '1') == '1'
+    return m
+attacher(corps, OSI, OSW)
+chrono('groupes de sommets')
+
+# Lissage correcteur : efface les pincements des articulations, garde le relief du repos. Sur le corps seulement
+# (ni le visage, ni les doigts, ni les ongles, cheveux, yeux).
+estCorps = D['corps'].astype(bool)
+nomOs = np.array([o['nom'] for o in OS])
+doigt = np.array([n.startswith(('doigt', 'orteils', 'tete')) for n in nomOs])
+pd = (OSW * doigt[OSI]).sum(1)
+liss = np.where(estCorps, 1.0, 0.0) * (1 - np.clip(pd * 1.5, 0, 1))
+# (la main et le pied : un peu, vers le poignet et la cheville)
+liss = np.where((zoneV == Z['main']) | (zoneV == Z['pied']), 0.6 * (1 - np.clip(pd * 2.0, 0, 1)), liss)
+g = corps.vertex_groups.new(name='lissage')
+q = np.round(liss * 20).astype(np.int64)
+for val in np.unique(q):
+    if val > 0: g.add(np.flatnonzero(q == val).tolist(), float(val) / 20, 'REPLACE')
+cs = corps.modifiers.new('lissage', 'CORRECTIVE_SMOOTH')
+cs.vertex_group = 'lissage'; cs.factor = float(os.environ.get('LISSAGE', '0.6')); cs.iterations = int(os.environ.get('TOURS', '12')); cs.smooth_type = 'LENGTH_WEIGHTED'
+cs.rest_source = 'ORCO'; cs.use_only_smooth = False; cs.use_pin_boundary = False
+chrono('lissage correcteur')
+
+# ---------- Le short ----------
+# Les faces du bassin et du haut des cuisses, doublées, gonflées de quelques millimètres et lissées (le relief des
+# muscles ne se lit pas à travers le tissu) ; mêmes attaches que la peau dessous.
+Va = D['V'].astype(np.float64)
+bras = np.array([n.startswith(('bras', 'avantbras', 'main', 'doigt')) for n in nomOs])
+pb = (OSW * bras[OSI]).sum(1)
+HAUT, BAS = float(os.environ.get('SHORT_HAUT', '0.965')), float(os.environ.get('SHORT_BAS', '0.69'))
+dans = estCorps & (pb < 0.5) & (Va[:, 1] < HAUT) & (Va[:, 1] > BAS)
+ft = dans[T].all(1) & (zoneT == Z['corps'])
+us = np.unique(T[ft]); rang = -np.ones(NV, np.int64); rang[us] = np.arange(len(us))
+Ts = rang[T[ft]]; Ps = V[us].copy()
+# normales lissées de la peau, puis gonflement et détente
+fn = np.cross(V[T[:, 1]] - V[T[:, 0]], V[T[:, 2]] - V[T[:, 0]]); Nn = np.zeros_like(V)
+for k in range(3): np.add.at(Nn, T[:, k], fn)
+Nn /= np.maximum(np.linalg.norm(Nn, axis=1, keepdims=True), 1e-20)
+import scipy.sparse as sp
+E = np.unique(np.sort(np.concatenate([Ts[:, [0, 1]], Ts[:, [1, 2]], Ts[:, [2, 0]]]), axis=1), axis=0)
+A = sp.coo_matrix((np.ones(len(E) * 2), (np.r_[E[:, 0], E[:, 1]], np.r_[E[:, 1], E[:, 0]])), shape=(len(us), len(us))).tocsr()
+deg = np.maximum(np.asarray(A.sum(1)).ravel(), 1)
+# bord du short (arêtes libres) : il ne bouge pas pendant la détente
+E3 = np.sort(np.concatenate([Ts[:, [0, 1]], Ts[:, [1, 2]], Ts[:, [2, 0]]]), axis=1); cle = E3[:, 0] * len(us) + E3[:, 1]
+u, cnt = np.unique(cle, return_counts=True); bordS = np.zeros(len(us), bool); bordS[(u[cnt == 1] // len(us))] = True; bordS[(u[cnt == 1] % len(us))] = True
+# Le bord est ramené sur une ligne nette : à la taille, à hauteur fixe ; à l'ourlet, à hauteur fixe aussi (les sommets
+# glissent le long de la peau, de quelques millimètres).
+yb = Va[us, 1]
+haut_b = bordS & (yb > (HAUT + BAS) / 2); bas_b = bordS & ~haut_b
+Ps[haut_b, 2] = HAUT; Ps[bas_b, 2] = BAS
+Ns = Nn[us].copy()
+for _ in range(10): Ns = 0.5 * Ns + 0.5 * (A @ Ns) / deg[:, None]
+Ns /= np.maximum(np.linalg.norm(Ns, axis=1, keepdims=True), 1e-20)
+Pl = Ps.copy()
+for _ in range(int(os.environ.get('SHORT_LISSE', '30'))):
+    moy = (A @ Pl) / deg[:, None]; Pl = np.where(bordS[:, None], Pl, 0.5 * Pl + 0.5 * moy)
+# le tissu reste au-dessus de la peau : on garde le plus haut des deux le long de la normale, plus l'épaisseur
+h = ((Pl - Ps) * Ns).sum(1)
+Pl = Pl + Ns * (np.maximum(0, -h) + float(os.environ.get('SHORT_EP', '0.004')))[:, None]
+short = maillage('short', Pl, Ts)
+short.data.materials.append(bpy.data.materials.new('tissu'))
+a = short.data.attributes.new('repos', 'FLOAT_VECTOR', 'POINT'); a.data.foreach_set('vector', Pl.astype(np.float32).ravel())
+a = short.data.attributes.new('actif', 'FLOAT', 'POINT'); a.data.foreach_set('value', np.zeros(len(us), np.float32))
+attacher(short, OSI[us], OSW[us])
+g = short.vertex_groups.new(name='lissage'); g.add(list(range(len(us))), 1.0, 'REPLACE')
+cs2 = short.modifiers.new('lissage', 'CORRECTIVE_SMOOTH'); cs2.vertex_group = 'lissage'; cs2.factor = cs.factor; cs2.iterations = cs.iterations; cs2.smooth_type = 'LENGTH_WEIGHTED'; cs2.rest_source = 'ORCO'
+so = short.modifiers.new('epaisseur', 'SOLIDIFY'); so.thickness = 0.0025; so.offset = 1.0
+# La peau sous le short est cachée (sauf une marge sous l'ourlet), pour qu'elle ne perce jamais le tissu.
+marge = 0.02
+cache = estCorps & (pb < 0.5) & (Va[:, 1] < HAUT - marge) & (Va[:, 1] > BAS + marge)
+g = corps.vertex_groups.new(name='sous_short'); g.add(np.flatnonzero(cache).tolist(), 1.0, 'REPLACE')
+mk = corps.modifiers.new('sous_short', 'MASK'); mk.vertex_group = 'sous_short'; mk.invert_vertex_group = True
+# (le masque reste le dernier : le lissage correcteur a besoin de tous les sommets du repos)
+np.save(os.path.splitext(SORTIE)[0] + '-short.npy', us)
+chrono(f'short : {len(us)} sommets, {len(Ts)} triangles ; {int(cache.sum())} sommets de peau cachés dessous')
+
+bpy.ops.wm.save_as_mainfile(filepath=os.path.abspath(SORTIE))
+chrono(f'écrit {SORTIE}')

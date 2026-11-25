@@ -657,6 +657,86 @@ n'a ni squelette ni poses (`video/glb.mjs` lit le fichier) :
 - Licence : CC BY-SA 4.0. Mention : « Écorché (github.com/Charleeh/ecorche), CC BY-SA 4.0. Based on BodyParts3D,
   © The Database Center for Life Science, CC BY 4.0, and Z-Anatomy by Gauthier Kervyn, CC BY-SA 4.0. »
 
+## Le mannequin Blender (vidéos d'exercice : curl, squat, développé militaire)
+
+Les deux prototypes ci-dessus rendent l'écorché tel que le moteur de l'appli le déforme (des muscles séparés, attachés
+chacun à ses os) : aux articulations, ils ont les défauts de l'atlas (muscles qui se vrillent au coude, qui se décollent
+à l'épaule). Le mannequin est un personnage classique : **une seule surface**, attachée aux os de son segment, dont le
+relief est celui des muscles. Les mouvements, le matériel et le choix des muscles en couleur restent ceux de l'appli.
+Tout est dans `video/mannequin/` ; `<travail>` est un dossier hors du dépôt.
+
+1. `node video/mannequin/exporter-source.mjs - <travail>/source.bin` : ce que l'appli sait du corps — le modèle préparé
+   (étoffé, comme le moteur le montre, avec la structure de chaque sommet), la peau de l'appli (film du corps, tête,
+   mains, pieds, ongles, cheveux, yeux) et le squelette.
+2. `SOURCES=<dossier de muscles.bin…> node --max-old-space-size=8000 video/exporter.mjs "curl hal" 2 <travail>/pleine.bin` :
+   les muscles et les os en pleine résolution, au repos, avec la carrure (le même export que le premier prototype).
+3. `AFFINAGES=2 python video/mannequin/etape1.py video/mannequin <travail>/source.bin <travail>/pleine.bin <travail>/mannequin.npz`
+   (Python avec `bpy` et `scipy`) : la surface et ses attaches.
+   - **La surface.** Le film de l'appli (côté gauche), chaque triangle coupé en seize (un sommet tous les 2 mm), les
+     milieux posés sur la surface courbe (triangles PN). Chaque sommet est ensuite poussé le long de sa normale jusqu'au
+     muscle en pleine résolution qu'il a sous lui (rayon lancé de 4 mm au-dessus), à 0,8 mm de lui, sans jamais
+     s'écarter du film de plus de 3 mm en creux ni de 1,5 mm en bosse : le relief gagne les sillons entre les muscles,
+     le film garde ce qu'il a de réglé (aisselle, entrejambe, raccords). Là où il n'y a pas de muscle dessous, un
+     sillon. Les aponévroses ne comptent pas (le relief des muscles se lirait mal dessous). La peau du bras ne cherche
+     que les muscles du bras et de l'épaule, celle du tronc que ceux du tronc et de l'épaule (la « part de bras » de la
+     peau d'origine dit de quel côté elle est) ; les membres ne voient pas ceux d'en face.
+   - **Le muscle de chaque sommet** (pour la couleur) : celui que le rayon touche ; le muscle suivant, plus profond,
+     est gardé aussi. Un muscle aperçu au fond d'une fente n'est pas celui que la peau recouvre : ces sommets-là
+     reprennent le muscle de leurs voisins. Le sens des fibres vient du muscle (vers le tendon où elles convergent).
+   - **Les attaches.** 69 os de déformation : bassin, cinq lombaires, thorax, trois os du cou, tête ; de chaque côté la
+     ceinture (clavicule et omoplate), le bras et l'avant-bras en trois tronçons, la main, les phalanges, la cuisse
+     en trois tronçons, la jambe, le pied, les orteils. Chaque sommet reçoit d'abord **un seul os** : le plus proche
+     parmi ceux que son endroit du corps permet — d'après le muscle (ou l'os) qu'il recouvre et sa part de bras, pas
+     d'après la seule distance : la peau de l'intérieur du bras ne s'attache jamais au flanc qu'elle touche. Puis les
+     poids **s'étalent sur la surface** (diffusion, 500 tours au plus), sur une largeur propre à chaque endroit : 6 mm
+     aux doigts, 3 à 4 cm au coude et au genou, 5 à 6 cm au tronc, à l'épaule et à la hanche. Le visage, les ongles,
+     les poils, les yeux et les cheveux restent rigides.
+   - **L'épaule.** Le deltoïde part de la ceinture et s'attache à mi-bras : attaché au bras d'un bloc, il partait avec
+     lui bras levés et s'écrasait contre le cou. Sa peau suit la ceinture en haut, le bras à partir de 5 cm sous le
+     centre de l'épaule (et près de l'axe du bras seulement : ce qui est sur l'omoplate reste à la ceinture), et le
+     mélange s'étale sur toute sa longueur (6,5 cm).
+4. `python video/mannequin/etape2.py video/mannequin <travail>/mannequin.npz <travail>/mannequin.blend` : le fichier
+   Blender du personnage. L'armature n'a pas de hiérarchie : chaque os reçoit sa pose du moteur. Mélange en
+   quaternions duaux (le volume se garde aux torsions), puis **lissage correcteur** (12 tours, relief du repos
+   gardé) sur le corps — ni le visage ni les doigts. Le **short** : les faces de la peau entre la taille et le haut
+   des cuisses, doublées, gonflées de 4 mm et détendues (le relief des muscles ne se lit pas à travers le tissu), le
+   bord ramené sur une ligne nette ; mêmes attaches que la peau, qui est cachée dessous.
+5. `node video/mannequin/exporter-mouvement.mjs - <identifiant> 25 <travail>/mv-<identifiant>.json` : les poses du
+   moteur image par image (quaternions duaux de chaque articulation), au tempo de l'appli, le matériel de chaque image,
+   la vue et la boîte du cadrage. `node video/mannequin/couleurs.cjs <dépôt> <travail>/couleurs.json <identifiants…>` :
+   les muscles que l'appli colore pour ces exercices.
+6. `PYTHON=<python avec bpy> DONNEES=<travail> bash video/mannequin/tout-rendre.sh e338 e39 e265` : rend chaque boucle
+   (`rendre.py` : une image, une liste ou une plage ; `DEBUG=os` colore la peau par os, pour lire les attaches).
+   - **La pose** (`poses.py`). Un os simple prend la pose de son articulation. Les tronçons du bras et de la cuisse
+     partagent la **torsion** : la rotation de l'os par rapport à son parent est séparée en un balancement et une
+     torsion autour de l'os, mesurée depuis une direction de référence qu'un bras ou une cuisse n'atteint jamais à
+     l'envers (pas de saut bras levés) ; chaque tronçon prend le balancement entier et une part de la torsion (35, 70,
+     100 %). Les tronçons de l'avant-bras partagent la **pronation** entre l'ulna et le radius (10, 50, 92 %).
+   - **Le matériel** : les formes du moteur (cylindre, boîte, sphère, anneau, demi-anneau, prisme à six pans), avec
+     leurs arrondis, leur teinte et leur part de métal ; une forme qui s'étire (câble, élastique) est mise à l'échelle.
+   - **La couleur** : l'intensité que l'appli donne à chaque muscle, les moins sollicités ramenés au neutre (seuil
+     0,4) ; un muscle profond se devine sous un muscle neutre (45 %) ; un muscle du bras ne colore que la peau du bras.
+     Les bords sont adoucis sur deux sommets. Sous le short, la couleur se devine en nappe douce.
+   - **Le studio** : lumières placées d'après la vue (principale en haut à gauche, débouchage, deux contre-jours), fond
+     transparent, le sol ne reçoit que l'ombre. Cadrage : la boîte de la répétition entière, comme dans l'appli.
+7. `node video/mannequin/fonds.cjs <travail> 800` (les fonds clair et sombre de la fiche, peints par le navigateur
+   d'après le CSS), puis `DONNEES=<travail> bash video/mannequin/assembler.sh <travail>/images-e338 <sortie>` : les
+   boucles `-sombre.mp4` et `-clair.mp4` (H.264).
+
+Mesuré ici (4 cœurs, sans carte graphique) : construire le mannequin prend 40 s (643 000 sommets, 1,29 million de
+triangles) ; une image de 800 × 800 à 36 échantillons, 23 s ; une boucle de 70 images, 27 min.
+
+Contrôlé en image fixe sur 21 exercices (départ et milieu de la répétition) : curl, squat, développé militaire,
+gainage, rowing barre, traction, élévations latérales, relevé de bassin, balancé de kettlebell, posture du pigeon,
+soulevé de terre, développé couché, pompe, extension des jambes à la machine, fente, dips, crunch, presse à cuisses,
+tirage vertical, rowing à la poulie, écarté à la poulie. Rendu en vidéo : les trois premiers.
+
+Ce qui reste imparfait : l'épaule dans ses positions extrêmes (bas des dips, bras tout en haut) reste un peu raide ;
+la carrure est celle de l'appli (plus fine que les mannequins de culturistes du commerce) ; les gestes sont ceux du
+moteur de l'appli, avec leurs limites.
+
+Licence : comme l'atlas (Z-Anatomy, CC BY-SA 4.0) — les vidéos en sont des adaptations et portent la mention.
+
 Ce que le mouvement ne montre pas : les
 déplacements (fentes marchées, marches latérales) se font sur place ; les mouvements à plusieurs temps (relevé
 turc, haltérophilie) passent par quelques poses clés ; les muscles s'étirent et se raccourcissent avec les os mais
