@@ -697,28 +697,63 @@ Tout est dans `video/mannequin/` ; `<travail>` est un dossier hors du dépôt.
    - **Le muscle de chaque sommet** (pour la couleur) : celui que le rayon touche ; le muscle suivant, plus profond,
      est gardé aussi. Un muscle aperçu au fond d'une fente n'est pas celui que la peau recouvre : ces sommets-là
      reprennent le muscle de leurs voisins. Le sens des fibres vient du muscle (vers le tendon où elles convergent).
-   - **Les attaches.** 69 os de déformation : bassin, cinq lombaires, thorax, trois os du cou, tête ; de chaque côté la
-     ceinture (clavicule et omoplate), le bras et l'avant-bras en trois tronçons, la main, les phalanges, la cuisse
-     en trois tronçons, la jambe, le pied, les orteils. Chaque sommet reçoit d'abord **un seul os** : le plus proche
+   - **Les attaches.** 79 os de déformation : bassin, cinq lombaires, thorax, trois os du cou, tête ; de chaque côté la
+     ceinture (clavicule et omoplate), cinq nœuds le long du bras et six le long de l'avant-bras, la main, les
+     phalanges, la cuisse en trois tronçons, la jambe, le pied, les orteils. Chaque sommet reçoit d'abord **un seul
+     os** : le plus proche
      parmi ceux que son endroit du corps permet — d'après le muscle (ou l'os) qu'il recouvre et sa part de bras, pas
      d'après la seule distance : la peau de l'intérieur du bras ne s'attache jamais au flanc qu'elle touche. Puis les
      poids **s'étalent sur la surface** (diffusion, 500 tours au plus), sur une largeur propre à chaque endroit : 6 mm
      aux doigts, 3 à 4 cm au coude et au genou, 5 à 6 cm au tronc, à l'épaule et à la hanche. Le visage, les ongles,
      les poils, les yeux et les cheveux restent rigides.
-   - **L'épaule.** Le deltoïde part de la ceinture et s'attache à mi-bras : attaché au bras d'un bloc, il partait avec
-     lui bras levés et s'écrasait contre le cou. Sa peau suit la ceinture en haut, le bras à partir de 5 cm sous le
-     centre de l'épaule (et près de l'axe du bras seulement : ce qui est sur l'omoplate reste à la ceinture), et le
-     mélange s'étale sur toute sa longueur (6,5 cm).
+   - **Le bras** (repris après « les avant-bras et les épaules sont très moches pendant les mouvements »). La
+     diffusion dit quelle part de chaque sommet revient au bras ; entre les os du bras, le partage est **écrit d'après
+     la place du sommet** (`BRAS_NET=0` pour revenir à la seule diffusion) :
+     - *la torsion en continu.* Avec trois tronçons, toute la pronation se faisait en deux endroits de l'avant-bras,
+       qui se vrillait là comme un linge qu'on essore (90 à 165° sur un tirage, un développé, une traction : la pose
+       du repos est en supination). Six nœuds, entre lesquels chaque sommet est partagé selon sa place le long de
+       l'os ; la part de pronation de chaque nœud suit t^1,3 (un peu plus vers le poignet, où l'avant-bras est mince).
+       Pour l'humérus, cinq nœuds et des parts de 0,2 · 0,5 · 0,8 · 1 · 1 : la rotation se prend sur la moitié haute
+       du bras. Toute sur le deltoïde, elle le plissait ; étalée jusqu'au coude, elle vrillait le biceps et le triceps.
+     - *le coude.* Une frontière nette derrière, remontée de 1,8 cm : l'olécrane appartient à l'avant-bras et fait la
+       pointe du coude quand le bras se plie (avant : un pli « en tuyau » sans pointe, et le haut de l'avant-bras qui
+       s'aplatissait en sac en haut du curl). Plus large devant (± 2,2 cm), où la peau se replie.
+     - *la ceinture ne tient que le deltoïde.* La diffusion laissait sa part traîner jusqu'au milieu du bras (30 à
+       50 % sur le haut du biceps et du triceps) : bras levé, la moitié haute du bras restait en arrière et le bras
+       s'étranglait en chapelet. Sur la peau du bras, les parts qui ne sont pas du bras s'éteignent dans les 7 cm
+       sous l'épaule (`EPAULE_FIN`).
+     - *le bras ne tient pas le tronc.* À l'inverse, la diffusion lui donnait prise jusqu'à vingt centimètres de
+       l'épaule (9 % en moyenne sur le grand dorsal, le pectoral, le dentelé) : sa part s'éteint là où la peau
+       d'origine n'est pas du bras (`TRONC_BRAS`).
+     - *le flanc suit le thorax.* Au plus proche, tout le flanc sous l'aisselle revenait à la ceinture (il est plus
+       près de l'omoplate que de la colonne) et pivotait avec elle de 40° bras levé. Les sommets du tronc qu'elle
+       avait pris sont rejugés entre la clavicule et l'épine de l'omoplate d'une part, la cage thoracique de l'autre
+       (`CAGE=0` pour l'ancien partage).
+   - **L'avant-bras adouci.** Une seconde forme de l'avant-bras, au relief lissé (la distance à l'axe est moyennée de
+     proche en proche, 90 tours : les sillons disparaissent, les masses et le volume restent), gardée comme clé de
+     forme. Elle prend le relais du relief sculpté au rendu : 60 % au repos (l'avant-bras sculpté faisait « paquet de
+     cordes »), 90 % à partir de 110° de pronation, où le dessin des muscles tournerait en hélice.
 4. `python video/mannequin/etape2.py video/mannequin <travail>/mannequin.npz <travail>/mannequin.blend` : le fichier
    Blender du personnage. L'armature n'a pas de hiérarchie : chaque os reçoit sa pose du moteur. Mélange en
    quaternions duaux (le volume se garde aux torsions : épaule, avant-bras, hanche) — sauf aux **charnières** : au
    coude et au genou ce mélange gonfle le pli quand l'articulation se ferme (l'avant-bras et le bas de la cuisse
    « grossissaient » en haut du curl et en bas du squat) ; là où la peau tient autant à l'os du dessus qu'à celui du
    dessous, il laisse la place au mélange ordinaire (deux modificateurs d'armature mêlés par un groupe de sommets ;
-   `CHARNIERES=0` pour revenir aux quaternions duaux partout). Puis **lissage correcteur** (12 tours, relief du repos
-   gardé) sur le corps — ni le visage ni les doigts. Le **short** : les faces de la peau entre la taille et le haut
+   `CHARNIERES=0` pour revenir aux quaternions duaux partout). **Autour de l'épaule** aussi, selon l'endroit : le
+   volume gardé convient au deltoïde, qui se ramasse en boule quand le bras monte, mais sous l'aisselle et derrière
+   l'épaule la peau tendue du tronc au bras levé tournait en arc et gonflait en poche ; la part ordinaire va de 5 %
+   en dehors à 80 % sous l'aisselle (35 % devant, 55 % derrière — `EPAULE_K`), et ne dépend que de la place autour de
+   l'épaule : liée aux poids du sommet, elle changeait d'un coup au bord de la zone de mélange et la peau s'y cassait
+   en facettes. Puis **lissage correcteur** (12 tours, relief du repos gardé) sur le corps — ni le visage ni les
+   doigts, et presque pas au milieu de l'avant-bras (il rendrait à la forme adoucie le relief qu'elle efface). Les
+   **clés de forme** de l'avant-bras adouci, une par côté. Le **short** : les faces de la peau entre la taille et le haut
    des cuisses, doublées, gonflées de 4 mm et détendues (le relief des muscles ne se lit pas à travers le tissu), le
    bord ramené sur une ligne nette ; mêmes attaches que la peau, qui est cachée dessous.
+   Pour juger une déformation hors de tout exercice : `node video/mannequin/exporter-banc.mjs <dépôt>
+   <travail>/mv-banc-coude.json coude` pose les deux bras par leurs angles (séries `coude`, `pronation`,
+   `pronation90`, `epaule-cote`, `epaule-avant`, `rotation`, ou une liste « plan,élévation,rotation,coude,pronation ;
+   … »), une image par ligne, cadrée sur le bras (`CADRE=epaule` ou `coude` pour serrer) ; `rendre.py` le rend comme
+   un mouvement (sans couleurs : `-`).
 5. `node video/mannequin/exporter-mouvement.mjs - <identifiant> 25 <travail>/mv-<identifiant>.json` : les poses du
    moteur image par image (quaternions duaux de chaque articulation), au tempo de l'appli, le matériel de chaque image,
    la vue et la boîte du cadrage. `node video/mannequin/couleurs.cjs <dépôt> <travail>/couleurs.json <identifiants…>` :
@@ -737,13 +772,25 @@ Tout est dans `video/mannequin/` ; `<travail>` est un dossier hors du dépôt.
      100 %). Les tronçons de l'avant-bras partagent la **pronation** entre l'ulna et le radius (10, 50, 92 %).
    - **Le matériel** : les formes du moteur (cylindre, boîte, sphère, anneau, demi-anneau, prisme à six pans), avec
      leurs arrondis, leur teinte et leur part de métal ; une forme qui s'étire (câble, élastique) est mise à l'échelle.
+     Le haut des grands bâtis (poutre, potence, poulies, câble), que le moteur marque « hors cadre », est dessiné comme
+     dans l'appli, quitte à être coupé par le bord de l'image : caché (`HORS=0`), le câble du tirage vertical
+     s'arrêtait dans le vide.
    - **La couleur** : l'intensité que l'appli donne à chaque muscle, les moins sollicités ramenés au neutre (seuil
-     0,4) ; un muscle profond se devine sous un muscle neutre (45 %) ; un muscle du bras ne colore que la peau du bras.
-     Les bords sont adoucis sur deux sommets. Sous le short, la couleur se devine en nappe douce.
+     0,4) ; un muscle profond se devine sous un muscle neutre (45 %, 60 % dans le rendu `argile`) — pas sous un os, un
+     tendon ou une aponévrose : la rotule, la face du tibia, la bandelette de la cuisse restent neutres (ils se
+     tachaient de la couleur du muscle caché derrière eux) ; un muscle du bras ne colore que la peau du bras.
+     Les bords sont adoucis sur deux sommets. Les **îlots** s'effacent : un muscle aperçu par une petite fenêtre à
+     l'écart de sa plaque principale (moins de 15 % de celle-ci, du même côté du corps — le vaste latéral derrière la
+     bandelette ilio-tibiale, qui faisait une pastille rouge sur le côté de la cuisse au squat) ne prend plus sa
+     couleur, et les éclats de moins de 40 sommets (un muscle profond deviné par un trou) disparaissent (`ILOTS=0`
+     pour les revoir). Sous le short, seuls les fessiers se devinent, en nappe douce : avec tous les muscles de la
+     hanche (`SHORT_MUSCLES=tous`), le haut des cuisses et les adducteurs tachaient le devant du tissu.
    - **Le studio** : lumières placées d'après la vue — deux bandes verticales devant, de chaque côté (un éclairage
      croisé, qui creuse le relief), une lumière haute derrière, un débouchage. Fond transparent ; le sol ne reçoit que
      l'ombre d'une lumière douce au zénith (les autres ne l'éclairent pas : une seule ombre, ramassée sous le corps).
      Cadrage : la boîte de la répétition entière, comme dans l'appli.
+   - **Les images répétées** : une boucle marque un temps d'arrêt en bas et en haut du geste ; ces images identiques
+     (13 sur 70) ne sont rendues qu'une fois puis recopiées (`DOUBLONS=0` pour tout rendre).
 7. `node video/mannequin/fonds.cjs <travail> 800` (les fonds clair et sombre de la fiche, peints par le navigateur
    d'après le CSS), puis `DONNEES=<travail> bash video/mannequin/assembler.sh <travail>/images-e338 <sortie>` : les
    boucles `-sombre.mp4` et `-clair.mp4` (H.264).

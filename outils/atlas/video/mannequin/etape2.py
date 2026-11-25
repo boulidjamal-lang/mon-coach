@@ -79,6 +79,27 @@ def attacher(ob, osi, osw):
                 wh, wb = (osw * eh[osi]).sum(1), (osw * eb[osi]).sum(1)
                 charn = np.maximum(charn, 2 * np.minimum(wh, wb))
         t = np.clip(charn, 0, 1); part = 1 - K * t * t * (3 - 2 * t)
+        # L'épaule. Là où la peau passe de la ceinture (ou du tronc) au bras, le mélange à volume gardé fait tourner les
+        # points autour de l'articulation sans les rapprocher : bien pour le deltoïde, qui se ramasse en boule quand le
+        # bras monte, mauvais sous le bras et derrière l'épaule, où la peau tendue gonflait en poche (bras levé devant
+        # surtout). Autour du bras, la part ordinaire va de presque rien en dehors à EPAULE_K sous l'aisselle.
+        KE = [float(x) for x in os.environ.get('EPAULE_K', '0.05,0.35,0.8,0.55').split(',')]   # dehors, devant, dedans, derrière
+        if max(KE) > 0:
+            Cj = {a_['nom']: np.array(a_['centre'], float) for a_ in meta['squelette']}
+            Vapp = D['V'].astype(np.float64)[:len(osi)] if len(osi) == NV else None
+            if Vapp is not None:
+                for cote, sx in (('.G', 1.0), ('.D', -1.0)):
+                    ep_ = Cj['humerus' + cote]; co_ = (Cj['ulna' + cote] + Cj['radius' + cote]) / 2; ax = (co_ - ep_) / np.linalg.norm(co_ - ep_)
+                    ex = np.array([sx, 0, 0.0]) - sx * ax[0] * ax; ex /= np.linalg.norm(ex); ez = np.array([0, 0, 1.0]) - ax[2] * ax; ez /= np.linalg.norm(ez)
+                    v = Vapp - ep_; r_ = v - np.outer(v @ ax, ax); phi = np.arctan2(r_ @ ez, r_ @ ex)
+                    kphi = (KE[0] + KE[2]) / 2 + (KE[0] - KE[2]) / 2 * np.cos(phi) + (KE[1] - KE[3]) / 2 * np.sin(phi) + ((KE[1] + KE[3]) / 2 - (KE[0] + KE[2]) / 2) * np.sin(phi) ** 2
+                    # (près de l'axe du bras — le dessus de l'épaule —, la direction n'a plus de sens : part du dehors)
+                    pr = np.clip(np.linalg.norm(r_, axis=1) / 0.045, 0, 1); kphi = KE[0] + (kphi - KE[0]) * pr * pr * (3 - 2 * pr)
+                    # La part ordinaire ne dépend que de la place autour de l'épaule (pas des poids du sommet) : elle
+                    # varie lentement d'un point à son voisin. Liée aux poids, elle changeait d'un coup au bord de la
+                    # zone de mélange et la peau s'y cassait en facettes.
+                    pres = np.clip((0.21 - np.linalg.norm(v, axis=1)) / 0.11, 0, 1); pres = pres * pres * (3 - 2 * pres)
+                    part = np.minimum(part, 1 - kphi * pres)
         gv = ob.vertex_groups.new(name='volume'); q = np.round(part * 50).astype(np.int64)
         for val in np.unique(q):
             if val > 0: gv.add(np.flatnonzero(q == val).tolist(), float(val) / 50, 'REPLACE')
@@ -97,6 +118,11 @@ pd = (OSW * doigt[OSI]).sum(1)
 liss = np.where(estCorps, 1.0, 0.0) * (1 - np.clip(pd * 1.5, 0, 1))
 # (la main et le pied : un peu, vers le poignet et la cheville)
 liss = np.where((zoneV == Z['main']) | (zoneV == Z['pied']), 0.6 * (1 - np.clip(pd * 2.0, 0, 1)), liss)
+# Au milieu de l'avant-bras, presque pas de lissage correcteur : il rendrait à la forme adoucie (clé « lisse ») le
+# relief du repos qu'elle vient d'effacer. La torsion y est continue, il n'y a pas de pincement à reprendre.
+milieu_ab = np.array([n.startswith('avantbras') and n.split('.')[0] != 'avantbras0' for n in nomOs])
+pm = (OSW * milieu_ab[OSI]).sum(1)
+liss = liss * (1 - float(os.environ.get('LISSAGE_AVANTBRAS', '0.85')) * np.clip((pm - 0.5) * 2.5, 0, 1))
 g = corps.vertex_groups.new(name='lissage')
 q = np.round(liss * 20).astype(np.int64)
 for val in np.unique(q):
@@ -105,6 +131,16 @@ cs = corps.modifiers.new('lissage', 'CORRECTIVE_SMOOTH')
 cs.vertex_group = 'lissage'; cs.factor = float(os.environ.get('LISSAGE', '0.6')); cs.iterations = int(os.environ.get('TOURS', '12')); cs.smooth_type = 'LENGTH_WEIGHTED'
 cs.rest_source = 'ORCO'; cs.use_only_smooth = False; cs.use_pin_boundary = False
 chrono('lissage correcteur')
+
+# ---------- Les clés de forme : l'avant-bras adouci, un côté à la fois ----------
+if 'lisse' in D.files:
+    dl = app_vers_blender(D['lisse'].astype(np.float64)); cote = D['cote'].astype(np.int64)
+    corps.shape_key_add(name='repos', from_mix=False)
+    for nom, c_ in (('lisse.G', 0), ('lisse.D', 1)):
+        k = corps.shape_key_add(name=nom, from_mix=False)
+        P2 = V + dl * (cote == c_)[:, None]
+        k.data.foreach_set('co', P2.astype(np.float32).ravel()); k.value = 0.0; k.slider_min = 0.0; k.slider_max = 1.0
+    chrono(f"clés de forme : avant-bras adouci ({int((np.abs(dl).sum(1) > 1e-6).sum())} sommets)")
 
 # ---------- Le short ----------
 # Les faces du bassin et du haut des cuisses, doublées, gonflées de quelques millimètres et lissées (le relief des

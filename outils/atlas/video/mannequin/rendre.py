@@ -3,13 +3,13 @@
 #   python rendre.py <outils> <mannequin.blend> <mannequin.npz> <mouvement.json | repos> <couleurs.json | -> <sortie> <images> [résolution] [échantillons]
 # <images> : "0-69", "0,17,35" ou "35". Réglages (variables) : VUE="az,el", CADRE="haut" (corps entier par défaut),
 # DEBUG=os (couleur par os), EXPO, TEINTE=rouge|rose, FORMAT="l,h".
-import sys, os, json, math, time, re
+import sys, os, json, math, time, re, hashlib, shutil
 import numpy as np
 import bpy
 from mathutils import Matrix, Vector
 sys.path.insert(0, sys.argv[1])
 from lire import app_vers_blender
-from poses import Poseur
+from poses import Poseur, rt, axe_angle
 
 args = sys.argv[2:]
 BLEND, NPZ, MOUV, COUL, SORTIE, IMAGES = args[:6]
@@ -43,17 +43,46 @@ MV = None if MOUV == 'repos' else json.load(open(MOUV))
 poseur = Poseur(meta)
 NJ = len(meta['squelette'])
 REST = {o['nom']: arm.data.bones[o['nom']].matrix_local.copy() for o in OS}
+# L'avant-bras adouci (clé de forme) prend le relais du relief sculpté à mesure que la main tourne : LISSE_BASE en
+# supination (la pose du repos), LISSE_MAX à partir de LISSE_A degrés de pronation.
+CLES = corps.data.shape_keys.key_blocks if corps.data.shape_keys else None
+LISSE_DE, LISSE_A, LISSE_MAX = float(os.environ.get('LISSE_DE', '20')), float(os.environ.get('LISSE_A', '110')), float(os.environ.get('LISSE_MAX', '0.9'))
+LISSE_BASE = float(os.environ.get('LISSE_BASE', '0.6'))     # (déjà au repos : l'avant-bras sculpté fait « paquet de cordes »)
 def poser(dq):
     for o, (R, t) in zip(OS, poseur.poser(dq)):
         X = np.eye(4); X[:3, :3] = R; X[:3, 3] = t
         Xb = Matrix((B4 @ X @ B4.T).tolist())
         M = REST[o['nom']]
         arm.pose.bones[o['nom']].matrix_basis = M.inverted() @ Xb @ M
+    if CLES is not None:
+        for cote in ('.G', '.D'):
+            if 'lisse' + cote not in CLES: continue
+            Ru, Rr = rt(dq[poseur.num['ulna' + cote]])[0], rt(dq[poseur.num['radius' + cote]])[0]
+            ang = math.degrees(axe_angle(Ru.T @ Rr)[1]); x = min(1.0, max(0.0, (ang - LISSE_DE) / (LISSE_A - LISSE_DE)))
+            CLES['lisse' + cote].value = LISSE_BASE + (LISSE_MAX - LISSE_BASE) * x * x * (3 - 2 * x) if os.environ.get('LISSE_FIXE') is None else float(os.environ['LISSE_FIXE'])
 DQ_REPOS = np.tile(np.array([0, 0, 0, 1, 0, 0, 0, 0], float), (NJ, 1))
 
 # ---------------------------------------------------------------- les muscles qui travaillent
 muscle = D['muscle'].astype(np.int64); muscle2 = D['muscle2'].astype(np.int64)
-actif = np.zeros(NV)
+ed = np.zeros(len(me.edges) * 2, np.int32); me.edges.foreach_get('vertices', ed); ed = ed.reshape(-1, 2)
+def plaques(garde):
+    """Les plaques d'un seul tenant du maillage réduit aux arêtes gardées : numéro de plaque et taille, par sommet."""
+    import scipy.sparse as sp
+    from scipy.sparse.csgraph import connected_components
+    A = sp.coo_matrix((np.ones(int(garde.sum()), np.int8), (ed[garde, 0], ed[garde, 1])), shape=(NV, NV)).tocsr()
+    lab = connected_components(A, directed=False)[1]
+    return lab, np.bincount(lab, minlength=lab.max() + 1)[lab]
+# Un muscle aperçu par une petite fenêtre à l'écart de sa plaque principale (le vaste latéral derrière la bandelette
+# ilio-tibiale, sur le côté de la cuisse) se colorait en pastille isolée. Ces îlots — moins de 15 % de la plus grande
+# plaque du même muscle, du même côté du corps — ne prennent plus sa couleur.
+if os.environ.get('ILOTS', '1') == '1':
+    cote = D['cote'].astype(np.int64); me0, me1 = muscle[ed[:, 0]], muscle[ed[:, 1]]
+    _, taille = plaques((me0 == me1) & (me0 >= 0) & (cote[ed[:, 0]] == cote[ed[:, 1]]))
+    cle = np.where(muscle >= 0, muscle * 4 + cote, 0); grande = np.zeros(cle.max() + 1, np.int64); np.maximum.at(grande, cle, taille)
+    ilot = (muscle >= 0) & (taille < 0.15 * grande[cle])
+    muscle = np.where(ilot, -1, muscle)
+    chrono(f'îlots de muscle retirés : {int(ilot.sum())} sommets')
+actif = np.zeros(NV); actif_short = actif
 if COUL != '-' and MV is not None:
     CC = json.load(open(COUL)); cmap = CC['couleurs'].get(MV['quoi'], {})
     hexv = lambda h: np.array([int(h[i:i + 2], 16) for i in (1, 3, 5)], float)
@@ -68,27 +97,42 @@ if COUL != '-' and MV is not None:
     a1 = force[muscle]; a2 = force[muscle2]
     # Un muscle du bras ne colore que la peau du bras : sous le deltoïde et le pectoral, le biceps et le coraco-brachial
     # affleurent dans le sillon de l'épaule — la peau de l'épaule ne les montre pas.
-    nomOs = np.array([o['nom'] for o in OS]); du_bras = np.array([n.split('.')[0] in ('bras1', 'bras2', 'avantbras0', 'avantbras1', 'avantbras2', 'main') or n.startswith('doigt') for n in nomOs])
+    nomOs = np.array([o['nom'] for o in OS]); NBRAS = sum(1 for n in nomOs if n.startswith('bras') and n.endswith('.G'))
+    # (le haut du bras, sous le deltoïde, ne compte pas : les deux premiers nœuds sur cinq, le premier tronçon sur trois)
+    du_bras = np.array([(n.startswith('bras') and int(n.split('.')[0][4:]) >= (2 if NBRAS >= 5 else 1)) or n.startswith(('avantbras', 'main', 'doigt')) for n in nomOs])
     pbras = (D['os_w'] * du_bras[D['os_i'].astype(np.int64)]).sum(1)
     reg_bras = np.array([s_['region'] in ('bras', 'avant_bras') for s_ in ST] + [False])
     a1 = np.where(reg_bras[muscle] & (pbras < 0.3), 0, a1); a2 = np.where(reg_bras[muscle2] & (pbras < 0.3), 0, a2)
-    actif = np.maximum(a1, float(os.environ.get('PROFOND', '0.45')) * a2 * (a1 < 0.05))
+    # Un muscle profond se devine sous un muscle au repos — pas sous un os, un tendon ou une aponévrose (la face du
+    # tibia, la rotule, la bandelette de la cuisse restent neutres : sinon ils se tachaient de la couleur du muscle
+    # caché derrière eux).
+    actif = np.maximum(a1, float(os.environ.get('PROFOND', '0.45')) * a2 * (a1 < 0.05) * (muscle >= 0))
+    # Les éclats (un muscle profond deviné par un trou, quelques sommets) s'effacent.
+    if os.environ.get('ILOTS', '1') == '1':
+        col = actif > 0.05; _, taille = plaques(col[ed[:, 0]] & col[ed[:, 1]])
+        actif = np.where(col & (taille < 40), 0, actif)
     # bords adoucis : deux tours de moyenne avec les voisins
-    ed = np.zeros(len(me.edges) * 2, np.int32); me.edges.foreach_get('vertices', ed); ed = ed.reshape(-1, 2)
     deg = np.zeros(NV); np.add.at(deg, ed[:, 0], 1); np.add.at(deg, ed[:, 1], 1); deg = np.maximum(deg, 1)
     for _ in range(int(os.environ.get('ADOUCIR', '2'))):
         s_ = np.zeros(NV); np.add.at(s_, ed[:, 0], actif[ed[:, 1]]); np.add.at(s_, ed[:, 1], actif[ed[:, 0]])
         actif = 0.5 * actif + 0.5 * s_ / deg
+    if os.environ.get('SHORT_MUSCLES', 'fessiers') == 'tous': actif_short = actif
+    else:
+        fes = np.array([s_['id'] in ('grand_fessier', 'moyen_fessier', 'petit_fessier') for s_ in ST] + [False])
+        actif_short = np.maximum(np.where(fes[muscle], force[muscle], 0), np.where(fes[muscle2], force[muscle2], 0))
     chrono(f"muscles en couleur : {int((force > 0).sum())} structures, {int((actif > 0.05).sum())} sommets ; plus fort {force.max():.2f}")
 me.attributes['actif'].data.foreach_set('value', actif.astype(np.float32))
 if short is not None:
     us = np.load(os.path.splitext(BLEND)[0] + '-short.npy')
-    # Sous le tissu, la couleur se devine en nappe douce (pas le dessin des muscles).
-    asr = actif[us].copy(); nS = len(us)
+    # Sous le tissu, seuls les fessiers se devinent, en nappe douce (pas le dessin des muscles) : le devant du short
+    # reste uni. Avec tous les muscles de la hanche (SHORT_MUSCLES=tous), le haut des cuisses, les adducteurs et les
+    # fléchisseurs y dessinaient une tache irrégulière.
+    asr = actif_short[us].copy(); nS = len(us)
     es = np.zeros(len(short.data.edges) * 2, np.int32); short.data.edges.foreach_get('vertices', es); es = es.reshape(-1, 2)
     dg = np.zeros(nS); np.add.at(dg, es[:, 0], 1); np.add.at(dg, es[:, 1], 1); dg = np.maximum(dg, 1)
     for _ in range(int(os.environ.get('ADOUCIR_SHORT', '40'))):
         t_ = np.zeros(nS); np.add.at(t_, es[:, 0], asr[es[:, 1]]); np.add.at(t_, es[:, 1], asr[es[:, 0]]); asr = 0.5 * asr + 0.5 * t_ / dg
+    asr = asr * float(os.environ.get('SHORT_FORCE', '1'))
     short.data.attributes['actif'].data.foreach_set('value', asr.astype(np.float32))
 
 # ---------------------------------------------------------------- les matières
@@ -314,7 +358,7 @@ def placer_materiel(formes):
         if f['forme'] in ('tore', 'arc', 'sphere'): ech = np.array([f['s'][0] / s0[0] if s0[0] > 1e-9 else 1.0] * 3)
         X = np.eye(4); X[:3, :3] = R * ech[None, :]; X[:3, 3] = f['p']
         o.matrix_world = Matrix((B4 @ X).tolist())
-        o.hide_render = bool(f.get('hors')) and os.environ.get('HORS', '0') != '1'
+        o.hide_render = bool(f.get('hors')) and os.environ.get('HORS', '1') != '1'
 if MV is not None: creer_materiel(MV['images'][0]['formes'])
 
 # ---------------------------------------------------------------- studio
@@ -342,6 +386,13 @@ for c in coins - cible:
 pos_app = cible + dir_app * dist
 co.location = Vector(B3 @ pos_app); d = Vector(B3 @ cible) - co.location; co.rotation_euler = d.to_track_quat('-Z', 'Y').to_euler()
 cam.clip_start = 0.1; cam.clip_end = 100
+def recadrer(b0, b1):
+    """La caméra sur une autre boîte, même direction de vue (banc d'essai : une boîte par image)."""
+    b0, b1 = np.array(b0, float), np.array(b1, float); ci = (b0 + b1) / 2; di = 0
+    for c in np.array([[x, y, z] for x in (b0[0], b1[0]) for y in (b0[1], b1[1]) for z in (b0[2], b1[2])]) - ci:
+        x, y, zc = c @ dr, c @ up, c @ dir_app
+        di = max(di, abs(x) * MARGE / tanx + zc, abs(y) * MARGE / tany + zc)
+    co.location = Vector(B3 @ (ci + dir_app * di)); d_ = Vector(B3 @ ci) - co.location; co.rotation_euler = d_.to_track_quat('-Z', 'Y').to_euler()
 
 def lampe(nom, loc_cam, cible_b, energie, taille=(1, 1), couleur=(1, 1, 1), etale=None):
     """loc_cam : (à droite, en haut, vers la caméra) depuis la cible, en mètres : les lumières suivent la vue."""
@@ -384,7 +435,7 @@ if os.environ.get('OMBRES', '1') == '1':
 # ---------------------------------------------------------------- rendu
 sc.render.engine = 'CYCLES'; sc.cycles.device = 'CPU'
 sc.cycles.samples = ECH; sc.cycles.use_adaptive_sampling = True; sc.cycles.adaptive_threshold = float(os.environ.get('SEUIL', '0.04'))
-sc.cycles.use_denoising = True
+sc.cycles.use_denoising = os.environ.get('DEBRUITER', '1') == '1'
 try: sc.cycles.denoiser = 'OPENIMAGEDENOISE'
 except Exception: pass
 sc.cycles.max_bounces = 4; sc.cycles.diffuse_bounces = 2; sc.cycles.glossy_bounces = 3; sc.cycles.transmission_bounces = 1; sc.cycles.transparent_max_bounces = 4
@@ -406,14 +457,26 @@ def liste(s):
     return out
 
 chrono('scène prête')
+# Une boucle marque un temps d'arrêt en bas et en haut du geste : ces images sont identiques (même pose, même
+# matériel). Chacune n'est rendue qu'une fois puis recopiée — une image sur cinq en moins à calculer.
+deja = {}
 for f in liste(IMAGES):
-    t = time.time()
+    t = time.time(); cle = None
+    sc.render.filepath = os.path.join(SORTIE, f'f{f:03d}.png')
     if MV is not None:
         im = MV['images'][f % len(MV['images'])]
+        cle = hashlib.md5(json.dumps([im['dq'], im['formes']], sort_keys=True).encode()).hexdigest()
+        if cle in deja and os.path.exists(deja[cle]) and os.environ.get('DOUBLONS', '1') == '1':
+            if deja[cle] != sc.render.filepath: shutil.copyfile(deja[cle], sc.render.filepath)
+            continue
+    if os.environ.get('REPRISE') == '1' and os.path.exists(sc.render.filepath):
+        if cle: deja[cle] = sc.render.filepath
+        continue
+    if MV is not None:
         poser(np.array(im['dq'], float).reshape(NJ, 8)); placer_materiel(im['formes'])
+        if im.get('boite'): recadrer(im['boite']['min'], im['boite']['max'])
     else: poser(DQ_REPOS)
-    sc.render.filepath = os.path.join(SORTIE, f'f{f:03d}.png')
-    if os.environ.get('REPRISE') == '1' and os.path.exists(sc.render.filepath): continue
     bpy.ops.render.render(write_still=True)
+    if cle: deja[cle] = sc.render.filepath
     print(f'image {f} : {time.time() - t:.1f} s', flush=True)
 if os.environ.get('GARDER'): bpy.ops.wm.save_as_mainfile(filepath=os.path.abspath(os.environ['GARDER']))

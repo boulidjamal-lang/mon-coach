@@ -114,8 +114,22 @@ os_('cou2', [(C['cou2'], C['cou3'])], {'art': 'cou2'})
 os_('cou3', [(C['cou3'], C['tete'])], {'art': 'cou3'})
 os_('tete', [(C['tete'], C['tete'] + [0, 0.17, 0.02]), (C['tete'], C['tete'] + [0, -0.03, 0.09])], {'art': 'tete'})
 os_('ceinture.G', [(C['clavicule.G'], ep), (ep, ep + [-0.055, -0.14, -0.085])], {'art': 'clavicule.G'})
-for k in range(3): os_(f'bras{k}.G', [(tiers(ep, co, k), tiers(ep, co, k + 1))], {'torsion': ['clavicule.G', 'humerus.G'], 'part': [0.35, 0.7, 1.0][k]})
-for k in range(3): os_(f'avantbras{k}.G', [(tiers(co, po, k), tiers(co, po, k + 1))], {'pronation': ['ulna.G', 'radius.G'], 'part': [0.1, 0.5, 0.92][k]})
+# Le bras et l'avant-bras : des nœuds répartis le long de l'os, entre lesquels la torsion passe en continu (cinq pour
+# la rotation de l'humérus, six pour la pronation). Avec trois tronçons seulement, toute la pronation se faisait en
+# deux endroits de l'avant-bras, qui se vrillait là comme un linge qu'on essore.
+NBR = int(os.environ.get('NOEUDS_BRAS', '5')); NAV = int(os.environ.get('NOEUDS_AVANTBRAS', '6'))
+EXP_PRON = float(os.environ.get('EXP_PRONATION', '1.3'))
+def noeuds(prefixe, A, B, N, pose_de):
+    for k in range(N):
+        t0, t1 = max(0.0, (k - 0.5) / (N - 1)), min(1.0, (k + 0.5) / (N - 1))
+        os_(f'{prefixe}{k}.G', [(A + (B - A) * t0, A + (B - A) * t1)], pose_de(k / (N - 1)))
+# (la rotation du bras se prend sur sa moitié haute, deltoïde compris : le bas du biceps et du triceps tourne d'un
+#  bloc avec l'humérus. Toute sur le deltoïde, elle le plissait ; étalée jusqu'au coude, elle vrillait tout le bras.)
+PART_BRAS = [float(x) for x in os.environ.get('PART_BRAS', '0.2,0.5,0.8,1,1').split(',')]
+noeuds('bras', ep, co, NBR, lambda t: {'torsion': ['clavicule.G', 'humerus.G'], 'part': PART_BRAS[min(len(PART_BRAS) - 1, int(round(t * (NBR - 1))))]})
+# (la pronation se prend un peu plus vers le poignet, où l'avant-bras est mince et son relief discret)
+noeuds('avantbras', co, po, NAV, lambda t: {'pronation': ['ulna.G', 'radius.G'], 'part': t ** EXP_PRON})
+BRAS_N = [f'bras{k}.G' for k in range(NBR)]; AVB_N = [f'avantbras{k}.G' for k in range(NAV)]
 os_('main.G', [(po, C[f'doigt{d}-1.G']) for d in (2, 3, 4, 5)], {'art': 'main.G'})
 for d in range(1, 6):
     for k in range(1, 4):
@@ -156,11 +170,11 @@ DOIGTS = [f'doigt{d}-{k}.G' for d in range(1, 6) for k in range(1, 4)]
 ENS = {
     'cou': ['thorax', 'cou1', 'cou2', 'cou3', 'tete', 'ceinture.G'],
     'tronc': ['bassin', 'L5', 'L4', 'L3', 'L2', 'L1', 'thorax', 'cou1', 'ceinture.G'],
-    'epaule': ['ceinture.G', 'bras0.G', 'bras1.G'],
-    'bras': ['bras0.G', 'bras1.G', 'bras2.G', 'avantbras0.G', 'avantbras1.G', 'avantbras2.G', 'main.G'] + DOIGTS,
+    'epaule': ['ceinture.G'] + BRAS_N[:(NBR + 1) // 2],
+    'bras': BRAS_N + AVB_N + ['main.G'] + DOIGTS,
     'jambe': ['cuisse0.G', 'cuisse1.G', 'cuisse2.G', 'jambe.G', 'pied.G', 'orteils.G'],
     'tete': ['cou2', 'cou3', 'tete'], 'tete_seule': ['tete'],
-    'main': ['avantbras2.G', 'main.G'] + DOIGTS, 'pied': ['jambe.G', 'pied.G', 'orteils.G'],
+    'main': [AVB_N[-1], 'main.G'] + DOIGTS, 'pied': ['jambe.G', 'pied.G', 'orteils.G'],
     'ongle_main': [f'doigt{d}-3.G' for d in range(1, 6)], 'ongle_pied': ['orteils.G'],
 }
 REGION_ENS = {'tete': 'cou', 'cou': 'cou', 'thorax': 'tronc', 'dos': 'tronc', 'abdomen': 'tronc', 'bassin': 'tronc', 'epaule': 'epaule',
@@ -248,7 +262,7 @@ N0 = normales(V, T, plan)
 estCorps = zone == 0
 piece0, _, _, _ = dessous(V[estCorps], N0[estCorps], bras[estCorps])
 permis = [None] * NV0; ens_v = [''] * NV0
-EPAULE_T = float(os.environ.get('EPAULE_T', '0.05')); EPAULE_SIG = float(os.environ.get('EPAULE_SIG', '0.065'))
+EPAULE_T = float(os.environ.get('EPAULE_T', '0.04')); EPAULE_SIG = float(os.environ.get('EPAULE_SIG', '0.04'))
 ic = np.flatnonzero(estCorps)
 for k, i in enumerate(ic):
     if piece0[k] < 0: e = 'bras' if bras[i] > 0.5 else 'tronc'
@@ -264,12 +278,24 @@ axe_bras = (co - ep) / np.linalg.norm(co - ep)
 for i in ic:
     if ens_v[i] != 'epaule': continue
     v = V[i] - ep; t = float(v @ axe_bras); rad = float(np.linalg.norm(v - t * axe_bras))
-    permis[i] = ['bras0.G', 'bras1.G'] if (t > EPAULE_T and rad < 0.085) else ['ceinture.G']
+    permis[i] = BRAS_N[:(NBR + 1) // 2] if (t > EPAULE_T and rad < 0.085) else ['ceinture.G']
 for i in np.flatnonzero(~estCorps):
     z = ZONES[zone[i]]
     e = 'tete' if z == 'tete' else 'main' if z == 'main' else 'pied' if z == 'pied' else ('ongle_main' if V[i, 1] > 0.4 else 'ongle_pied') if z == 'ongle' else 'tete_seule'
     permis[i] = ENS[e]
 etiq = etiqueter(V, permis)
+# La ceinture scapulaire ne garde que le haut de l'épaule. Au plus proche, tout le flanc sous l'aisselle lui revenait
+# (il est plus près de l'omoplate que de la colonne) : il suivait la ceinture, qui pivote de 40° quand le bras monte,
+# et le tronc s'ouvrait en « ailes ». Les sommets du tronc qu'elle avait pris sont rejugés entre la ceinture — la
+# clavicule et l'épine de l'omoplate — et la cage thoracique (une ligne sur le flanc, une devant, une derrière).
+if os.environ.get('CAGE', '1') == '1':
+    cage = [(C['thorax'], C['cou1'])] + [(np.array(a_, float), np.array(b_, float)) for a_, b_ in
+            (((0.105, 1.10, -0.005), (0.105, 1.32, -0.005)), ((0.065, 1.12, 0.075), (0.065, 1.34, 0.065)), ((0.075, 1.10, -0.085), (0.075, 1.36, -0.095)))]
+    haut = [(C['clavicule.G'], ep), (ep, np.array([0.075, ep[1] + 0.01, -0.10]))]
+    kc = np.flatnonzero((etiq == IOS['ceinture.G']) & np.array([e in ('tronc', 'cou') for e in ens_v]))
+    vers_thorax = dist_segments(V[kc], cage) < dist_segments(V[kc], haut)
+    etiq[kc[vers_thorax]] = IOS['thorax']
+    chrono(f'ceinture : {int(vers_thorax.sum())} sommets du tronc rendus au thorax sur {len(kc)}')
 # Le visage et le crâne restent rigides : au-dessus de la mâchoire, tout suit la tête.
 visage = (zone == Z['tete']) & (V[:, 1] > C['tete'][1] + 0.005 - 0.9 * np.maximum(0, V[:, 2] - 0.0))
 etiq[visage] = IOS['tete']
@@ -376,6 +402,55 @@ for tour in range(AFFINAGES):
 NVF = len(Vf)
 zonef = np.zeros(NVF, np.int64); zonef[:NV0] = zone          # (les sommets ajoutés sont tous du corps)
 dbordf = Mtot @ dbord; brasf = Mtot @ bras; Wf = (Mtot @ Wg).astype(np.float32)
+
+# ---------------------------------------------------------------- le bras : partage net entre ses os
+# La diffusion dit quelle part de chaque sommet revient au bras (face à la ceinture, au tronc, à la main). Entre les os
+# du bras lui-même, le partage est écrit d'après la place du sommet :
+#  - le long de l'os, entre les deux nœuds qui l'encadrent : la torsion varie en continu ;
+#  - au coude, une frontière nette derrière et remontée de deux centimètres (l'olécrane appartient à l'avant-bras : il
+#    fait la pointe du coude quand le bras se plie), plus large devant, où la peau se replie.
+iB = np.array([IOS[n] for n in BRAS_N]); iA = np.array([IOS[n] for n in AVB_N])
+L_h, L_f = np.linalg.norm(co - ep), np.linalg.norm(po - co); a_h, a_f = (co - ep) / L_h, (po - co) / L_f
+d_ = C['radius.G'] - C['ulna.G']; n_coude = d_ - (d_ @ a_h) * a_h; n_coude = -n_coude / np.linalg.norm(n_coude)   # axe de flexion (vers le dedans)
+a_moy = (a_h + a_f) / np.linalg.norm(a_h + a_f); devant = np.cross(n_coude, a_moy); devant /= np.linalg.norm(devant)
+liss_ = lambda t: np.clip(t, 0, 1) ** 2 * (3 - 2 * np.clip(t, 0, 1))
+COUDE_DOS = [float(x) for x in os.environ.get('COUDE_DOS', '-0.018,0.012').split(',')]      # frontière et demi-largeur derrière (m)
+COUDE_DEVANT = [float(x) for x in os.environ.get('COUDE_DEVANT', '0.004,0.022').split(',')]  # … et devant
+def part_avantbras(P):
+    s_, g_ = (P - co) @ a_moy, (P - co) @ devant
+    q = liss_(g_ / 0.03)        # (toute la moitié arrière du coude suit la règle de derrière : une pointe large)
+    s0 = COUDE_DOS[0] + (COUDE_DEVANT[0] - COUDE_DOS[0]) * q; h = COUDE_DOS[1] + (COUDE_DEVANT[1] - COUDE_DOS[1]) * q
+    return liss_((s_ - s0) / (2 * h) + 0.5)
+def chapeaux(t, N):
+    x = np.clip(t, 0, 1) * (N - 1); k0 = np.minimum(np.floor(x).astype(np.int64), N - 2); f = x - k0
+    H = np.zeros((len(t), N)); H[np.arange(len(t)), k0] = 1 - f; H[np.arange(len(t)), k0 + 1] = f
+    return H
+# La ceinture scapulaire ne tient que le deltoïde. La diffusion laissait sa part traîner jusqu'au milieu du bras (30 à
+# 50 % sur le haut du biceps et du triceps) : bras levé, la moitié haute du bras restait en arrière et le bras
+# s'étranglait en chapelet. Sur la peau du bras, les parts qui ne sont pas du bras s'éteignent entre EPAULE_FIN[0] et
+# EPAULE_FIN[1] mètres sous l'épaule.
+EPAULE_FIN = [float(x) for x in os.environ.get('EPAULE_FIN', '0.0,0.07').split(',')]
+s_ep = (Vf - ep) @ a_h
+k_ep = liss_((brasf - 0.3) / 0.4) * liss_((s_ep - EPAULE_FIN[0]) / (EPAULE_FIN[1] - EPAULE_FIN[0]))
+autres = np.ones(NB, bool); autres[iB] = False; autres[iA] = False
+for n_ in ['main.G'] + DOIGTS: autres[IOS[n_]] = False
+retire = (Wf[:, autres] * k_ep[:, None]).sum(1)
+Wf[:, autres] *= (1 - k_ep)[:, None]
+Wf[:, iB[0]] += retire          # (rendu au bras ; le partage entre ses nœuds vient juste après)
+# À l'inverse, le bras ne tient pas le tronc : la diffusion lui donnait prise jusqu'à vingt centimètres de l'épaule (9 %
+# en moyenne sur le grand dorsal, le pectoral, le dentelé), et bras levé le tronc se soulevait en « ailes » sous
+# l'aisselle. La part de bras s'éteint là où la peau d'origine n'est pas du bras (TRONC_BRAS : de rien à tout).
+TRONC_BRAS = [float(x) for x in os.environ.get('TRONC_BRAS', '0.05,0.35').split(',')]
+g_tr = liss_((brasf - TRONC_BRAS[0]) / (TRONC_BRAS[1] - TRONC_BRAS[0]))
+cols_b = np.r_[iB, iA]
+Wf[:, cols_b] *= g_tr[:, None]
+tot_ = Wf.sum(1); Wf /= np.maximum(tot_, 1e-9)[:, None]
+m_bras = Wf[:, iB].sum(1) + Wf[:, iA].sum(1); selb = np.flatnonzero(m_bras > 1e-5)
+if os.environ.get('BRAS_NET', '1') == '1':
+    Pb = Vf[selb]; wf_ = part_avantbras(Pb)
+    Wf[np.ix_(selb, iB)] = (m_bras[selb] * (1 - wf_))[:, None] * chapeaux(((Pb - ep) @ a_h) / L_h, NBR)
+    Wf[np.ix_(selb, iA)] = (m_bras[selb] * wf_)[:, None] * chapeaux(((Pb - co) @ a_f) / L_f, NAV)
+    chrono(f'bras : {len(selb)} sommets partagés entre {NBR} + {NAV} nœuds')
 chrono(f'corps affiné {AFFINAGES} fois : {NVF} sommets, {len(Tf)} triangles (côté gauche)')
 
 # ---------------------------------------------------------------- le relief : chaque sommet du corps posé sur le muscle sous lui
@@ -443,6 +518,24 @@ if GONFLE > 0:
     Vrel = Vrel + Nl * (g * GONFLE)[:, None]; Vrel[planf, 0] = 0
     chrono(f'carrure : jusqu\'à {g.max() * GONFLE * 1000:.1f} mm, {float((g * GONFLE)[corpsV].mean()) * 1000:.1f} mm en moyenne sur le corps')
 
+# ---------------------------------------------------------------- l'avant-bras adouci (clé de forme)
+# En pronation, le relief des muscles de l'avant-bras, sculpté paume vers l'avant, tourne en hélice : on dirait une
+# corde tordue. Sous la peau d'un vrai bras ce dessin s'efface quand la main tourne. Une seconde forme de l'avant-bras,
+# au relief lissé (la distance à l'axe de l'avant-bras est moyennée de proche en proche : les sillons disparaissent,
+# les masses et le volume restent), prend le relais à mesure que la pronation augmente (réglé au rendu).
+LISSE_TOURS = int(os.environ.get('LISSE_TOURS', '90'))
+wA = Wf[:, iA].sum(1); tf_ = ((Vrel - co) @ a_f) / L_f
+dans_ab = wA > 0.02
+r_ = (Vrel - co) - np.outer((Vrel - co) @ a_f, a_f); rho = np.linalg.norm(r_, axis=1); u_ = r_ / np.maximum(rho, 1e-9)[:, None]
+x_ = rho.copy()
+for _ in range(LISSE_TOURS):
+    moy = (Af @ x_) / degf
+    x_ = np.where(dans_ab, 0.5 * x_ + 0.5 * moy, x_)
+masque_ab = np.clip(wA * 1.15, 0, 1) * liss_((tf_ - 0.03) / 0.14)
+lisse_ab = ((x_ - rho) * masque_ab)[:, None] * u_
+lisse_ab[planf] = 0
+chrono(f"avant-bras adouci : {int(dans_ab.sum())} sommets, déplacement jusqu'à {np.abs((x_ - rho) * masque_ab).max() * 1000:.1f} mm")
+
 # ---------------------------------------------------------------- le corps entier : gauche + miroir + cheveux
 vers_d = np.arange(NVF) + NVF; vers_d[planf] = np.flatnonzero(planf)
 garde_d = ~planf                                              # les sommets de la couture ne sont pas doublés
@@ -455,6 +548,8 @@ WT = np.concatenate([Wf, Wf[:, JUM_OS][garde_d]])
 musT = np.concatenate([muscle, muscle[garde_d]]); mus2T = np.concatenate([muscle2, muscle2[garde_d]])
 fibT = np.concatenate([fibre, (fibre * [-1, 1, 1])[garde_d]])
 profT = np.concatenate([profondeur, profondeur[garde_d]])
+lisseT = np.concatenate([lisse_ab, (lisse_ab * [-1, 1, 1])[garde_d]])
+brasT = np.concatenate([brasf, brasf[garde_d]])
 coteV = np.concatenate([np.zeros(NVF, np.int8), np.ones(int(garde_d.sum()), np.int8)]); coteV[np.flatnonzero(planf)] = 2
 corpsVT = np.concatenate([corpsV, corpsV[garde_d]])
 # Les cheveux (au milieu, une seule fois) : rigides avec la tête.
@@ -464,6 +559,7 @@ zoneV = np.concatenate([zoneV, zr[uh]])
 Wh = np.zeros((len(uh), NB), np.float32); Wh[:, IOS['tete']] = 1; WT = np.concatenate([WT, Wh])
 musT = np.concatenate([musT, -np.ones(len(uh), np.int64)]); mus2T = np.concatenate([mus2T, -np.ones(len(uh), np.int64)])
 fibT = np.concatenate([fibT, np.zeros((len(uh), 3), np.float32)]); profT = np.concatenate([profT, np.zeros(len(uh), np.float32)])
+lisseT = np.concatenate([lisseT, np.zeros((len(uh), 3))]); brasT = np.concatenate([brasT, np.zeros(len(uh))])
 coteV = np.concatenate([coteV, np.full(len(uh), 2, np.int8)]); corpsVT = np.concatenate([corpsVT, np.zeros(len(uh), bool)])
 # Les poils, les yeux et les ongles suivent un seul os (celui de leur étiquette) : pas de mélange.
 rig = np.isin(zoneV, [Z['ongle'], Z['poil'], Z['oeil'], Z['cheveux']])
@@ -476,7 +572,7 @@ Wq = np.take_along_axis(WT, ordre, axis=1); Wq[Wq < 0.004] = 0; Wq /= Wq.sum(1, 
 
 np.savez_compressed(SORTIE, V=VT.astype(np.float32), T=TT.astype(np.int32), zoneT=zoneTT.astype(np.int8), zoneV=zoneV.astype(np.int8),
                     os_i=ordre.astype(np.int16), os_w=Wq.astype(np.float32), muscle=musT.astype(np.int16), muscle2=mus2T.astype(np.int16),
-                    fibre=fibT, profondeur=profT, cote=coteV, corps=corpsVT,
+                    fibre=fibT, profondeur=profT, cote=coteV, corps=corpsVT, lisse=lisseT.astype(np.float32), bras=brasT.astype(np.float32),
                     meta=json.dumps({'os': [{'nom': o['nom'], 'segs': [[a.tolist(), b.tolist()] for a, b in o['segs']], 'pose': o['pose']} for o in OS],
                                      'zones': ZONES, 'oeil': H['oeil'], 'squelette': SQ, 'structures': H['structures'], 'affinages': AFFINAGES}))
 chrono(f'écrit {SORTIE}')
