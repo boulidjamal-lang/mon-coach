@@ -16,7 +16,7 @@
      'unsafe-inline' ; la phase 2 les remplace), connexions vers les seuls
      services utilisés, aucun cadre tiers ni plugin. Retirée dans l'app iPhone
      par preparer-www.mjs (tout y est local). -->
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://unpkg.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: blob: https:; media-src 'self' blob: data: https:; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://world.openfoodfacts.org https://api.nal.usda.gov https://generativelanguage.googleapis.com https://boulidjamal-lang.github.io; worker-src 'self' blob:; frame-src 'none'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://unpkg.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: blob: https:; media-src 'self' blob: data: https:; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://world.openfoodfacts.org https://api.nal.usda.gov https://generativelanguage.googleapis.com https://boulidjamal-lang.github.io; worker-src 'self' blob:; frame-src 'none'; object-src 'none'; base-uri 'self'; form-action 'self'">
   <!-- Le pincement pour zoomer reste permis (accessibilité : texte trop
        petit, vue fatiguée). Seul le zoom par double appui est retiré, en CSS
        (touch-action: manipulation, voir html, body) : taper deux fois vite
@@ -58,6 +58,17 @@
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.5.1/dist/chart.umd.min.js" integrity="sha384-jb8JQMbMoBUzgWatfe6COACi2ljcDdZQ2OxczGA3bGNeWe+6DChMTBJemed7ZnvJ" crossorigin="anonymous"></script>
   <!-- Synchronisation facultative : l'application fonctionne entièrement sans. -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.3/dist/umd/supabase.js" integrity="sha384-BWcjm9OdFth9TbhCxZPdm+gAOUMAzQy9nmTs12ioXdCcbVnJaPMn+fMUoQCLt60R" crossorigin="anonymous"></script>
+  <!-- Le site ne s'affiche pas dans le cadre d'un autre site (clics détournés).
+       L'interdiction « frame-ancestors » ne vaut qu'envoyée par le serveur, ce
+       que GitHub Pages ne permet pas (dans une balise meta, elle est ignorée) :
+       encadrée, la page se masque avant d'être dessinée et tente de reprendre
+       toute la fenêtre. -->
+  <script>
+  if (window.top !== window.self) {
+    document.documentElement.style.display = 'none';
+    try { window.top.location = window.self.location.href; } catch (e) {}
+  }
+  </script>
 
   <!-- Les styles vivent dans assets/styles.css (lot 14) ; seule la règle qui vise le dégradé SVG de la page reste ici. -->
   <link rel="stylesheet" href="assets/styles.css">
@@ -2028,6 +2039,11 @@
         <input type="checkbox" class="interrupteur" role="switch" id="rappel-seance" onchange="changerRappel('seance')" aria-label="Rappel : séance prévue">
       </div>
       <div class="ligne-reglage rappel-ligne">
+        <span class="action-ic"><svg class="icone-ui" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="13" r="8" /><path d="M12 9v4l2 2" /><path d="M5 3 2 6" /><path d="m22 6-3-3" /></svg></span>
+        <span class="ligne-txt"><b>Avant la séance</b><small>1 h avant ton heure habituelle</small></span>
+        <input type="checkbox" class="interrupteur" role="switch" id="rappel-avant" onchange="changerRappel('avant')" aria-label="Rappel : avant la séance">
+      </div>
+      <div class="ligne-reglage rappel-ligne">
         <span class="action-ic"><svg class="icone-ui" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="5" r="3" /><path d="M6.5 8a2 2 0 0 0-1.905 1.46L2.1 18.5A2 2 0 0 0 4 21h16a2 2 0 0 0 1.925-2.54L19.4 9.5A2 2 0 0 0 17.48 8Z" /></svg></span>
         <span class="ligne-txt"><b>Pesée</b><small>Après 7 jours sans pesée</small></span>
         <input type="time" class="rappel-heure" id="rappel-heure-pesee" value="08:00" onchange="changerRappel('pesee')" aria-label="Heure du rappel : pesée"><input type="checkbox" class="interrupteur" role="switch" id="rappel-pesee" onchange="changerRappel('pesee')" aria-label="Rappel : pesée">
@@ -2037,8 +2053,19 @@
         <span class="ligne-txt"><b>Hydratation</b><small>Moins de la moitié bue</small></span>
         <input type="time" class="rappel-heure" id="rappel-heure-eau" value="16:00" onchange="changerRappel('eau')" aria-label="Heure du rappel : hydratation"><input type="checkbox" class="interrupteur" role="switch" id="rappel-eau" onchange="changerRappel('eau')" aria-label="Rappel : hydratation">
       </div>
+      <div class="ligne-reglage rappel-ligne">
+        <span class="action-ic"><svg class="icone-ui" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z" /></svg></span>
+        <span class="ligne-txt"><b>Série en danger</b><small>Rien de noté ce jour-là</small></span>
+        <input type="time" class="rappel-heure" id="rappel-heure-serie" value="20:30" onchange="changerRappel('serie')" aria-label="Heure du rappel : série en danger"><input type="checkbox" class="interrupteur" role="switch" id="rappel-serie" onchange="changerRappel('serie')" aria-label="Rappel : série en danger">
+      </div>
+      <div class="ligne-reglage rappel-ligne">
+        <span class="action-ic"><svg class="icone-ui" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6" /><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18" /><path d="M4 22h16" /><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22" /><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22" /><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z" /></svg></span>
+        <span class="ligne-txt"><b>Défi de la semaine</b><small>Le week-end, s'il t'en manque peu</small></span>
+        <input type="time" class="rappel-heure" id="rappel-heure-defi" value="10:00" onchange="changerRappel('defi')" aria-label="Heure du rappel : défi de la semaine"><input type="checkbox" class="interrupteur" role="switch" id="rappel-defi" onchange="changerRappel('defi')" aria-label="Rappel : défi de la semaine">
+      </div>
     </div>
-    <p class="note reglages-note seulement-ios">Sur ce téléphone, recalculés à chaque saisie : un rappel devenu inutile ne sonne pas.</p>
+    <p class="note reglages-note rappels-coupes seulement-ios hidden" id="rappels-coupes" role="status">Les notifications sont coupées pour Askēsis sur cet iPhone : aucun rappel ne sonnera. Active-les dans Réglages › Askēsis › Notifications.</p>
+    <p class="note reglages-note seulement-ios">Sur ce téléphone, recalculés à chaque saisie : un rappel devenu inutile ne sonne pas. En retard sur les protéines et l'eau le même jour : un seul message.</p>
 
     <div class="reglages-titre">Affichage</div>
     <div class="carte-liste">
@@ -3200,6 +3227,10 @@ async function envoyerErreurs() {
     }
   } catch (e) {} finally { envoiErreursEnCours = false; }
 }
+/* Une étape d'affichage ou de démarrage qui lève une erreur (donnée
+   inattendue, élément absent) est signalée comme toute erreur de l'appli
+   (voir noterErreur, par l'événement « error ») sans arrêter les suivantes. */
+function sansBloquer(f) { try { return f(); } catch (e) { setTimeout(() => { throw e; }, 0); } }
 window.addEventListener('error', e => {
   if (e && e.message) noterErreur('js', e.message, (e.error && e.error.stack) || (e.filename ? String(e.filename).split('/').pop() + ':' + e.lineno : ''));
 });
@@ -3422,15 +3453,49 @@ async function majRappelsReposMaintenant() {
   rappelsReposIds = prevus.map(p => p.id);
 }
 
+/* Séance laissée en plan : une notification 30 min après la dernière action
+   (reprogrammée à chaque action, retirée quand la séance se termine), pour
+   ne pas découvrir le lendemain une séance encore ouverte. Sans autorisation
+   déjà donnée, rien n'est demandé. */
+var RAPPEL_PAUSE_ID = 42700, RAPPEL_PAUSE_LS = 'mc_rappel_pause', rappelPauseSignature = null, seanceConnueDesRappels = false;
+function majRappelSeancePause() {
+  if (!NATIF) return;
+  fileRappelsRepos = fileRappelsRepos.then(majRappelSeancePauseMaintenant, majRappelSeancePauseMaintenant);
+}
+async function majRappelSeancePauseMaintenant() {
+  const s = musculationSessionActive && !musculationSessionActive.demo ? musculationSessionActive : null;
+  // À la minute près : une reprogrammation par minute au plus. L'autorisation
+  // n'est ni demandée ni vérifiée ici : elle est connue dès le premier repos
+  // (rappel de fin de repos) ou dès qu'un rappel est activé.
+  const at = s ? Math.ceil(((Number(s.derniereAction) || Date.now()) + SEANCE_INACTIVITE_MS) / 60000) * 60000 : 0;
+  const signature = s && permissionRappels === true && at > Date.now() ? s.debut + ':' + at : '';
+  if (signature === rappelPauseSignature) return;
+  rappelPauseSignature = signature;
+  let programme = false;
+  try { programme = localStorage.getItem(RAPPEL_PAUSE_LS) === '1'; } catch (e) {}
+  if (programme) {
+    await appelNatif('LocalNotifications', 'cancel', { notifications: [{ id: RAPPEL_PAUSE_ID }] });
+    try { localStorage.removeItem(RAPPEL_PAUSE_LS); } catch (e) {}
+  }
+  if (!signature) return;
+  await appelNatif('LocalNotifications', 'schedule', { notifications: [{ id: RAPPEL_PAUSE_ID, title: 'Séance en pause',
+    body: `${s.programmeNom || 'Séance libre'} : tu as fini ? Touche pour la terminer, seul ton temps d'entraînement est compté.`,
+    schedule: { at: new Date(at) }, extra: { rappel: 'pause' } }] });
+  try { localStorage.setItem(RAPPEL_PAUSE_LS, '1'); } catch (e) {}
+}
+
 /* Rappels sur le téléphone (appli iPhone) : des notifications programmées
-   pour les 7 prochains jours (protéines, séance prévue pas faite, pesée,
-   eau). Leur texte vient de ce qui est noté au moment du calcul, refait à
-   chaque saisie et au retour dans l'appli : un repas ajouté reprogramme
-   tout, et un rappel devenu inutile disparaît. Réglages propres à
-   l'appareil (localStorage) ; l'autorisation n'est demandée qu'en activant
-   un premier rappel. */
+   pour les 7 prochains jours (protéines, eau, séance prévue : une heure
+   avant, puis si elle n'est pas faite, pesée, série de jours notés en
+   danger, défi de la semaine à portée). Leur texte vient de ce qui est noté
+   au moment du calcul, refait à chaque saisie et au retour dans l'appli : un
+   repas ajouté reprogramme tout, et un rappel devenu inutile disparaît.
+   Réglages propres à l'appareil (localStorage) ; l'autorisation n'est
+   demandée qu'en activant un premier rappel. */
 var RAPPELS_LS = 'mc_rappels', RAPPEL_PESEE_LS = 'mc_rappel_pesee', RAPPELS_PROGRAMMES_LS = 'mc_rappels_programmes', RAPPELS_JOURS = 7;
-var RAPPELS = { proteines: { base: 42000, heure: '18:00' }, seance: { base: 42100 }, pesee: { base: 42200, heure: '08:00' }, eau: { base: 42300, heure: '16:00' } };
+var RAPPELS = { proteines: { base: 42000, heure: '18:00' }, seance: { base: 42100 }, pesee: { base: 42200, heure: '08:00' }, eau: { base: 42300, heure: '16:00' },
+  avant: { base: 42400 }, serie: { base: 42500, heure: '20:30' }, defi: { base: 42600, heure: '10:00' } };
+var SERIE_RAPPEL_MIN = 3;
 var rappelsSignature = '', fileRappels = Promise.resolve(), minuteurRappels = 0;
 function reglagesRappels() {
   let r = {};
@@ -3458,21 +3523,71 @@ function rappelsPrevus(maintenant) {
   const ajouter = (type, k, at, titre, texte, date) => { if (at.getTime() > apres) res.push({ id: RAPPELS[type].base + k, at, titre, texte, type, date }); };
   for (let k = 0; k < RAPPELS_JOURS; k++) {
     const d = shiftDate(auj, k), j = appData[d] || vide();
+    let prot = null, eau = null;
     if (r.proteines.on) {
       const t = computeTargets(j, d), p = sumMeals(j).p, manque = Math.round(t.protein - p);
-      if (manque > Math.max(20, t.protein * 0.15))
-        ajouter('proteines', k, a(d, r.proteines.heure), 'Protéines', p > 0 ? `Il te manque ${fr(manque)} g de protéines aujourd'hui.` : `Rien de noté aujourd'hui : ton objectif est de ${fr(t.protein)} g de protéines.`, d);
+      if (manque > Math.max(20, t.protein * 0.15)) prot = { p, manque, cible: t.protein };
     }
     if (r.eau.on) {
       const bu = Number(j.eauMl) || 0, quota = quotaEauSuggere(d);
-      if (bu < quota * 0.5) ajouter('eau', k, a(d, r.eau.heure), 'Hydratation', `Tu en es à ${litres(bu)} L sur ${litres(quota)} L : pense à boire.`, d);
+      if (bu < quota * 0.5) eau = { bu, quota };
+    }
+    // En retard sur les deux le même jour : un seul message, à la plus
+    // tardive des deux heures, au lieu de deux notifications.
+    if (prot && eau) {
+      const at = a(d, r.proteines.heure > r.eau.heure ? r.proteines.heure : r.eau.heure), reste = litres(eau.quota - eau.bu);
+      ajouter('proteines', k, at, 'Protéines et eau', prot.p > 0 ? `Il te manque ${fr(prot.manque)} g de protéines et ${reste} L d'eau aujourd'hui.`
+        : `Rien de noté aujourd'hui : il te reste ${fr(prot.cible)} g de protéines et ${reste} L d'eau.`, d);
+    } else if (prot) {
+      ajouter('proteines', k, a(d, r.proteines.heure), 'Protéines', prot.p > 0 ? `Il te manque ${fr(prot.manque)} g de protéines aujourd'hui.` : `Rien de noté aujourd'hui : ton objectif est de ${fr(prot.cible)} g de protéines.`, d);
+    } else if (eau) {
+      ajouter('eau', k, a(d, r.eau.heure), 'Hydratation', `Tu en es à ${litres(eau.bu)} L sur ${litres(eau.quota)} L : pense à boire.`, d);
     }
   }
-  if (r.seance.on) prochainesSeances(RAPPELS_JOURS).forEach(s => {
-    const k = numeroJour(s.date) - numeroJour(auj), h = Math.min(21.5, (s.heure != null ? s.heure : 19) + 2);
-    const at = dateLocale(s.date); at.setHours(Math.floor(h), Math.round(h % 1 * 60), 0, 0);
-    ajouter('seance', k, at, 'Séance ' + s.nom, "Pas encore faite. Pas aujourd'hui ? Retire-la pour ajuster ton objectif.", s.date);
+  // (La séance en cours est déclarée plus loin dans le script.)
+  let enSeance = false;
+  try { enSeance = !!musculationSessionActive && !musculationSessionActive.demo; } catch (e) {}
+  if (r.seance.on || r.avant.on) prochainesSeances(RAPPELS_JOURS).forEach(s => {
+    const k = numeroJour(s.date) - numeroJour(auj), connue = s.heure != null, heure = connue ? s.heure : 19;
+    // Déjà en train de s'entraîner : rien à rappeler pour aujourd'hui.
+    if (k === 0 && enSeance) return;
+    const aHeure = hh => { const at = dateLocale(s.date); at.setHours(Math.floor(hh), Math.round(hh % 1 * 60), 0, 0); return at; };
+    // Une heure avant ton heure habituelle (18 h si elle n'est pas connue).
+    if (r.avant.on) ajouter('avant', k, aHeure(Math.max(6, heure - 1)), 'Séance ' + s.nom,
+      `${connue ? "Dans 1 h, comme d'habitude" : "Prévue aujourd'hui"} : environ ${fr(s.duree)} min, ${accord(s.series, 'série')}.`, s.date);
+    if (r.seance.on) ajouter('seance', k, aHeure(Math.min(21.5, heure + 2)), 'Séance ' + s.nom, "Pas encore faite. Pas aujourd'hui ? Retire-la pour ajuster ton objectif.", s.date);
   });
+  if (r.serie.on) {
+    // Jours d'affilée avec un repas noté (comme la série de Progrès). Le
+    // rappel vaut pour le premier jour pas encore noté : aujourd'hui, ou
+    // demain si aujourd'hui l'est déjà.
+    const notee = d => { const j = appData[d]; return estObjetSimple(j) && estObjetSimple(j.meals) && sumMeals(j).kcal > 0; };
+    const k = notee(auj) ? 1 : 0;
+    let n = 0;
+    for (let d = shiftDate(auj, k - 1); n < 3650 && notee(d); d = shiftDate(d, -1)) n++;
+    if (n >= SERIE_RAPPEL_MIN) {
+      const d = shiftDate(auj, k);
+      ajouter('serie', k, a(d, r.serie.heure), `Ta série de ${fr(n)} jours s'arrête ce soir`, "Rien de noté aujourd'hui : note un repas avant minuit pour la garder.", d);
+    }
+  }
+  if (r.defi.on) {
+    // Le week-end, un défi de la semaine encore faisable et à 1 ou 2 du but.
+    const defis = (passeSaison().semaine || []).filter(x => !x.ok), dimanche = shiftDate(lundiDe(auj), 6);
+    const NOMS = { muscu: ['séance de muscu', 'séances de muscu'], cardio: ['séance de cardio', 'séances de cardio'], journees: ['journée notée', 'journées notées'],
+      eau: ["jour d'eau atteint", "jours d'eau atteints"], pesee: ['pesée', 'pesées'] };
+    for (let k = 0; k < RAPPELS_JOURS && shiftDate(auj, k) <= dimanche; k++) {
+      const d = shiftDate(auj, k), w = dateLocale(d).getDay();
+      if (w !== 6 && w !== 0) continue;
+      const restants = numeroJour(dimanche) - numeroJour(d) + 1;
+      const proches = defis.map(x => ({ x, manque: x.but - x.fait }))
+        .filter(o => NOMS[o.x.cle] && o.manque <= 2 && o.manque <= restants * (o.x.cle === 'muscu' || o.x.cle === 'cardio' ? 2 : 1))
+        .sort((p, q) => p.manque - q.manque);
+      if (!proches.length) continue;
+      const o = proches[0];
+      ajouter('defi', k, a(d, r.defi.heure), 'Défi de la semaine', `Plus que ${o.manque} ${NOMS[o.x.cle][o.manque > 1 ? 1 : 0]} pour réussir « ${o.x.nom} » : +${XP_GAINS.defiSemaine} XP.`
+        + (proches.length > 1 ? ` ${proches.length > 2 ? proches.length - 1 + ' autres défis sont' : 'Un autre défi est'} à ta portée.` : '') + (w === 0 ? ' Fin ce soir.' : ' Fin dimanche soir.'), d);
+    }
+  }
   if (r.pesee.on) {
     // Le premier matin possible à 7 jours ou plus de la dernière pesée, puis
     // chaque semaine. Ce jour est retenu : ouvrir l'appli chaque jour sans se
@@ -3499,9 +3614,25 @@ async function permissionNotifications(demander) {
   permissionRappels = !!(p && p.display === 'granted');
   return permissionRappels;
 }
+/* Des rappels activés alors que les notifications sont coupées pour l'appli
+   dans les réglages de l'iPhone : rien ne sonnera. Le Profil le dit, au lieu
+   de montrer des interrupteurs allumés comme si de rien n'était. */
+function majAlerteRappels(coupees) {
+  const n = document.getElementById('rappels-coupes');
+  if (n) n.classList.toggle('hidden', !coupees);
+}
+async function verifierNotificationsCoupees() {
+  if (!NATIF) return false;
+  const r = reglagesRappels();
+  const coupees = Object.keys(r).some(k => r[k].on) && !(await permissionNotifications(false));
+  majAlerteRappels(coupees);
+  return coupees;
+}
 async function majRappelsMaintenant() {
   const r = reglagesRappels();
-  const prevus = Object.keys(r).some(k => r[k].on) ? rappelsPrevus() : [];
+  const actifs = Object.keys(r).some(k => r[k].on);
+  if (actifs) await verifierNotificationsCoupees(); else majAlerteRappels(false);
+  const prevus = actifs ? rappelsPrevus() : [];
   const signature = todayStr() + '#' + prevus.map(p => p.id + '@' + p.at.getTime() + ':' + p.texte).join('|');
   if (signature === rappelsSignature) return;
   rappelsSignature = signature;
@@ -3516,7 +3647,7 @@ async function majRappelsMaintenant() {
     await appelNatif('LocalNotifications', 'cancel', { notifications: ids });
     try { localStorage.removeItem(RAPPELS_PROGRAMMES_LS); } catch (e) {}
   }
-  if (!prevus.length || !(await permissionNotifications(false))) return;
+  if (!prevus.length || !permissionRappels) return;
   await appelNatif('LocalNotifications', 'schedule', { notifications: prevus.map(p => ({
     id: p.id, title: p.titre, body: p.texte, schedule: { at: p.at }, extra: { rappel: p.type, date: p.date } })) });
   try { localStorage.setItem(RAPPELS_PROGRAMMES_LS, '1'); } catch (e) {}
@@ -3598,6 +3729,12 @@ function ouvrirDepuisRappel(x) {
     currentDate = todayStr();
     document.querySelectorAll('.modal.show').forEach(m => fermerModal(m.id));
     if (x.rappel === 'seance') { ouvrirSeancesPrevues(); return; }
+    // Avant la séance, défi de la semaine, séance en pause : l'écran Activité.
+    if (x.rappel === 'avant' || x.rappel === 'defi' || x.rappel === 'pause') {
+      allerA('seance'); if (x.rappel !== 'defi') choisirModeSeance('muscu'); renderApp();
+      if (x.rappel === 'pause') proposerFinSeanceOubliee();
+      return;
+    }
     allerA('repas'); renderApp();
     if (x.rappel === 'pesee') ouvrirSaisieRapide('poids');
   }, 60);
@@ -3810,12 +3947,88 @@ function formatDateDisplay(dateStr) {
   return d.toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric', month: 'short' });
 }
 
+/* =====================================================================
+   DONNÉES MAL FORMÉES
+   Une journée, une séance ou un programme arrive du stockage de l'appareil
+   ou du serveur (synchronisation). Une seule valeur de la mauvaise forme
+   (un repas qui n'est pas une liste, un aliment à null, une séance sans
+   exercices…) levait une erreur à chaque affichage, démarrage compris ; et
+   comme les données sont synchronisées, réinstaller n'y changeait rien.
+   Tout ce qui entre passe donc ici : ce qui n'a pas la forme attendue
+   reprend sa forme vide, les éléments illisibles d'une liste sont retirés,
+   le reste n'est pas touché. Chaque fonction rend la valeur réparée, ou
+   null quand il n'y a rien à en tirer.
+   ===================================================================== */
+function estObjetSimple(v) { return !!v && typeof v === 'object' && !Array.isArray(v); }
+/* Une liste d'objets : toute autre valeur donne une liste vide. */
+function listeObjets(v) {
+  if (!Array.isArray(v)) return [];
+  return v.every(estObjetSimple) ? v : v.filter(estObjetSimple);
+}
+function assainirJournee(j) {
+  if (!estObjetSimple(j)) return null;
+  // Les quatre repas existent toujours, chacun une liste d'aliments : les
+  // calculs les parcourent directement (sumMeals), sans passer par getDay.
+  if (!estObjetSimple(j.meals)) j.meals = {};
+  Object.keys(j.meals).forEach(m => {
+    j.meals[m] = listeObjets(j.meals[m]);
+    // Un nom qui n'est pas du texte (un nombre) faisait échouer la recherche.
+    j.meals[m].forEach(it => { if (it.name != null && typeof it.name !== 'string') it.name = String(it.name); });
+  });
+  ['breakfast', 'lunch', 'snack', 'dinner'].forEach(m => { if (!Array.isArray(j.meals[m])) j.meals[m] = []; });
+  if (j.workouts !== undefined && j.workouts !== null) j.workouts = listeObjets(j.workouts);
+  return j;
+}
+function assainirJournees(journees) {
+  Object.keys(journees).forEach(d => { if (!assainirJournee(journees[d])) delete journees[d]; });
+  return journees;
+}
+/* Exercices d'une séance (faite ou en cours) : chacun avec sa liste de séries. */
+function assainirExercicesSeance(v) {
+  const liste = listeObjets(v);
+  liste.forEach(x => { x.series = listeObjets(x.series); });
+  return liste;
+}
+function assainirSeance(s) {
+  if (!estObjetSimple(s)) return null;
+  s.exercices = assainirExercicesSeance(s.exercices);
+  return s;
+}
+/* Programme : les séries d'un exercice peuvent être un nombre (ancien
+   format, voir normaliserSeriesProgramme) ; seule une liste est nettoyée. */
+function assainirProgramme(p) {
+  if (!estObjetSimple(p)) return null;
+  p.exercices = listeObjets(p.exercices);
+  p.exercices.forEach(x => { if (Array.isArray(x.series)) x.series = listeObjets(x.series); });
+  return p;
+}
+function assainirProfil(p) {
+  if (!estObjetSimple(p)) return null;
+  if (p.ajustements !== undefined && p.ajustements !== null) {
+    p.ajustements = listeObjets(p.ajustements).filter(a => /^\d{4}-\d{2}-\d{2}$/.test(String(a.l)));
+  }
+  return p;
+}
+/* Séance en cours : sans sa liste d'exercices, elle ne peut pas reprendre. */
+function assainirSessionActive(s) {
+  if (!estObjetSimple(s) || !Array.isArray(s.exercices)) return null;
+  s.exercices = assainirExercicesSeance(s.exercices);
+  if (!(Number(s.debut) > 0)) s.debut = Date.now();
+  return s;
+}
+/* Une liste entière (programmes, séances, exercices perso) : les entrées
+   illisibles sont retirées, les autres réparées. */
+function assainirListe(v, reparer) {
+  return listeObjets(v).filter(x => !reparer || reparer(x));
+}
+
 function loadData() {
   appData = lireBloc(STORAGE_KEY, null);
-  if (!appData || typeof appData !== 'object' || Array.isArray(appData)) appData = {};
+  if (!estObjetSimple(appData)) appData = {};
+  assainirJournees(appData);
   invaliderAjustement();
-  const profilLu = lireBloc(PROFILE_KEY, null);
-  if (profilLu && typeof profilLu === 'object' && !Array.isArray(profilLu)) userProfile = Object.assign(userProfile, profilLu);
+  const profilLu = assainirProfil(lireBloc(PROFILE_KEY, null));
+  if (profilLu) userProfile = Object.assign(userProfile, profilLu);
   appliquerGeminiKeyEffective();
   majUIWithings();
 }
@@ -3845,7 +4058,7 @@ function saveData(jourModifie) {
   }
 }
 function getDay(dateStr) {
-  if (!appData[dateStr]) {
+  if (!estObjetSimple(appData[dateStr])) {
     appData[dateStr] = {
       weight: null, goal: null, steps: 0,
       workouts: [],
@@ -3853,10 +4066,10 @@ function getDay(dateStr) {
     };
   }
   const day = appData[dateStr];
-  if (!day.meals) day.meals = { breakfast: [], lunch: [], snack: [], dinner: [] };
-  MEALS.forEach(m => { if (!day.meals[m]) day.meals[m] = []; });
+  if (!estObjetSimple(day.meals)) day.meals = { breakfast: [], lunch: [], snack: [], dinner: [] };
+  MEALS.forEach(m => { if (!Array.isArray(day.meals[m])) day.meals[m] = []; });
   
-  if (!day.workouts) {
+  if (!Array.isArray(day.workouts)) {
     day.workouts = [];
     if (day.hasWorkout === 'oui' && day.workoutType) {
       day.workouts.push({ type: day.workoutType, time: Number(day.workoutTime) || 0 });
@@ -17971,7 +18184,9 @@ async function synchroniser(raison) {
     let changementLocal = false, curseur = Number(etat.curseurs.journees) || 0;
     const limiteBases = shiftDate(todayStr(), -JOURS_BASES_SYNC);
     (data || []).forEach(r => {
-      if (!jourValide(r.jour) || !r.donnees) return;
+      // Une journée illisible sur le serveur est ignorée, une journée mal
+      // formée est réparée avant toute comparaison (voir « Données mal formées »).
+      if (!jourValide(r.jour) || !assainirJournee(r.donnees)) return;
       const m = Number(r.maj) || 0;
       curseur = Math.max(curseur, m);
       const local = appData[r.jour];
@@ -17984,7 +18199,7 @@ async function synchroniser(raison) {
         // Même contenu des deux côtés : rien à fusionner ni à renvoyer.
         if (r.jour in marques) { retirerMarqueJour(r.jour, marques[r.jour]); delete marques[r.jour]; }
       } else if (m > vu) {
-        const base = bases[r.jour];
+        const base = assainirJournee(bases[r.jour]);
         // Journée jamais suivie ainsi (avant cette version) et plus récente ici : elle repart.
         if (!vu && local && mLocal > m && !(r.jour in marques)) marques[r.jour] = marquerJourModifie(r.jour);
         if (!local || !(r.jour in marques)) {
@@ -18045,7 +18260,7 @@ async function synchroniser(raison) {
     // repart au serveur s'il diffère de ce qu'il avait.
     const majProfilLocal = Number(userProfile.maj) || 0;
     const majProfilDistant = rp.data ? Number(rp.data.maj) || 0 : 0;
-    const profilDistant = rp.data && rp.data.donnees && typeof rp.data.donnees === 'object' ? rp.data.donnees : null;
+    const profilDistant = rp.data ? assainirProfil(rp.data.donnees) : null;
     if (profilDistant && !memeProfil(userProfile, profilDistant)) {
       const fusion = fusionnerProfil(bases.profil, userProfile, profilDistant, majProfilLocal >= majProfilDistant);
       const commeDistant = memeProfil(fusion, profilDistant);
@@ -20286,14 +20501,14 @@ function basculerPauseFiche() {
 }
 
 function chargerMuscu() {
-  const liste = cle => { const v = lireBloc(cle, null); return Array.isArray(v) ? v : []; };
-  musculationProgrammes = liste(MUSCU_PROGRAMMES_KEY);
-  musculationHistorique = liste(MUSCU_HISTORIQUE_KEY);
-  musculationExosPerso = liste(MUSCU_EXOS_PERSO_KEY);
-  try { exercicesCommunaute = JSON.parse(localStorage.getItem(MUSCU_EXOS_COMMUNAUTE_KEY)) || []; } catch (e) { exercicesCommunaute = []; }
-  try { musculationSessionActive = JSON.parse(localStorage.getItem(MUSCU_SESSION_KEY)) || null; } catch (e) { musculationSessionActive = null; }
+  // Voir « Données mal formées » : rien d'illisible n'entre dans l'appli.
+  musculationProgrammes = assainirListe(lireBloc(MUSCU_PROGRAMMES_KEY, null), assainirProgramme);
+  musculationHistorique = assainirListe(lireBloc(MUSCU_HISTORIQUE_KEY, null), assainirSeance);
+  musculationExosPerso = assainirListe(lireBloc(MUSCU_EXOS_PERSO_KEY, null));
+  try { exercicesCommunaute = assainirListe(JSON.parse(localStorage.getItem(MUSCU_EXOS_COMMUNAUTE_KEY))); } catch (e) { exercicesCommunaute = []; }
+  try { musculationSessionActive = assainirSessionActive(JSON.parse(localStorage.getItem(MUSCU_SESSION_KEY))); } catch (e) { musculationSessionActive = null; }
   if (musculationSessionActive && musculationSessionActive.demo) musculationSessionActive = null;
-  try { programmeEnEdition = JSON.parse(localStorage.getItem(MUSCU_PROGRAMME_EDITION_KEY)) || null; } catch (e) { programmeEnEdition = null; }
+  try { programmeEnEdition = assainirProgramme(JSON.parse(localStorage.getItem(MUSCU_PROGRAMME_EDITION_KEY))); } catch (e) { programmeEnEdition = null; }
   // Toujours appelé, même sans corrections en cache : c'est aussi ce qui
   // applique les doublons fusionnés dans le code (FUSIONS_BIBLIOTHEQUE).
   let correctionsBase = [];
@@ -20482,6 +20697,28 @@ function sauvegarderHistorique() {
 function sauvegarderExosPerso() {
   if (ecrireBloc(MUSCU_EXOS_PERSO_KEY, musculationExosPerso)) planifierSync();
 }
+/* Séance oubliée (téléphone rangé, appli fermée) : plus de 30 min sans rien
+   toucher ne comptent pas comme de l'entraînement, sauf les 10 min qui
+   suivent la dernière action. Ce temps mort est retiré de la durée, que la
+   séance soit reprise ensuite ou seulement terminée, le lendemain compris. */
+const SEANCE_INACTIVITE_MS = 30 * 60000, SEANCE_GRACE_MS = 10 * 60000, SEANCE_DUREE_MAX_MS = 3 * 3600000;
+function tempsMortSeance(s, maintenant) {
+  const derniere = Number(s.derniereAction) || 0, t = maintenant || Date.now();
+  return (Number(s.tempsMort) || 0) + (derniere && t - derniere > SEANCE_INACTIVITE_MS ? t - derniere - SEANCE_GRACE_MS : 0);
+}
+function noterActionSeance(s) {
+  const t = Date.now();
+  s.tempsMort = tempsMortSeance(s, t);
+  s.derniereAction = t;
+}
+/* Temps d'entraînement d'une séance en cours, en millisecondes : le temps
+   écoulé depuis son début, sans les temps morts (c'est ce qu'affiche le
+   chrono). La durée retenue à la fin ne dépasse jamais 3 h. */
+function tempsActifSeance(s, maintenant) {
+  const t = maintenant || Date.now();
+  return Math.max(0, t - (Number(s.debut) || t) - tempsMortSeance(s, t));
+}
+function dureeSeanceEnCours(s, maintenant) { return Math.min(SEANCE_DUREE_MAX_MS, tempsActifSeance(s, maintenant)); }
 function sauvegarderSessionActive() {
   // La séance en cours reste volontairement locale : elle change à chaque
   // coche, et la synchroniser en direct sur chaque case cochée coûterait
@@ -20489,12 +20726,14 @@ function sauvegarderSessionActive() {
   // façon envoyée à Supabase qu'une fois terminée, via sauvegarderHistorique).
   // Séance de démonstration de la visite guidée : jamais enregistrée.
   if (musculationSessionActive && musculationSessionActive.demo) return;
-  if (musculationSessionActive) musculationSessionActive.derniereAction = Date.now();
+  if (musculationSessionActive) noterActionSeance(musculationSessionActive);
   try {
     if (musculationSessionActive) localStorage.setItem(MUSCU_SESSION_KEY, JSON.stringify(musculationSessionActive));
     else localStorage.removeItem(MUSCU_SESSION_KEY);
   } catch (e) {}
   majRappelsRepos();
+  majRappelSeancePause();
+  if (!!musculationSessionActive !== seanceConnueDesRappels) { seanceConnueDesRappels = !!musculationSessionActive; majRappels(); }
   majDirectSession();
   majActiviteEnDirect();
 }
@@ -20522,7 +20761,12 @@ function majActiviteEnDirect() {
     const fin = Number(reposActifs[clef]) + reposCibleExo(Number(clef.split('_')[0])) * 1000;
     if (fin > Date.now() + 1000 && (!reposFin || fin < reposFin)) reposFin = fin;
   });
-  const etat = { titre: s.programmeNom || 'Séance libre', debut: s.debut || Date.now(), detail, seriesFaites: faites, seriesTotal: total, reposFin: reposFin || 0 };
+  // `depuis` : d'où part le chrono (le début, décalé des temps morts).
+  // `perimeLe` : 30 min après la dernière action, l'écran verrouillé affiche
+  // « En pause » au lieu d'un chrono qui tournerait toute la nuit.
+  const etat = { titre: s.programmeNom || 'Séance libre', debut: s.debut || Date.now(), detail, seriesFaites: faites, seriesTotal: total, reposFin: reposFin || 0,
+    depuis: (Number(s.debut) || Date.now()) + (Number(s.tempsMort) || 0),
+    perimeLe: Math.ceil(((Number(s.derniereAction) || Date.now()) + SEANCE_INACTIVITE_MS) / 60000) * 60000 };
   const cle = JSON.stringify(etat);
   if (cle === activiteEnDirectEtat) return;
   activiteEnDirectEtat = cle;
@@ -20676,11 +20920,15 @@ async function syncCollectionMusculation(nomTable, utilisateurId, collectionLoca
   const tombes = tombesMuscu();
   const T = tombes[nomTable] || (tombes[nomTable] = {});
   const tombesDistantes = new Map();
+  // Une ligne illisible sur le serveur est ignorée, une ligne mal formée
+  // réparée avant d'entrer (voir « Données mal formées »).
+  const reparer = { programmes_musculation: assainirProgramme, seances_musculation: assainirSeance }[nomTable] || (v => estObjetSimple(v) ? v : null);
   (data || []).forEach(r => {
     if (bloque(r.id)) return;
     const m = Number(r.maj) || 0;
     distants.set(r.id, m);
     connus[r.id] = m;
+    r.donnees = r.donnees && r.donnees.supprime ? r.donnees : reparer(r.donnees);
     const idxLocal = collectionLocale.findIndex(x => x.id === r.id);
     // Marque de suppression venue du serveur : on retire la copie locale
     // (sauf si elle a été modifiée ici après la suppression).
@@ -20770,7 +21018,7 @@ async function chargerExercicesCommunaute(utilisateurId) {
     const { data, error } = await supa.from('exercices_perso_musculation').select('id,utilisateur,donnees');
     if (error) throw error;
     exercicesCommunaute = (data || [])
-      .filter(r => r.utilisateur !== utilisateurId && r.donnees && !r.donnees.supprime)
+      .filter(r => r.utilisateur !== utilisateurId && estObjetSimple(r.donnees) && !r.donnees.supprime)
       .map(r => Object.assign({}, r.donnees, { id: r.id }));
     try { localStorage.setItem(MUSCU_EXOS_COMMUNAUTE_KEY, JSON.stringify(exercicesCommunaute)); } catch (e) {}
     if (document.getElementById('picker-exercices-modal')?.classList.contains('show')) rendrePickerExercices();
@@ -21014,7 +21262,7 @@ function majBandeauSeanceFlottant() {
   el.classList.remove('hidden');
   const nbFaites = musculationSessionActive.exercices.reduce((n, e) => n + e.series.filter(s => s.fait).length, 0);
   appelOnglets('accessoire', { titre: musculationSessionActive.programmeNom || 'Séance libre',
-    detail: `${nbFaites} ${nbFaites > 1 ? 'séries cochées' : 'série cochée'}`, depuis: musculationSessionActive.debut || Date.now() });
+    detail: `${nbFaites} ${nbFaites > 1 ? 'séries cochées' : 'série cochée'}`, depuis: (Number(musculationSessionActive.debut) || Date.now()) + (Number(musculationSessionActive.tempsMort) || 0) });
   // Un nom trop long se coupe (…) avant le nombre de séries, qui reste visible.
   document.getElementById('bandeau-seance-flottant-texte').innerHTML =
     `<span class="bsf-nom">${escapeHtml(musculationSessionActive.programmeNom || 'Séance libre')}</span><span class="bsf-compte">&nbsp;· ${nbFaites} ${nbFaites > 1 ? 'séries cochées' : 'série cochée'}</span>`;
@@ -21117,24 +21365,28 @@ function renderStatsMuscu(dateDebut, dateFin) {
     const finPrec = shiftDate(dateDebut, -1), debutPrec = shiftDate(dateDebut, -jours);
     precedent = musculationHistorique.filter(h => h.date >= debutPrec && h.date <= finPrec);
   }
-  renderStatsTotauxMuscu(historiqueFiltre, 'muscu-stats-totaux', precedent, jours);
-  renderForceProgres('pg-force', historiqueFiltre, precedent);
-  renderGrilleMuscu('pg-grille-muscu');
-  renderChartSeancesParMois(historiqueFiltre, 'muscuParMoisChart', 'muscuParMoisChartInstance', dateDebut, dateFin);
-  initialiserSelectProgression(historiqueFiltre, 'muscu-exo-select', 'muscu-progression-vide');
-  renderStatsRecordsMuscu(historiqueFiltre, 'muscu-stats-records');
-  renderChartSeancesParGroupeMuscu(historiqueFiltre, 'muscuGroupeChart', 'muscuGroupeChartInstance');
-  renderStatsProgrammesMuscu(historiqueFiltre, 'muscu-stats-programmes');
-  // 3650 j (10 ans) plutôt que la fenêtre habituelle de 30 j : l'historique
-  // passé ici est déjà filtré par le curseur de période, ce paramètre ne
-  // doit plus re-filtrer par-dessus (et encore moins par rapport à
-  // aujourd'hui si la période choisie est dans le passé).
-  renderHistoriqueSeances(historiqueFiltre, 'muscu-historique-container', 3650);
-  // Zones et niveau de force : indépendants du curseur de période (une
-  // zone est par définition hebdomadaire ; un niveau, le meilleur de tous
-  // les temps).
-  renderZonesMuscu('muscu-zones-container');
-  renderForceMuscu('muscu-force-container');
+  // Chaque bloc se dessine à part : une erreur dans l'un ne laisse pas les
+  // suivants vides (voir sansBloquer).
+  [
+    () => renderStatsTotauxMuscu(historiqueFiltre, 'muscu-stats-totaux', precedent, jours),
+    () => renderForceProgres('pg-force', historiqueFiltre, precedent),
+    () => renderGrilleMuscu('pg-grille-muscu'),
+    () => renderChartSeancesParMois(historiqueFiltre, 'muscuParMoisChart', 'muscuParMoisChartInstance', dateDebut, dateFin),
+    () => initialiserSelectProgression(historiqueFiltre, 'muscu-exo-select', 'muscu-progression-vide'),
+    () => renderStatsRecordsMuscu(historiqueFiltre, 'muscu-stats-records'),
+    () => renderChartSeancesParGroupeMuscu(historiqueFiltre, 'muscuGroupeChart', 'muscuGroupeChartInstance'),
+    () => renderStatsProgrammesMuscu(historiqueFiltre, 'muscu-stats-programmes'),
+    // 3650 j (10 ans) plutôt que la fenêtre habituelle de 30 j : l'historique
+    // passé ici est déjà filtré par le curseur de période, ce paramètre ne
+    // doit plus re-filtrer par-dessus (et encore moins par rapport à
+    // aujourd'hui si la période choisie est dans le passé).
+    () => renderHistoriqueSeances(historiqueFiltre, 'muscu-historique-container', 3650),
+    // Zones et niveau de force : indépendants du curseur de période (une
+    // zone est par définition hebdomadaire ; un niveau, le meilleur de tous
+    // les temps).
+    () => renderZonesMuscu('muscu-zones-container'),
+    () => renderForceMuscu('muscu-force-container')
+  ].forEach(sansBloquer);
 }
 
 /* Détail par faisceau sous la jauge d'un groupe (Stats › Muscu) : séries
@@ -21397,6 +21649,9 @@ function renderChartSeancesParGroupeMuscu(historique, idCanvas, nomInstance) {
   if (window[nomInstance]) window[nomInstance].destroy();
   if (!groupesUtilises.length) { window[nomInstance] = null; return; }
   const c = graphiqueCouleursMuscu();
+  // Une barre par groupe, chacune avec son nom : la hauteur suit leur nombre
+  // (à hauteur fixe, un nom sur deux était sauté dès 8 groupes).
+  if (canvas.parentElement) canvas.parentElement.style.height = Math.max(180, groupesUtilises.length * 26 + 46) + 'px';
   window[nomInstance] = new Chart(canvas, {
     type: 'bar',
     data: {
@@ -21408,8 +21663,8 @@ function renderChartSeancesParGroupeMuscu(historique, idCanvas, nomInstance) {
       responsive: true, maintainAspectRatio: false,
       plugins: { legend: { display: false }, tooltip: tooltipMuscu(c) },
       scales: {
-        x: { ticks: { color: c.texte, font: { size: 9 }, precision: 0 }, grid: { color: c.grille, drawTicks: false }, border: { display: false }, beginAtZero: true },
-        y: { ticks: { color: c.texte, font: { size: 9 } }, grid: { color: c.grille, drawTicks: false }, border: { display: false } }
+        x: { ticks: { color: c.texte, font: { size: 10 }, precision: 0 }, grid: { color: c.grille, drawTicks: false }, border: { display: false }, beginAtZero: true },
+        y: { ticks: { color: c.texte, font: { size: 11 }, autoSkip: false }, grid: { color: c.grille, drawTicks: false }, border: { display: false } }
       }
     }
   });
@@ -28611,14 +28866,22 @@ function renderForceProgres(idCible, seances, avant) {
   if (!c) return;
   const freq = {};
   seances.forEach(h => new Set((h.exercices || []).filter(e => (e.series || []).some(z => z.fait)).map(e => e.exerciceId)).forEach(id => { freq[id] = (freq[id] || 0) + 1; }));
-  const ids = Object.keys(freq).filter(id => freq[id] >= 1).sort((a, z) => freq[z] - freq[a]).slice(0, 4);
-  if (!ids.length) { c.innerHTML = '<p class="pg-vide">Aucune séance de musculation sur la période. Ta force exercice par exercice apparaîtra ici.</p>'; return; }
+  const pratiques = Object.keys(freq).sort((a, z) => freq[z] - freq[a]);
+  if (!pratiques.length) { c.innerHTML = '<p class="pg-vide">Aucune séance de musculation sur la période. Ta force exercice par exercice apparaîtra ici.</p>'; return; }
+  // Les 4 exercices les plus pratiqués qui ont une série mesurable : une
+  // série cochée sans charge ni répétitions ne dit rien de la force.
+  const lignes = [];
+  for (const id of pratiques) {
+    const best = meilleur1RM(id, seances);
+    if (best) lignes.push({ id, best });
+    if (lignes.length === 4) break;
+  }
+  if (!lignes.length) { c.innerHTML = '<p class="pg-vide">Tes séries sont cochées sans charge ni répétitions. Note-les pendant la séance : ta force exercice par exercice apparaîtra ici.</p>'; return; }
   const chrono = seances.slice().sort((a, z) => a.date < z.date ? -1 : 1);
-  c.innerHTML = ids.map(id => {
+  c.innerHTML = lignes.map(({ id, best }) => {
     const ex = trouverExercice(id);
     const nom = ex ? libelleExercice(ex) : id;
     const parSeance = chrono.map(h => meilleur1RM(id, [h])).filter(Boolean);
-    const best = meilleur1RM(id, seances);
     const ref = avant && avant.length ? meilleur1RM(id, avant) : (parSeance.length > 1 ? parSeance[0] : null);
     const pct = best && ref && ref.valeur > 0 ? Math.round((best.valeur - ref.valeur) / ref.valeur * 100) : null;
     // Sans charge ou au temps : la valeur ne se lit pas en kilos, la série se dit telle quelle.
@@ -29033,7 +29296,8 @@ function assurerChronoSession() {
 function majChronoSession() {
   const el = document.getElementById('session-chrono');
   if (!el || !musculationSessionActive) return;
-  const sec = Math.max(0, Math.floor((Date.now() - musculationSessionActive.debut) / 1000));
+  // Le temps d'entraînement : sans les temps morts d'une séance laissée en plan.
+  const sec = Math.floor(tempsActifSeance(musculationSessionActive) / 1000);
   const h = Math.floor(sec / 3600), m = Math.floor(sec / 60) % 60, s = sec % 60, deux = n => String(n).padStart(2, '0');
   el.textContent = h ? h + ':' + deux(m) + ':' + deux(s) : m + ':' + deux(s);
   el.setAttribute('aria-label', 'Depuis ' + (h ? h + ' h ' : '') + m + ' min ' + s + ' s');
@@ -30205,16 +30469,15 @@ async function terminerSeance() {
   const seriesFaites = s.exercices.reduce((n, e) => n + e.series.filter(x => x.fait).length, 0);
   if (!seriesFaites && !(await confirmer("Aucune série n'est cochée comme faite. Terminer quand même la séance ?", { ok: 'Terminer' }))) return;
   // Garde-fou : une séance oubliée (téléphone dans la poche) ne dure pas la
-  // nuit. 30 min sans rien toucher : elle s'arrête 10 min après la dernière
-  // action ; et jamais plus de 3 h.
-  const derniere = Number(s.derniereAction) || Date.now();
-  let fin = Date.now();
-  if (fin - derniere > 30 * 60000) fin = derniere + 10 * 60000;
-  fin = Math.min(fin, s.debut + 3 * 3600000);
-  const dureeMin = Math.max(1, Math.round((fin - s.debut) / 60000));
+  // nuit : les temps morts sont retirés de sa durée (voir tempsMortSeance),
+  // et elle ne dépasse jamais 3 h. Elle est rangée au jour où elle a
+  // commencé, même terminée le lendemain.
+  const duree = dureeSeanceEnCours(s);
+  const fin = s.debut + duree;
+  const dureeMin = Math.max(1, Math.round(duree / 60000));
   const entree = {
     id: idUnique('hist'), programmeId: s.programmeId, programmeNom: s.programmeNom || 'Séance libre',
-    date: todayStr(), debut: s.debut, fin, dureeMin, notes: s.notes || '', maj: fin, ...(duoAccepte(s) ? { avec: s.duo.pseudo } : {}),
+    date: dateEnChaine(new Date(s.debut)), debut: s.debut, fin, dureeMin, notes: s.notes || '', maj: Date.now(), ...(duoAccepte(s) ? { avec: s.duo.pseudo } : {}),
     exercices: s.exercices.map(e => ({
       exerciceId: e.exerciceId, nom: e.nom, series: e.series.filter(x => x.fait || x.poids || x.reps).map(x => { delete x.chrono; return x; }),
       supersetSuivant: !!e.supersetSuivant, ...(e.notes && e.notes.trim() ? { notes: e.notes.trim() } : {}),
@@ -30318,12 +30581,49 @@ async function fermerBilanSeance() {
 }
 async function abandonnerSeance() {
   if (!(await confirmer('Abandonner cette séance ? Rien ne sera enregistré dans ton historique.', { ok: 'Abandonner', danger: true }))) return;
+  abandonnerSeanceMaintenant();
+}
+function abandonnerSeanceMaintenant() {
   finDirect(musculationSessionActive, false);
   musculationSessionActive = null;
   reposActifs = {};
   palierOuvert = {};
   sauvegarderSessionActive();
   renderSeance();
+  renderApp();
+}
+/* Séance laissée en plan : au retour dans l'appli après plus de 30 min sans
+   rien toucher, on demande quoi en faire, une fois, plutôt que de laisser
+   le chrono courir jusqu'au lendemain. Terminée, elle est rangée au jour où
+   elle a commencé et ne compte que le temps d'entraînement (voir
+   tempsMortSeance) ; reprise, son chrono repart d'où il en était. */
+let seanceOublieeVue = 0;
+async function proposerFinSeanceOubliee() {
+  const s = musculationSessionActive;
+  if (!s || s.demo || !donneesPretes) return;
+  const derniere = Number(s.derniereAction) || Number(s.debut) || 0;
+  if (!derniere || Date.now() - derniere <= SEANCE_INACTIVITE_MS || seanceOublieeVue === derniere) return;
+  // Connexion ou accord à l'écran : la question attendra le prochain retour.
+  if (document.querySelector('#compte-modal.show, #accord-modal.show, #modal-bienvenue.show')) return;
+  seanceOublieeVue = derniere;
+  const nom = s.programmeNom || 'Séance libre';
+  const faites = s.exercices.reduce((n, e) => n + e.series.filter(x => x.fait).length, 0);
+  const d = new Date(derniere), jour = dateEnChaine(d), auj = todayStr();
+  const heure = d.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+  const quand = jour === auj ? heure : jour === shiftDate(auj, -1) ? 'hier ' + heure : `le ${d.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' })} à ${heure}`;
+  if (faites) {
+    const min = Math.max(1, Math.round(dureeSeanceEnCours(s) / 60000));
+    const ok = await confirmer(`Ta séance « ${nom} » est en pause depuis ${quand}.\n\nLa terminer ? Elle comptera ${accord(min, 'minute')} : le temps passé sans rien toucher n'est pas compté.`, { ok: 'Terminer', annuler: 'Reprendre' });
+    if (musculationSessionActive !== s) return;
+    if (ok) return terminerSeance();
+  } else {
+    const ok = await confirmer(`Ta séance « ${nom} » est restée ouverte depuis ${quand}, sans série cochée.\n\nL'abandonner ? Rien ne sera enregistré.`, { ok: 'Abandonner', annuler: 'Reprendre', danger: true });
+    if (musculationSessionActive !== s) return;
+    if (ok) return abandonnerSeanceMaintenant();
+  }
+  // Reprise : le temps mort est mis de côté, le chrono repart d'où il en était.
+  sauvegarderSessionActive();
+  majChronoSession();
 }
 
 /* Un tap (ou clic) qui atterrit directement sur le fond flouté d'une
@@ -30546,26 +30846,30 @@ function appliquerTailleTexteSysteme() {
 window.addEventListener('load', async () => {
   // IndexedDB s'ouvre en asynchrone : tout le démarrage attend ses blocs.
   await chargerStockage();
-  loadData();
-  majCouleurBarreStyle();
-  chargerMuscu();
-  recalerXP();
-  chargerRecettesPerso();
+  /* Chaque étape passe par sansBloquer : sinon la première erreur laissait
+     l'appli sans connexion, sans synchronisation et sans écran, à chaque
+     ouverture. */
+  const etape = sansBloquer;
+  etape(loadData);
+  etape(majCouleurBarreStyle);
+  etape(chargerMuscu);
+  etape(recalerXP);
+  etape(chargerRecettesPerso);
   // Lancé ici, au tout premier chargement de l'appli — pas seulement en
   // arrivant sur l'onglet Séance (voir renderListeProgrammes) — pour que
   // les photos des exercices des programmes soient déjà en cache le temps
   // que l'utilisateur ouvre un aperçu de programme, quel que soit l'onglet
   // sur lequel l'appli démarre.
-  prechargerImagesProgrammes();
-  verifierSupportVerre();
+  etape(prechargerImagesProgrammes);
+  etape(verifierSupportVerre);
   if (navigator.deviceMemory && navigator.deviceMemory <= 2) document.documentElement.classList.add('flou-leger');
-  appliquerTheme(themeActuel());
-  appliquerTailleTexteSysteme();
+  etape(() => appliquerTheme(themeActuel()));
+  etape(appliquerTailleTexteSysteme);
   document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') appliquerTailleTexteSysteme(); });
   window.addEventListener('pageshow', appliquerTailleTexteSysteme);
   // App iPhone : thème des éléments d'iOS, et barre d'onglets native (iOS 26 et plus).
-  apparenceNative();
-  initOngletsNatifs();
+  etape(apparenceNative);
+  etape(initOngletsNatifs);
   // Hors ligne : service worker (voir sw.js), seulement servi en http(s).
   if ('serviceWorker' in navigator && /^https?:$/.test(location.protocol)) navigator.serviceWorker.register('sw.js').catch(() => {});
   // Nouvelle version en ligne : bandeau « Mettre à jour » (voir verifierNouvelleVersion).
@@ -30580,8 +30884,9 @@ window.addEventListener('load', async () => {
   // défaut, plutôt que de laisser croire qu'une valeur a été saisie ici.
   // (La clé Gemini est déjà remplie par appliquerGeminiKeyEffective(), appelée
   // depuis loadData() ci-dessus — elle reflète le profil du compte connecté.)
-  remplirInfosPersonnelles();
+  etape(remplirInfosPersonnelles);
 
+  etape(() => {
   const cs = confSupabase();
   document.getElementById('supa-url').value = localStorage.getItem(SUPA_URL_LS) || '';
   document.getElementById('supa-key').value = localStorage.getItem(SUPA_KEY_LS) || '';
@@ -30596,7 +30901,8 @@ window.addEventListener('load', async () => {
   document.getElementById('bloc-sql-admin').textContent = SQL_ADMIN;
   document.getElementById('bloc-sql-saison').textContent = SQL_SAISON;
   document.getElementById('bloc-sql-withings').textContent = SQL_WITHINGS;
-  retourPaiementPro();
+  });
+  etape(retourPaiementPro);
   // Pas de synchroniser('démarrage') ici : la vérification de session est
   // asynchrone, donc juste après initAuth() sessionUtilisateur est encore
   // null pendant un court instant. Une synchro lancée pile à ce moment-là
@@ -30605,6 +30911,7 @@ window.addEventListener('load', async () => {
   // le tout premier compartiment "moi", partagé, à CHAQUE ouverture de
   // l'appli. initAuth() se charge lui-même de déclencher la bonne synchro
   // (avec le vrai identifiant) une fois la session connue.
+  etape(() => {
   if (initSupabase()) { initAuth(); compterAliments(); }
   else {
     compterAliments();
@@ -30619,7 +30926,8 @@ window.addEventListener('load', async () => {
     // l'installation tout de suite (voir aussi definirSessionUtilisateur).
     proposerInstallationSiPertinent();
   }
-  majUIInstallation();
+  });
+  etape(majUIInstallation);
 
   /* Le réseau revient : on rattrape aussitôt. Et au retour sur l'onglet, car
      un autre appareil a pu écrire pendant ce temps. */
@@ -30631,7 +30939,7 @@ window.addEventListener('load', async () => {
     'Hors ligne : les données restent sur cet appareil, l’envoi reprendra au retour du réseau.'));
   document.addEventListener('visibilitychange', () => {
     if (!document.hidden) {
-      synchroniser('retour'); verifierNouvelleVersion(); majRappels();
+      synchroniser('retour'); verifierNouvelleVersion(); majRappels(); proposerFinSeanceOubliee();
       if (Date.now() - gymbroLiensDernierChargement > 60000) chargerLiensGymbro();
       if (Date.now() - adminAValiderDernier > 60000) { compterAValiderAdmin(); compterSignalementsAdmin(); }
       chargerAnnonce();
@@ -30643,13 +30951,14 @@ window.addEventListener('load', async () => {
   });
   // Référence initiale (aucun rechargement à ce stade, juste la mémoriser) :
   // sans ça, un premier retour au premier plan n'aurait rien à comparer.
-  verifierNouvelleVersion();
-  majVersionAffichee();
+  etape(verifierNouvelleVersion);
+  etape(majVersionAffichee);
   setTimeout(() => chargerAnnonce(), 1500);
 
   // Les bornes des curseurs doivent exister meme si l'onglet Stats n'a jamais
   // ete ouvert : sinon « Analyser ma periode » travaillait sur un intervalle
   // par defaut sans rapport avec les donnees.
+  etape(() => {
   buildMasterArrays();
   const sl = document.getElementById('slider-start');
   const el = document.getElementById('slider-end');
@@ -30658,25 +30967,32 @@ window.addEventListener('load', async () => {
     appliquerPeriodeStats();
     majToutesStats();
   }
+  });
 
+  etape(() => {
   const lim = limiteIA();
   if (lim) document.getElementById('ia-limite').value = lim;
   majAffichageIA();
+  });
 
-  renderApp();
-  majNoteCleIA();
-  majUIWithings();
-  brancherLiensWithings();
-  lireInvitationGymbro();
-  traiterRetourWithings();
+  etape(renderApp);
+  etape(majNoteCleIA);
+  etape(majUIWithings);
+  etape(brancherLiensWithings);
+  etape(lireInvitationGymbro);
+  etape(traiterRetourWithings);
+  etape(() => {
   let ecran = 'repas';
   try { ecran = localStorage.getItem('elite_ecran') || 'repas'; } catch (e) {}
   // La fenêtre de statistiques s'ouvre depuis une carte : au lancement, on
   // revient à l'écran principal plutôt que d'y rester sans « Retour » utile.
   if (ecran === 'stats') ecran = 'repas';
   allerA(ecran);
+  });
   donneesPretes = true;
   actionsEnAttente.splice(0).forEach(f => setTimeout(f, 60));
+  // Une séance restée ouverte depuis la dernière fois : on demande quoi en faire.
+  setTimeout(proposerFinSeanceOubliee, 1500);
 });
 
 /* =====================================================================

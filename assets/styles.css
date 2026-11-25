@@ -566,9 +566,17 @@ body.sur-stats .date-nav, body.sur-reglages .date-nav, body.sur-admin .date-nav 
    dessin : une zone invisible, centrée, prolonge les petits boutons.
    :where() = aucune spécificité, les positions déjà posées gardent la main. */
 :where(.app-bar h2[onclick], #moi-entete, .macro-item, #ecran-repas .eau-boutons .btn-icone, .repas-ajouter, .food-info, .btn-delete, .segment > button,
-  #pg-periode-btn, .titre-depliant, .pg-lien, .force-carte-titre, .btn-engrenage, .pf-modif, #reglages-puce-sync, .pilule) { position: relative; }
-:where(.app-bar h2[onclick], #moi-entete, .macro-item, #ecran-repas .eau-boutons .btn-icone, .repas-ajouter, .food-info, .btn-delete, .segment > button, #pg-periode-btn, .titre-depliant, .pg-lien, .force-carte-titre, .btn-engrenage, .pf-modif, #reglages-puce-sync, .pilule, .pc-options)::after {
+  #pg-periode-btn, .titre-depliant, .pg-lien, .force-carte-titre, .btn-engrenage, .pf-modif, #reglages-puce-sync, .pilule,
+  .semaine-tete button, .pro-actualiser, .fh-chip, .fh-agrandir, .fiche-exo-note-source .lien-texte, .hd-exo-courbe, .ajout-modifier,
+  .ajout-section button, .recette-tri button, button.session-exo-nom, button.exo-en-programme-nom) { position: relative; }
+:where(.app-bar h2[onclick], #moi-entete, .macro-item, #ecran-repas .eau-boutons .btn-icone, .repas-ajouter, .food-info, .btn-delete, .segment > button, #pg-periode-btn, .titre-depliant, .pg-lien, .force-carte-titre, .btn-engrenage, .pf-modif, #reglages-puce-sync, .pilule, .pc-options,
+  .semaine-tete button, .pro-actualiser, .fh-chip, .fh-agrandir, .fiche-exo-note-source .lien-texte, .hd-exo-courbe, .ajout-modifier,
+  .ajout-section button, .recette-tri button, button.session-exo-nom, button.exo-en-programme-nom)::after {
   content: ''; position: absolute; left: 50%; top: 50%; width: max(100%, 44px); height: max(100%, 44px); transform: translate(-50%, -50%); }
+/* « Aujourd'hui » de la semaine est serré entre la barre du haut et les
+   jours : sa zone descend sur le haut des jours plutôt que d'être centrée. */
+.semaine-tete button { z-index: 1; }
+.semaine-tete button::after { top: -4px; height: 44px; transform: translateX(-50%); }
 .summary-card span.libelle { color: var(--text-muted); font-size: 0.76rem; font-weight: 700; text-transform: uppercase; letter-spacing: 1.5px; }
 .summary-card h1 { margin: 8px 0 4px 0; font-size: var(--densite-h1-taille); font-weight: 900; color: var(--primary); letter-spacing: -1px; }    .reste-kcal { font-size: 0.8rem; font-weight: 700; margin-bottom: 16px; }
 
@@ -1750,6 +1758,9 @@ img.vignette-3d { background: radial-gradient(ellipse 75% 60% at 50% 42%, #1b1e2
 .serie-prec {
   border: 0; background: none; padding: 0; font-family: inherit; cursor: pointer;
   font-size: 0.74rem; font-weight: 700; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  /* Zone de toucher : ce bouton coupe son texte (overflow), il est donc agrandi
+     par un remplissage que des marges négatives annulent dans la mise en page. */
+  padding-block: 12px; margin-block: -12px;
 }
 .serie-prec small { font-size: 0.6rem; font-weight: 600; margin-right: 1px; }
 .serie-prec--vide { cursor: default; opacity: 0.6; }
@@ -3221,7 +3232,7 @@ html:root #opt-cardio .ic { background: linear-gradient(135deg, #22d3ee, #6366f1
 .serie-ligne--pave .pave-titre { flex: 1; min-width: 0; display: inline-flex; align-items: center; gap: 4px; padding: 6px 2px; border: 0; background: none; color: var(--text);
   font: inherit; font-weight: 800; font-size: .92rem; text-align: left; cursor: pointer; }
 .serie-ligne--pave .pave-titre .icone-ui { width: 16px; height: 16px; color: var(--text-muted); flex: none; }
-.serie-ligne--pave .pave-prec { flex: none; width: auto; padding: 6px 10px; }
+.serie-ligne--pave .pave-prec { flex: none; width: auto; padding: 15px 10px; margin-block: -9px; }
 .pave-unite { position: absolute; left: 0; right: 0; bottom: -14px; text-align: center; font-size: .62rem; font-weight: 700; color: var(--text-muted); pointer-events: none; }
 .pave-btn { width: 44px; height: 44px; border: 0; border-radius: 15px; display: grid; place-items: center; cursor: pointer; touch-action: manipulation; user-select: none; -webkit-user-select: none;
   font-family: inherit; font-weight: 600; font-size: 1.5rem; line-height: 1; color: var(--text); background: var(--carte-plein); box-shadow: 0 6px 14px -8px rgba(0,0,0,.4), inset 0 0 0 1px var(--trait); transition: transform .08s; }
@@ -4299,6 +4310,7 @@ html:root body .modal-content .carte-liste .segment { background: var(--s3) !imp
 html:root[data-theme="dark"] body .modal-content .carte-liste .segment button[aria-pressed="true"] { background: #48484e !important; }
 a.pilule { display: inline-block; text-decoration: none; }
 .reglages-note { margin: 6px 4px 0; font-size: .74rem; }
+.reglages-note.rappels-coupes { color: var(--danger, #d92d20); font-weight: 600; }
 #carte-identite .profil-perso { border-top: 1px solid var(--ligne); }
 
 /* =====================================================================
@@ -5110,6 +5122,9 @@ html.app-ios body .ligne-reglage:has(#rappel-proteines) .action-ic { background:
 html.app-ios body .ligne-reglage:has(#rappel-seance) .action-ic { background: #ff9500 !important; }
 html.app-ios body .ligne-reglage:has(#rappel-pesee) .action-ic { background: #5856d6 !important; }
 html.app-ios body .ligne-reglage:has(#rappel-eau) .action-ic { background: #32ade6 !important; }
+html.app-ios body .ligne-reglage:has(#rappel-avant) .action-ic { background: #ff9500 !important; }
+html.app-ios body .ligne-reglage:has(#rappel-serie) .action-ic { background: #ff2d55 !important; }
+html.app-ios body .ligne-reglage:has(#rappel-defi) .action-ic { background: #af52de !important; }
 html.app-ios body .ligne-reglage:has(#segment-theme) .action-ic { background: #636366 !important; }
 html.app-ios body .ligne-reglage[onclick*="'zones'"] .action-ic { background: #34c759 !important; }
 html.app-ios body .ligne-reglage[onclick*="'increments'"] .action-ic { background: #ff9500 !important; }
@@ -5619,5 +5634,5 @@ html:root body .modal-atlas .atlas-fenetre { max-width: none; width: 100%; heigh
 .btn-atlas .icone-ui { width: 16px; height: 16px; flex: none; }
 .btn-atlas.btn { width: 100%; margin: 4px 0 12px; }
 .fiche-bloc .btn-atlas.btn { margin: 10px 0 4px; }
-.hx--pivot > .cp-bouton--atlas { top: 54px; }
+.hx--pivot > .cp-bouton--atlas { top: 60px; }
 .cp-bouton--atlas svg { width: 14px; height: 14px; }
