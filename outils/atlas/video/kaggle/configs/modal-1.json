@@ -1,0 +1,7 @@
+{
+ "mode": "gen", "quant": "Q8_0", "delai_tache_s": 900, "secours_natif": false,
+ "taches": [
+  {"nom": "curl-anime", "guide": "curl-guide.mp4", "image": "ref-anime-halteres.png", "largeur": 480, "hauteur": 832, "longueur": 73, "ips": 25, "etapes": 6, "graine": 1,
+   "texte": "Anime style, cel shading, clean line art. A muscular young man with spiky black hair, white sleeveless top and black shorts, doing dumbbell biceps curls, plain white background, fixed camera, full body."}
+ ]
+}

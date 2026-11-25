@@ -38,3 +38,17 @@ Les sorties (clip, vidéo des poses, planche guide | pose | résultat, journal, 
 
 Temps par clip et mémoire sur T4 (16 Go), qualité en 480 × 832, tenue du matériel (le mode « animation »
 tire le décor de l'image de référence ; le mode « remplacement », qui garderait notre décor 3D, reste à monter).
+
+## Modal (carte graphique à la demande)
+
+`anqa_modal.py` lance le même programme sur Modal (30 $ de calcul offerts par mois, carte bancaire exigée pour
+les cartes graphiques ; fixer une limite d'usage sous les crédits dans « Usage & Billing »). La clé reste hors
+du dépôt (`modal token set`, fichier `~/.modal.toml`). Depuis une machine derrière un relais HTTPS :
+`pip install 'modal[api-proxy-support]'`.
+
+    ANQA_CARTE= modal run anqa_modal.py::preparer --quant Q8_0     # processeur : modèles dans le volume « anqa-modeles »
+    modal run anqa_modal.py::main --config configs/modal-1.json    # carte L40S : génère dans resultats/modal-1/
+
+Premier clip mesuré le 25/11/2026 (curl, personnage anime, 480 × 832, 73 images, 6 passes, modèle Q8) : 187 s
+de machine au total, dont 55 s d'échantillonnage (9,2 s par passe), 29 Go de mémoire graphique ; environ
+0,13 $ au tarif affiché. Le chargement des modèles est payé à chaque démarrage : grouper les clips par lot.

@@ -28,6 +28,8 @@ import uuid
 # Réglages (remplacés à l'envoi par le lanceur : ne pas modifier la ligne « CONFIG = »)
 # --------------------------------------------------------------------------------------------------
 CONFIG = {"mode": "sec", "taches": []}
+if os.environ.get("ANQA_CONFIG"):      # hors Kaggle (Modal) : réglages passés par l'environnement
+    CONFIG = json.loads(os.environ["ANQA_CONFIG"])
 
 VERSIONS = {
     "ComfyUI": ("https://github.com/comfyanonymous/ComfyUI.git", "a2103ae69d98d8ef94c150f5a472b89775eed929"),
@@ -54,7 +56,7 @@ MODELES = [
 NEGATIF = ("色调艳丽，过曝，静态，细节模糊不清，字幕，风格，作品，画作，画面，静止，整体发灰，最差质量，低质量，JPEG压缩残留，丑陋的，残缺的，"
            "多余的手指，画得不好的手部，画得不好的脸部，畸形的，毁容的，形态畸形的肢体，手指融合，静止不动的画面，杂乱的背景，三条腿，背景人很多，倒着走")
 
-TRAVAIL = "/kaggle/working" if os.path.isdir("/kaggle/working") else os.path.abspath("travail")
+TRAVAIL = os.environ.get("ANQA_TRAVAIL") or ("/kaggle/working" if os.path.isdir("/kaggle/working") else os.path.abspath("travail"))
 SORTIES = os.path.join(TRAVAIL, "sorties")
 os.makedirs(SORTIES, exist_ok=True)
 JOURNAL = open(os.path.join(SORTIES, "journal.txt"), "a", encoding="utf-8")
@@ -123,6 +125,9 @@ def diagnostic():
 
 
 def base():
+    if os.environ.get("ANQA_BASE"):
+        os.makedirs(os.environ["ANQA_BASE"], exist_ok=True)
+        return os.environ["ANQA_BASE"]
     for d in ("/kaggle/temp", "/tmp"):
         try:
             os.makedirs(os.path.join(d, "anqa"), exist_ok=True)
@@ -149,7 +154,9 @@ def installer(racine):
     cloner("ComfyUI", comfy)
     for ext in ("ComfyUI-GGUF", "ComfyUI-WanAnimatePreprocess"):
         cloner(ext, os.path.join(comfy, "custom_nodes", ext))
-    # torch est déjà dans l'image Kaggle (version CUDA) : on ne le réinstalle pas.
+    if os.path.exists(os.path.join(racine, "installe")):
+        return comfy
+    # torch est déjà dans l'image (version CUDA) : on ne le réinstalle pas.
     req = [l.strip() for l in open(os.path.join(comfy, "requirements.txt")) if l.strip() and not l.startswith("#")]
     req = [l for l in req if l.split("=")[0].split(">")[0].split("<")[0].strip().lower() not in ("torch", "torchvision", "torchaudio")]
     plus = ["gguf", "onnx", "opencv-python-headless", "matplotlib", "huggingface_hub"]
@@ -157,6 +164,7 @@ def installer(racine):
         plus.append("onnxruntime")
     open(os.path.join(racine, "req.txt"), "w").write("\n".join(req + plus) + "\n")
     cmd([sys.executable, "-m", "pip", "install", "-q", "--disable-pip-version-check", "-r", os.path.join(racine, "req.txt")])
+    open(os.path.join(racine, "installe"), "w").close()
     cmd([sys.executable, "-c", "import torch, onnxruntime, gguf, cv2, av; print('torch', torch.__version__, '| onnxruntime', onnxruntime.__version__, onnxruntime.get_available_providers())"], verifier=False)
     return comfy
 
@@ -187,7 +195,7 @@ def telecharger(comfy, quant, reel, jeux=("base", "gguf")):
         t = time.time()
         for essai in range(4):
             try:
-                p = hf_hub_download(depot, chemin, local_dir=os.path.join(comfy, "models", "_hf", depot.replace("/", "__")))
+                p = hf_hub_download(depot, chemin, local_dir=os.path.join(os.environ.get("ANQA_MODELES") or os.path.join(comfy, "models", "_hf"), depot.replace("/", "__")))
                 break
             except Exception as e:      # coupure réseau : on réessaie
                 dire("téléchargement à refaire :", depot, chemin, type(e).__name__, str(e)[:200])
@@ -393,7 +401,7 @@ NOEUDS = ["LoadVideo", "GetVideoComponents", "ImageScale", "OnnxDetectionModelLo
 # 6. Entrées, sorties
 # --------------------------------------------------------------------------------------------------
 def trouver(nom):
-    for racine in ("/kaggle/input", os.path.join(os.path.dirname(os.path.abspath(__file__)), "entrees") if "__file__" in globals() else "entrees", "entrees"):
+    for racine in (os.environ.get("ANQA_ENTREES", "/kaggle/input"), "/kaggle/input", os.path.join(os.path.dirname(os.path.abspath(__file__)), "entrees") if "__file__" in globals() else "entrees", "entrees"):
         r = glob.glob(os.path.join(racine, "**", nom), recursive=True)
         if r:
             return r[0]
@@ -491,10 +499,14 @@ def main():
         racine = base()
         with Etape("installation"):
             comfy = installer(racine)
+        if CONFIG["mode"] == "install":
+            return
         jeux = ["base", "gguf"] + (["relumiere"] if any(t.get("relumiere") for t in CONFIG["taches"]) else [])
         with Etape("modèles"):
             telecharger(comfy, CONFIG.get("quant", "Q4_K_M"), reel=gpu, jeux=jeux)
             telecharger(comfy, CONFIG.get("quant", "Q4_K_M"), reel=False, jeux=("natif",))   # factices, pour valider le secours
+        if CONFIG.get("arret_apres_modeles"):
+            return
         choisir_fournisseur(gpu)
         with Etape("démarrage de ComfyUI"):
             demarrer(comfy, gpu)
