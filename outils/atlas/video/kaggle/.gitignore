@@ -1,0 +1,4 @@
+_envoi/
+resultats/
+__pycache__/
+entrees/dataset-metadata.json

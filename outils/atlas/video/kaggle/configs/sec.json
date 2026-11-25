@@ -1,0 +1,5 @@
+{"mode": "sec", "quant": "Q4_K_M",
+ "taches": [
+  {"nom": "curl-gris", "guide": "curl-guide.mp4", "image": "ref-gris.png", "largeur": 480, "hauteur": 832, "longueur": 73, "ips": 25, "etapes": 6,
+   "texte": "A very muscular man doing dumbbell biceps curls in a clean light grey studio, fixed camera, full body."}
+ ]}
