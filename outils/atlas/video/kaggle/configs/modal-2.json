@@ -1,0 +1,7 @@
+{
+ "mode": "gen", "quant": "Q8_0", "delai_tache_s": 900, "secours_natif": false,
+ "taches": [
+  {"nom": "curl-riche", "guide": "curl-guide.mp4", "image": "ref-anime-riche.png", "largeur": 480, "hauteur": 832, "longueur": 73, "ips": 25, "etapes": 6, "graine": 1,
+   "texte": "Detailed anime illustration, rich shading, glossy tan skin, warm lighting. A very muscular young man with short spiky black hair, teal tank top, black shorts, orange wristbands and white sneakers, doing dumbbell biceps curls, plain light background, fixed camera, full body."}
+ ]
+}
