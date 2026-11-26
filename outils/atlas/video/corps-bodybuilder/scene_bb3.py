@@ -47,16 +47,6 @@ if os.environ.get('ATHLETE'):
         sk = np.reshape(sk, (-1, 1)) if np.ndim(sk) else sk
         cible += w[:, None] * (P + (V0 - P) * sk); poids += w
     V1 = cible / poids[:, None]
-    if os.environ.get('RENTRER_PIEDS', '1') == '1':
-        # le bas de la jambe rentre en douceur dans le pied greffé (pas de coupe)
-        zp = float(os.environ.get('Z_PIED', '0.13'))
-        for sg in (1, -1):
-            axe = np.array([0.175 * sg, 0.03])
-            m = (V1[:, 0] * sg > 0.06) & (V1[:, 2] < zp + 0.05)
-            f = np.clip((zp + 0.05 - V1[m, 2]) / 0.07, 0, 1); f = f * f * (3 - 2 * f) * 0.62
-            f = np.where(V1[m, 2] < zp - 0.005, 0.93, f)
-            V1[m, :2] = axe + (V1[m, :2] - axe) * (1 - f)[:, None]
-            V1[m, 2] = np.maximum(V1[m, 2], zp - 0.03)
     # relief : accentue l'écart à une version lissée du maillage
     ed_ = np.array([e.vertices[:] for e in corps.data.edges]); dg_ = np.bincount(ed_.ravel(), minlength=len(V1)).clip(1)
     L_ = V1.copy()
@@ -65,6 +55,19 @@ if os.environ.get('ATHLETE'):
     V1 = V1 + float(os.environ.get('RELIEF', '0.6')) * (V1 - L_)
     corps.data.vertices.foreach_set('co', V1.ravel()); corps.data.update(); V0 = V1
 
+
+def rentrer_pieds(V1):
+    # le bas de la jambe rentre en douceur dans le pied greffé (pas de coupe)
+    zp = float(os.environ.get('Z_PIED', '0.13'))
+    for sg in (1, -1):
+        axe = np.array([0.175 * sg, 0.03])
+        m = (V1[:, 0] * sg > 0.06) & (V1[:, 2] < zp + 0.05)
+        f = np.clip((zp + 0.05 - V1[m, 2]) / 0.07, 0, 1); f = f * f * (3 - 2 * f) * 0.62
+        f = np.where(V1[m, 2] < zp - 0.005, 0.93, f)
+        V1[m, :2] = axe + (V1[m, :2] - axe) * (1 - f)[:, None]
+        V1[m, 2] = np.maximum(V1[m, 2], zp - 0.03)
+
+    return V1
 
 # ---------------------------------------------------------------- squelette (pose en croix du modèle)
 J = {}
@@ -91,8 +94,11 @@ for n, p in PARENT.items():
 bpy.ops.object.mode_set(mode='OBJECT')
 bpy.ops.object.select_all(action='DESELECT'); corps.select_set(True); arm.select_set(True); bpy.context.view_layer.objects.active = arm
 bpy.ops.object.parent_set(type='ARMATURE_AUTO')
+if os.environ.get('ATHLETE') and os.environ.get('RENTRER_PIEDS', '1') == '1':
+    V0 = rentrer_pieds(V0.copy()); corps.data.vertices.foreach_set('co', V0.ravel()); corps.data.update()
 vides = sum(1 for v in corps.data.vertices if not v.groups)
 print('peau liée : groupes', len(corps.vertex_groups), '| sommets sans os', vides, flush=True)
+if vides > 200: raise SystemExit('ERREUR : la peau ne suit pas le squelette (liaison automatique échouée)')
 for _m in corps.modifiers:
     if _m.type == 'ARMATURE': _m.use_deform_preserve_volume = os.environ.get('DQS') == '1'
 if os.environ.get('LISSE_POIDS'):
@@ -244,7 +250,7 @@ if os.environ.get('TETE') == 'anime':
     m_re = bpy.data.materials.new('reflet'); m_re.use_nodes = True; m_re.node_tree.nodes['Principled BSDF'].inputs['Base Color'].default_value = (1, 1, 1, 1); m_re.node_tree.nodes['Principled BSDF'].inputs['Emission Strength'].default_value = 1.5; m_re.node_tree.nodes['Principled BSDF'].inputs['Emission Color'].default_value = (1, 1, 1, 1)
     t_ = tete_anime.construire(mat_main, m_ch, m_oe, m_re, echelle=float(os.environ.get('ECH_TETE_A', '1.0')))
     Mt = t_.matrix_world.copy(); t_.parent = arm; t_.parent_type = 'BONE'; t_.parent_bone = 'cou'; bpy.context.view_layer.update(); t_.matrix_world = Mt
-elif 'pos_T' in H.files:
+elif 'pos_T' in H.files and os.environ.get('TETE') != 'aucune':
     me = bpy.data.meshes.new('tete'); me.from_pydata([tuple(p) for p in H['pos_T'][0].astype(float)], [], [tuple(t) for t in H['tri_T']]); me.update()
     for f in me.polygons: f.use_smooth = True
     o = bpy.data.objects.new('tete', me); sc.collection.objects.link(o); mains['T'] = o
