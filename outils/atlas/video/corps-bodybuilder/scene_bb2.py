@@ -52,6 +52,16 @@ vides = sum(1 for v in corps.data.vertices if not v.groups)
 print('peau liée : groupes', len(corps.vertex_groups), '| sommets sans os', vides, flush=True)
 for _m in corps.modifiers:
     if _m.type == 'ARMATURE': _m.use_deform_preserve_volume = os.environ.get('DQS') == '1'
+if os.environ.get('LISSE_POIDS'):
+    # poids adoucis autour de l'épaule : les os du haut du corps se partagent la peau plus progressivement
+    fac, rep = [float(x) for x in os.environ['LISSE_POIDS'].split(',')]
+    bpy.ops.object.select_all(action='DESELECT'); corps.select_set(True); bpy.context.view_layer.objects.active = corps
+    bpy.ops.object.mode_set(mode='WEIGHT_PAINT')
+    for g in ('clavG', 'clavD', 'brasG', 'brasD', 'poitrine', 'cou', 'dos'):
+        corps.vertex_groups.active_index = corps.vertex_groups[g].index
+        bpy.ops.object.vertex_group_smooth(group_select_mode='ACTIVE', factor=fac, repeat=int(rep))
+    bpy.ops.object.vertex_group_normalize_all(lock_active=False)
+    bpy.ops.object.mode_set(mode='OBJECT')
 lisse = corps.modifiers.new('lisse', 'CORRECTIVE_SMOOTH'); lisse.factor = 0.5; lisse.iterations = 6; lisse.use_only_smooth = False; lisse.smooth_type = 'LENGTH_WEIGHTED'; lisse.rest_source = 'ORCO'
 
 # ---------------------------------------------------------------- biceps en rouge (au repos, devant le haut du bras)
@@ -66,6 +76,38 @@ rouge = (lisse01(tmax - theta, 0, 14) * (np.abs(u) < 1) * (V0[:, 2] > 1.45) * (a
 zz = V0[:, 2]; larg = 0.10 + 0.13 * lisse01(zz, 1.10, 1.42)
 dors = lisse01(V0[:, 1] - 0.0, 0.0, 0.05) * lisse01(zz, 1.08, 1.16) * (1 - lisse01(zz, 1.44, 1.50)) * lisse01(ax, 0.04, 0.08) * (1 - lisse01(ax - larg, -0.02, 0.01)) * (ax < 0.30)
 rouge = np.maximum(rouge, dors * float(os.environ.get('DORSAL', '0'))).astype(np.float32)
+if os.environ.get('COULEURS'):
+    import json as _j
+    Dm = np.load(os.environ['NPZ_MANNEQUIN']); ST = _j.loads(str(Dm['meta']))['structures']
+    CC = _j.load(open(os.environ['COULEURS'])); cmap = CC['couleurs'].get(os.environ['QUOI'], {})
+    hexv = lambda h: np.array([int(h[i:i + 2], 16) for i in (1, 3, 5)], float)
+    n0, a0 = hexv(CC['neutres']['muscle']), hexv(CC['accent'])
+    force = np.zeros(len(ST) + 1)
+    for s_ in ST:
+        if s_['id'] in cmap: force[s_['i']] = float(np.clip(((hexv(cmap[s_['id']]) - n0) @ (a0 - n0)) / ((a0 - n0) @ (a0 - n0)), 0, 1))
+    force = np.clip((force - 0.4) / 0.6, 0, 1) ** 0.8
+    CA = np.load(os.environ['CARTE_MUSCLES']); mu, mu2 = CA['muscle'].astype(np.int64), CA['muscle2'].astype(np.int64)
+    a1, a2 = force[mu], force[mu2]
+    # un muscle du bras ne colore que la peau du bras (pas le creux de l'épaule)
+    reg_bras = np.array([s_['region'] in ('bras', 'avant_bras') for s_ in ST] + [False])
+    t_bras = np.clip((ax - 0.205) / 0.245, 0, 2)
+    gidx = {g.name: g.index for g in corps.vertex_groups}
+    def poids(nom):
+        w = np.zeros(len(V0))
+        for v in corps.data.vertices:
+            for g in v.groups:
+                if g.group == gidx.get(nom): w[v.index] = g.weight
+        return w
+    pbras = (poids('brasG') + poids('brasD')) * (t_bras > 0.35) + poids('avbrasG') + poids('avbrasD')
+    a1 = np.where(reg_bras[mu] & (pbras < 0.3), 0, a1); a2 = np.where(reg_bras[mu2] & (pbras < 0.3), 0, a2)
+    actif = np.maximum(a1, 0.6 * a2 * (a1 < 0.05) * (mu >= 0))
+    zones = ['corps', 'tete', 'main', 'pied', 'ongle', 'poil', 'cheveux', 'oeil']
+    zv = CA['zoneV'].astype(int); actif = np.where(np.isin(zv, [2, 3]), 0, actif)
+    ed = np.array([e.vertices[:] for e in corps.data.edges]); deg = np.bincount(ed.ravel(), minlength=len(V0)).clip(1)
+    for _ in range(4):
+        s2 = np.zeros(len(V0)); np.add.at(s2, ed[:, 0], actif[ed[:, 1]]); np.add.at(s2, ed[:, 1], actif[ed[:, 0]]); actif = 0.5 * actif + 0.5 * s2 / deg
+    rouge = np.clip((actif - 0.15) / 0.85, 0, 1).astype(np.float32)
+    print('muscles en couleur :', int((force > 0).sum()), 'structures,', int((rouge > 0.05).sum()), 'sommets', flush=True)
 ca = corps.data.color_attributes.new('travail', 'FLOAT_COLOR', 'POINT')
 ca.data.foreach_set('color', np.c_[rouge, rouge, rouge, np.ones_like(rouge)].ravel())
 
@@ -77,7 +119,10 @@ m = bpy.data.materials.new('argile'); m.use_nodes = True; N = m.node_tree.nodes;
 bs = N['Principled BSDF']; bs.inputs['Roughness'].default_value = 0.55
 at = N.new('ShaderNodeAttribute'); at.attribute_name = 'travail'
 mix = N.new('ShaderNodeMix'); mix.data_type = 'RGBA'; mix.inputs['A'].default_value = (*ARGILE, 1); mix.inputs['B'].default_value = (*ROUGE, 1)
-L.new(at.outputs['Fac'], mix.inputs['Factor']); L.new(mix.outputs['Result'], bs.inputs['Base Color'])
+rampe = N.new('ShaderNodeValToRGB'); el_ = rampe.color_ramp.elements
+el_[0].position = 0.0; el_[0].color = (*ARGILE, 1); el_[1].position = 1.0; el_[1].color = (*ROUGE, 1)
+e_m = el_.new(0.45); e_m.color = (*srgb('#f58a4a'), 1)
+L.new(at.outputs['Fac'], rampe.inputs['Fac']); L.new(rampe.outputs['Color'], bs.inputs['Base Color'])
 corps.data.materials.clear(); corps.data.materials.append(m)
 mat_main = bpy.data.materials.new('main'); mat_main.use_nodes = True
 mat_main.node_tree.nodes['Principled BSDF'].inputs['Base Color'].default_value = (*ARGILE, 1); mat_main.node_tree.nodes['Principled BSDF'].inputs['Roughness'].default_value = 0.55
@@ -131,8 +176,15 @@ def poser_corps(pw):
         tete[b] = v('bassin') if p is None else tete[p] + R[p] @ (h0 - REST[p][:3, 3])
         queue[b] = tete[b] + R[b] @ (np.array(J[b][1]) - np.array(J[b][0]))
     return R, tete, queue
-ANCRE = os.environ.get('ANCRE', 'pieds')
 pw0 = app2bl(MV['images'][0]['pw'])
+ANCRE = os.environ.get('ANCRE', 'auto')
+if ANCRE == 'auto':
+    pieds_sol = all(min(app2bl(im['pw'])[ix['pied.G']][2], app2bl(im['pw'])[ix['pied.D']][2]) < 0.16 for im in MV['images'])
+    bas_bassin = min(app2bl(im['pw'])[ix['bassin']][2] for im in MV['images'])
+    pend = all(app2bl(im['pw'])[ix['main.G']][2] > app2bl(im['pw'])[ix['tete']][2] for im in MV['images'][:3]) and not pieds_sol
+    debout = min(unit(app2bl(im['pw'])[ix['cou1']] - app2bl(im['pw'])[ix['bassin']])[2] for im in MV['images']) > 0.75
+    ANCRE = 'mains' if pend else ('pieds' if pieds_sol and bas_bassin > 0.55 and debout else 'bassin')
+print('ancrage :', ANCRE, flush=True)
 ECH_MAIN = float(os.environ.get('ECH_MAIN', '1.05'))
 # mains greffées
 mains = {}
@@ -141,6 +193,15 @@ for c in 'GD':
     me.from_pydata([tuple(p) for p in P], [], [tuple(t) for t in H['tri_' + c]]); me.update()
     for f in me.polygons: f.use_smooth = True
     o = bpy.data.objects.new('main' + c, me); sc.collection.objects.link(o); me.materials.append(mat_main); mains[c] = o
+if 'pos_T' in H.files:
+    me = bpy.data.meshes.new('tete'); me.from_pydata([tuple(p) for p in H['pos_T'][0].astype(float)], [], [tuple(t) for t in H['tri_T']]); me.update()
+    for f in me.polygons: f.use_smooth = True
+    o = bpy.data.objects.new('tete', me); sc.collection.objects.link(o); mains['T'] = o
+    zT = H['zoneV'][H['idx_T']]
+    mat_ch = bpy.data.materials.new('cheveux'); mat_ch.use_nodes = True; mat_ch.node_tree.nodes['Principled BSDF'].inputs['Base Color'].default_value = (0.05, 0.045, 0.04, 1)
+    me.materials.append(mat_main); me.materials.append(mat_ch)
+    for f in me.polygons: f.material_index = 1 if all(zT[i] in (5, 6) for i in f.vertices) else 0
+ECH_TETE = float(os.environ.get('ECH_TETE', '1.08'))
 # haltères : les formes du mouvement, rattachées à la main la plus proche
 sys.path.insert(0, os.environ['OUTILS'])
 FORMES = MV['images'][0]['formes']
@@ -179,20 +240,30 @@ def placer(i):
     R, tete, queue = poser_corps(pw)
     if ANCRE == 'mains':
         dec = (pw[ix['main.G']] + pw[ix['main.D']]) / 2 - (queue['avbrasG'] + queue['avbrasD']) / 2
+    elif ANCRE == 'bassin':
+        dec = np.zeros(3)
     else:
         dec = np.array([0, 0, 0.0]); dec[:2] = ((pw[ix['pied.G']] + pw[ix['pied.D']]) / 2 - (tete['piedG'] + tete['piedD']) / 2)[:2]
         dec[2] = 0.09 - min(tete['piedG'][2], tete['piedD'][2])
     for b in ORDRE:
         X = np.eye(4); X[:3, :3] = R[b] @ REST[b][:3, :3]; X[:3, 3] = tete[b] + dec
         arm.pose.bones[b].matrix = Matrix(X.tolist()); bpy.context.view_layer.update()
+    global DERNIER; DERNIER = (tete, dec, pw)
     poignet = {c: queue['avbras' + c] + dec for c in 'GD'}
     for c in 'GD':
         Pm = H['pos_' + c][i].astype(float); Wm = H['poignet_' + c][i]
         mains[c].data.vertices.foreach_set('co', (poignet[c] + ECH_MAIN * (Pm - Wm)).ravel()); mains[c].data.update()
+    if 'T' in mains:
+        cou_bb = tete['cou'] + dec + float(os.environ.get('COU_T', '0.45')) * (np.array(J['cou'][1]) - np.array(J['cou'][0])) @ R['cou'].T
+        cou_bb = cou_bb + R['cou'] @ np.array([0.0] + [float(x) for x in os.environ.get('TETE_DEC', '0.06,0.04').split(',')])
+        Pm = H['pos_T'][i].astype(float); Wm = H['poignet_T'][i]
+        mains['T'].data.vertices.foreach_set('co', (cou_bb + ECH_TETE * (Pm - Wm)).ravel()); mains['T'].data.update()
     for (o, s0, c), f in zip(haltere, im['formes']):
         Rf = B3 @ quat(f['q']); X = np.eye(4)
         if f.get('tenu') and ANCRE != 'mains':
-            Wm = H['poignet_' + c][i]; X[:3, :3] = Rf * ECH_MAIN; X[:3, 3] = poignet[c] + ECH_MAIN * (app2bl(f['p']) - Wm)
+            dG, dD = poignet['G'] - H['poignet_G'][i], poignet['D'] - H['poignet_D'][i]
+            dc = (dG if c == 'G' else dD) if f['tenu'] == 'haltere' else (dG + dD) / 2
+            X[:3, :3] = Rf; X[:3, 3] = app2bl(f['p']) + dc
         else:
             X[:3, :3] = Rf; X[:3, 3] = app2bl(f['p'])
         o.matrix_world = Matrix(X.tolist())
@@ -228,6 +299,26 @@ for cx in (lo[0], hi[0]):
 if os.environ.get('ZOOM'):
     zx, zz, zd = [float(x) for x in os.environ['ZOOM'].split(',')]; cible = np.array([zx, 0, zz]); dist = zd
 co.location = Vector(cible + dirc * dist); co.rotation_euler = (Vector(cible) - co.location).to_track_quat('-Z', 'Y').to_euler()
+if os.environ.get('CARTE'):
+    # Report de la carte des muscles du mannequin (même pose) : chaque sommet du bodybuilder, ramené au repère de son os
+    # principal chez le mannequin, prend le muscle du sommet le plus proche.
+    from scipy.spatial import cKDTree
+    src, img, sortie = os.environ['CARTE'].split(',')
+    Mq = np.load(src); placer(int(img)); tete, dec, pw = DERNIER
+    dg = bpy.context.evaluated_depsgraph_get(); dg.update()
+    ev = corps.evaluated_get(dg); m2 = ev.to_mesh(); P = np.zeros(len(m2.vertices) * 3); m2.vertices.foreach_get('co', P); P = P.reshape(-1, 3); ev.to_mesh_clear()
+    gnom = {g.index: g.name for g in corps.vertex_groups}
+    dom = []
+    for v in corps.data.vertices:
+        gs = [(g.weight, gnom[g.group]) for g in v.groups if gnom[g.group] in CHAINE]
+        dom.append(max(gs)[1] if gs else 'bassin')
+    off = np.array([pw[ix[CHAINE[b][0]]] - (tete[b] + dec) for b in dom])
+    garde = Mq['corps'].astype(bool)
+    idx_src = np.where(garde)[0]; arbre = cKDTree(Mq['V'][garde])
+    d, k = arbre.query(P + off); k = idx_src[k]
+    np.savez_compressed(sortie, muscle=Mq['muscle'][k], muscle2=Mq['muscle2'][k], cote=Mq['cote'][k], zoneV=Mq['zoneV'][k], dist=d.astype(np.float32))
+    print('carte reportée : distance médiane', round(float(np.median(d)), 4), 'max', round(float(d.max()), 3), '| sans muscle', int((Mq['muscle'][k] < 0).sum()), flush=True)
+    sys.exit(0)
 a, b = (IMAGES.split('-') + [None])[:2]
 liste = range(int(a), int(b) + 1) if b else [int(x) for x in IMAGES.split(',')]
 for i in liste:

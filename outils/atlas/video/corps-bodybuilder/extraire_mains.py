@@ -21,8 +21,8 @@ def poser(dq):
 me = corps.data; NV = len(me.vertices)
 gid = {g.name: g.index for g in corps.vertex_groups}
 res = {}
-for cote in ('G', 'D'):
-    noms = [n for n in gid if n.endswith('.' + cote) and (n.startswith('main') or n.startswith('doigt'))]
+for cote in ('G', 'D', 'T'):
+    noms = ['tete', 'cou3'] if cote == 'T' else [n for n in gid if n.endswith('.' + cote) and (n.startswith('main') or n.startswith('doigt'))]
     ids = {gid[n] for n in noms}
     w = np.zeros(NV)
     for v in me.vertices:
@@ -50,9 +50,9 @@ for i, im in enumerate(MV['images']):
     co = co @ Mw[:3, :3].T + Mw[:3, 3]
     for c in res:
         pos[c].append(co[res[c][0]].astype(np.float32))
-        pb = arm.pose.bones['main.' + c]; Mb = arm.matrix_world @ pb.matrix
+        pb = arm.pose.bones['cou3' if c == 'T' else 'main.' + c]; Mb = arm.matrix_world @ pb.matrix
         poignet[c].append(np.array(Mb.translation)); rot[c].append(np.array(Mb.to_3x3()))
     if i % 10 == 0: print('image', i, flush=True)
 np.savez_compressed(SORTIE, **{f'pos_{c}': np.array(pos[c]) for c in res}, **{f'tri_{c}': res[c][1] for c in res},
-                    **{f'poignet_{c}': np.array(poignet[c]) for c in res}, **{f'rot_{c}': np.array(rot[c]) for c in res})
+                    **{f'poignet_{c}': np.array(poignet[c]) for c in res}, **{f'rot_{c}': np.array(rot[c]) for c in res}, **{f'idx_{c}': res[c][0] for c in res}, zoneV=D['zoneV'])
 print('fini')
