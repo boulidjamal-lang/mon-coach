@@ -339,7 +339,7 @@ def choisir_fournisseur(gpu):
     dire("détection de pose :", FOURNISSEUR_ONNX)
 
 
-def montage_pretraitement(larg, haut, prefixe):
+def montage_pretraitement(larg, haut, prefixe, mains=-1):
     """Vidéo guide -> poses détectées (images) + visages."""
     return {
         "12": {"class_type": "LoadVideo", "inputs": {"file": "guide.mp4"}},
@@ -347,7 +347,7 @@ def montage_pretraitement(larg, haut, prefixe):
         "14": {"class_type": "ImageScale", "inputs": {"image": ["13", 0], "upscale_method": "lanczos", "width": larg, "height": haut, "crop": "center"}},
         "15": {"class_type": "OnnxDetectionModelLoader", "inputs": {"vitpose_model": "vitpose-l-wholebody.onnx", "yolo_model": "yolov10m.onnx", "onnx_device": FOURNISSEUR_ONNX}},
         "16": {"class_type": "PoseAndFaceDetection", "inputs": {"model": ["15", 0], "images": ["14", 0], "width": larg, "height": haut, "face_padding": 0}},
-        "17": {"class_type": "DrawViTPose", "inputs": {"pose_data": ["16", 0], "width": larg, "height": haut, "retarget_padding": 16, "body_stick_width": -1, "hand_stick_width": -1, "draw_head": True}},
+        "17": {"class_type": "DrawViTPose", "inputs": {"pose_data": ["16", 0], "width": larg, "height": haut, "retarget_padding": 16, "body_stick_width": -1, "hand_stick_width": mains, "draw_head": True}},
         "90": {"class_type": "SaveImage", "inputs": {"images": ["17", 0], "filename_prefix": prefixe + "-pose"}},
         "91": {"class_type": "SaveImage", "inputs": {"images": ["16", 1], "filename_prefix": prefixe + "-visage"}},
     }
@@ -357,7 +357,7 @@ def montage_generation(t, quant, prefixe, natif=False):
     """Montage complet « animation » : le personnage de l'image exécute le mouvement de la vidéo guide.
     natif=True : modèle et encodeur de texte au format compressé de ComfyUI au lieu de GGUF (secours)."""
     larg, haut, longueur = t["largeur"], t["hauteur"], t["longueur"]
-    g = montage_pretraitement(larg, haut, prefixe)
+    g = montage_pretraitement(larg, haut, prefixe, t.get("mains", -1))
     del g["91"]
     g.update({
         "1": {"class_type": "UnetLoaderGGUF", "inputs": {"unet_name": f"Wan2.2-Animate-14B-{quant}.gguf"}},
@@ -445,7 +445,7 @@ def executer(comfy, gpu):
             for vieux in glob.glob(os.path.join(sortie_comfy, "anqa", nom + "-*")):
                 os.remove(vieux)
             if not gpu:
-                ok, d = lancer(montage_pretraitement(larg, haut, prefixe), nom + " (prétraitement)")
+                ok, d = lancer(montage_pretraitement(larg, haut, prefixe, t.get("mains", -1)), nom + " (prétraitement)")
                 res["pretraitement"] = {"ok": ok, **{k: v for k, v in d.items() if k != "sorties"}}
                 n = images_vers_video(os.path.join(sortie_comfy, "anqa", nom + "-pose_*.png"), os.path.join(SORTIES, nom + "-pose.mp4"), ips)
                 res["images_pose"] = n
