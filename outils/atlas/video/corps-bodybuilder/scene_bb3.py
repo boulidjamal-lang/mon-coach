@@ -42,8 +42,21 @@ if os.environ.get('ATHLETE'):
         w = np.exp(-(r - dmin) / 0.025)
         h, t = np.array(h), np.array(t); d = t - h; u = np.clip(((V0 - h) @ d) / (d @ d), 0, 1); P = h + u[:, None] * d
         sk = 1 - k_ath * (1 - ech[n])
+        if n == 'jambe': sk = sk * (1 - float(os.environ.get('CHEVILLE', '0.22')) * np.clip((u - 0.72) / 0.28, 0, 1) ** 1.3)
+        if n == 'avbras': sk = sk * (1 - float(os.environ.get('POIGNET', '0.16')) * np.clip((u - 0.6) / 0.4, 0, 1) ** 1.5)[:, None] if np.ndim(sk) else sk * (1 - float(os.environ.get('POIGNET', '0.16')) * np.clip((u - 0.6) / 0.4, 0, 1) ** 1.5)
+        sk = np.reshape(sk, (-1, 1)) if np.ndim(sk) else sk
         cible += w[:, None] * (P + (V0 - P) * sk); poids += w
     V1 = cible / poids[:, None]
+    if os.environ.get('RENTRER_PIEDS', '1') == '1':
+        # le bas de la jambe rentre en douceur dans le pied greffé (pas de coupe)
+        zp = float(os.environ.get('Z_PIED', '0.13'))
+        for sg in (1, -1):
+            axe = np.array([0.175 * sg, 0.03])
+            m = (V1[:, 0] * sg > 0.06) & (V1[:, 2] < zp + 0.05)
+            f = np.clip((zp + 0.05 - V1[m, 2]) / 0.07, 0, 1); f = f * f * (3 - 2 * f) * 0.62
+            f = np.where(V1[m, 2] < zp - 0.005, 0.93, f)
+            V1[m, :2] = axe + (V1[m, :2] - axe) * (1 - f)[:, None]
+            V1[m, 2] = np.maximum(V1[m, 2], zp - 0.03)
     # relief : accentue l'écart à une version lissée du maillage
     ed_ = np.array([e.vertices[:] for e in corps.data.edges]); dg_ = np.bincount(ed_.ravel(), minlength=len(V1)).clip(1)
     L_ = V1.copy()
@@ -240,6 +253,17 @@ elif 'pos_T' in H.files:
     me.materials.append(mat_main); me.materials.append(mat_ch)
     for f in me.polygons: f.material_index = 1 if all(zT[i] in (5, 6) for i in f.vertices) else 0
 ECH_TETE = float(os.environ.get('ECH_TETE', '1.08'))
+ECH_PIED = float(os.environ.get('ECH_PIED', '1.08'))
+if 'pos_PG' in H.files and os.environ.get('PIEDS', '1') == '1':
+    for c in ('PG', 'PD'):
+        me = bpy.data.meshes.new('pied' + c); me.from_pydata([tuple(p) for p in H['pos_' + c][0].astype(float)], [], [tuple(t) for t in H['tri_' + c]]); me.update()
+        for f in me.polygons: f.use_smooth = True
+        o = bpy.data.objects.new('pied' + c, me); sc.collection.objects.link(o); me.materials.append(mat_main); mains[c] = o
+    gp = corps.vertex_groups.new(name='pieds_caches'); gi = {g.name: g.index for g in corps.vertex_groups}
+    cache = np.where(V0[:, 2] < float(os.environ.get('Z_PIED', '0.115')))[0].tolist()
+    gp.add(cache, 1.0, 'REPLACE')
+    if os.environ.get('RENTRER_PIEDS', '1') != '1': mk = corps.modifiers.new('sans_pieds', 'MASK'); 
+    if os.environ.get('RENTRER_PIEDS', '1') != '1': mk.vertex_group = 'pieds_caches'; mk.invert_vertex_group = True
 # haltères : les formes du mouvement, rattachées à la main la plus proche
 sys.path.insert(0, os.environ['OUTILS'])
 FORMES = MV['images'][0]['formes']
@@ -291,6 +315,10 @@ def placer(i):
     for c in 'GD':
         Pm = H['pos_' + c][i].astype(float); Wm = H['poignet_' + c][i]
         mains[c].data.vertices.foreach_set('co', (poignet[c] + ECH_MAIN * (Pm - Wm)).ravel()); mains[c].data.update()
+    for c in ('PG', 'PD'):
+        if c in mains:
+            Pm = H['pos_' + c][i].astype(float); Wm = H['poignet_' + c][i]
+            mains[c].data.vertices.foreach_set('co', (tete['pied' + c[1]] + dec + ECH_PIED * (Pm - Wm)).ravel()); mains[c].data.update()
     if 'T' in mains:
         cou_bb = tete['cou'] + dec + float(os.environ.get('COU_T', '0.45')) * (np.array(J['cou'][1]) - np.array(J['cou'][0])) @ R['cou'].T
         cou_bb = cou_bb + R['cou'] @ np.array([0.0] + [float(x) for x in os.environ.get('TETE_DEC', '0.06,0.04').split(',')])

@@ -21,14 +21,14 @@ def poser(dq):
 me = corps.data; NV = len(me.vertices)
 gid = {g.name: g.index for g in corps.vertex_groups}
 res = {}
-for cote in ('G', 'D', 'T'):
-    noms = ['tete', 'cou3'] if cote == 'T' else [n for n in gid if n.endswith('.' + cote) and (n.startswith('main') or n.startswith('doigt'))]
+for cote in ('G', 'D', 'T', 'PG', 'PD'):
+    noms = ['tete', 'cou3'] if cote == 'T' else ['pied.' + cote[1], 'orteils.' + cote[1]] if cote.startswith('P') else [n for n in gid if n.endswith('.' + cote) and (n.startswith('main') or n.startswith('doigt'))]
     ids = {gid[n] for n in noms}
     w = np.zeros(NV)
     for v in me.vertices:
         for g in v.groups:
             if g.group in ids: w[v.index] += g.weight
-    sel = np.where(w > 0.5)[0]
+    sel = np.where(w > (0.12 if cote.startswith('P') else 0.5))[0]
     # faces entièrement dans la sélection
     garde = np.zeros(NV, bool); garde[sel] = True
     faces = [list(p.vertices) for p in me.polygons if all(garde[i] for i in p.vertices)]
@@ -50,7 +50,7 @@ for i, im in enumerate(MV['images']):
     co = co @ Mw[:3, :3].T + Mw[:3, 3]
     for c in res:
         pos[c].append(co[res[c][0]].astype(np.float32))
-        pb = arm.pose.bones['cou3' if c == 'T' else 'main.' + c]; Mb = arm.matrix_world @ pb.matrix
+        pb = arm.pose.bones['cou3' if c == 'T' else ('pied.' + c[1]) if c.startswith('P') else 'main.' + c]; Mb = arm.matrix_world @ pb.matrix
         poignet[c].append(np.array(Mb.translation)); rot[c].append(np.array(Mb.to_3x3()))
     if i % 10 == 0: print('image', i, flush=True)
 np.savez_compressed(SORTIE, **{f'pos_{c}': np.array(pos[c]) for c in res}, **{f'tri_{c}': res[c][1] for c in res},
