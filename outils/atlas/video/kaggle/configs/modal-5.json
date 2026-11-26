@@ -1,0 +1,32 @@
+{
+ "mode": "gen",
+ "quant": "Q8_0",
+ "delai_tache_s": 900,
+ "secours_natif": false,
+ "taches": [
+  {
+   "nom": "curl-perso3c-g1",
+   "guide": "curl-guide-face0.mp4",
+   "image": "ref-perso3b.png",
+   "largeur": 480,
+   "hauteur": 832,
+   "longueur": 73,
+   "ips": 25,
+   "etapes": 6,
+   "graine": 1,
+   "texte": "Detailed anime illustration, rich shading, glossy tan skin, warm lighting. A shirtless athletic muscular young man with short spiky black hair, black gym shorts with a white waistband, orange wristbands, white socks and white sneakers, facing the camera, performs strict standing dumbbell biceps curls with perfect form: upper arms stay pinned against his sides, elbows stay fixed next to the torso, only the forearms move, both hands keep the same underhand grip with palms facing up the whole time, wrists straight, both arms move symmetrically, the black dumbbells rise smoothly to the front of the shoulders and lower slowly to full arm extension, torso upright and still, no swinging, no shoulder shrug. Both biceps muscles are highlighted in bright red. Plain light grey background, fixed camera, full body."
+  },
+  {
+   "nom": "curl-perso3c-g2",
+   "guide": "curl-guide-face0.mp4",
+   "image": "ref-perso3b.png",
+   "largeur": 480,
+   "hauteur": 832,
+   "longueur": 73,
+   "ips": 25,
+   "etapes": 6,
+   "graine": 2,
+   "texte": "Detailed anime illustration, rich shading, glossy tan skin, warm lighting. A shirtless athletic muscular young man with short spiky black hair, black gym shorts with a white waistband, orange wristbands, white socks and white sneakers, facing the camera, performs strict standing dumbbell biceps curls with perfect form: upper arms stay pinned against his sides, elbows stay fixed next to the torso, only the forearms move, both hands keep the same underhand grip with palms facing up the whole time, wrists straight, both arms move symmetrically, the black dumbbells rise smoothly to the front of the shoulders and lower slowly to full arm extension, torso upright and still, no swinging, no shoulder shrug. Both biceps muscles are highlighted in bright red. Plain light grey background, fixed camera, full body."
+  }
+ ]
+}
