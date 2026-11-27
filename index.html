@@ -33403,9 +33403,11 @@ function editerExerciceAdmin(exo) {
   const mediaActuel = mediaExercice(exo);
   document.getElementById('edit-exo-image').value = (mediaActuel && mediaActuel.img && mediaActuel.img[0]) || '';
   afficherChampImageExercice(!!document.getElementById('edit-exo-image').value);
-  const videoActuelle = videoExercice(exo);
-  document.getElementById('edit-exo-video').value = (videoActuelle && videoActuelle.video) || '';
-  modal.dataset.videoInitiale = (videoActuelle && videoActuelle.video) || '';
+  // Le lien posé dans Administration, tel quel : pas la vidéo SmartWorkout de la bibliothèque (bêta, copie dans
+  // l'appli), qui n'est pas un lien à modifier et ferait refuser l'enregistrement.
+  const videoActuelle = typeof exo.video === 'string' && !estLienImage(exo.video) ? exo.video : '';
+  document.getElementById('edit-exo-video').value = videoActuelle;
+  modal.dataset.videoInitiale = videoActuelle;
   renderFaisceauxAdmin();
   modal.classList.add('show');
   majCoucheOuverte();
