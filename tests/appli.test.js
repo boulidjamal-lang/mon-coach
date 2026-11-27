@@ -4050,6 +4050,11 @@ test("bêta : les fiches montrent la vidéo SmartWorkout (lue sur leurs serveurs
     res.zoom = /assets\/videos-sw\/[0-9a-f-]+\.mp4/.test(document.getElementById('video-zoom-media').innerHTML);
     fermerVideoExercice();
     res.maison = videoExercice({ id: 'maison', nom: 'Maison', groupe: 'biceps', perso: true });
+    // Lien SmartWorkout posé dans Administration (exercice de la base sans entrée dans la table) : la copie locale et son
+    // aperçu local servent de vidéo et de miniature (sans aperçu, l'iPhone laisse la case vide).
+    const idv = VIDEOS_SMARTWORKOUT['sw-crunch-avec-ramene-de-genoux'][0];
+    const corrige = { id: 'e9999', nom: 'Corrigé', groupe: 'abdos', materiel: 'poids_corps', video: 'https://api.smartworkout.app/asset/video/' + idv + '.mp4' };
+    res.lienAdmin = { video: videoExercice(corrige).video, miniature: medaillonExercice(corrige).slice(0, 120) };
     VIDEOS_SW_BETA = false;
     res.horsBeta = videoExercice(trouverExercice('sw-crunch-avec-ramene-de-genoux'));
     return res;
@@ -4059,6 +4064,8 @@ test("bêta : les fiches montrent la vidéo SmartWorkout (lue sur leurs serveurs
   assert.ok(require('node:fs').statSync(require('node:path').join(__dirname, '..', r.url)).size > 5000);
   assert.match(r.source, /^https:\/\/smartworkout\.app\//);
   assert.deepEqual([r.troisD, r.apres3D, r.retour, r.zoom, r.maison, r.horsBeta], [false, { troisD: true, retour: true }, true, true, null, null]);
+  assert.match(r.lienAdmin.video, /^assets\/videos-sw\/[0-9a-f-]+\.mp4$/);
+  assert.match(r.lienAdmin.miniature, /^<img src="assets\/videos-sw\/[0-9a-f-]+\.jpg"/);
 }));
 
 test("frictions : confirmation de l'appli (plus de fenêtre du navigateur), série supprimée avec Annuler, quantité prête à taper, mot de passe plus gardé", () => avecAppli({}, async ({ page, dialogues }) => {
