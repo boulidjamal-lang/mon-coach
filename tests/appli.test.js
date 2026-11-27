@@ -4292,6 +4292,30 @@ test("une vidéo ou des photos posées autrefois dans Administration ne remplace
   assert.deepEqual([r.copies, r.autre], [[true, true, true], false]);
 }));
 
+test("muscle-up : la fiche montre la vidéo filmée du corps 3D, avec le crédit CC BY de son auteur, et la 3D reste à portée d'un bouton", () => avecAppli({}, async ({ page }) => {
+  const r = await page.evaluate(() => {
+    afficherFicheExerciceBiblio('sw-muscle-up'); choisirOngletFiche('technique');
+    const fiche = document.getElementById('fiche-exercice-container');
+    const v = fiche.querySelector('.fiche-exo-film video');
+    const res = { src: v && v.getAttribute('src'), muet: !!(v && v.muted), enLigne: !!(v && v.hasAttribute('playsinline')),
+      credit: /AaronJOlson/.test(fiche.textContent) && /CC BY 4\.0/.test(fiche.textContent), troisD: !!fiche.querySelector('#fiche-exo-3d') };
+    basculerMediaFiche('sw-muscle-up', '3d');
+    res.apres3D = { troisD: !!fiche.querySelector('#fiche-exo-3d'), retour: /Voir la vidéo/.test(fiche.textContent) };
+    basculerMediaFiche('sw-muscle-up', 'film');
+    res.retourFilm = !!fiche.querySelector('.fiche-exo-film video');
+    fermerModal('fiche-exercice-modal');
+    // Un autre exercice garde son mouvement en 3D.
+    afficherFicheExerciceBiblio('e265');
+    res.autre = { film: !!document.querySelector('#fiche-exercice-container .fiche-exo-film'), troisD: !!document.querySelector('#fiche-exercice-container #fiche-exo-3d') };
+    fermerModal('fiche-exercice-modal');
+    return res;
+  });
+  assert.deepEqual(r, { src: 'assets/videos-corps/sw-muscle-up.mp4', muet: true, enLigne: true, credit: true, troisD: false,
+    apres3D: { troisD: true, retour: true }, retourFilm: true, autre: { film: false, troisD: true } });
+  // Le fichier est bien dans le dépôt (sinon la fiche montrerait un cadre vide).
+  assert.ok(require('node:fs').statSync(require('node:path').join(__dirname, '..', 'assets', 'videos-corps', 'sw-muscle-up.mp4')).size > 10000);
+}));
+
 test("frictions : confirmation de l'appli (plus de fenêtre du navigateur), série supprimée avec Annuler, quantité prête à taper, mot de passe plus gardé", () => avecAppli({}, async ({ page, dialogues }) => {
   // Vraie fenêtre de l'appli : Abandonner une séance demande confirmation.
   await page.evaluate(() => {
