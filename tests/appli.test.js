@@ -4317,14 +4317,14 @@ test("vidéo filmée du corps 3D (aucune pour l'instant) : posée sur un exercic
     apres3D: { troisD: true, retour: true }, retourFilm: true, autre: { film: false, troisD: true } });
 }));
 
-test("bêta : les fiches montrent la vidéo SmartWorkout (lue sur leurs serveurs, source citée), l'agrandissement aussi ; la 3D reste à un bouton ; un exercice maison n'en a pas", () => avecAppli({}, async ({ page }) => {
+test("bêta : les fiches montrent la vidéo SmartWorkout (copie dans l'appli, source citée, aucun lien vers leurs serveurs), l'agrandissement aussi ; la 3D reste à un bouton ; un exercice maison n'en a pas", () => avecAppli({}, async ({ page }) => {
   const r = await page.evaluate(() => {
     const res = { beta: VIDEOS_SW_BETA };
     afficherFicheExerciceBiblio('sw-crunch-avec-ramene-de-genoux'); choisirOngletFiche('technique');
     const f = document.getElementById('fiche-exercice-container');
     const place = f.querySelector('.fiche-exo-video .hd-place, .fiche-exo-video video');
     res.url = place && (place.dataset.url || place.getAttribute('src'));
-    res.source = (f.querySelector('.fiche-exo-note-source a') || {}).href || null;
+    res.source = { texte: (f.querySelector('.fiche-exo-note-source') || {}).textContent || '', lien: !!f.querySelector('.fiche-exo-note-source a'), smartworkoutEnLigne: /smartworkout\.app/i.test(f.innerHTML) };
     res.troisD = !!f.querySelector('#fiche-exo-3d');
     basculerMediaFiche('sw-crunch-avec-ramene-de-genoux', '3d');
     res.apres3D = { troisD: !!f.querySelector('#fiche-exo-3d'), retour: /Voir la vidéo/.test(f.textContent) };
@@ -4339,7 +4339,8 @@ test("bêta : les fiches montrent la vidéo SmartWorkout (lue sur leurs serveurs
     // aperçu local servent de vidéo et de miniature (sans aperçu, l'iPhone laisse la case vide).
     const idv = VIDEOS_SMARTWORKOUT['sw-crunch-avec-ramene-de-genoux'][0];
     const corrige = { id: 'e9999', nom: 'Corrigé', groupe: 'abdos', materiel: 'poids_corps', video: 'https://api.smartworkout.app/asset/video/' + idv + '.mp4' };
-    res.lienAdmin = { video: videoExercice(corrige).video, miniature: medaillonExercice(corrige).slice(0, 120) };
+    res.lienAdmin = { video: videoExercice(corrige).video, miniature: medaillonExercice(corrige).slice(0, 120),
+      inconnu: videoExercice({ id: 'e9998', nom: 'Inconnu', video: 'https://api.smartworkout.app/asset/video/00000000-0000-0000-0000-000000000000.mp4' }) };
     VIDEOS_SW_BETA = false;
     res.horsBeta = videoExercice(trouverExercice('sw-crunch-avec-ramene-de-genoux'));
     return res;
@@ -4347,10 +4348,11 @@ test("bêta : les fiches montrent la vidéo SmartWorkout (lue sur leurs serveurs
   assert.equal(r.beta, true);
   assert.match(r.url, /^assets\/videos-sw\/[0-9a-f-]+\.mp4$/);   // copie locale (autorisation déclarée), lue sans attendre
   assert.ok(require('node:fs').statSync(require('node:path').join(__dirname, '..', r.url)).size > 5000);
-  assert.match(r.source, /^https:\/\/smartworkout\.app\//);
+  assert.deepEqual([/Vidéo : SmartWorkout/.test(r.source.texte), r.source.lien, r.source.smartworkoutEnLigne], [true, false, false]);
   assert.deepEqual([r.troisD, r.apres3D, r.retour, r.zoom, r.maison, r.horsBeta], [false, { troisD: true, retour: true }, true, true, null, null]);
   assert.match(r.lienAdmin.video, /^assets\/videos-sw\/[0-9a-f-]+\.mp4$/);
   assert.match(r.lienAdmin.miniature, /^<img src="assets\/videos-sw\/[0-9a-f-]+\.jpg"/);
+  assert.equal(r.lienAdmin.inconnu, null);   // un lien SmartWorkout sans copie dans l'appli n'est jamais lu en ligne
 }));
 
 test("frictions : confirmation de l'appli (plus de fenêtre du navigateur), série supprimée avec Annuler, quantité prête à taper, mot de passe plus gardé", () => avecAppli({}, async ({ page, dialogues }) => {
