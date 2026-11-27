@@ -20183,6 +20183,12 @@ function medaillonExercice(exo, anime) {
   // Vidéo ajoutée dans Administration, ou vidéo SmartWorkout (bêta) : en séance, elle joue en boucle ; dans les
   // listes, son image d'aperçu (chargée près de l'écran seulement).
   if (anime && sw && sw.video && (typeof exo.video === 'string' || estVideoSmartWorkout(sw))) return videoVignetteHTML(sw.video, sw.poster, true);
+  // Listes (des centaines de lignes) : l'aperçu, puis la vidéo en boucle par-dessus quand la case reste à l'écran
+  // (quatre au plus à la fois, voir vignetteEnVideo) ; jamais en mouvement réduit.
+  if (sw && estVideoSmartWorkout(sw) && sw.poster) {
+    const boucle = vignettes3DAnimees() ? ` data-video="${escapeHtml(sw.video)}"` : '';
+    return `<img class="vignette-sw${boucle ? ' vignette-differee' : ''}" src="${escapeHtml(sw.poster)}" alt="" decoding="async" loading="lazy"${boucle} data-repli="${escapeHtml(exo.groupe || '')}" style="background:#2b2c30;">`;
+  }
   // data-repli : image distante introuvable (hors ligne, lien mort) → la
   // silhouette du groupe, plutôt que l'icône d'image cassée (voir plus bas).
   const repli = ` data-repli="${escapeHtml(exo.groupe || '')}"`;
@@ -20237,8 +20243,8 @@ function vignetteEnVideo(img) {
   ['muted', 'loop', 'playsinline', 'autoplay', 'disablepictureinpicture', 'disableremoteplayback'].forEach(a => v.setAttribute(a, ''));
   v.setAttribute('aria-hidden', 'true');
   v.addEventListener('playing', () => v.classList.add('prete'), { once: true });
-  // Miniature 3D : la boucle du thème affiché (son fond est celui de la case).
-  v.src = animationVignette3D(img.dataset.anim3d);
+  // Vidéo de l'exercice (copie SmartWorkout dans l'appli), ou miniature 3D : la boucle du thème affiché.
+  v.src = img.dataset.video || animationVignette3D(img.dataset.anim3d);
   img.after(v);
   img._video = v;
   vignettesActives.add(img);

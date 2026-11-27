@@ -4066,8 +4066,25 @@ test("bêta : les fiches montrent la vidéo SmartWorkout (copie dans l'appli, so
   assert.deepEqual([/Vidéo : SmartWorkout/.test(r.source.texte), r.source.lien, r.source.smartworkoutEnLigne], [true, false, false]);
   assert.deepEqual([r.troisD, r.apres3D, r.retour, r.zoom, r.maison, r.horsBeta], [false, { troisD: true, retour: true }, true, true, null, null]);
   assert.match(r.lienAdmin.video, /^assets\/videos-sw\/[0-9a-f-]+\.mp4$/);
-  assert.match(r.lienAdmin.miniature, /^<img src="assets\/videos-sw\/[0-9a-f-]+\.jpg"/);
+  assert.match(r.lienAdmin.miniature, /^<img [^>]*src="assets\/videos-sw\/[0-9a-f-]+\.jpg"/);
   assert.equal(r.lienAdmin.inconnu, null);   // un lien SmartWorkout sans copie dans l'appli n'est jamais lu en ligne
+}));
+
+test("bêta : dans les listes, l'aperçu SmartWorkout s'anime (sa vidéo locale en boucle par-dessus, quatre au plus) ; image fixe en mouvement réduit", () => avecAppli({ animations: true }, async ({ page }) => {
+  const r = await page.evaluate(async () => {
+    const res = { html: medaillonExercice(trouverExercice('sw-crunch-avec-ramene-de-genoux')) };
+    ouvrirBibliotheque();
+    await new Promise(ok => setTimeout(ok, 2500));
+    const vids = [...document.querySelectorAll('#picker-liste-exercices video.vignette-video')];
+    res.boucles = vids.length; res.jouent = vids.filter(v => v.classList.contains('prete')).length;
+    res.sources = vids.slice(0, 2).map(v => v.getAttribute('src'));
+    fermerModal('picker-exercices-modal');
+    return res;
+  });
+  assert.match(r.html, /^<img class="vignette-sw vignette-differee" src="assets\/videos-sw\/[0-9a-f-]+\.jpg"[^>]* data-video="assets\/videos-sw\/[0-9a-f-]+\.mp4"/);
+  assert.ok(r.boucles >= 1 && r.boucles <= 4, 'de une à quatre boucles : ' + r.boucles);
+  assert.ok(r.jouent >= 1, 'au moins une boucle joue');
+  r.sources.forEach(src => assert.match(src, /^assets\/videos-sw\/[0-9a-f-]+\.mp4$/));
 }));
 
 test("frictions : confirmation de l'appli (plus de fenêtre du navigateur), série supprimée avec Annuler, quantité prête à taper, mot de passe plus gardé", () => avecAppli({}, async ({ page, dialogues }) => {
