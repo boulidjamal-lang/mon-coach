@@ -20255,6 +20255,21 @@ function svgSilhouetteGroupe(groupe) {
    VIDEOS_SW_BETA à false avant toute sortie publique (App Store, site ouvert) remet la règle de l'audit LEG-01. */
 let VIDEOS_SW_BETA = true;
 const SW_ASSET = 'https://api.smartworkout.app/asset/';
+/* Copies locales des vidéos SmartWorkout (autorisation déclarée par le propriétaire de l'appli le 27/11/2026, voir
+   AUDIT_2026-11_registre.md) : compressées en 720 px sans son, avec une image d'aperçu de 240 px, dans
+   assets/videos-sw/<identifiant>.mp4 / .jpg. Elles se lisent tout de suite, sans attendre leurs serveurs. */
+const SW_LOCAL = 'assets/videos-sw/';
+let _swLocales = null;
+function videoSWLocale(id) {
+  if (!_swLocales) _swLocales = new Set(typeof VIDEOS_SMARTWORKOUT === 'undefined' ? [] : Object.values(VIDEOS_SMARTWORKOUT).map(v => v[0]));
+  return id && _swLocales.has(id) ? SW_LOCAL + id : null;
+}
+// Lien d'une vidéo SmartWorkout (…/asset/video/<id>.mp4, posé dans Administration) -> sa copie locale quand on l'a.
+function lienSWLocal(url) {
+  const m = /api\.smartworkout\.app\/asset\/video\/([0-9a-f-]+)\.mp4/i.exec(url || '');
+  const l = m && videoSWLocale(m[1].toLowerCase());
+  return l ? l + '.mp4' : url;
+}
 function mediaTiersInterdit(url) {
   return (VIDEOS_SW_BETA ? /exercisedb\.dev|wger\.de/i : /smart-?workout|exercisedb\.dev|wger\.de/i).test(url || '');
 }
@@ -20263,13 +20278,13 @@ function videoSmartWorkout(id) {
   const t = VIDEOS_SMARTWORKOUT;
   return (Object.prototype.hasOwnProperty.call(t, id) && t[id]) || (Object.prototype.hasOwnProperty.call(t, cibleFusion(id)) && t[cibleFusion(id)]) || null;
 }
-function estVideoSmartWorkout(v) { return !!(v && v.video && /smart-?workout/i.test(v.video)); }
+function estVideoSmartWorkout(v) { return !!(v && v.video && (/smart-?workout/i.test(v.video) || v.video.startsWith(SW_LOCAL))); }
 // Lien d'image SmartWorkout collé à la place de la vidéo -> la vidéo de la même page (ou null).
 function videoDepuisLienImageSW(url) {
   if (!VIDEOS_SW_BETA || typeof SW_IMAGE_VERS_VIDEO === 'undefined') return null;
   const m = /\/asset\/image\/([a-f0-9-]{13})/i.exec(url || '');
   const id = m && SW_IMAGE_VERS_VIDEO[m[1].toLowerCase()];
-  return id ? SW_ASSET + 'video/' + id + '.mp4' : null;
+  return id ? (videoSWLocale(id) ? videoSWLocale(id) + '.mp4' : SW_ASSET + 'video/' + id + '.mp4') : null;
 }
 function estLienImage(url) {
   return /\/asset\/image\//i.test(url || '') || /\.(jpe?g|png|webp|gif|avif)(\?|#|$)/i.test(url || '');
@@ -20282,12 +20297,14 @@ function videoExercice(exo) {
   if (typeof exo.video === 'string') {
     if (!exo.video || mediaTiersInterdit(exo.video)) return null;
     if (estLienImage(exo.video)) { const v = videoDepuisLienImageSW(exo.video); return { video: v, poster: exo.video, page: v || exo.video }; }
-    return { video: exo.video, poster: exo.videoPoster && !mediaTiersInterdit(exo.videoPoster) ? exo.videoPoster : null, page: exo.video };
+    const local = VIDEOS_SW_BETA ? lienSWLocal(exo.video) : exo.video;
+    return { video: local, poster: exo.videoPoster && !mediaTiersInterdit(exo.videoPoster) ? exo.videoPoster : null, page: exo.video };
   }
   // Bêta : la vidéo SmartWorkout de l'exercice de la bibliothèque, quand il en a une.
   const sw = !exo.perso && videoSmartWorkout(exo.id);
   if (!sw) return null;
-  return { video: SW_ASSET + 'video/' + sw[0] + '.mp4', poster: sw[1] ? SW_ASSET + 'image/' + sw[1] : null, page: 'https://smartworkout.app/fr/bibliotheque-d-exercices/' + sw[2] };
+  const loc = videoSWLocale(sw[0]);
+  return { video: loc ? loc + '.mp4' : SW_ASSET + 'video/' + sw[0] + '.mp4', poster: loc ? loc + '.jpg' : sw[1] ? SW_ASSET + 'image/' + sw[1] : null, page: 'https://smartworkout.app/fr/bibliotheque-d-exercices/' + sw[2] };
 }
 function mediaExercice(exo) {
   const m = exo.img && exo.img.length ? { img: exo.img, ins: exo.ins || [] } : EXERCICE_MEDIA[exo.id];
@@ -20334,8 +20351,9 @@ function medaillonExercice(exo, anime) {
     return `<img class="vignette-3d${boucle ? ' vignette-differee' : ''}" src="${v3d}" alt="" decoding="async" loading="lazy"${boucle} data-repli="${escapeHtml(exo.groupe || '')}">`;
   }
   const sw = !exo.perso && videoExercice(exo);
-  // Vidéo ajoutée dans Administration : en séance, elle joue en boucle.
-  if (anime && sw && sw.video && typeof exo.video === 'string') return videoVignetteHTML(sw.video, sw.poster, true);
+  // Vidéo ajoutée dans Administration, ou vidéo SmartWorkout (bêta) : en séance, elle joue en boucle ; dans les
+  // listes, son image d'aperçu (chargée près de l'écran seulement).
+  if (anime && sw && sw.video && (typeof exo.video === 'string' || estVideoSmartWorkout(sw))) return videoVignetteHTML(sw.video, sw.poster, true);
   // data-repli : image distante introuvable (hors ligne, lien mort) → la
   // silhouette du groupe, plutôt que l'icône d'image cassée (voir plus bas).
   const repli = ` data-repli="${escapeHtml(exo.groupe || '')}"`;
@@ -25145,7 +25163,11 @@ const ATLAS_FICHIERS = { moteur: 'assets/atlas/atlas3d.js', mouvements: 'assets/
    demande). Un exercice fusionné dans un autre joue le mouvement de celui qui l'a remplacé, comme partout ailleurs
    dans l'appli. Un exercice créé par l'utilisateur ou venu de la communauté, ou un ancien exercice sorti de la
    bibliothèque, montre ses muscles, corps immobile. Renvoie l'identifiant dont jouer le mouvement, ou null. */
+/* Mouvements en 3D des exercices (fiche, miniatures des listes, atlas ouvert sur un exercice) : coupés pour l'instant,
+   les vidéos SmartWorkout (bêta) les remplacent ; l'atlas des muscles reste. true les remet partout. */
+let MOUVEMENTS_3D = false;
 function mouvementExercice(id) {
+  if (!MOUVEMENTS_3D) return null;
   const cible = cibleFusion(id);
   return IDS_EXERCICES_LIVRES.has(cible) ? cible : IDS_EXERCICES_LIVRES.has(id) ? id : null;
 }
