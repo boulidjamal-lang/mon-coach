@@ -145,7 +145,7 @@ rouge = (lisse01(tmax - theta, 0, 14) * (np.abs(u) < 1) * (V0[:, 2] > 1.45) * (a
 zz = V0[:, 2]; larg = 0.10 + 0.13 * lisse01(zz, 1.10, 1.42)
 dors = lisse01(V0[:, 1] - 0.0, 0.0, 0.05) * lisse01(zz, 1.08, 1.16) * (1 - lisse01(zz, 1.44, 1.50)) * lisse01(ax, 0.04, 0.08) * (1 - lisse01(ax - larg, -0.02, 0.01)) * (ax < 0.30)
 rouge = np.maximum(rouge, dors * float(os.environ.get('DORSAL', '0'))).astype(np.float32)
-if os.environ.get('COULEURS'):
+if os.environ.get('COULEURS') and os.environ.get('SANS_COULEUR') != '1':
     import json as _j
     Dm = np.load(os.environ['NPZ_MANNEQUIN']); ST = _j.loads(str(Dm['meta']))['structures']
     CC = _j.load(open(os.environ['COULEURS'])); cmap = CC['couleurs'].get(os.environ['QUOI'], {})
@@ -190,6 +190,7 @@ if os.environ.get('COULEURS'):
     if os.environ.get('DEBUG_ROUGE'):
         zz_ = V0[:, 2]; print('rouge z<1.0 :', int(((rouge > 0.1) & (zz_ < 1.0)).sum()), '| z des rouges du bas du dos', np.percentile(zz_[(rouge > 0.1) & (zz_ < 1.25) & (V0[:, 1] > 0)], [0, 10, 50]).round(3) if ((rouge > 0.1) & (zz_ < 1.25) & (V0[:, 1] > 0)).any() else '-', '| muscles :', sorted({ST[m]['id'] for m in mu[(rouge > 0.1) & (zz_ < 1.0)] if m >= 0})[:12], flush=True)
     print('muscles en couleur :', int((force > 0).sum()), 'structures,', int((rouge > 0.05).sum()), 'sommets', flush=True)
+if os.environ.get('SANS_COULEUR') == '1': rouge = np.zeros(len(V0), np.float32)
 ca = corps.data.color_attributes.new('travail', 'FLOAT_COLOR', 'POINT')
 ca.data.foreach_set('color', np.c_[rouge, rouge, rouge, np.ones_like(rouge)].ravel())
 
