@@ -473,6 +473,7 @@ test('la bibliothèque s\'ouvre vite et ne lance que quelques vidéos', () => av
 }));
 
 test("un lien SmartWorkout collé comme vidéo n'est plus affiché (site comme app) ; une autre image reste une image", () => avecAppli({}, async ({ page }) => {
+  await page.evaluate(() => { VIDEOS_SW_BETA = false; });   // règle hors bêta : sans les vidéos SmartWorkout
   const r = await page.evaluate(() => {
     const IMG_AB_COASTER = 'https://api.smartworkout.app/asset/image/4e939dab-2978-4d2f-82f0-74cafb543e9a';
     const connu = videoExercice({ id: 'x', video: IMG_AB_COASTER });
@@ -3976,6 +3977,7 @@ test('vidéos HD : préchargées au démarrage de la séance, reprises telles qu
 }));
 
 test("une vidéo ou des photos posées autrefois dans Administration ne remplacent plus la 3D d'un exercice de la bibliothèque (miniature, fiche, séance) ; toute copie de SmartWorkout est écartée", () => avecAppli({}, async ({ page }) => {
+  await page.evaluate(() => { VIDEOS_SW_BETA = false; });   // règle hors bêta : sans les vidéos SmartWorkout
   const r = await page.evaluate(() => {
     // Les corrections telles que le serveur les rend (exercices_base_overrides) : une vidéo hébergée ailleurs
     // que chez SmartWorkout, des photos.
@@ -4007,8 +4009,9 @@ test("une vidéo ou des photos posées autrefois dans Administration ne remplace
   assert.deepEqual([r.copies, r.autre], [[true, true, true], false]);
 }));
 
-test("muscle-up : la fiche montre la vidéo filmée du corps 3D, avec le crédit CC BY de son auteur, et la 3D reste à portée d'un bouton", () => avecAppli({}, async ({ page }) => {
+test("vidéo filmée du corps 3D (aucune pour l'instant) : posée sur un exercice, la fiche la montre avec le crédit CC BY de son auteur, et la 3D reste à portée d'un bouton", () => avecAppli({}, async ({ page }) => {
   const r = await page.evaluate(() => {
+    VIDEOS_SW_BETA = false; VIDEOS_CORPS['sw-muscle-up'] = 'assets/videos-corps/sw-muscle-up.mp4';
     afficherFicheExerciceBiblio('sw-muscle-up'); choisirOngletFiche('technique');
     const fiche = document.getElementById('fiche-exercice-container');
     const v = fiche.querySelector('.fiche-exo-film video');
@@ -4027,8 +4030,34 @@ test("muscle-up : la fiche montre la vidéo filmée du corps 3D, avec le crédit
   });
   assert.deepEqual(r, { src: 'assets/videos-corps/sw-muscle-up.mp4', muet: true, enLigne: true, credit: true, troisD: false,
     apres3D: { troisD: true, retour: true }, retourFilm: true, autre: { film: false, troisD: true } });
-  // Le fichier est bien dans le dépôt (sinon la fiche montrerait un cadre vide).
-  assert.ok(require('node:fs').statSync(require('node:path').join(__dirname, '..', 'assets', 'videos-corps', 'sw-muscle-up.mp4')).size > 10000);
+}));
+
+test("bêta : les fiches montrent la vidéo SmartWorkout (lue sur leurs serveurs, source citée), l'agrandissement aussi ; la 3D reste à un bouton ; un exercice maison n'en a pas", () => avecAppli({}, async ({ page }) => {
+  const r = await page.evaluate(() => {
+    const res = { beta: VIDEOS_SW_BETA };
+    afficherFicheExerciceBiblio('sw-crunch-avec-ramene-de-genoux'); choisirOngletFiche('technique');
+    const f = document.getElementById('fiche-exercice-container');
+    const place = f.querySelector('.fiche-exo-video .hd-place, .fiche-exo-video video');
+    res.url = place && (place.dataset.url || place.getAttribute('src'));
+    res.source = (f.querySelector('.fiche-exo-note-source a') || {}).href || null;
+    res.troisD = !!f.querySelector('#fiche-exo-3d');
+    basculerMediaFiche('sw-crunch-avec-ramene-de-genoux', '3d');
+    res.apres3D = { troisD: !!f.querySelector('#fiche-exo-3d'), retour: /Voir la vidéo/.test(f.textContent) };
+    basculerMediaFiche('sw-crunch-avec-ramene-de-genoux', 'sw');
+    res.retour = !!f.querySelector('.fiche-exo-video');
+    fermerModal('fiche-exercice-modal');
+    agrandirVideoExercice('sw-crunch-avec-ramene-de-genoux');
+    res.zoom = /api\.smartworkout\.app\/asset\/video\//.test(document.getElementById('video-zoom-media').innerHTML);
+    fermerVideoExercice();
+    res.maison = videoExercice({ id: 'maison', nom: 'Maison', groupe: 'biceps', perso: true });
+    VIDEOS_SW_BETA = false;
+    res.horsBeta = videoExercice(trouverExercice('sw-crunch-avec-ramene-de-genoux'));
+    return res;
+  });
+  assert.equal(r.beta, true);
+  assert.match(r.url, /^https:\/\/api\.smartworkout\.app\/asset\/video\/[0-9a-f-]+\.mp4$/);
+  assert.match(r.source, /^https:\/\/smartworkout\.app\//);
+  assert.deepEqual([r.troisD, r.apres3D, r.retour, r.zoom, r.maison, r.horsBeta], [false, { troisD: true, retour: true }, true, true, null, null]);
 }));
 
 test("frictions : confirmation de l'appli (plus de fenêtre du navigateur), série supprimée avec Annuler, quantité prête à taper, mot de passe plus gardé", () => avecAppli({}, async ({ page, dialogues }) => {
@@ -6914,6 +6943,7 @@ test('app iOS, Pro en vente : Pro se paie via Apple (prix d\'Apple, achat relié
 }));
 
 test("app iOS : ni vidéo SmartWorkout, ni GIF ExerciseDB, ni image wger ; les autres images gardent leur source", () => avecAppli({ natif: true }, async ({ page }) => {
+  await page.evaluate(() => { VIDEOS_SW_BETA = false; });   // règle hors bêta : sans les vidéos SmartWorkout
   const requetes = [];
   page.on('request', r => requetes.push(r.url()));
   const r = await page.evaluate(async () => {
@@ -6965,6 +6995,7 @@ test("app iOS : ni vidéo SmartWorkout, ni GIF ExerciseDB, ni image wger ; les a
 }));
 
 test("site : comme l'app, ni vidéo SmartWorkout ni GIF ExerciseDB (schéma des muscles à la place) ; chaque image d'exercice cite sa source", () => avecAppli({}, async ({ page }) => {
+  await page.evaluate(() => { VIDEOS_SW_BETA = false; });   // règle hors bêta : sans les vidéos SmartWorkout
   const r = await page.evaluate(() => {
     window.WebGL2RenderingContext = undefined;   // la fiche sans le mouvement en 3D : la photo, ou le corps dessiné
     const fiche = id => {
@@ -7067,6 +7098,7 @@ test("miniatures 3D animées : la boucle du thème affiché se pose sur l'image 
 }));
 
 test("listes : la miniature 3D de chaque exercice sur le fond de la fiche (clair ou sombre) ; en séance, la toucher ouvre le mouvement en 3D", () => avecAppli({ natif: true }, async ({ page }) => {
+  await page.evaluate(() => { VIDEOS_SW_BETA = false; });   // règle hors bêta : sans les vidéos SmartWorkout
   const r = await page.evaluate(async () => {
     const res = {};
     ouvrirBibliotheque();
@@ -9040,6 +9072,7 @@ test('atlas 3D : les cartes viennent de l\'historique réel, et restent neutres 
 test('atlas 3D : la fiche d\'un exercice montre son mouvement dès l\'ouverture, et l\'atlas s\'ouvre devant elle', async () => {
   // Sans WebGL 2 : la fiche garde la photo ou le corps dessiné, et rien ne se charge.
   await avecAppli({}, async ({ page }) => {
+  await page.evaluate(() => { VIDEOS_SW_BETA = false; });   // règle hors bêta : sans les vidéos SmartWorkout
     const r = await page.evaluate(() => {
       const sauve = window.WebGL2RenderingContext; window.WebGL2RenderingContext = undefined;
       afficherFicheExerciceBiblio('e265');
@@ -9052,6 +9085,7 @@ test('atlas 3D : la fiche d\'un exercice montre son mouvement dès l\'ouverture,
   const nav = await lancerNavigateur(['--use-gl=angle', '--use-angle=swiftshader', '--enable-unsafe-swiftshader']);
   try {
     const { page, erreurs, ctx } = await ouvrirAppli(nav, { https: true });
+    await page.evaluate(() => { VIDEOS_SW_BETA = false; });   // règle hors bêta : sans les vidéos SmartWorkout
     const webgl = await page.evaluate(() => !!document.createElement('canvas').getContext('webgl2'));
     if (!webgl) { await ctx.close(); return; }   // pas de rendu 3D dans ce navigateur de test : rien à vérifier de plus
     const monte = () => page.waitForFunction(() => ficheMouvement && document.querySelector('#fiche-exo-3d canvas'), null, { timeout: 120000 });
@@ -9414,6 +9448,7 @@ test('atlas 3D : bras écartés, la peau tendue sous l\'aisselle laisse voir le 
   const nav = await lancerNavigateur(['--use-gl=angle', '--use-angle=swiftshader', '--enable-unsafe-swiftshader']);
   try {
     const { page, erreurs, ctx } = await ouvrirAppli(nav, { https: true });
+    await page.evaluate(() => { VIDEOS_SW_BETA = false; });   // règle hors bêta : sans les vidéos SmartWorkout
     if (!await page.evaluate(() => !!document.createElement('canvas').getContext('webgl2'))) { await ctx.close(); return; }   // pas de rendu 3D ici
     await page.evaluate(() => afficherFicheExerciceBiblio('sw-tirage-vertical-a-la-poulie'));
     await page.waitForFunction(() => ficheMouvement && document.querySelector('#fiche-exo-3d canvas'), null, { timeout: 120000 });
