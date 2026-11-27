@@ -20296,9 +20296,12 @@ function videoExercice(exo) {
   if (!exo) return null;
   if (typeof exo.video === 'string') {
     if (!exo.video || mediaTiersInterdit(exo.video)) return null;
-    if (estLienImage(exo.video)) { const v = videoDepuisLienImageSW(exo.video); return { video: v, poster: exo.video, page: v || exo.video }; }
+    // Copie locale d'une vidéo SmartWorkout : son image d'aperçu locale sert de miniature (sans elle, une liste montre
+    // une vidéo arrêtée, que l'iPhone laisse vide).
+    const apercuLocal = v => v && v.startsWith(SW_LOCAL) ? v.replace(/\.mp4$/, '.jpg') : null;
+    if (estLienImage(exo.video)) { const v = videoDepuisLienImageSW(exo.video); return { video: v, poster: apercuLocal(v) || exo.video, page: v || exo.video }; }
     const local = VIDEOS_SW_BETA ? lienSWLocal(exo.video) : exo.video;
-    return { video: local, poster: exo.videoPoster && !mediaTiersInterdit(exo.videoPoster) ? exo.videoPoster : null, page: exo.video };
+    return { video: local, poster: (exo.videoPoster && !mediaTiersInterdit(exo.videoPoster) ? exo.videoPoster : null) || apercuLocal(local), page: exo.video };
   }
   // Bêta : la vidéo SmartWorkout de l'exercice de la bibliothèque, quand il en a une.
   const sw = !exo.perso && videoSmartWorkout(exo.id);
