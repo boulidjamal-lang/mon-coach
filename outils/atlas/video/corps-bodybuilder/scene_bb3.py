@@ -498,8 +498,58 @@ def quat(q):
     x, y, z, w = q
     return np.array([[1 - 2 * (y * y + z * z), 2 * (x * y - w * z), 2 * (x * z + w * y)], [2 * (x * y + w * z), 1 - 2 * (x * x + z * z), 2 * (y * z - w * x)], [2 * (x * z - w * y), 2 * (y * z + w * x), 1 - 2 * (x * x + y * y)]])
 
-def placer(i):
-    im = MV['images'][i]; pw = app2bl(im['pw'])
+# Barres fixes (traction, muscle-up…) : le corps de l'appli est plus fin que ce corps-ci ; là où le mouvement fait
+# frôler la barre (cuisses et bassin en haut du muscle-up), ce corps la traverserait. Le corps entier recule alors,
+# image par image, juste de quoi rester devant la barre (les bras et les mains, qui la tiennent, ne comptent pas).
+_bras = np.zeros(len(V0)); _gn = {g.index: g.name for g in corps.vertex_groups}
+for _v in corps.data.vertices:
+    for _g in _v.groups:
+        if _gn[_g.group].startswith(('bras', 'avbras', 'clav')): _bras[_v.index] += _g.weight
+HORS_BRAS = _bras < 0.3
+def ecart_barres(im, pw, dec):
+    # pour chaque barre fixe : le corps reste du côté où est son squelette (bassin, dos, cuisses le plus près de la
+    # barre) ; on mesure, à la hauteur de la barre et entre les mains, où commence la peau de ce côté, et le corps
+    # recule jusqu'à laisser la barre dehors.
+    if os.environ.get('ANTI_BARRE', '1') != '1': return None
+    from mathutils.bvhtree import BVHTree
+    bv_ = BVHTree.FromObject(corps, bpy.context.evaluated_depsgraph_get()); tot = np.zeros(3)
+    Mw = np.array(corps.matrix_world); Mi = np.linalg.inv(Mw)
+    mains_ = [pw[ix['main.G']], pw[ix['main.D']]]
+    for f in im['formes']:
+        if f['forme'] != 'cylindre' or f.get('tenu') or max(f['s']) < 0.5: continue
+        Rf = B3 @ quat(f['q']); ax = unit(Rf[:, 1]); L_ = f['s'][1] / 2; c_ = app2bl(f['p'])
+        if abs(ax[2]) > 0.3: continue
+        R_ = max(f['s'][0], f['s'][2]) + float(os.environ.get('MARGE_BARRE', '0.012'))
+        n_ = unit(np.cross([0, 0, 1.0], ax))
+        tm = sorted((m - c_) @ ax for m in mains_)
+        lo_, hi_ = max(-L_, tm[0] + 0.09), min(L_, tm[1] - 0.09)
+        if hi_ <= lo_: continue
+        arts = [pw[ix[a]] for a in ('bassin', 'L3', 'thorax', 'cou1', 'femur.G', 'femur.D', 'tibia.G', 'tibia.D')]
+        def dist_axe(q): d = q - c_; return np.linalg.norm(d - (d @ ax) * ax)
+        proche = min(arts, key=dist_axe); h_os = (proche - c_) @ n_
+        if abs(h_os) < 0.005: continue
+        s_ = np.sign(h_os); d_ = s_ * n_
+        besoin = 0.0
+        for t in np.arange(lo_, hi_ + 1e-6, 0.02):
+            for dzv in (-R_ * 0.7, 0.0, R_ * 0.7):
+                o_ = c_ + ax * t + np.array([0, 0, dzv]) - d_ * 0.6
+                ol = Mi[:3, :3] @ o_ + Mi[:3, 3]; dl = Mi[:3, :3] @ d_
+                loc, _, _, dd = bv_.ray_cast(Vector(ol), Vector(unit(dl)), 1.2)
+                if loc is None: continue
+                h_front = dd - 0.6          # où commence la peau, compté depuis la barre, du côté du squelette
+                if h_front > 0.45: continue
+                besoin = max(besoin, R_ - h_front)
+        if besoin > 0: tot = tot + d_ * min(besoin, float(os.environ.get('RECUL_MAX', '0.25')))
+    return tot if np.linalg.norm(tot) > 1e-4 else None
+def ik_bras(S, H, E0, l1, l2):
+    # coude placé pour un bras de longueurs l1, l2 entre l'épaule S et la main H, dans le plan du coude d'origine E0
+    d = H - S; L = np.linalg.norm(d)
+    if L < 1e-6: return E0
+    u = d / L; L = min(L, (l1 + l2) * 0.999)
+    a = (l1 * l1 - l2 * l2 + L * L) / (2 * L); hh = math.sqrt(max(l1 * l1 - a * a, 0))
+    w = (E0 - S) - ((E0 - S) @ u) * u; w = unit(w) if np.linalg.norm(w) > 1e-6 else unit(np.cross(u, [1.0, 0, 0]))
+    return S + u * a + w * hh
+def poser_tout(pw):
     R, tete, queue = poser_corps(pw)
     if ANCRE == 'mains':
         dec = (pw[ix['main.G']] + pw[ix['main.D']]) / 2 - (queue['avbrasG'] + queue['avbrasD']) / 2
@@ -511,6 +561,31 @@ def placer(i):
     for b in ORDRE:
         X = np.eye(4); X[:3, :3] = R[b] @ REST[b][:3, :3]; X[:3, 3] = tete[b] + dec
         arm.pose.bones[b].matrix = Matrix(X.tolist()); bpy.context.view_layer.update()
+    return R, tete, queue, dec
+TOT_LISSE = None; DERNIER_RECUL = np.zeros(3)
+def placer(i):
+    im = MV['images'][i]; pw = app2bl(im['pw'])
+    R, tete, queue, dec = poser_tout(pw)
+    if ANCRE == 'mains' and any(f['forme'] == 'cylindre' and not f.get('tenu') for f in im['formes']):
+        # le tronc recule de la barre ; les mains restent dessus, les bras se replient (coude recalculé)
+        pw0 = pw.copy(); tot = np.zeros(3)
+        for passe in range(int(os.environ.get('PASSES_BARRE', '3'))):
+            if TOT_LISSE is not None:
+                if passe or np.linalg.norm(TOT_LISSE[i]) < 1e-4: break
+                tot = TOT_LISSE[i].copy()
+            else:
+                sh = ecart_barres(im, pw, dec)
+                if sh is None: break
+                tot = tot + sh
+            pw = pw0 + tot
+            for c in 'GD':
+                for n in [k for k in ART if k.endswith('.' + c) and (k.startswith('main') or k.startswith('doigt') or k.startswith('pouce'))]: pw[ix[n]] = pw0[ix[n]]
+                S_, E_, H_ = pw[ix['humerus.' + c]], pw0[ix['ulna.' + c]] + tot, pw0[ix['main.' + c]]
+                l1 = np.linalg.norm(pw0[ix['ulna.' + c]] - pw0[ix['humerus.' + c]]); l2 = np.linalg.norm(pw0[ix['main.' + c]] - pw0[ix['ulna.' + c]])
+                pw[ix['ulna.' + c]] = ik_bras(S_, H_, E_, l1, l2)
+            R, tete, queue, dec = poser_tout(pw)
+        if os.environ.get('DEBUG_BARRE') and np.linalg.norm(tot) > 0: print('barre : image', i, 'recul', np.round(tot, 3), flush=True)
+        global DERNIER_RECUL; DERNIER_RECUL = tot
     global DERNIER; DERNIER = (tete, dec, pw)
     poignet = {c: queue['avbras' + c] + dec for c in 'GD'}
     BZ = corps_evalue() if COUT else None
@@ -606,6 +681,17 @@ for cx in (lo[0], hi[0]):
         for cz in (lo[2], hi[2]):
             q = np.array([cx, cy, cz]) - cible
             dist = max(dist, abs(q @ dr) * MARGE / tanx + q @ dirc, abs(q @ up) * MARGE / tany + q @ dirc)
+if ANCRE == 'mains' and any(f['forme'] == 'cylindre' and not f.get('tenu') for im_ in MV['images'] for f in im_['formes']) and os.environ.get('ANTI_BARRE', '1') == '1':
+    # recul de la barre mesuré sur toutes les images, puis lissé dans le temps (enveloppe haute puis moyenne douce) :
+    # pas d'à-coup quand le corps commence ou finit de reculer, et jamais moins que le recul nécessaire autour.
+    reculs = []
+    for i_ in range(len(MV['images'])):
+        DERNIER_RECUL = np.zeros(3); placer(i_); reculs.append(DERNIER_RECUL.copy())
+    reculs = np.array(reculs); n_ = len(reculs); k_ = int(os.environ.get('FENETRE_BARRE', '4'))
+    env_ = np.array([reculs[max(0, j - k_):j + k_ + 1][np.argmax(np.linalg.norm(reculs[max(0, j - k_):j + k_ + 1], axis=1))] for j in range(n_)])
+    g_ = np.exp(-0.5 * (np.arange(-2 * k_, 2 * k_ + 1) / k_) ** 2); g_ /= g_.sum()
+    TOT_LISSE = np.stack([np.convolve(np.pad(env_[:, c], 2 * k_, mode='edge'), g_, mode='valid') for c in range(3)], 1)
+    print('recul de la barre lissé : max', round(float(np.linalg.norm(TOT_LISSE, axis=1).max()), 3), flush=True)
 if os.environ.get('CADRE', 'serre') == 'serre' and not os.environ.get('ZOOM'):
     # Cadrage serré : on pose le corps sur une image sur cinq et on cadre ce qui est vraiment rendu (corps, mains, pieds,
     # matériel) au lieu de la boîte large de l'appli, pour que le corps remplisse l'image.
