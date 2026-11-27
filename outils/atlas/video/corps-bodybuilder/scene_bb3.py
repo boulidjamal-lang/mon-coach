@@ -234,6 +234,62 @@ mat_fonte.node_tree.nodes['Principled BSDF'].inputs['Base Color'].default_value 
 MV = json.load(open(MOUV)); ART = MV['articulations']; ix = {n: i for i, n in enumerate(ART)}
 def app2bl(P): P = np.asarray(P, float); return np.stack([P[..., 0], -P[..., 2], P[..., 1]], -1)
 H = np.load(MAINS)
+class _Tableaux(dict):
+    @property
+    def files(self): return list(self.keys())
+def _orthonormer(M):
+    U_, _, Vt_ = np.linalg.svd(M); R_ = U_ @ Vt_
+    if np.linalg.det(R_) < 0: U_[:, -1] *= -1; R_ = U_ @ Vt_
+    return R_
+def retemporiser(MV, H):
+    """Rythme fluide : le mouvement de l'appli ralentit presque à l'arrêt à chaque pose clé et tient de longues pauses.
+    On garde sa durée, mais chaque phase (entre deux pauses) est parcourue d'un seul trait à vitesse douce (lente au départ
+    et à l'arrivée seulement), et les pauses sont raccourcies. Images, matériel, mains et pieds greffés sont interpolés."""
+    imgs = MV['images']; n = len(imgs)
+    P = np.array([im['pw'] for im in imgs], float)
+    d = np.linalg.norm(np.diff(P, axis=0), axis=2).sum(1)          # « quantité de mouvement » entre deux images
+    calme = d < 0.02 * max(d.max(), 1e-9)
+    # phases : suites d'intervalles en mouvement ; pauses : suites d'intervalles calmes
+    segs = []; j = 0
+    while j < n - 1:
+        k = j
+        while k < n - 1 and calme[k] == calme[j]: k += 1
+        segs.append((bool(calme[j]), j, k)); j = k
+    pause_max = int(os.environ.get('PAUSE_MAX', '5'))
+    t_nouv = []
+    for est_calme, a_, b_ in segs:
+        nb = b_ - a_
+        if est_calme:
+            m_ = min(nb, pause_max); t_nouv += [a_ + (b_ - a_) * q / max(m_, 1) for q in range(m_)]
+        else:
+            s_cum = np.concatenate([[0], np.cumsum(d[a_:b_])]); tot = s_cum[-1]
+            for q in range(nb):
+                u = q / nb; u = u * u * (3 - 2 * u)                    # vitesse douce sur toute la phase
+                t_nouv.append(float(np.interp(u * tot, s_cum, np.arange(a_, b_ + 1))))
+    t_nouv.append(n - 1)
+    t_nouv = np.array(t_nouv)
+    def interp_img(t):
+        i0 = int(np.floor(t)); i1 = min(i0 + 1, n - 1); f = t - i0; A_, B_ = imgs[i0], imgs[i1]
+        im = dict(A_); im['pw'] = ((1 - f) * np.array(A_['pw']) + f * np.array(B_['pw'])).tolist()
+        fo = []
+        for fa, fb in zip(A_['formes'], B_['formes']):
+            g = dict(fa); g['p'] = ((1 - f) * np.array(fa['p']) + f * np.array(fb['p'])).tolist()
+            qa, qb = np.array(fa['q'], float), np.array(fb['q'], float)
+            if qa @ qb < 0: qb = -qb
+            q_ = (1 - f) * qa + f * qb; g['q'] = (q_ / max(np.linalg.norm(q_), 1e-9)).tolist(); fo.append(g)
+        im['formes'] = fo
+        return im
+    MV = dict(MV); MV['images'] = [interp_img(t) for t in t_nouv]
+    H2 = _Tableaux({k: H[k] for k in H.files})
+    for k in H.files:
+        if k.startswith(('pos_', 'poignet_', 'rot_')):
+            A_ = H[k].astype(float); i0 = np.floor(t_nouv).astype(int); i1 = np.minimum(i0 + 1, n - 1); f = (t_nouv - i0).reshape((-1,) + (1,) * (A_.ndim - 1))
+            V_ = (1 - f) * A_[i0] + f * A_[i1]
+            if k.startswith('rot_'): V_ = np.array([_orthonormer(M) for M in V_])
+            H2[k] = V_
+    print('rythme : %d images, pauses ramenées à %d images' % (len(t_nouv), pause_max), flush=True)
+    return MV, H2
+if os.environ.get('FLUIDE') == '1': MV, H = retemporiser(MV, H)
 REST = {b.name: np.array(b.matrix_local) for b in ad.bones}
 def unit(v): return v / max(np.linalg.norm(v), 1e-9)
 AV = np.array([0, -1, 0.0])
@@ -562,9 +618,34 @@ def poser_tout(pw):
         X = np.eye(4); X[:3, :3] = R[b] @ REST[b][:3, :3]; X[:3, 3] = tete[b] + dec
         arm.pose.bones[b].matrix = Matrix(X.tolist()); bpy.context.view_layer.update()
     return R, tete, queue, dec
+def _rot(axe, ang):
+    k = unit(axe); K = np.array([[0, -k[2], k[1]], [k[2], 0, -k[0]], [-k[1], k[0], 0]])
+    return np.eye(3) + math.sin(ang) * K + (1 - math.cos(ang)) * K @ K
+def _flexion_hanche(pw):
+    t_ = unit(pw[ix['L3']] - pw[ix['bassin']]); g_ = unit((pw[ix['tibia.G']] + pw[ix['tibia.D']]) / 2 - (pw[ix['femur.G']] + pw[ix['femur.D']]) / 2)
+    lat = unit(pw[ix['femur.G']] - pw[ix['femur.D']]); f_ = unit(np.cross(lat, t_))
+    return math.atan2(g_ @ f_, g_ @ -t_), t_, f_
+_pw0 = app2bl(MV['images'][0]['pw'])
+_ph0, _t0, _f0 = _flexion_hanche(_pw0)
+# sens « avant » : du côté où pointent les orteils à la première image
+_SENS_AV = 1.0 if (_pw0[ix['orteils.G']] - _pw0[ix['pied.G']]) @ _f0 >= 0 else -1.0
+def plier_colonne(pw):
+    """Colonne vivante : le mouvement de l'appli garde le tronc d'un bloc. On le plie avec les hanches : jambes devant
+    (balancier, passage au-dessus de la barre) le dos s'arrondit, jambes derrière il se cambre. 45 % en bas du dos,
+    55 % en haut ; les bras gardent leurs articulations (épaules, coudes, mains restent où le mouvement les met)."""
+    k_ = float(os.environ.get('COLONNE', '0'))
+    if k_ <= 0: return pw
+    ph, t_, f_ = _flexion_hanche(pw); f_ = f_ * _SENS_AV
+    b_ = float(np.clip(k_ * _SENS_AV * (ph - _ph0), math.radians(-18), math.radians(24)))
+    axe = np.cross(t_, f_); pw = pw.copy()
+    R1 = _rot(axe, 0.45 * b_); L3 = pw[ix['L3']]
+    for n_ in ('thorax', 'cou1', 'tete'): pw[ix[n_]] = L3 + R1 @ (pw[ix[n_]] - L3)
+    R2 = _rot(axe, 0.55 * b_); T_ = pw[ix['thorax']]
+    for n_ in ('cou1', 'tete'): pw[ix[n_]] = T_ + R2 @ (pw[ix[n_]] - T_)
+    return pw
 TOT_LISSE = None; DERNIER_RECUL = np.zeros(3)
 def placer(i):
-    im = MV['images'][i]; pw = app2bl(im['pw'])
+    im = MV['images'][i]; pw = plier_colonne(app2bl(im['pw']))
     R, tete, queue, dec = poser_tout(pw)
     if ANCRE == 'mains' and any(f['forme'] == 'cylindre' and not f.get('tenu') for f in im['formes']):
         # le tronc recule de la barre ; les mains restent dessus, les bras se replient (coude recalculé)
@@ -700,6 +781,8 @@ if os.environ.get('CADRE', 'serre') == 'serre' and not os.environ.get('ZOOM'):
         placer(i_); dg_ = bpy.context.evaluated_depsgraph_get(); dg_.update()
         for o_ in sc.objects:
             if o_.type != 'MESH' or o_.name == 'sol' or o_.hide_render: continue
+            # CADRE_CORPS=1 : on cadre le corps (et ses mains, ses pieds) ; le matériel peut sortir de l'image
+            if os.environ.get('CADRE_CORPS') == '1' and not (o_ == corps or o_ in mains.values()): continue
             e_ = o_.evaluated_get(dg_); m_ = e_.to_mesh(); n_ = len(m_.vertices)
             if n_:
                 c_ = np.zeros(n_ * 3); m_.vertices.foreach_get('co', c_); c_ = c_.reshape(-1, 3)[::3]
@@ -753,6 +836,7 @@ if os.environ.get('CARTE'):
     sys.exit(0)
 a, b = (IMAGES.split('-') + [None])[:2]
 liste = range(int(a), int(b) + 1) if b else [int(x) for x in IMAGES.split(',')]
+liste = [i for i in liste if i < len(MV['images'])]   # rythme fluide : moins d'images que le mouvement d'origine
 for i in liste:
     placer(i); sc.render.filepath = os.path.join(SORTIE, 'f%03d.png' % i); bpy.ops.render.render(write_still=True)
     print('image', i, flush=True)

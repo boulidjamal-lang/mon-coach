@@ -1,0 +1,2 @@
+# Muscle-up (vidéo de la fiche) :
+# FLUIDE=1 COLONNE=0.4 VUE=310,10 CADRE_CORPS=1 MARGE=1.12 FORMAT=720,720 SORTIE_LOT=videos-appli ./lot.sh sw-muscle-up
