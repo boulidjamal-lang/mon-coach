@@ -69,12 +69,18 @@ def rentrer_pieds(V1):
 
     return V1
 
+BRAS_PLUS = float(os.environ.get('BRAS_PLUS', '0'))
+if BRAS_PLUS:
+    axb = np.abs(V0[:, 0]); haut_b = V0[:, 2] > 1.30
+    t_ = np.clip((axb - 0.26) / (0.42 - 0.26), 0, 1); t_ = t_ * t_ * (3 - 2 * t_)
+    V0 = V0.copy(); V0[:, 0] += np.sign(V0[:, 0]) * BRAS_PLUS * t_ * haut_b
+    corps.data.vertices.foreach_set('co', V0.ravel()); corps.data.update()
 # ---------------------------------------------------------------- squelette (pose en croix du modèle)
 J = {}
 for c, s in (('G', 1), ('D', -1)):
     J['clav' + c] = ((0.03 * s, 0.03, 1.555), (0.205 * s, 0.06, 1.585))
-    J['bras' + c] = ((0.205 * s, 0.06, 1.588), (0.45 * s, 0.062, 1.59))
-    J['avbras' + c] = ((0.45 * s, 0.062, 1.59), (0.745 * s, 0.03, 1.598))
+    J['bras' + c] = ((0.205 * s, 0.06, 1.588), ((0.45 + BRAS_PLUS) * s, 0.062, 1.59))
+    J['avbras' + c] = (((0.45 + BRAS_PLUS) * s, 0.062, 1.59), ((0.745 + BRAS_PLUS) * s, 0.03, 1.598))
     J['cuisse' + c] = ((0.10 * s, 0.0, 0.95), (0.15 * s, -0.005, 0.56))
     J['jambe' + c] = ((0.15 * s, -0.005, 0.56), (0.175 * s, 0.03, 0.09))
     J['pied' + c] = ((0.175 * s, 0.03, 0.09), (0.19 * s, -0.12, 0.02))
@@ -111,8 +117,22 @@ if os.environ.get('LISSE_POIDS'):
         bpy.ops.object.vertex_group_smooth(group_select_mode='ACTIVE', factor=fac, repeat=int(rep))
     bpy.ops.object.vertex_group_normalize_all(lock_active=False)
     bpy.ops.object.mode_set(mode='OBJECT')
+if float(os.environ.get('ARTIC', '0')) > 0:
+    centres = []
+    for sg in (1, -1):
+        centres += [(0.205 * sg, 0.06, 1.588, float(os.environ.get('R_EPAULE', '0.07'))), ((0.45 + BRAS_PLUS) * sg, 0.062, 1.59, 0.06), ((0.745 + BRAS_PLUS) * sg, 0.03, 1.598, 0.035),
+                    (0.10 * sg, 0.0, 0.95, 0.08), (0.15 * sg, -0.005, 0.56, 0.07), (0.175 * sg, 0.03, 0.12, 0.05)]
+    wa = np.zeros(len(V0))
+    for x, y, z, r in centres:
+        d2 = ((V0 - np.array([x, y, z])) ** 2).sum(1); wa = np.maximum(wa, np.exp(-d2 / (r * r)))
+    ga = corps.vertex_groups.new(name='articulations')
+    for k in np.where(wa > 0.02)[0]: ga.add([int(k)], float(wa[k]), 'REPLACE')
+    la = corps.modifiers.new('lisse_artic', 'CORRECTIVE_SMOOTH'); la.factor = 1.0; la.iterations = int(float(os.environ['ARTIC'])); la.vertex_group = 'articulations'
+    la.use_only_smooth = False; la.smooth_type = 'LENGTH_WEIGHTED'; la.rest_source = 'ORCO'
 lisse = corps.modifiers.new('lisse', 'CORRECTIVE_SMOOTH'); lisse.factor = 0.5; lisse.iterations = 6; lisse.use_only_smooth = False; lisse.smooth_type = 'LENGTH_WEIGHTED'; lisse.rest_source = 'ORCO'
 
+if os.environ.get('SUBDIV', '0') != '0':
+    sd = corps.modifiers.new('fin', 'SUBSURF'); sd.levels = 0; sd.render_levels = int(os.environ['SUBDIV'])
 # ---------------------------------------------------------------- biceps en rouge (au repos, devant le haut du bras)
 def lisse01(x, a, b): t = np.clip((x - a) / (b - a), 0, 1); return t * t * (3 - 2 * t)
 ax = np.abs(V0[:, 0])
@@ -134,12 +154,16 @@ if os.environ.get('COULEURS'):
     force = np.zeros(len(ST) + 1)
     for s_ in ST:
         if s_['id'] in cmap: force[s_['i']] = float(np.clip(((hexv(cmap[s_['id']]) - n0) @ (a0 - n0)) / ((a0 - n0) @ (a0 - n0)), 0, 1))
-    force = np.clip((force - 0.4) / 0.6, 0, 1) ** 0.8
+    # trois teintes franches comme l'ancien mannequin : muscle visé (rouge), ses aides (orangé soutenu), secondaires (orangé clair)
+    paliers = [tuple(float(x) for x in p.split(':')) for p in os.environ.get('NIVEAUX', '0.9:1,0.5:0.6,0.4:0.24').split(',')]
+    f2 = np.zeros_like(force)
+    for seuil, val in sorted(paliers): f2 = np.where(force >= seuil - 1e-6, val, f2)
+    force = f2
     CA = np.load(os.environ['CARTE_MUSCLES']); mu, mu2 = CA['muscle'].astype(np.int64), CA['muscle2'].astype(np.int64)
     a1, a2 = force[mu], force[mu2]
     # un muscle du bras ne colore que la peau du bras (pas le creux de l'épaule)
     reg_bras = np.array([s_['region'] in ('bras', 'avant_bras') for s_ in ST] + [False])
-    t_bras = np.clip((ax - 0.205) / 0.245, 0, 2)
+    t_bras = np.clip((ax - 0.205) / (0.245 + BRAS_PLUS), 0, 2)
     gidx = {g.name: g.index for g in corps.vertex_groups}
     def poids(nom):
         w = np.zeros(len(V0))
@@ -149,13 +173,22 @@ if os.environ.get('COULEURS'):
         return w
     pbras = (poids('brasG') + poids('brasD')) * (t_bras > 0.35) + poids('avbrasG') + poids('avbrasD')
     a1 = np.where(reg_bras[mu] & (pbras < 0.3), 0, a1); a2 = np.where(reg_bras[mu2] & (pbras < 0.3), 0, a2)
+    # le report de carte déborde entre le bas du dos et les fessiers : chaque région reste à sa hauteur (corps au repos)
+    reg_haut = np.array([s_['region'] in ('dos', 'thorax', 'epaule', 'abdomen') for s_ in ST] + [False])
+    reg_bas = np.array([s_['region'] in ('bassin', 'cuisse') for s_ in ST] + [False])
+    zr = V0[:, 2]
+    for a_, m_ in ((a1, mu), (a2, mu2)):
+        a_ *= 1 - reg_haut[m_] * np.clip((float(os.environ.get('Z_TAILLE', '1.17')) - zr) / 0.04, 0, 1) * (V0[:, 1] > -0.02)
+        a_ *= 1 - reg_bas[m_] * np.clip((zr - 1.15) / 0.04, 0, 1)
     actif = np.maximum(a1, 0.6 * a2 * (a1 < 0.05) * (mu >= 0))
     zones = ['corps', 'tete', 'main', 'pied', 'ongle', 'poil', 'cheveux', 'oeil']
     zv = CA['zoneV'].astype(int); actif = np.where(np.isin(zv, [2, 3]), 0, actif)
     ed = np.array([e.vertices[:] for e in corps.data.edges]); deg = np.bincount(ed.ravel(), minlength=len(V0)).clip(1)
     for _ in range(4):
         s2 = np.zeros(len(V0)); np.add.at(s2, ed[:, 0], actif[ed[:, 1]]); np.add.at(s2, ed[:, 1], actif[ed[:, 0]]); actif = 0.5 * actif + 0.5 * s2 / deg
-    rouge = np.clip((actif - 0.15) / 0.85, 0, 1).astype(np.float32)
+    rouge = np.where(actif > 0.08, actif, 0).astype(np.float32)
+    if os.environ.get('DEBUG_ROUGE'):
+        zz_ = V0[:, 2]; print('rouge z<1.0 :', int(((rouge > 0.1) & (zz_ < 1.0)).sum()), '| z des rouges du bas du dos', np.percentile(zz_[(rouge > 0.1) & (zz_ < 1.25) & (V0[:, 1] > 0)], [0, 10, 50]).round(3) if ((rouge > 0.1) & (zz_ < 1.25) & (V0[:, 1] > 0)).any() else '-', '| muscles :', sorted({ST[m]['id'] for m in mu[(rouge > 0.1) & (zz_ < 1.0)] if m >= 0})[:12], flush=True)
     print('muscles en couleur :', int((force > 0).sum()), 'structures,', int((rouge > 0.05).sum()), 'sommets', flush=True)
 ca = corps.data.color_attributes.new('travail', 'FLOAT_COLOR', 'POINT')
 ca.data.foreach_set('color', np.c_[rouge, rouge, rouge, np.ones_like(rouge)].ravel())
@@ -170,8 +203,17 @@ at = N.new('ShaderNodeAttribute'); at.attribute_name = 'travail'
 mix = N.new('ShaderNodeMix'); mix.data_type = 'RGBA'; mix.inputs['A'].default_value = (*ARGILE, 1); mix.inputs['B'].default_value = (*ROUGE, 1)
 rampe = N.new('ShaderNodeValToRGB'); el_ = rampe.color_ramp.elements
 el_[0].position = 0.0; el_[0].color = (*ARGILE, 1); el_[1].position = 1.0; el_[1].color = (*ROUGE, 1)
-e_m = el_.new(0.45); e_m.color = (*srgb('#f58a4a'), 1)
-L.new(at.outputs['Fac'], rampe.inputs['Fac']); L.new(rampe.outputs['Color'], bs.inputs['Base Color'])
+e_m = el_.new(0.24); e_m.color = (*[0.7 * a + 0.3 * b for a, b in zip(ARGILE, srgb('#f5a070'))], 1); e_n = el_.new(0.6); e_n.color = (*srgb('#f58a4a'), 1)
+L.new(at.outputs['Fac'], rampe.inputs['Fac'])
+if float(os.environ.get('CREUX', '0')) > 0:
+    ao = N.new('ShaderNodeAmbientOcclusion'); ao.inputs['Distance'].default_value = 0.035; ao.samples = 8
+    mr = N.new('ShaderNodeMapRange'); mr.inputs['From Min'].default_value = 0.2; mr.inputs['From Max'].default_value = 0.95
+    mr.inputs['To Min'].default_value = 1 - float(os.environ['CREUX']); mr.inputs['To Max'].default_value = 1.0
+    L.new(ao.outputs['AO'], mr.inputs['Value'])
+    mul = N.new('ShaderNodeMix'); mul.data_type = 'RGBA'; mul.blend_type = 'MULTIPLY'; mul.inputs['Factor'].default_value = 1.0
+    L.new(rampe.outputs['Color'], mul.inputs['A']); L.new(mr.outputs['Result'], mul.inputs['B']); L.new(mul.outputs['Result'], bs.inputs['Base Color'])
+else:
+    L.new(rampe.outputs['Color'], bs.inputs['Base Color'])
 corps.data.materials.clear(); corps.data.materials.append(m)
 mat_main = bpy.data.materials.new('main'); mat_main.use_nodes = True
 mat_main.node_tree.nodes['Principled BSDF'].inputs['Base Color'].default_value = (*ARGILE, 1); mat_main.node_tree.nodes['Principled BSDF'].inputs['Roughness'].default_value = 0.55
@@ -371,6 +413,10 @@ for cx in (lo[0], hi[0]):
 if os.environ.get('ZOOM'):
     zx, zz, zd = [float(x) for x in os.environ['ZOOM'].split(',')]; cible = np.array([zx, 0, zz]); dist = zd
 co.location = Vector(cible + dirc * dist); co.rotation_euler = (Vector(cible) - co.location).to_track_quat('-Z', 'Y').to_euler()
+if float(os.environ.get('CONTOUR', '0')) > 0:
+    lc = bpy.data.lights.new('contour', 'AREA'); lc.energy = float(os.environ['CONTOUR']); lc.size = 1.2
+    oc = bpy.data.objects.new('contour', lc); sc.collection.objects.link(oc)
+    oc.location = Vector(cible - dirc * 2.6 + np.array([0, 0, 1.2])); oc.rotation_euler = (Vector(cible + np.array([0, 0, 0.3])) - oc.location).to_track_quat('-Z', 'Y').to_euler()
 if os.environ.get('CARTE'):
     # Report de la carte des muscles du mannequin (même pose) : chaque sommet du bodybuilder, ramené au repère de son os
     # principal chez le mannequin, prend le muscle du sommet le plus proche.
