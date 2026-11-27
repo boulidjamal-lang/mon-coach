@@ -232,6 +232,6 @@ $$;
 - Le propriétaire de l'appli déclare disposer d'une autorisation de SmartWorkout pour utiliser leurs vidéos de
   démonstration. Elle n'est pas jointe au dépôt : à conserver par écrit et à produire en cas de réclamation.
 - Les 811 vidéos de la bibliothèque sont copiées dans `assets/videos-sw/` (720 px, sans son, image d'aperçu 240 px) ;
-  chaque fiche cite SmartWorkout et renvoie vers la page de l'exercice sur leur site.
+  chaque fiche cite SmartWorkout (en texte : plus aucun lien vers leurs serveurs ni leur site dans le code).
 - Interrupteurs : `VIDEOS_SW_BETA` (index.html) coupe tout l'affichage ; `SANS_VIDEOS_SW=1` (app iPhone) vide les
   tables à la préparation de l'app. Les mouvements 3D (`MOUVEMENTS_3D`) sont coupés pendant ce temps.

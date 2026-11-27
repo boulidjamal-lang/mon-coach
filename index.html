@@ -20074,11 +20074,10 @@ function svgSilhouetteGroupe(groupe) {
    Les exercices concernés montrent leur mouvement en 3D ou le schéma de
    leurs muscles, consignes comprises. Un lien de cette origine posé
    autrefois dans Administration est ignoré. */
-/* Bêta (testeurs) : les vidéos de démonstration SmartWorkout reviennent dans les fiches, lues depuis leurs serveurs
-   (jamais copiées), en attendant les vidéos maison. Ce sont des contenus d'un autre éditeur, sans licence : passer
+/* Bêta (testeurs) : les vidéos de démonstration SmartWorkout reviennent dans les fiches, depuis leurs copies dans
+   l'appli (aucun lien vers leurs serveurs), en attendant les vidéos maison. Ce sont des contenus d'un autre éditeur, sans licence : passer
    VIDEOS_SW_BETA à false avant toute sortie publique (App Store, site ouvert) remet la règle de l'audit LEG-01. */
 let VIDEOS_SW_BETA = true;
-const SW_ASSET = 'https://api.smartworkout.app/asset/';
 /* Copies locales des vidéos SmartWorkout (autorisation déclarée par le propriétaire de l'appli le 27/11/2026, voir
    AUDIT_2026-11_registre.md) : compressées en 720 px sans son, avec une image d'aperçu de 240 px, dans
    assets/videos-sw/<identifiant>.mp4 / .jpg. Elles se lisent tout de suite, sans attendre leurs serveurs. */
@@ -20088,27 +20087,27 @@ function videoSWLocale(id) {
   if (!_swLocales) _swLocales = new Set(typeof VIDEOS_SMARTWORKOUT === 'undefined' ? [] : Object.values(VIDEOS_SMARTWORKOUT).map(v => v[0]));
   return id && _swLocales.has(id) ? SW_LOCAL + id : null;
 }
-// Lien d'une vidéo SmartWorkout (…/asset/video/<id>.mp4, posé dans Administration) -> sa copie locale quand on l'a.
+// Lien d'une vidéo SmartWorkout (…/asset/video/<id>.mp4, posé dans Administration) -> sa copie locale, ou null.
 function lienSWLocal(url) {
-  const m = /api\.smartworkout\.app\/asset\/video\/([0-9a-f-]+)\.mp4/i.exec(url || '');
+  const m = /\/asset\/video\/([0-9a-f-]+)\.mp4/i.exec(url || '');
   const l = m && videoSWLocale(m[1].toLowerCase());
-  return l ? l + '.mp4' : url;
+  return l ? l + '.mp4' : null;
 }
 function mediaTiersInterdit(url) {
-  return (VIDEOS_SW_BETA ? /exercisedb\.dev|wger\.de/i : /smart-?workout|exercisedb\.dev|wger\.de/i).test(url || '');
+  return /smart-?workout|exercisedb\.dev|wger\.de/i.test(url || '');
 }
 function videoSmartWorkout(id) {
   if (!VIDEOS_SW_BETA || typeof VIDEOS_SMARTWORKOUT === 'undefined' || !id) return null;
   const t = VIDEOS_SMARTWORKOUT;
   return (Object.prototype.hasOwnProperty.call(t, id) && t[id]) || (Object.prototype.hasOwnProperty.call(t, cibleFusion(id)) && t[cibleFusion(id)]) || null;
 }
-function estVideoSmartWorkout(v) { return !!(v && v.video && (/smart-?workout/i.test(v.video) || v.video.startsWith(SW_LOCAL))); }
+function estVideoSmartWorkout(v) { return !!(v && v.video && v.video.startsWith(SW_LOCAL)); }
 // Lien d'image SmartWorkout collé à la place de la vidéo -> la vidéo de la même page (ou null).
 function videoDepuisLienImageSW(url) {
   if (!VIDEOS_SW_BETA || typeof SW_IMAGE_VERS_VIDEO === 'undefined') return null;
   const m = /\/asset\/image\/([a-f0-9-]{13})/i.exec(url || '');
   const id = m && SW_IMAGE_VERS_VIDEO[m[1].toLowerCase()];
-  return id ? (videoSWLocale(id) ? videoSWLocale(id) + '.mp4' : SW_ASSET + 'video/' + id + '.mp4') : null;
+  return id && videoSWLocale(id) ? videoSWLocale(id) + '.mp4' : null;
 }
 function estLienImage(url) {
   return /\/asset\/image\//i.test(url || '') || /\.(jpe?g|png|webp|gif|avif)(\?|#|$)/i.test(url || '');
@@ -20119,19 +20118,22 @@ function estLienImage(url) {
 function videoExercice(exo) {
   if (!exo) return null;
   if (typeof exo.video === 'string') {
-    if (!exo.video || mediaTiersInterdit(exo.video)) return null;
-    // Copie locale d'une vidéo SmartWorkout : son image d'aperçu locale sert de miniature (sans elle, une liste montre
-    // une vidéo arrêtée, que l'iPhone laisse vide).
-    const apercuLocal = v => v && v.startsWith(SW_LOCAL) ? v.replace(/\.mp4$/, '.jpg') : null;
-    if (estLienImage(exo.video)) { const v = videoDepuisLienImageSW(exo.video); return { video: v, poster: apercuLocal(v) || exo.video, page: v || exo.video }; }
-    const local = VIDEOS_SW_BETA ? lienSWLocal(exo.video) : exo.video;
-    return { video: local, poster: (exo.videoPoster && !mediaTiersInterdit(exo.videoPoster) ? exo.videoPoster : null) || apercuLocal(local), page: exo.video };
+    if (!exo.video) return null;
+    // Lien SmartWorkout posé autrefois dans Administration : jamais lu en ligne ; seulement sa copie dans l'appli
+    // (vidéo et image d'aperçu locales), quand on l'a.
+    if (/smart-?workout/i.test(exo.video)) {
+      if (!VIDEOS_SW_BETA) return null;
+      const v = estLienImage(exo.video) ? videoDepuisLienImageSW(exo.video) : lienSWLocal(exo.video);
+      return v ? { video: v, poster: v.replace(/\.mp4$/, '.jpg'), page: null } : null;
+    }
+    if (mediaTiersInterdit(exo.video)) return null;
+    if (estLienImage(exo.video)) return { video: null, poster: exo.video, page: exo.video };
+    return { video: exo.video, poster: exo.videoPoster && !mediaTiersInterdit(exo.videoPoster) ? exo.videoPoster : null, page: exo.video };
   }
-  // Bêta : la vidéo SmartWorkout de l'exercice de la bibliothèque, quand il en a une.
+  // Bêta : la vidéo SmartWorkout de l'exercice de la bibliothèque, copiée dans l'appli, quand il en a une.
   const sw = !exo.perso && videoSmartWorkout(exo.id);
-  if (!sw) return null;
-  const loc = videoSWLocale(sw[0]);
-  return { video: loc ? loc + '.mp4' : SW_ASSET + 'video/' + sw[0] + '.mp4', poster: loc ? loc + '.jpg' : sw[1] ? SW_ASSET + 'image/' + sw[1] : null, page: 'https://smartworkout.app/fr/bibliotheque-d-exercices/' + sw[2] };
+  const loc = sw && videoSWLocale(sw[0]);
+  return loc ? { video: loc + '.mp4', poster: loc + '.jpg', page: null } : null;
 }
 function mediaExercice(exo) {
   const m = exo.img && exo.img.length ? { img: exo.img, ins: exo.ins || [] } : EXERCICE_MEDIA[exo.id];
@@ -23207,7 +23209,7 @@ function videoCorpsExercice(e) {
 }
 function videoSWFicheHTML(e, v) {
   return `<div class="fiche-exo-video"><span class="hd-place" data-url="${escapeHtml(v.video)}"${v.poster ? ` data-poster="${escapeHtml(v.poster)}"` : ''} data-label="Démonstration : ${escapeHtml(libelleExercice(e))}"></span></div>
-    <p class="note fiche-exo-note-source">Vidéo : <a href="${escapeHtml(v.page)}" target="_blank" rel="noopener">SmartWorkout</a>.${atlasDisponible() && mouvementExercice(e.id) ? ` <button type="button" class="lien-texte" onclick="basculerMediaFiche(${argJs(e.id)}, '3d')">Voir le mouvement en 3D</button>` : ''}</p>`;
+    <p class="note fiche-exo-note-source">Vidéo : SmartWorkout.${atlasDisponible() && mouvementExercice(e.id) ? ` <button type="button" class="lien-texte" onclick="basculerMediaFiche(${argJs(e.id)}, '3d')">Voir le mouvement en 3D</button>` : ''}</p>`;
 }
 function videoCorpsFicheHTML(e) {
   const reduit = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
