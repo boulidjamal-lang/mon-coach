@@ -1666,6 +1666,9 @@ img.vignette-3d { background: radial-gradient(ellipse 75% 60% at 50% 42%, #1b1e2
   background: radial-gradient(ellipse 75% 60% at 50% 42%, #1b1e27 0%, #0d0f15 55%, #07080b 100%);
 }
 :root[data-theme="light"] .fiche-exo-3d { background: radial-gradient(ellipse 75% 60% at 50% 42%, #ffffff 0%, #eef1f6 60%, #e2e6ee 100%); }
+/* Vidéo filmée du corps (studio clair, même fond que la vidéo) */
+.fiche-exo-film { width: 100%; border-radius: 20px; overflow: hidden; margin-bottom: 14px; background: #eeeeec; }
+.fiche-exo-film video { display: block; width: 100%; aspect-ratio: 1 / 1; max-height: 400px; object-fit: contain; background: #eeeeec; }
 .fiche-exo-3d .atlas-toile { position: absolute; inset: 0; width: 100%; height: 100%; display: block; outline: none; }
 .fiche-exo-3d .atlas-attente { color: #c8cad2; }
 :root[data-theme="light"] .fiche-exo-3d .atlas-attente { color: var(--text-muted); }

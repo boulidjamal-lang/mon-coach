@@ -23150,12 +23150,26 @@ const IC_FICHE_3D = {
   grand: '<svg class="icone-ui" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7" /></svg>'
 };
 let ficheMouvement = null, ficheMouvementJeton = 0;
+/* Vidéos d'exercice filmées dans Blender avec le corps « Bodybuilder Man Anatomy Practice Basemesh » d'AaronJOlson
+   (licence CC BY 4.0 : l'auteur est crédité sous la vidéo), mains et pieds ajoutés, sans tête. Rendues par
+   outils/atlas/video/corps-bodybuilder (lot.sh). Essai, un exercice à la fois avant toute la bibliothèque : la vidéo
+   passe avant le mouvement en 3D de la fiche, qui reste à portée d'un bouton. */
+const VIDEOS_CORPS = { 'sw-muscle-up': 'assets/videos-corps/sw-muscle-up.mp4' };
+const CREDIT_CORPS = 'Corps 3D : <a href="https://sketchfab.com/3d-models/bodybuilder-man-anatomy-practice-basemesh-67f60a34b71e497ead72645e8c5e9151" target="_blank" rel="noopener">« Bodybuilder Man Anatomy Practice Basemesh »</a> par AaronJOlson, licence <a href="https://creativecommons.org/licenses/by/4.0/deed.fr" target="_blank" rel="noopener">CC BY 4.0</a>, adapté (mains et pieds ajoutés, sans tête).';
+function videoCorpsExercice(e) {
+  return e && !e.perso && Object.prototype.hasOwnProperty.call(VIDEOS_CORPS, e.id) ? VIDEOS_CORPS[e.id] : null;
+}
+function videoCorpsFicheHTML(e) {
+  const reduit = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+  return `<div class="fiche-exo-film"><video src="${escapeHtml(videoCorpsExercice(e))}"${reduit ? ' controls' : ' autoplay loop'} muted playsinline preload="auto" aria-label="Démonstration : ${escapeHtml(libelleExercice(e))}"></video></div>
+    <p class="note fiche-exo-note-source">${CREDIT_CORPS}${atlasDisponible() && mouvementExercice(e.id) ? ` <button type="button" class="lien-texte" onclick="basculerMediaFiche(${argJs(e.id)}, '3d')">Voir le mouvement en 3D</button>` : ''}</p>`;
+}
 function mouvementFicheHTML(e, media) {
   const photo = !!(media && media.img && media.img.length);
   return `<div class="fiche-exo-3d" id="fiche-exo-3d" data-exercice="${escapeHtml(e.id)}">
       <div class="atlas-attente" role="status"><i aria-hidden="true"></i>Chargement du mouvement…</div>
     </div>
-    <p class="note fiche-exo-note-source">Mouvement en 3D : glisse de gauche à droite pour tourner.${photo ? ` <button type="button" class="lien-texte" onclick="basculerMediaFiche(${argJs(e.id)}, 'photo')">Voir la photo</button>` : ''}</p>`;
+    <p class="note fiche-exo-note-source">Mouvement en 3D : glisse de gauche à droite pour tourner.${videoCorpsExercice(e) ? ` <button type="button" class="lien-texte" onclick="basculerMediaFiche(${argJs(e.id)}, 'film')">Voir la vidéo</button>` : photo ? ` <button type="button" class="lien-texte" onclick="basculerMediaFiche(${argJs(e.id)}, 'photo')">Voir la photo</button>` : ''}</p>`;
 }
 function fermerMouvementFiche() {
   ficheMouvementJeton++;
@@ -23227,7 +23241,9 @@ function basculerMediaFiche(id, vers, repli) {
   if (!zone || !e) return;
   const media = mediaExercice(e);
   fermerMediasFiche();
-  if (vers === 'photo') {
+  if (vers === 'film' && videoCorpsExercice(e)) {
+    zone.innerHTML = videoCorpsFicheHTML(e);
+  } else if (vers === 'photo') {
     zone.innerHTML = mediaStatiqueFicheHTML(e, media)
       + (repli ? '' : `<p class="note fiche-exo-note-source"><button type="button" class="lien-texte" onclick="basculerMediaFiche(${argJs(e.id)}, '3d')">Voir le mouvement en 3D</button></p>`);
     if (media && media.img && media.img.length > 1) demarrerAnimationFiche();
@@ -23288,8 +23304,11 @@ function afficherFicheExerciceBiblio(id, options) {
   // il prend la place de la photo, qui reste à portée d'un bouton quand il y en a une.
   // Il passe aussi avant une vidéo posée autrefois dans Administration (des copies de SmartWorkout, sans licence) :
   // elle ne sert plus qu'aux exercices sans mouvement (créés par l'utilisateur) et aux appareils sans 3D.
-  const mouvement3d = atlasDisponible() && mouvementExercice(e.id);
-  if (mouvement3d) {
+  const film = videoCorpsExercice(e);
+  const mouvement3d = !film && atlasDisponible() && mouvementExercice(e.id);
+  if (film) {
+    html += `<div id="fiche-exo-media">${videoCorpsFicheHTML(e)}</div>`;
+  } else if (mouvement3d) {
     html += `<div id="fiche-exo-media">${mouvementFicheHTML(e, media)}</div>`;
   } else if (video) {
     html += `<div class="fiche-exo-video"><span class="hd-place" data-url="${escapeHtml(video.video)}"${video.poster ? ` data-poster="${escapeHtml(video.poster)}"` : ''} data-label="Démonstration : ${escapeHtml(libelleExercice(e))}"></span></div>`;
@@ -23302,7 +23321,7 @@ function afficherFicheExerciceBiblio(id, options) {
     <div class="fiche-muscles"><span class="principal">${escapeHtml(GROUPES_MUSCULAIRES[e.groupe] || '')}</span>${(e.secondaires || []).filter(g => g !== e.groupe && GROUPES_MUSCULAIRES[g]).map(g => `<span>${escapeHtml(GROUPES_MUSCULAIRES[g])}</span>`).join('')}</div>
     ${coiffeExercice(e) ? `<p class="note fiche-coiffe">Coiffe des rotateurs : ${escapeHtml(coiffeExercice(e).texte)}.</p>` : ''}
     ${faisceauxFicheHTML(e)}
-    ${boutonAtlasHTML('exercice', e.id, mouvement3d ? 'Explorer les muscles en 3D' : mouvementExercice(e.id) ? 'Voir le mouvement en 3D' : 'Voir les muscles en 3D')}
+    ${boutonAtlasHTML('exercice', e.id, mouvement3d || film ? 'Explorer les muscles en 3D' : mouvementExercice(e.id) ? 'Voir le mouvement en 3D' : 'Voir les muscles en 3D')}
     <div class="fiche-record" style="margin-top:6px;"><span>Matériel</span><b>${MATERIELS[e.materiel].ic} ${escapeHtml(MATERIELS[e.materiel].label)}</b></div>
   </div>`;
 
@@ -23330,7 +23349,7 @@ function afficherFicheExerciceBiblio(id, options) {
   rendreHistoriqueFiche();
   ouvrirModal('fiche-exercice-modal');
   if (mouvement3d) monterMouvementFiche(e);
-  else if (!video && media && media.img && media.img.length > 1) demarrerAnimationFiche();
+  else if (!film && !video && media && media.img && media.img.length > 1) demarrerAnimationFiche();
   // Ouverture sur la vidéo (onglet Instructions), sauf onglet demandé
   // (ex. depuis les statistiques, on ouvre sur le résumé).
   choisirOngletFiche(opts.onglet || 'technique');

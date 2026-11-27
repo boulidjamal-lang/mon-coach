@@ -26,6 +26,7 @@ if os.environ.get('ATHLETE'):
     # Physique d'athlète : chaque partie resserrée vers son os (bras, cuisses, trapèzes, cou plus que le tronc),
     # puis les séparations des muscles creusées (relief accentué par rapport à une version lissée).
     ech = {'bras': 0.80, 'avbras': 0.87, 'clav': 0.84, 'cou': 0.80, 'poitrine': 0.92, 'dos': 0.95, 'bassin': 0.97, 'cuisse': 0.85, 'jambe': 0.90, 'pied': 1.0}
+    for _kv in filter(None, os.environ.get('ECH_SEGS', '').split(',')): ech[_kv.split(':')[0]] = float(_kv.split(':')[1])
     k_ath = float(os.environ['ATHLETE'])
     segs = []
     for c, sg in (('G', 1), ('D', -1)):
@@ -54,6 +55,7 @@ if os.environ.get('ATHLETE'):
         s_ = np.zeros_like(L_); np.add.at(s_, ed_[:, 0], L_[ed_[:, 1]]); np.add.at(s_, ed_[:, 1], L_[ed_[:, 0]]); L_ = 0.5 * L_ + 0.5 * s_ / dg_[:, None]
     V1 = V1 + float(os.environ.get('RELIEF', '0.6')) * (V1 - L_)
     corps.data.vertices.foreach_set('co', V1.ravel()); corps.data.update(); V0 = V1
+    if os.environ.get('DUMP'): np.save(os.environ['DUMP'], V1); raise SystemExit(0)
 
 
 def rentrer_pieds(V1):
@@ -62,7 +64,7 @@ def rentrer_pieds(V1):
     for sg in (1, -1):
         axe = np.array([0.175 * sg, 0.03])
         m = (V1[:, 0] * sg > 0.06) & (V1[:, 2] < zp + 0.05)
-        f = np.clip((zp + 0.05 - V1[m, 2]) / 0.07, 0, 1); f = f * f * (3 - 2 * f) * 0.62
+        f = np.clip((zp + 0.05 - V1[m, 2]) / 0.07, 0, 1); f = f * f * (3 - 2 * f) * float(os.environ.get('RENTRE', '0.62'))
         f = np.where(V1[m, 2] < zp - 0.005, 0.93, f)
         V1[m, :2] = axe + (V1[m, :2] - axe) * (1 - f)[:, None]
         V1[m, 2] = np.maximum(V1[m, 2], zp - 0.03)
@@ -100,7 +102,8 @@ for n, p in PARENT.items():
 bpy.ops.object.mode_set(mode='OBJECT')
 bpy.ops.object.select_all(action='DESELECT'); corps.select_set(True); arm.select_set(True); bpy.context.view_layer.objects.active = arm
 bpy.ops.object.parent_set(type='ARMATURE_AUTO')
-if os.environ.get('ATHLETE') and os.environ.get('RENTRER_PIEDS', '1') == '1':
+if os.environ.get('ATHLETE') and (os.environ.get('RENTRER_PIEDS', '1') == '1' or os.environ.get('AMINCIR') == '1'):
+    # (avec les pieds d'origine masqués, AMINCIR=1 garde seulement l'affinement du bas de jambe vers la cheville)
     V0 = rentrer_pieds(V0.copy()); corps.data.vertices.foreach_set('co', V0.ravel()); corps.data.update()
 vides = sum(1 for v in corps.data.vertices if not v.groups)
 print('peau liée : groupes', len(corps.vertex_groups), '| sommets sans os', vides, flush=True)
@@ -208,6 +211,8 @@ e_m = el_.new(0.24); e_m.color = (*[0.7 * a + 0.3 * b for a, b in zip(ARGILE, sr
 L.new(at.outputs['Fac'], rampe.inputs['Fac'])
 if float(os.environ.get('CREUX', '0')) > 0:
     ao = N.new('ShaderNodeAmbientOcclusion'); ao.inputs['Distance'].default_value = 0.035; ao.samples = 8
+    # creux calculés sur l'objet seul : plus de liseré sombre là où la jambe ou l'avant-bras rentre dans le pied ou la main greffés
+    ao.only_local = os.environ.get('AO_LOCAL', '1') == '1'
     mr = N.new('ShaderNodeMapRange'); mr.inputs['From Min'].default_value = 0.2; mr.inputs['From Max'].default_value = 0.95
     mr.inputs['To Min'].default_value = 1 - float(os.environ['CREUX']); mr.inputs['To Max'].default_value = 1.0
     L.new(ao.outputs['AO'], mr.inputs['Value'])
@@ -218,6 +223,10 @@ else:
 corps.data.materials.clear(); corps.data.materials.append(m)
 mat_main = bpy.data.materials.new('main'); mat_main.use_nodes = True
 mat_main.node_tree.nodes['Principled BSDF'].inputs['Base Color'].default_value = (*ARGILE, 1); mat_main.node_tree.nodes['Principled BSDF'].inputs['Roughness'].default_value = 0.55
+# mains et pieds greffés : même matière que le corps (même teinte, mêmes creux), pour que la jonction ne se voie pas
+MAT_GREFFE = m if os.environ.get('GREFFE_MAT', 'corps') == 'corps' else mat_main
+if os.environ.get('DEBUG_TEINTE'):
+    MAT_GREFFE = bpy.data.materials.new('greffe_rouge'); MAT_GREFFE.use_nodes = True; MAT_GREFFE.node_tree.nodes['Principled BSDF'].inputs['Base Color'].default_value = (0.8, 0.05, 0.02, 1)
 mat_fonte = bpy.data.materials.new('fonte'); mat_fonte.use_nodes = True
 mat_fonte.node_tree.nodes['Principled BSDF'].inputs['Base Color'].default_value = (*[x * 0.62 for x in ARGILE], 1); mat_fonte.node_tree.nodes['Principled BSDF'].inputs['Roughness'].default_value = 0.6
 
@@ -278,13 +287,142 @@ if ANCRE == 'auto':
     ANCRE = 'mains' if pend else ('pieds' if pieds_sol and bas_bassin > 0.55 and debout else 'bassin')
 print('ancrage :', ANCRE, flush=True)
 ECH_MAIN = float(os.environ.get('ECH_MAIN', '1.05'))
+COUTURE = os.environ.get('COUTURE', '1') == '1'
+def bord_greffe(c, lim, pct):
+    # anneau du bord (côté membre) de la pièce greffée, dans son repère ; axe = du centre de la pièce vers l'anneau
+    T_ = H['tri_' + c]; L0 = (H['pos_' + c][0].astype(float) - H['poignet_' + c][0]) @ H['rot_' + c][0]
+    ar = np.sort(np.concatenate([T_[:, [0, 1]], T_[:, [1, 2]], T_[:, [2, 0]]]), 1)
+    u_, n_ = np.unique(ar, axis=0, return_counts=True); bord = np.unique(u_[n_ == 1])
+    bord = bord[np.linalg.norm(L0[bord], axis=1) < lim]
+    axe = unit(L0[bord].mean(0) - L0.mean(0)); h_ = L0 @ axe; h_cut = np.percentile(h_[bord], pct)
+    return T_[(h_[T_] < h_cut).all(1)], axe, h_, h_cut
+def voisinage(T_, n):
+    import scipy.sparse as sp_
+    e_ = np.concatenate([T_[:, [0, 1]], T_[:, [1, 2]], T_[:, [2, 0]]]); e_ = np.concatenate([e_, e_[:, ::-1]])
+    A_ = sp_.csr_matrix((np.ones(len(e_)), (e_[:, 0], e_[:, 1])), shape=(n, n)); A_.data[:] = 1
+    d_ = np.asarray(A_.sum(1)).ravel(); seuls = d_ == 0
+    A_ = A_ + sp_.diags(seuls.astype(float)); d_[seuls] = 1   # sommets hors faces : immobiles
+    return (sp_.diags(1 / d_) @ A_).tocsr()
+def poids_bande(h_, h_cut, bande):
+    t_ = np.clip((h_ - (h_cut - bande)) / bande, 0, 1); return t_ * t_ * (3 - 2 * t_)
+# Couture : sur une bande au bord de la main (ou du pied), la pièce greffée épouse la surface réelle de l'avant-bras
+# (ou de la jambe) déformé à chaque image, juste sous la peau. Le corps recouvre le bord de la pièce, puis la pièce
+# ressort en pente douce : plus de marche, de lèvre ni de bord dentelé à la jonction.
+COUT = {}; BV_CORPS = None; GARDES = None
+_gn = {g.index: g.name for g in corps.vertex_groups}; _pg = {}
+for _v in corps.data.vertices:
+    for _g in _v.groups:
+        _n = _gn[_g.group]
+        if _n.startswith(('avbras', 'jambe', 'pied')): _pg.setdefault(_n, np.zeros(len(V0)))[_v.index] += _g.weight
+def zone_corps(os_, rayon):
+    pg_ = _pg.get(os_, np.zeros(len(V0)))
+    if os_.startswith('jambe') and os.environ.get('RENTRER_PIEDS', '1') != '1': pg_ = pg_ + _pg.get('pied' + os_[-1], 0)   # bas de jambe jusqu'à la coupe
+    bout = np.array(J[os_][1]); m_ = (pg_ > 0.5) & (np.linalg.norm(V0 - bout, axis=1) < rayon)
+    if os_.startswith('jambe') and os.environ.get('RENTRER_PIEDS', '1') != '1': m_ &= V0[:, 2] >= float(os.environ.get('Z_PIED', '0.115'))
+    return np.where(m_)[0]
+def corps_evalue():
+    dg_ = bpy.context.evaluated_depsgraph_get(); dg_.update(); e_ = corps.evaluated_get(dg_); m_ = e_.to_mesh()
+    P_ = np.zeros(len(m_.vertices) * 3); m_.vertices.foreach_get('co', P_); e_.to_mesh_clear()
+    Mw = np.array(corps.matrix_world); P_ = P_.reshape(-1, 3) @ Mw[:3, :3].T + Mw[:3, 3]
+    if len(P_) == len(V0): return P_
+    if GARDES is not None and len(P_) == len(GARDES):
+        # pieds d'origine masqués : on remet chaque sommet gardé à son numéro (les masqués restent vides)
+        Q_ = np.full((len(V0), 3), np.nan); Q_[GARDES] = P_; return Q_
+    return None
+def coudre(Gw, O, A, Bz, w, dbord, vois, delta, eps, bas=0.0):
+    Bz = Bz[~np.isnan(Bz[:, 0])]
+    sel = w > 1e-4
+    if bas > 0 and len(Bz) >= 20:
+        # au-delà de la bande, les sommets jusqu'au bout réel du membre suivent aussi (pied d'origine masqué)
+        Qb0 = Bz - O; hb0 = np.percentile(Qb0 @ A, 1); sel = sel | ((Gw - O) @ A >= hb0 - bas)
+    if os.environ.get('DEBUG_COUTURE'): print('couture entree', int(sel.sum()), len(Bz), flush=True)
+    if not sel.any() or len(Bz) < 20: return Gw
+    # axe centré sur le membre du corps (et non sur l'os, décentré dans la chair)
+    Qb = Bz - O; hb_ = Qb @ A; mb = (hb_ > 0.01) & (hb_ < 0.06)
+    if mb.sum() > 10: O = O + (Qb[mb] - np.outer(hb_[mb], A)).mean(0)
+    e1 = unit(np.cross(A, [0, 0, 1.0]) if abs(A[2]) < 0.9 else np.cross(A, [1.0, 0, 0])); e2 = np.cross(A, e1)
+    def cyl(P_): Q_ = P_ - O; return Q_ @ A, np.hypot(Q_ @ e1, Q_ @ e2), np.arctan2(Q_ @ e2, Q_ @ e1)
+    hb, rb, tb = cyl(Bz); hg, rg, tg = cyl(Gw[sel]); wv = w[sel]; hn = hg + delta * wv
+    NB, dh = int(os.environ.get('NB_COUTURE', '24')), float(os.environ.get('DH_COUTURE', '0.006')); h0 = hn.min() - dh; nh = int((hn.max() + 0.03 - h0) / dh) + 2
+    ib = np.floor((hb - h0) / dh).astype(int); jb = np.floor((tb + np.pi) / (2 * np.pi) * NB).astype(int) % NB; ok = (ib >= 0) & (ib < nh)
+    if os.environ.get('PROFIL_MAX'):
+        G_ = np.full((nh, NB), -1.0); np.maximum.at(G_, (ib[ok], jb[ok]), rb[ok]); G_[G_ < 0] = np.nan
+    else:
+        # rayon moyen de la peau dans chaque case (le maximum surestime la surface et fait ressortir la pièce par endroits)
+        S_ = np.zeros((nh, NB)); N_ = np.zeros((nh, NB)); np.add.at(S_, (ib[ok], jb[ok]), rb[ok]); np.add.at(N_, (ib[ok], jb[ok]), 1)
+        G_ = np.where(N_ > 0, S_ / np.maximum(N_, 1), np.nan)
+    ang = np.arange(NB) + 0.5
+    for k in range(nh):
+        v_ = ~np.isnan(G_[k])
+        if v_.sum() >= NB // 3: G_[k] = np.interp(ang, ang[v_], G_[k][v_], period=NB)
+        else: G_[k] = np.nan
+    lignes = np.where(~np.isnan(G_[:, 0]))[0]; h_bout = h0 + dh * lignes.min() if len(lignes) else None
+    pente = dh * math.tan(math.radians(float(os.environ.get('PENTE_COUTURE', '35'))))
+    pente_bas = dh * math.tan(math.radians(float(os.environ.get('PENTE_BAS', '14'))))
+    k_bout = (h_bout - h0) / dh if h_bout is not None else -1
+    for k in range(nh - 2, -1, -1): G_[k] = np.fmax(G_[k], G_[k + 1] - (pente if k >= k_bout else pente_bas))   # vers le bout : on prolonge le membre en pente douce au lieu de suivre son bout arrondi
+    val = ~np.isnan(G_[:, 0])
+    if not val.any(): return Gw
+    iv = np.where(val)[0]
+    for k in range(nh):
+        if not val[k]: G_[k] = G_[iv[np.argmin(np.abs(iv - k))]]
+    fh = np.clip((hn - h0) / dh - 0.5, 0, nh - 1.001); k0 = fh.astype(int); ah = fh - k0
+    ft = (tg + np.pi) / (2 * np.pi) * NB - 0.5; j0 = np.floor(ft).astype(int); at_ = ft - j0; j0 %= NB; j1 = (j0 + 1) % NB
+    k1 = np.minimum(k0 + 1, nh - 1)
+    if bas > 0 and h_bout is not None:
+        # jusqu'au bout du membre, la pièce prolonge exactement le membre ; elle ne reprend sa forme qu'au-delà
+        t_ = np.clip((hn - (h_bout - bas)) / bas, 0, 1); wv = np.maximum(wv, t_ * t_ * (3 - 2 * t_))
+    # manchon : le bord de la pièce est rentré sous la peau, puis la pièce passe juste par-dessus la peau sur
+    # quelques millimètres et recouvre tout le bout du membre (souvent irrégulier) ; l'entrée se fait en pente franche
+    # (anneau net) au lieu d'un croisement rasant qui dessine un contour dentelé.
+    t_ = np.clip(dbord[sel] / float(os.environ.get('MANCHON', '0.01')), 0, 1); t_ = t_ * t_ * (3 - 2 * t_)
+    eps = (eps + float(os.environ.get('EPS_BORD', '0.002'))) * (1 - t_) - float(os.environ.get('DESSUS', '0.0012')) * t_
+    env = (1 - ah) * ((1 - at_) * G_[k0, j0] + at_ * G_[k0, j1]) + ah * ((1 - at_) * G_[k1, j0] + at_ * G_[k1, j1])
+    rp = np.full(len(hn), np.nan)
+    if BV_CORPS is not None:
+        # peau réellement visible : rayon depuis l'axe vers l'extérieur, en gardant les replis du bout du membre (6 mm au plus)
+        Dr = np.outer(np.cos(tg), e1) + np.outer(np.sin(tg), e2); Pa = O + np.outer(hn, A)
+        for k in range(len(hn)):
+            d_ = Vector(Dr[k]); p_ = Vector(Pa[k]); loc, _, _, dd = BV_CORPS.ray_cast(p_, d_, 0.12)
+            if loc is None: continue
+            rr = dd
+            for _ in range(3):
+                loc2, _, _, d2 = BV_CORPS.ray_cast(loc + d_ * 1e-4, d_, 0.006)
+                if loc2 is None: break
+                rr += 1e-4 + d2; loc = loc2
+            rp[k] = rr
+    tocc = ~np.isnan(rp)
+    # bord (t_≈0) : sur la peau vue par le rayon ; manchon (t_≈1) : par-dessus la peau et le prolongement du membre
+    base = np.where(tocc, (1 - t_) * rp + t_ * np.fmax(rp, env), env)
+    rt = base - eps
+    if h_bout is not None:
+        # au bout coupé du membre, un peu plus de marge : le bord de la peau ne perce pas la pièce
+        rt = rt + float(os.environ.get('MARGE_BOUT', '0.002')) * np.exp(-((hn - h_bout - 0.004) / 0.01) ** 2)
+    if h_bout is not None and os.environ.get('SANS_COL', '1') == '1':
+        # sous le bout du membre : la pièce n'est jamais plus fine que le membre prolongé en pente douce (pas de « col »)
+        sous = hn < h_bout; rt = np.where(sous, np.maximum(rg, rt), rt)
+    rn = (1 - wv) * rg + wv * rt
+    if os.environ.get('DEBUG_COUTURE'):
+        print('  detail: h_bout', None if h_bout is None else round(h_bout, 3), 'hn', np.percentile(hn, [0, 50, 100]).round(3), 'wv>=.99', int((wv >= 0.99).sum()), 'touche', int(tocc.sum()), '/', len(hn), 'rt-rg mm', np.percentile((rt - rg)[wv > 0.5] * 1000, [10, 50, 90]).round(1) if (wv > 0.5).any() else '-', 'rp-env mm', np.nanpercentile((rp - env) * 1000, [10, 50, 90]).round(1) if tocc.any() else '-', flush=True)
+    if os.environ.get('DEBUG_COUTURE'): print('couture', int(sel.sum()), len(Bz), 'h graft', hg.min().round(3), hg.max().round(3), 'h corps', hb.min().round(3), hb.max().round(3), 'rg', rg[wv > 0.9].mean().round(4) if (wv > 0.9).any() else '-', 'rt', rt[wv > 0.9].mean().round(4) if (wv > 0.9).any() else '-', flush=True)
+    G2 = Gw.copy(); G2[sel] = O + np.outer(hn, A) + (np.outer(np.cos(tg), e1) + np.outer(np.sin(tg), e2)) * rn[:, None]
+    # lissage (Taubin, sans rétrécir) de la zone de raccord : plus de plis ni de froissé hérités de la pièce ou de la peau
+    it = int(os.environ.get('LISSE_COUTURE', '25'))
+    if it and vois is not None:
+        m_ = np.zeros(len(Gw)); m_[sel] = np.clip(wv * float(os.environ.get('FORCE_LISSE', '3')), 0, 1); m_ = m_[:, None]
+        for _ in range(it):
+            G2 = G2 + 0.5 * m_ * (vois @ G2 - G2); G2 = G2 - 0.53 * m_ * (vois @ G2 - G2)
+    return G2
 # mains greffées
 mains = {}
 for c in 'GD':
-    me = bpy.data.meshes.new('main' + c); P = H['pos_' + c][0].astype(float)
-    me.from_pydata([tuple(p) for p in P], [], [tuple(t) for t in H['tri_' + c]]); me.update()
+    me = bpy.data.meshes.new('main' + c); P = H['pos_' + c][0].astype(float); T_m = H['tri_' + c]
+    if COUTURE:
+        T_m, axe_m, h_m, hc_m = bord_greffe(c, 0.06, float(os.environ.get('COUPE_MAIN', '2')))
+        COUT[c] = (axe_m, poids_bande(h_m, hc_m, float(os.environ.get('BANDE_MAIN', '0.03'))), zone_corps('avbras' + c, 0.12), hc_m - h_m, voisinage(T_m, len(P)))
+    me.from_pydata([tuple(p) for p in P], [], [tuple(t) for t in T_m]); me.update()
     for f in me.polygons: f.use_smooth = True
-    o = bpy.data.objects.new('main' + c, me); sc.collection.objects.link(o); me.materials.append(mat_main); mains[c] = o
+    o = bpy.data.objects.new('main' + c, me); sc.collection.objects.link(o); me.materials.append(MAT_GREFFE); mains[c] = o
 if os.environ.get('TETE') == 'anime':
     sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
     import tete_anime
@@ -304,15 +442,29 @@ elif 'pos_T' in H.files and os.environ.get('TETE') != 'aucune':
 ECH_TETE = float(os.environ.get('ECH_TETE', '1.08'))
 ECH_PIED = float(os.environ.get('ECH_PIED', '1.08'))
 if 'pos_PG' in H.files and os.environ.get('PIEDS', '1') == '1':
+    COUPE_P = {}
     for c in ('PG', 'PD'):
-        me = bpy.data.meshes.new('pied' + c); me.from_pydata([tuple(p) for p in H['pos_' + c][0].astype(float)], [], [tuple(t) for t in H['tri_' + c]]); me.update()
+        # Bord du pied greffé : coupé net en anneau au-dessus de la cheville (au lieu du bord dentelé du seuil de poids),
+        # puis resserré vers l'axe de la jambe pour rentrer sous la peau de la jambe (plus de lèvre ni d'intérieur visible).
+        T_ = H['tri_' + c]; L0 = (H['pos_' + c][0].astype(float) - H['poignet_' + c][0]) @ H['rot_' + c][0]
+        ar = np.sort(np.concatenate([T_[:, [0, 1]], T_[:, [1, 2]], T_[:, [2, 0]]]), 1)
+        u_, n_ = np.unique(ar, axis=0, return_counts=True); bord = np.unique(u_[n_ == 1])
+        bord = bord[np.linalg.norm(L0[bord], axis=1) < 0.13]
+        axe_p = unit(L0[bord].mean(0)); h_ = L0 @ axe_p
+        h_cut = np.percentile(h_[bord], float(os.environ.get('COUPE_PIED', '15')))
+        T_ = T_[(h_[T_] < h_cut).all(1)]
+        t_ = np.clip((h_ - (h_cut - 0.035)) / 0.035, 0, 1); k_ = 1 - float(os.environ.get('SERRE_PIED', '0.22')) * t_ * t_
+        COUPE_P[c] = (axe_p, k_)
+        if COUTURE: COUT[c] = (axe_p, poids_bande(h_, h_cut, float(os.environ.get('BANDE_PIED', '0.035'))), zone_corps('jambe' + c[1], 0.16), h_cut - h_, voisinage(T_, len(L0)))
+        me = bpy.data.meshes.new('pied' + c); me.from_pydata([tuple(p) for p in H['pos_' + c][0].astype(float)], [], [tuple(t) for t in T_]); me.update()
         for f in me.polygons: f.use_smooth = True
-        o = bpy.data.objects.new('pied' + c, me); sc.collection.objects.link(o); me.materials.append(mat_main); mains[c] = o
+        o = bpy.data.objects.new('pied' + c, me); sc.collection.objects.link(o); me.materials.append(MAT_GREFFE); mains[c] = o
     gp = corps.vertex_groups.new(name='pieds_caches'); gi = {g.name: g.index for g in corps.vertex_groups}
     cache = np.where(V0[:, 2] < float(os.environ.get('Z_PIED', '0.115')))[0].tolist()
     gp.add(cache, 1.0, 'REPLACE')
     if os.environ.get('RENTRER_PIEDS', '1') != '1': mk = corps.modifiers.new('sans_pieds', 'MASK'); 
     if os.environ.get('RENTRER_PIEDS', '1') != '1': mk.vertex_group = 'pieds_caches'; mk.invert_vertex_group = True
+    if os.environ.get('RENTRER_PIEDS', '1') != '1': GARDES = np.setdiff1d(np.arange(len(V0)), cache)
 # haltères : les formes du mouvement, rattachées à la main la plus proche
 sys.path.insert(0, os.environ['OUTILS'])
 FORMES = MV['images'][0]['formes']
@@ -361,13 +513,46 @@ def placer(i):
         arm.pose.bones[b].matrix = Matrix(X.tolist()); bpy.context.view_layer.update()
     global DERNIER; DERNIER = (tete, dec, pw)
     poignet = {c: queue['avbras' + c] + dec for c in 'GD'}
+    BZ = corps_evalue() if COUT else None
+    global BV_CORPS
+    if COUT and os.environ.get('RAYONS', '1') == '1':
+        from mathutils.bvhtree import BVHTree
+        BV_CORPS = BVHTree.FromObject(corps, bpy.context.evaluated_depsgraph_get())
     for c in 'GD':
         Pm = H['pos_' + c][i].astype(float); Wm = H['poignet_' + c][i]
-        mains[c].data.vertices.foreach_set('co', (poignet[c] + ECH_MAIN * (Pm - Wm)).ravel()); mains[c].data.update()
+        Gw = poignet[c] + ECH_MAIN * (Pm - Wm)
+        if c in COUT:
+            if BZ is None: BZ = corps_evalue()
+            if BZ is not None:
+                axe_m, w_m, z_m, d_m, v_m = COUT[c]
+                Gw = coudre(Gw, poignet[c], unit(tete['avbras' + c] - queue['avbras' + c]), BZ[z_m], w_m, d_m, v_m, float(os.environ.get('ALLONGE_MAIN', '0.03')), float(os.environ.get('EPS_COUTURE', '0.0015')), float(os.environ.get('BAS_MAIN', '0.02')))
+        mains[c].data.vertices.foreach_set('co', Gw.ravel()); mains[c].data.update()
     for c in ('PG', 'PD'):
         if c in mains:
-            Pm = H['pos_' + c][i].astype(float); Wm = H['poignet_' + c][i]
-            mains[c].data.vertices.foreach_set('co', (tete['pied' + c[1]] + dec + ECH_PIED * (Pm - Wm)).ravel()); mains[c].data.update()
+            Pm = H['pos_' + c][i].astype(float); Wm = H['poignet_' + c][i]; Rp = H['rot_' + c][i]
+            Lp = (Pm - Wm) @ Rp; axe_p, k_ = COUPE_P[c]; ax_ = np.outer(Lp @ axe_p, axe_p); Lp = ax_ + (Lp - ax_) * k_[:, None]
+            Gw = tete['pied' + c[1]] + dec + ECH_PIED * (Lp @ Rp.T)
+            if c in COUT and BZ is not None:
+                axe_c, w_c, z_c, d_c, v_c = COUT[c]
+                Gw = coudre(Gw, tete['pied' + c[1]] + dec, unit(tete['jambe' + c[1]] - queue['jambe' + c[1]]), BZ[z_c], w_c, d_c, v_c, float(os.environ.get('ALLONGE_PIED', '0')), float(os.environ.get('EPS_COUTURE', '0.0015')), float(os.environ.get('BAS_PIED', '0.02')))
+            mains[c].data.vertices.foreach_set('co', Gw.ravel()); mains[c].data.update()
+    if os.environ.get('DEBUG_COUTURE'):
+        from mathutils.bvhtree import BVHTree
+        dg_ = bpy.context.evaluated_depsgraph_get(); bv_ = BVHTree.FromObject(corps, dg_)
+        for c_ in [k for k in ('G', 'D', 'PG', 'PD') if k in mains]:
+            me_ = mains[c_].data; T_ = np.array([p_.vertices[:] for p_ in me_.polygons])
+            ar = np.sort(np.concatenate([T_[:, [0, 1]], T_[:, [1, 2]], T_[:, [2, 0]]]), 1); u_, n_ = np.unique(ar, axis=0, return_counts=True); bd = np.unique(u_[n_ == 1]); bd = bd[COUT[c_][1][bd] > 0.5]
+            P_ = np.zeros(len(me_.vertices) * 3); me_.vertices.foreach_get('co', P_); P_ = P_.reshape(-1, 3)
+            sd = []
+            for k in bd:
+                loc, nor, _, dist = bv_.find_nearest(Vector(P_[k]))
+                if loc is not None: sd.append((Vector(P_[k]) - loc).dot(nor))
+            wb = COUT[c_][1]; db = COUT[c_][3]; ib_ = np.where(wb > 0.05)[0]
+            sg = np.array([((Vector(P_[k]) - bv_.find_nearest(Vector(P_[k]))[0]).dot(bv_.find_nearest(Vector(P_[k]))[1])) for k in ib_])
+            for lo_, hi_ in ((0, 0.005), (0.005, 0.01), (0.01, 0.02), (0.02, 0.03), (0.03, 0.05), (0.05, 0.2)):
+                mm = (db[ib_] >= lo_) & (db[ib_] < hi_)
+                if mm.any(): print('  bande', c_, lo_, hi_, 'n', int(mm.sum()), 'sous la peau', int((sg[mm] < 0).sum()), 'distance mm p10/50/90', np.percentile(sg[mm] * 1000, [10, 50, 90]).round(1), flush=True)
+            sd = np.array(sd); print('bord', c_, len(bd), 'dehors', int((sd > 0).sum()), 'max dehors mm', round(1000 * sd.max(), 1), 'médiane mm', round(1000 * np.median(sd), 1), 'p90', round(1000 * np.percentile(sd, 90), 1), flush=True)
     if 'T' in mains:
         cou_bb = tete['cou'] + dec + float(os.environ.get('COU_T', '0.45')) * (np.array(J['cou'][1]) - np.array(J['cou'][0])) @ R['cou'].T
         cou_bb = cou_bb + R['cou'] @ np.array([0.0] + [float(x) for x in os.environ.get('TETE_DEC', '0.06,0.04').split(',')])
@@ -399,6 +584,16 @@ for nom, loc, e, t in [('cle', (1.8, -3.2, 3.0), 260, 2.5), ('debouche', (-2.6, 
 cam = bpy.data.cameras.new('c'); cam.lens = 85; cam.sensor_width = 36; cam.sensor_fit = 'HORIZONTAL'
 co = bpy.data.objects.new('c', cam); sc.collection.objects.link(co); sc.camera = co
 VUE = [float(x) for x in os.environ['VUE'].split(',')] if os.environ.get('VUE') else [MV['vue']['az'], MV['vue']['el']]
+if not os.environ.get('VUE'):
+    # Exercices allongés (buste à plat) : vue en hauteur depuis les pieds, de trois quarts, pour voir le torse
+    # au lieu des disques de la barre ; on garde le côté de la vue d'origine.
+    t0 = app2bl(MV['images'][0]['pw'])[ix['cou1']] - app2bl(MV['images'][0]['pw'])[ix['bassin']]
+    if abs(unit(t0)[2]) < 0.5:
+        pieds = -unit(np.array([t0[0], t0[1], 0.0]))
+        a_pieds = math.degrees(math.atan2(pieds[0], -pieds[1]))
+        cands = [a_pieds + 35, a_pieds - 35]
+        VUE = [min(cands, key=lambda a: abs((a - VUE[0] + 180) % 360 - 180)), max(VUE[1], float(os.environ.get('EL_ALLONGE', '42')))]
+        print('vue allongé :', [round(x) for x in VUE], flush=True)
 az, el = map(math.radians, VUE)
 bmin, bmax = app2bl(MV['boite']['min']), app2bl(MV['boite']['max'])
 lo, hi = np.minimum(bmin, bmax), np.maximum(bmin, bmax)
@@ -411,8 +606,40 @@ for cx in (lo[0], hi[0]):
         for cz in (lo[2], hi[2]):
             q = np.array([cx, cy, cz]) - cible
             dist = max(dist, abs(q @ dr) * MARGE / tanx + q @ dirc, abs(q @ up) * MARGE / tany + q @ dirc)
+if os.environ.get('CADRE', 'serre') == 'serre' and not os.environ.get('ZOOM'):
+    # Cadrage serré : on pose le corps sur une image sur cinq et on cadre ce qui est vraiment rendu (corps, mains, pieds,
+    # matériel) au lieu de la boîte large de l'appli, pour que le corps remplisse l'image.
+    pts = []
+    for i_ in list(range(0, len(MV['images']), 5)):
+        placer(i_); dg_ = bpy.context.evaluated_depsgraph_get(); dg_.update()
+        for o_ in sc.objects:
+            if o_.type != 'MESH' or o_.name == 'sol' or o_.hide_render: continue
+            e_ = o_.evaluated_get(dg_); m_ = e_.to_mesh(); n_ = len(m_.vertices)
+            if n_:
+                c_ = np.zeros(n_ * 3); m_.vertices.foreach_get('co', c_); c_ = c_.reshape(-1, 3)[::3]
+                Mw = np.array(o_.matrix_world); pts.append(c_ @ Mw[:3, :3].T + Mw[:3, 3])
+            e_.to_mesh_clear()
+    P_ = np.concatenate(pts); MARGE = float(os.environ.get('MARGE', '1.10'))
+    def cadrer(az_, el_):
+        dc = np.array([math.sin(az_) * math.cos(el_), -math.cos(az_) * math.cos(el_), math.sin(el_)])
+        r_ = unit(np.cross([0, 0, 1.0], dc)); u_ = np.cross(dc, r_); x_, y_, z_ = P_ @ r_, P_ @ u_, P_ @ dc
+        c_ = r_ * (x_.min() + x_.max()) / 2 + u_ * (y_.min() + y_.max()) / 2 + dc * (z_.min() + z_.max()) / 2; Q_ = P_ - c_
+        return max((np.abs(Q_ @ r_) * MARGE / tanx + Q_ @ dc).max(), (np.abs(Q_ @ u_) * MARGE / tany + Q_ @ dc).max()), c_, dc, r_, u_
+    dist, cible, dirc, dr, up = cadrer(az, el)
+    if not os.environ.get('VUE'):
+        # mouvement trop large pour l'image en hauteur (bras écartés…) : on tourne un peu la vue (20° au plus)
+        # si le corps y gagne plus de 10 % de taille à l'écran
+        meilleur = min(((cadrer(az + math.radians(d), el), d) for d in (-20, -10, 10, 20)), key=lambda t: t[0][0])
+        if meilleur[0][0] < 0.9 * dist:
+            (dist, cible, dirc, dr, up), d = meilleur; az += math.radians(d); print('vue tournée de', d, '°', flush=True)
+    print('cadrage serré : distance', round(float(dist), 2), flush=True)
 if os.environ.get('ZOOM'):
     zx, zz, zd = [float(x) for x in os.environ['ZOOM'].split(',')]; cible = np.array([zx, 0, zz]); dist = zd
+if os.environ.get('ZOOM_OBJ'):
+    # gros plan de contrôle sur une pièce (mainG, piedPD…) : même direction de vue, centré sur la pièce
+    nz_, dz_ = os.environ['ZOOM_OBJ'].split(','); placer(int(IMAGES.replace('-', ',').split(',')[0]))
+    me_ = sc.objects[nz_].data; c_ = np.zeros(len(me_.vertices) * 3); me_.vertices.foreach_get('co', c_)
+    cible = c_.reshape(-1, 3).mean(0) + np.array([0, 0, float(os.environ.get('ZOOM_DZ', '0'))]); dist = float(dz_)
 co.location = Vector(cible + dirc * dist); co.rotation_euler = (Vector(cible) - co.location).to_track_quat('-Z', 'Y').to_euler()
 if float(os.environ.get('CONTOUR', '0')) > 0:
     lc = bpy.data.lights.new('contour', 'AREA'); lc.energy = float(os.environ['CONTOUR']); lc.size = 1.2
