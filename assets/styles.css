@@ -5092,6 +5092,10 @@ html.app-ios body :is(.modal:not(#manual-modal):not(#modal-dialogue), .feuille) 
   transition: padding-bottom .32s cubic-bezier(.32,.72,0,1); }
 html.app-ios body .modal:not(#manual-modal):not(#modal-dialogue) .modal-content { max-height: calc(100dvh - env(safe-area-inset-top, 0px) - 18px - var(--clavier, 0px)); }
 html.app-ios body .feuille-contenu { max-height: min(85dvh, calc(100dvh - env(safe-area-inset-top, 0px) - 18px - var(--clavier, 0px))); }
+/* La hauteur suit le clavier au même rythme que la marge du bas : le haut de
+   la feuille reste en place. Sans ça, la feuille rétrécissait d'un coup puis
+   remontait depuis le bas, comme une nouvelle feuille qui s'ouvre. */
+html.app-ios body .feuille-contenu { transition: height .32s cubic-bezier(.32,.72,0,1), max-height .32s cubic-bezier(.32,.72,0,1); }
 /* Poignée : en haut de chaque feuille ; on la tire (ou l'en-tête) vers le bas pour fermer. */
 html.app-ios body .modal:not(#manual-modal):not(#modal-dialogue) .modal-content::before { content: ''; position: absolute; top: 7px; left: 50%; width: 36px; height: 5px;
   margin-left: -18px; border-radius: 99px; background: var(--t3); }
