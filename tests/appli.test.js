@@ -9839,3 +9839,23 @@ test('atlas 3D : sans WebGL 2, aucun accès ; avec, la fenêtre s\'ouvre, anime 
     await ctx.close();
   } finally { await nav.close(); }
 });
+
+test("app iPhone : quand le clavier s'ouvre ou se ferme, le haut de la feuille d'ajout ne saute pas (pas d'effet « nouvelle feuille »)", () => avecAppli({ animations: true }, async ({ page }) => {
+  const r = await page.evaluate(async () => {
+    document.documentElement.classList.add('app-ios');
+    ouvrirFeuilleRepas('lunch');
+    await new Promise(ok => setTimeout(ok, 800));
+    const c = document.querySelector('#feuille-repas .feuille-contenu');
+    const suivre = async () => { const hauts = []; for (let i = 0; i < 12; i++) { hauts.push(c.getBoundingClientRect().top); await new Promise(ok => setTimeout(ok, 40)); } return hauts; };
+    const depart = c.getBoundingClientRect().top;
+    hauteurClavier(336);
+    const montee = await suivre();
+    hauteurClavier(0);
+    const descente = await suivre();
+    return { depart, montee, descente };
+  });
+  // Au clavier, la feuille ne descend jamais sous son point de départ ; à la fermeture, elle ne passe jamais au-dessus de l'écran.
+  assert.ok(Math.max(...r.montee) <= r.depart + 2, 'la feuille retombe avant de remonter : ' + r.montee.map(Math.round).join(' '));
+  assert.ok(Math.min(...r.descente) >= -2, 'la feuille sort par le haut : ' + r.descente.map(Math.round).join(' '));
+  assert.ok(r.montee[r.montee.length - 1] < r.depart, 'la feuille remonte au-dessus du clavier');
+}));
