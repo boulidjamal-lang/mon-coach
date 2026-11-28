@@ -24998,7 +24998,10 @@ const LIBELLES_ROLE_ATLAS = { principal: 'muscle moteur', synergiste: "muscle d'
 const JOURS_ATLAS = 28;
 let atlasMonte = null, atlasScripts = {}, atlasExercice = null, atlasDonnees = null;
 
-function atlasDisponible() { return typeof WebGL2RenderingContext !== 'undefined'; }
+/* Toute la 3D (atlas des muscles, ses boutons, le modèle) est coupée pour l'instant : les vidéos SmartWorkout (bêta)
+   la remplacent. true la remet (avec MOUVEMENTS_3D pour les mouvements des exercices). */
+let ATLAS_3D = false;
+function atlasDisponible() { return ATLAS_3D && typeof WebGL2RenderingContext !== 'undefined'; }
 /* Le modèle et la peau, lus une seule fois par visite : la fiche d'un exercice et l'atlas s'en servent tour à tour
    (le moteur ne modifie pas ces tampons). La peau est facultative : si son fichier manque ou ne se charge pas, le
    corps reste l'écorché. Un échec n'est pas retenu : la prochaine ouverture réessaie. */
