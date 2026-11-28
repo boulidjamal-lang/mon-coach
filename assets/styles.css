@@ -4176,8 +4176,8 @@ html:root body { font-family: 'Inter', -apple-system, 'Segoe UI', sans-serif; ba
 /* Fond « studio » : uni, avec une grille fine qui s'efface vers le bas
    (fixe : elle ne défile pas). Ni lueur ni grain en haut : sous la bande
    unie du haut (voir .bord-haut), ils dessinaient un voile plus sombre. */
-html:root { --grille: rgba(13,16,32,.05); --bord-haut-h: max(calc(env(safe-area-inset-top, 0px) + 8px), 12px); }
-html:root[data-theme="dark"] { --grille: rgba(255,255,255,.038); }
+html:root { --grille: rgba(13,16,32,.028); --bord-haut-h: max(calc(env(safe-area-inset-top, 0px) + 8px), 12px); }
+html:root[data-theme="dark"] { --grille: rgba(255,255,255,.022); }
 html:root body::before { content: ''; display: block !important; position: fixed; inset: 0; z-index: 0; pointer-events: none; filter: none;
   background: linear-gradient(180deg, transparent 0 22%, var(--bg) 78%),
     linear-gradient(var(--grille) 1px, transparent 1px) 0 0/100% 32px, linear-gradient(90deg, var(--grille) 1px, transparent 1px) 0 0/32px 100%, var(--bg);
@@ -4211,8 +4211,8 @@ html.app-ios:not(.spl-actif) .bord-haut { display: none !important; height: calc
   -webkit-mask-image: linear-gradient(#000 40%, transparent); mask-image: linear-gradient(#000 40%, transparent);
   opacity: 0; transition: opacity .25s ease; }
 html.app-ios.page-defilee:not(.spl-actif) .bord-haut { opacity: 1; }
-/* App iPhone, en sombre : la grille du fond se voit (elle était presque noire sur noir). */
-html.app-ios:root[data-theme="dark"] { --grille: rgba(255,255,255,.085); }
+/* App iPhone, en sombre : la grille du fond se voit, discrète (elle était presque noire sur noir). */
+html.app-ios:root[data-theme="dark"] { --grille: rgba(255,255,255,.046); }
 /* App iPhone : pas de sélection de texte ni de loupe au toucher long
    sur l'interface, comme dans une app ; les champs restent sélectionnables. */
 html.app-ios body { -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
@@ -4419,7 +4419,7 @@ html:root, html:root[data-theme="light"] {
   --verre-lo: rgba(0,0,0,.04);
   --ombre-carte: 0 1px 2px rgba(0,0,0,.04), 0 6px 20px -10px rgba(0,0,0,.12);
   --ombre-haute: 0 18px 44px -16px rgba(0,0,0,.28);
-  --grille: rgba(0,0,0,.045);
+  --grille: rgba(0,0,0,.025);
   --corps-cible: #db2777; --corps-neutre: #d4d4da; --corps-contour: #e8e8ec; --record: #a16207;
 }
 html:root[data-theme="dark"] {
@@ -4434,7 +4434,7 @@ html:root[data-theme="dark"] {
   --verre-lo: rgba(255,255,255,.04);
   --ombre-carte: inset 0 0 0 1px var(--ligne);
   --ombre-haute: 0 18px 44px -16px rgba(0,0,0,.8);
-  --grille: rgba(255,255,255,.04);
+  --grille: rgba(255,255,255,.022);
   --corps-cible: #f472b6; --corps-neutre: #2e2e33; --corps-contour: #1c1c1f; --record: #f5b83d;
 }
 
