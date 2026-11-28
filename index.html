@@ -22570,12 +22570,48 @@ function demarrerReordre(c, o, zone, pointerId, y) {
   const rects = zones.map(z => z.getBoundingClientRect());
   // La place qu'il libère : sa hauteur et l'écart jusqu'à son voisin.
   const ecart = from + 1 < rects.length ? rects[from + 1].top - rects[from].bottom : from > 0 ? rects[from].top - rects[from - 1].bottom : 8;
-  reordreEnCours = { c, o, zones, from, cible: from, pointerId, y0: y, pas: rects[from].height + Math.max(0, ecart), centres: rects.map(x => x.top + x.height / 2) };
+  const defileur = defileurDe(c);
+  reordreEnCours = { c, o, zones, from, cible: from, pointerId, y0: y, pas: rects[from].height + Math.max(0, ecart), centres: rects.map(x => x.top + x.height / 2),
+    defileur, defile: 0, yDoigt: y, boucle: 0 };
   suivreReordre(y);
+  defilerPendantReordre();
+}
+/* Ce qui défile autour de la liste : la fenêtre d'une feuille ou d'une
+   modale si elle a sa propre barre, sinon la page. */
+function defileurDe(el) {
+  for (let n = el.parentElement; n && n !== document.body; n = n.parentElement) {
+    const oy = getComputedStyle(n).overflowY;
+    if ((oy === 'auto' || oy === 'scroll') && n.scrollHeight > n.clientHeight + 1) return n;
+  }
+  return null;
+}
+function hautDefile(d) { return d ? d.scrollTop : (window.scrollY || document.documentElement.scrollTop || 0); }
+/* Le doigt près du haut ou du bas de l'écran : la liste défile toute seule,
+   d'autant plus vite qu'on s'approche du bord, et l'exercice tenu reste sous
+   le doigt. Plus besoin de lâcher pour défiler puis de le reprendre. */
+function defilerPendantReordre() {
+  const st = reordreEnCours;
+  if (!st) return;
+  const cadre = st.defileur ? st.defileur.getBoundingClientRect() : { top: 0, bottom: window.innerHeight };
+  const haut = Math.max(0, cadre.top) + 90, bas = Math.min(window.innerHeight, cadre.bottom) - 110, BORD = 80;
+  let v = 0;
+  // Seulement vers le bord où le doigt est allé : un exercice pris près du
+  // haut ne fait pas défiler la liste tant qu'on ne monte pas.
+  if (st.yDoigt < haut + BORD && st.yDoigt < st.y0 - 12) v = -Math.min(1, (haut + BORD - st.yDoigt) / BORD);
+  else if (st.yDoigt > bas - BORD && st.yDoigt > st.y0 + 12) v = Math.min(1, (st.yDoigt - (bas - BORD)) / BORD);
+  if (v) {
+    const avant = hautDefile(st.defileur), pas = Math.round(v * 16);
+    if (st.defileur) st.defileur.scrollTop += pas; else window.scrollBy(0, pas);
+    const fait = hautDefile(st.defileur) - avant;
+    if (fait) { st.defile += fait; suivreReordre(st.yDoigt); }
+  }
+  st.boucle = requestAnimationFrame(defilerPendantReordre);
 }
 function suivreReordre(y) {
   const st = reordreEnCours;
-  const dy = y - st.y0;
+  st.yDoigt = y;
+  // Ce que la liste a défilé toute seule compte : elle a bougé sous le doigt.
+  const dy = y - st.y0 + st.defile;
   st.zones[st.from].style.transform = `translateY(${dy}px)`;
   const centre = st.centres[st.from] + dy;
   let cible = 0;
@@ -22593,6 +22629,7 @@ function suivreReordre(y) {
 function terminerReordre(poser) {
   const st = reordreEnCours;
   reordreEnCours = null;
+  if (st.boucle) cancelAnimationFrame(st.boucle);
   reordreVientDeFinir = true;
   setTimeout(() => { reordreVientDeFinir = false; }, 80);
   st.c.classList.remove('reordre');

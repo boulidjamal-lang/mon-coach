@@ -2125,7 +2125,8 @@ img.vignette-3d { background: radial-gradient(ellipse 75% 60% at 50% 42%, #1b1e2
   color: #fff; font-weight: 800; font-size: 0.82rem; opacity: 0; transition: opacity 0.15s; }
 .exo-swipe-fond svg, .exo-swipe-fond .icone-ui { width: 22px; height: 22px; color: #fff; }
 .exo-swipe-fond--suppr { background: var(--danger); justify-content: flex-end; }
-.exo-swipe-fond--remplacer { background: var(--accent); justify-content: flex-start; }
+/* Bleu franc à lui : avec le thème noir et blanc, --accent devient gris et le fond semblait désactivé. */
+.exo-swipe-fond--remplacer { background: #1f6feb; justify-content: flex-start; }
 .exo-swipe.vers-gauche .exo-swipe-fond--suppr, .exo-swipe.vers-droite .exo-swipe-fond--remplacer { opacity: 1; }
 .exo-swipe.au-seuil .exo-swipe-fond svg { transform: scale(1.25); transition: transform 0.15s; }
 .session-superset-bloc .exo-swipe { margin-bottom: 14px; border-radius: 12px; }
