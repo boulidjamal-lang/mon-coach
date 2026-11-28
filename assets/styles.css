@@ -1640,6 +1640,10 @@ body.couche-ouverte .bandeau-seance-flottant { opacity: 0; pointer-events: none;
   display: flex; align-items: center; justify-content: center;
 }
 .exo-ligne-vignette img, .exo-ligne-vignette video { width: 100%; height: 100%; object-fit: cover; display: block; }
+/* Les aperçus animés ne prennent jamais le doigt : sur iPhone, une vidéo qui
+   joue peut garder le toucher pour elle, et le glissement de l'exercice
+   (retirer, remplacer) ou le toucher de la ligne ne partait plus. */
+:is(.exo-ligne-vignette, .exo-prog-vignette, .session-exo-vignette-btn) :is(video, img) { pointer-events: none; -webkit-touch-callout: none; }
 .exo-ligne-vignette .vignette-video { position: absolute; inset: 0; opacity: 0; transition: opacity 0.2s; background: transparent; }
 .exo-ligne-vignette .vignette-video.prete { opacity: 1; }
 .exo-ligne-vignette svg { width: 78%; height: 78%; }
