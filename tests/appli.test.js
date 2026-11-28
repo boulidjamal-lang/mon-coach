@@ -473,7 +473,7 @@ test('la bibliothèque s\'ouvre vite et ne lance que quelques vidéos', () => av
 }));
 
 test("un lien SmartWorkout collé comme vidéo n'est plus affiché (site comme app) ; une autre image reste une image", () => avecAppli({}, async ({ page }) => {
-  await page.evaluate(() => { VIDEOS_SW_BETA = false; MOUVEMENTS_3D = true; });   // règle hors bêta : sans les vidéos SmartWorkout, avec les mouvements 3D
+  await page.evaluate(() => { VIDEOS_SW_BETA = false; MOUVEMENTS_3D = true; ATLAS_3D = true; });   // règle hors bêta : sans les vidéos SmartWorkout, avec les mouvements 3D
   const r = await page.evaluate(() => {
     const IMG_AB_COASTER = 'https://api.smartworkout.app/asset/image/4e939dab-2978-4d2f-82f0-74cafb543e9a';
     const connu = videoExercice({ id: 'x', video: IMG_AB_COASTER });
@@ -4262,7 +4262,7 @@ test('vidéos HD : préchargées au démarrage de la séance, reprises telles qu
 }));
 
 test("une vidéo ou des photos posées autrefois dans Administration ne remplacent plus la 3D d'un exercice de la bibliothèque (miniature, fiche, séance) ; toute copie de SmartWorkout est écartée", () => avecAppli({}, async ({ page }) => {
-  await page.evaluate(() => { VIDEOS_SW_BETA = false; MOUVEMENTS_3D = true; });   // règle hors bêta : sans les vidéos SmartWorkout, avec les mouvements 3D
+  await page.evaluate(() => { VIDEOS_SW_BETA = false; MOUVEMENTS_3D = true; ATLAS_3D = true; });   // règle hors bêta : sans les vidéos SmartWorkout, avec les mouvements 3D
   const r = await page.evaluate(() => {
     // Les corrections telles que le serveur les rend (exercices_base_overrides) : une vidéo hébergée ailleurs
     // que chez SmartWorkout, des photos.
@@ -4296,7 +4296,7 @@ test("une vidéo ou des photos posées autrefois dans Administration ne remplace
 
 test("vidéo filmée du corps 3D (aucune pour l'instant) : posée sur un exercice, la fiche la montre avec le crédit CC BY de son auteur, et la 3D reste à portée d'un bouton", () => avecAppli({}, async ({ page }) => {
   const r = await page.evaluate(() => {
-    VIDEOS_SW_BETA = false; MOUVEMENTS_3D = true; VIDEOS_CORPS['sw-muscle-up'] = 'assets/videos-corps/sw-muscle-up.mp4';
+    VIDEOS_SW_BETA = false; MOUVEMENTS_3D = true; ATLAS_3D = true; VIDEOS_CORPS['sw-muscle-up'] = 'assets/videos-corps/sw-muscle-up.mp4';
     afficherFicheExerciceBiblio('sw-muscle-up'); choisirOngletFiche('technique');
     const fiche = document.getElementById('fiche-exercice-container');
     const v = fiche.querySelector('.fiche-exo-film video');
@@ -7255,7 +7255,7 @@ test('app iOS, Pro en vente : Pro se paie via Apple (prix d\'Apple, achat relié
 }));
 
 test("app iOS : ni vidéo SmartWorkout, ni GIF ExerciseDB, ni image wger ; les autres images gardent leur source", () => avecAppli({ natif: true }, async ({ page }) => {
-  await page.evaluate(() => { VIDEOS_SW_BETA = false; MOUVEMENTS_3D = true; });   // règle hors bêta : sans les vidéos SmartWorkout, avec les mouvements 3D
+  await page.evaluate(() => { VIDEOS_SW_BETA = false; MOUVEMENTS_3D = true; ATLAS_3D = true; });   // règle hors bêta : sans les vidéos SmartWorkout, avec les mouvements 3D
   const requetes = [];
   page.on('request', r => requetes.push(r.url()));
   const r = await page.evaluate(async () => {
@@ -7307,7 +7307,7 @@ test("app iOS : ni vidéo SmartWorkout, ni GIF ExerciseDB, ni image wger ; les a
 }));
 
 test("site : comme l'app, ni vidéo SmartWorkout ni GIF ExerciseDB (schéma des muscles à la place) ; chaque image d'exercice cite sa source", () => avecAppli({}, async ({ page }) => {
-  await page.evaluate(() => { VIDEOS_SW_BETA = false; MOUVEMENTS_3D = true; });   // règle hors bêta : sans les vidéos SmartWorkout, avec les mouvements 3D
+  await page.evaluate(() => { VIDEOS_SW_BETA = false; MOUVEMENTS_3D = true; ATLAS_3D = true; });   // règle hors bêta : sans les vidéos SmartWorkout, avec les mouvements 3D
   const r = await page.evaluate(() => {
     window.WebGL2RenderingContext = undefined;   // la fiche sans le mouvement en 3D : la photo, ou le corps dessiné
     const fiche = id => {
@@ -7331,7 +7331,7 @@ test("site : comme l'app, ni vidéo SmartWorkout ni GIF ExerciseDB (schéma des 
 }));
 
 test("miniatures 3D : chaque exercice de la bibliothèque a la sienne, rendue sur son mouvement actuel, et rien d'autre", () => avecAppli({}, async ({ page }) => {
-  await page.evaluate(() => { VIDEOS_SW_BETA = false; MOUVEMENTS_3D = true; });   // mouvements 3D rallumés pour ce test (coupés dans l'appli pour l'instant)
+  await page.evaluate(() => { VIDEOS_SW_BETA = false; MOUVEMENTS_3D = true; ATLAS_3D = true; });   // mouvements 3D rallumés pour ce test (coupés dans l'appli pour l'instant)
   const r = await page.evaluate(() => {
     const visibles = EXERCICES_BASE.map(e => e.id).filter(id => mouvementExercice(id) === id);
     const cibles = [...EXERCICES_BASE, ...EXERCICES_RETIRES].map(e => mouvementExercice(e.id)).filter(Boolean);
@@ -7383,7 +7383,7 @@ test("miniatures 3D : chaque exercice de la bibliothèque a la sienne, rendue su
 }));
 
 test("miniatures 3D animées : la boucle du thème affiché se pose sur l'image quand la case reste à l'écran (quatre au plus), suit le thème, et rien en mouvement réduit", () => avecAppli({ natif: true, animations: true }, async ({ page }) => {
-  await page.evaluate(() => { VIDEOS_SW_BETA = false; MOUVEMENTS_3D = true; });   // mouvements 3D rallumés pour ce test (coupés dans l'appli pour l'instant)
+  await page.evaluate(() => { VIDEOS_SW_BETA = false; MOUVEMENTS_3D = true; ATLAS_3D = true; });   // mouvements 3D rallumés pour ce test (coupés dans l'appli pour l'instant)
   const r = await page.evaluate(async () => {
     const res = {};
     appliquerTheme('light');
@@ -7412,7 +7412,7 @@ test("miniatures 3D animées : la boucle du thème affiché se pose sur l'image 
 }));
 
 test("listes : la miniature 3D de chaque exercice sur le fond de la fiche (clair ou sombre) ; en séance, la toucher ouvre le mouvement en 3D", () => avecAppli({ natif: true }, async ({ page }) => {
-  await page.evaluate(() => { VIDEOS_SW_BETA = false; MOUVEMENTS_3D = true; });   // règle hors bêta : sans les vidéos SmartWorkout, avec les mouvements 3D
+  await page.evaluate(() => { VIDEOS_SW_BETA = false; MOUVEMENTS_3D = true; ATLAS_3D = true; });   // règle hors bêta : sans les vidéos SmartWorkout, avec les mouvements 3D
   const r = await page.evaluate(async () => {
     const res = {};
     ouvrirBibliotheque();
@@ -8504,6 +8504,8 @@ test("zones de toucher : les petits boutons repérés par l'audit se touchent su
     while (droite < 200 && dedans(cx + droite + 1, cy)) droite++;
     return [gauche + droite + 1, haut + bas + 1];
   }, sel);
+  // Le bouton de l'atlas n'existe qu'avec la 3D (coupée par défaut) : on la rallume pour le mesurer.
+  await page.evaluate(() => { ATLAS_3D = true; });
   await page.evaluate(() => {
     const t = todayStr(), exo = toutesLesExercices().find(e => e.groupe === 'pectoraux' && e.materiel === 'barre');
     for (let k = 3; k >= 0; k--) getDay(shiftDate(t, -k)).meals.lunch.push({ name: 'Riz', grams: 100, unite: 'g', kcal: 130, p: 3, c: 28, f: 0 });
@@ -8809,7 +8811,7 @@ const HISTORIQUE_ATLAS = `(() => {
 })()`;
 
 test('atlas 3D : le registre du modèle parle la langue de l\'appli (groupes, faisceaux, muscles attendus)', () => avecAppli({}, async ({ page }) => {
-  await page.evaluate(() => { VIDEOS_SW_BETA = false; MOUVEMENTS_3D = true; });   // mouvements 3D rallumés pour ce test (coupés dans l'appli pour l'instant)
+  await page.evaluate(() => { VIDEOS_SW_BETA = false; MOUVEMENTS_3D = true; ATLAS_3D = true; });   // mouvements 3D rallumés pour ce test (coupés dans l'appli pour l'instant)
   const E = enteteAtlas(), S = E.structures;
   assert.equal(E.format, 'anqa-atlas');
   assert.equal(new Set(S.map(s => s.id)).size, S.length, 'identifiants uniques');
@@ -9387,7 +9389,7 @@ test('atlas 3D : les cartes viennent de l\'historique réel, et restent neutres 
 test('atlas 3D : la fiche d\'un exercice montre son mouvement dès l\'ouverture, et l\'atlas s\'ouvre devant elle', async () => {
   // Sans WebGL 2 : la fiche garde la photo ou le corps dessiné, et rien ne se charge.
   await avecAppli({}, async ({ page }) => {
-  await page.evaluate(() => { VIDEOS_SW_BETA = false; MOUVEMENTS_3D = true; });   // règle hors bêta : sans les vidéos SmartWorkout, avec les mouvements 3D
+  await page.evaluate(() => { VIDEOS_SW_BETA = false; MOUVEMENTS_3D = true; ATLAS_3D = true; });   // règle hors bêta : sans les vidéos SmartWorkout, avec les mouvements 3D
     const r = await page.evaluate(() => {
       const sauve = window.WebGL2RenderingContext; window.WebGL2RenderingContext = undefined;
       afficherFicheExerciceBiblio('e265');
@@ -9400,7 +9402,7 @@ test('atlas 3D : la fiche d\'un exercice montre son mouvement dès l\'ouverture,
   const nav = await lancerNavigateur(['--use-gl=angle', '--use-angle=swiftshader', '--enable-unsafe-swiftshader']);
   try {
     const { page, erreurs, ctx } = await ouvrirAppli(nav, { https: true });
-    await page.evaluate(() => { VIDEOS_SW_BETA = false; MOUVEMENTS_3D = true; });   // règle hors bêta : sans les vidéos SmartWorkout, avec les mouvements 3D
+    await page.evaluate(() => { VIDEOS_SW_BETA = false; MOUVEMENTS_3D = true; ATLAS_3D = true; });   // règle hors bêta : sans les vidéos SmartWorkout, avec les mouvements 3D
     const webgl = await page.evaluate(() => !!document.createElement('canvas').getContext('webgl2'));
     if (!webgl) { await ctx.close(); return; }   // pas de rendu 3D dans ce navigateur de test : rien à vérifier de plus
     const monte = () => page.waitForFunction(() => ficheMouvement && document.querySelector('#fiche-exo-3d canvas'), null, { timeout: 120000 });
@@ -9763,7 +9765,7 @@ test('atlas 3D : bras écartés, la peau tendue sous l\'aisselle laisse voir le 
   const nav = await lancerNavigateur(['--use-gl=angle', '--use-angle=swiftshader', '--enable-unsafe-swiftshader']);
   try {
     const { page, erreurs, ctx } = await ouvrirAppli(nav, { https: true });
-    await page.evaluate(() => { VIDEOS_SW_BETA = false; MOUVEMENTS_3D = true; });   // règle hors bêta : sans les vidéos SmartWorkout, avec les mouvements 3D
+    await page.evaluate(() => { VIDEOS_SW_BETA = false; MOUVEMENTS_3D = true; ATLAS_3D = true; });   // règle hors bêta : sans les vidéos SmartWorkout, avec les mouvements 3D
     if (!await page.evaluate(() => !!document.createElement('canvas').getContext('webgl2'))) { await ctx.close(); return; }   // pas de rendu 3D ici
     await page.evaluate(() => afficherFicheExerciceBiblio('sw-tirage-vertical-a-la-poulie'));
     await page.waitForFunction(() => ficheMouvement && document.querySelector('#fiche-exo-3d canvas'), null, { timeout: 120000 });
@@ -9965,7 +9967,7 @@ test("atlas 3D : la main se referme sur la barre — chaque phalange et le pouce
 test('atlas 3D : sans WebGL 2, aucun accès ; avec, la fenêtre s\'ouvre, anime un exercice et libère tout à la fermeture', async () => {
   // Sans WebGL 2 : pas de bouton, et l'ouverture forcée prévient sans rien casser.
   await avecAppli({}, async ({ page, dialogues }) => {
-  await page.evaluate(() => { VIDEOS_SW_BETA = false; MOUVEMENTS_3D = true; });   // mouvements 3D rallumés pour ce test (coupés dans l'appli pour l'instant)
+  await page.evaluate(() => { VIDEOS_SW_BETA = false; MOUVEMENTS_3D = true; ATLAS_3D = true; });   // mouvements 3D rallumés pour ce test (coupés dans l'appli pour l'instant)
     const r = await page.evaluate(async () => {
       const sauve = window.WebGL2RenderingContext; window.WebGL2RenderingContext = undefined;
       const bouton = boutonAtlasHTML('semaine', null, '3D');
@@ -9983,7 +9985,7 @@ test('atlas 3D : sans WebGL 2, aucun accès ; avec, la fenêtre s\'ouvre, anime 
   const nav = await lancerNavigateur(['--use-gl=angle', '--use-angle=swiftshader', '--enable-unsafe-swiftshader']);
   try {
     const { page, erreurs, ctx } = await ouvrirAppli(nav, { https: true });
-    await page.evaluate(() => { VIDEOS_SW_BETA = false; MOUVEMENTS_3D = true; });   // mouvements 3D rallumés pour ce test (coupés dans l'appli pour l'instant)
+    await page.evaluate(() => { VIDEOS_SW_BETA = false; MOUVEMENTS_3D = true; ATLAS_3D = true; });   // mouvements 3D rallumés pour ce test (coupés dans l'appli pour l'instant)
     const webgl = await page.evaluate(() => !!document.createElement('canvas').getContext('webgl2'));
     if (!webgl) { await ctx.close(); return; }   // pas de rendu 3D dans ce navigateur de test : rien à vérifier de plus
     await page.evaluate(HISTORIQUE_ATLAS);
