@@ -9880,3 +9880,28 @@ test("séance : un glissement arrivé au seuil remplace ou retire l'exercice mê
   });
   assert.ok(r.picker, 'glisser à droite jusqu\'au seuil ouvre « Remplacer » même terminé par pointercancel');
 }));
+
+test("séance en cours : en tenant un exercice près du bas de l'écran, la page défile toute seule et on le pose plus loin sans le lâcher", () => avecAppli({}, async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 600 });
+  await page.evaluate(() => {
+    allerA('seance'); choisirModeSeance('muscu');
+    musculationSessionActive = { programmeId: null, programmeNom: null, debut: Date.now(), notes: '',
+      exercices: toutesLesExercices().slice(0, 14).map(e => ({ exerciceId: e.id, nom: e.nom, series: [{ poids: 40, reps: 10 }, { poids: 40, reps: 10 }] })) };
+    sauvegarderSessionActive(); renderSeance();
+  });
+  const avant = await page.evaluate(() => musculationSessionActive.exercices.map(e => e.exerciceId));
+  await page.locator('#session-exercices-container .session-exo-entete').first().evaluate(el => el.scrollIntoView({ block: 'center' }));
+  const b = await page.locator('#session-exercices-container .session-exo-nom').first().boundingBox();
+  const x = b.x + 20, y = b.y + b.height / 2;
+  await page.mouse.move(x, y); await page.mouse.down();
+  await page.waitForTimeout(600);
+  const haut0 = await page.evaluate(() => window.scrollY);
+  // Le doigt descend tout en bas de l'écran et y reste.
+  for (let k = 1; k <= 10; k++) await page.mouse.move(x, y + (585 - y) * k / 10);
+  await page.waitForTimeout(1500);
+  const haut1 = await page.evaluate(() => window.scrollY);
+  await page.mouse.up(); await page.waitForTimeout(300);
+  const ordre = await page.evaluate(() => musculationSessionActive.exercices.map(e => e.exerciceId));
+  assert.ok(haut1 > haut0 + 150, `la page défile pendant qu'on tient l'exercice (${haut0} → ${haut1})`);
+  assert.ok(ordre.indexOf(avant[0]) >= 8, 'le premier exercice est posé bien plus bas : position ' + ordre.indexOf(avant[0]));
+}));
