@@ -4295,7 +4295,8 @@ test('bibliothèque : chaque exercice dit s\'il se charge et s\'il se chronomèt
     'Vélo : sans charge, temps', 'Rameur : sans charge, temps', 'Corde à sauter : sans charge, temps', 'Planche avec poids : charge, temps', 'Roulade avec roue abdominale : sans charge', 'Développé couché avec barre : charge',
     'Curl biceps avec élastique : charge', 'Squat gobelet avec kettlebell : charge']);
   assert.deepEqual(r.incoherents, []);
-  assert.ok(r.auTemps >= 65 && r.auTemps <= 80 && r.sansCharge >= 230 && r.sansCharge <= 260, `${r.auTemps} au temps, ${r.sansCharge} sans charge sur ${r.total}`);
+  // Bibliothèque complète de SmartWorkout (1 069 exercices depuis le 28/11/2026, dont beaucoup d'étirements, d'échauffements et de cardio).
+  assert.ok(r.auTemps >= 125 && r.auTemps <= 145 && r.sansCharge >= 365 && r.sansCharge <= 400, `${r.auTemps} au temps, ${r.sansCharge} sans charge sur ${r.total}`);
   assert.deepEqual(r.programme, [
     { entete: ['Série', 'Durée (s)'], champs: 1, tempo: false, lest: false },
     { entete: ['Série', 'Répétitions'], champs: 1, tempo: true, lest: true },
@@ -7050,7 +7051,8 @@ test("miniatures 3D : chaque exercice de la bibliothèque a la sienne, rendue su
   const r = await page.evaluate(() => {
     const visibles = EXERCICES_BASE.map(e => e.id).filter(id => mouvementExercice(id) === id);
     const cibles = [...EXERCICES_BASE, ...EXERCICES_RETIRES].map(e => mouvementExercice(e.id)).filter(Boolean);
-    return { visibles, cibles: [...new Set(cibles)], base: EXERCICES_BASE.length,
+    // Les exercices repris après la 3D (EXERCICES_SANS_3D) n'ont pas de mouvement : ils ne comptent pas ici.
+    return { visibles, cibles: [...new Set(cibles)], base: EXERCICES_BASE.filter(e => !EXERCICES_SANS_3D.has(e.id)).length, sans3d: EXERCICES_BASE.filter(e => EXERCICES_SANS_3D.has(e.id) && mouvementExercice(e.id)).map(e => e.id),
       perso: vignette3DExercice({ id: 'maison', perso: true, groupe: 'biceps' }), sansMouvement: vignette3DExercice({ id: 'inconnu' }) };
   });
   const dossier = path.join(RACINE, 'assets', 'atlas', 'vignettes');
@@ -7058,6 +7060,7 @@ test("miniatures 3D : chaque exercice de la bibliothèque a la sienne, rendue su
   const table = Object.fromEntries(fs.readFileSync(path.join(RACINE, 'outils', 'atlas', 'mouvements', 'table.txt'), 'utf8').split('\n')
     .filter(l => l.trim() && !l.startsWith('#')).map(l => l.split('|').map(x => x.trim())).map(([id, spec]) => [id, spec]));
   assert.equal(r.visibles.length, r.base, 'tous les exercices de la bibliothèque ont leur mouvement');
+  assert.deepEqual(r.sans3d, [], 'un exercice repris après la 3D n\'annonce pas de mouvement');
   const total = { image: 0, boucles: 0 };
   for (const id of r.visibles) {
     // L'image fixe (WebP) et la boucle de chaque thème (MP4).
@@ -7132,9 +7135,11 @@ test("listes : la miniature 3D de chaque exercice sur le fond de la fiche (clair
     const res = {};
     ouvrirBibliotheque();
     await new Promise(ok => setTimeout(ok, 600));
-    const lignes = [...document.querySelectorAll('#picker-liste-exercices .exo-ligne')];
+    // Les exercices repris après la 3D (EXERCICES_SANS_3D) n'ont pas de miniature 3D : hors de ce compte.
+    const idLigne = l => (l.getAttribute('onclick') || '').match(/choisirExercicePicker\("([^"]+)"\)/)?.[1] || null;
+    const lignes = [...document.querySelectorAll('#picker-liste-exercices .exo-ligne')].filter(l => !EXERCICES_SANS_3D.has(idLigne(l)));
     const imgs = lignes.map(l => l.querySelector('.exo-ligne-vignette img.vignette-3d'));
-    res.lignes = lignes.length; res.sansMiniature = imgs.filter(i => !i).length; res.silhouettes = document.querySelectorAll('#picker-liste-exercices .exo-ligne-vignette svg').length;
+    res.lignes = lignes.length; res.sansMiniature = imgs.filter(i => !i).length; res.silhouettes = lignes.filter(l => l.querySelector('.exo-ligne-vignette svg')).length;
     res.paresseuses = imgs.filter(i => i && i.getAttribute('loading') === 'lazy').length;
     res.boucles = imgs.filter(i => i && (i.dataset.anim3d || i.classList.contains('vignette-differee'))).length;
     // Les premières, à l'écran : chargées, à la taille rendue.
@@ -8565,7 +8570,7 @@ test('atlas 3D : le registre du modèle parle la langue de l\'appli (groupes, fa
     REDIRECTIONS_EXERCICES['exercice-commun'] = 'e1';
     const fusionne = mouvementExercice('exercice-commun');
     delete REDIRECTIONS_EXERCICES['exercice-commun'];
-    return { ids, visibles: EXERCICES_BASE.map(e => e.id), doublons: EXERCICES_RETIRES.filter(e => e.estFusionBibliotheque).map(e => e.id), anime: ids.every(id => mouvementExercice(id) === cibleFusion(id) && IDS_EXERCICES_LIVRES.has(cibleFusion(id))),
+    return { ids, visibles: EXERCICES_BASE.map(e => e.id).filter(id => !EXERCICES_SANS_3D.has(id)), doublons: EXERCICES_RETIRES.filter(e => e.estFusionBibliotheque).map(e => e.id), anime: ids.every(id => mouvementExercice(id) === cibleFusion(id) && IDS_EXERCICES_LIVRES.has(cibleFusion(id))),
       perso: mouvementExercice('exercice-maison'), fusionne, ancien: mouvementExercice(EXERCICES_RETIRES.find(e => !e.estFusionBibliotheque && !REDIRECTIONS_EXERCICES[e.id]).id) };
   });
   assert.ok(bibli.ids.length > 800 && bibli.visibles.length > 750 && bibli.doublons.length > 20, 'la bibliothèque');
