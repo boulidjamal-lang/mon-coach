@@ -9905,3 +9905,22 @@ test("séance en cours : en tenant un exercice près du bas de l'écran, la page
   assert.ok(haut1 > haut0 + 150, `la page défile pendant qu'on tient l'exercice (${haut0} → ${haut1})`);
   assert.ok(ordre.indexOf(avant[0]) >= 8, 'le premier exercice est posé bien plus bas : position ' + ordre.indexOf(avant[0]));
 }));
+
+test("app iPhone : une fenêtre avec un champ (ex. « Lancer un défi ») ne retombe pas puis remonte quand le clavier s'ouvre", () => avecAppli({ animations: true }, async ({ page }) => {
+  const r = await page.evaluate(async () => {
+    document.documentElement.classList.add('app-ios');
+    const m = document.getElementById('modal-defi');
+    m.classList.add('show');
+    await new Promise(ok => setTimeout(ok, 900));
+    const c = m.querySelector('.modal-content');
+    const suivre = async () => { const hauts = []; for (let i = 0; i < 12; i++) { hauts.push(c.getBoundingClientRect().top); await new Promise(ok => setTimeout(ok, 40)); } return hauts; };
+    const depart = c.getBoundingClientRect().top;
+    hauteurClavier(480);   // assez haut pour que la fenêtre doive rétrécir
+    const montee = await suivre();
+    hauteurClavier(0);
+    const descente = await suivre();
+    return { depart, montee, descente, hauteur: c.getBoundingClientRect().height };
+  });
+  assert.ok(Math.max(...r.montee) <= r.depart + 2, 'la fenêtre retombe avant de remonter : ' + r.depart + ' → ' + r.montee.map(Math.round).join(' '));
+  assert.ok(Math.min(...r.descente) >= -2, 'la fenêtre sort par le haut : ' + r.descente.map(Math.round).join(' '));
+}));
