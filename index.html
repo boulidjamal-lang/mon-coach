@@ -30071,7 +30071,10 @@ function initSwipeExercices(conteneurId, options) {
     swipeExoVientDeGlisser = true;
     setTimeout(() => { swipeExoVientDeGlisser = false; }, 60);
     const ei = Number(st.zone.dataset.ei);
-    const declenche = Math.abs(st.dx) >= SEUIL() && e.type === 'pointerup';
+    // Sur iPhone, le système finit souvent un glissement par « pointercancel »
+    // au lieu de « pointerup » : l'exercice revenait en place sans rien faire.
+    // Arrivé au seuil, le geste compte quelle que soit la façon dont il finit.
+    const declenche = Math.abs(st.dx) >= SEUIL();
     const revenir = () => {
       st.zone.classList.remove('en-glissement', 'au-seuil');
       st.bloc.style.transform = '';
@@ -30089,6 +30092,9 @@ function initSwipeExercices(conteneurId, options) {
   };
   c.addEventListener('pointerup', fin);
   c.addEventListener('pointercancel', fin);
+  // Glissement horizontal lancé : la page ne défile pas en même temps (sinon
+  // l'iPhone reprend le geste pour lui et l'annule).
+  c.addEventListener('touchmove', (e) => { if (swipeExo && swipeExo.horizontal && e.cancelable) e.preventDefault(); }, { passive: false });
   // Un glissement ne doit pas aussi « cliquer » (ouvrir la fiche, déplier).
   c.addEventListener('click', (e) => { if (swipeExoVientDeGlisser) { e.stopPropagation(); e.preventDefault(); } }, true);
 }
