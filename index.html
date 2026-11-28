@@ -6644,8 +6644,8 @@ function majJaugeEau(day) {
    au repos, 60 quand l'eau bouge ; en mouvement réduit, une image fixe.
    Repère : le coin haut gauche de la gourde (60 × 86 px) ; la toile déborde
    au-dessus (le filet) et autour (l'ombre). */
-const GOURDE_PLEIN = 38.6, GOURDE_VIDE = 80.8, GOURDE_X = 30, GOURDE_SOURCE = -22, GOURDE_G = 0.0016;
-const GOURDE_MARGES = { haut: 24, cote: 8, bas: 8 }, GOURDE_N = 36, GOURDE_XG = 12.6, GOURDE_XD = 47.4;
+const GOURDE_PLEIN = 37.4, GOURDE_VIDE = 80.8, GOURDE_X = 30, GOURDE_SOURCE = -22, GOURDE_G = 0.0016;
+const GOURDE_MARGES = { haut: 24, cote: 8, bas: 8 }, GOURDE_N = 36, GOURDE_XG = 11.6, GOURDE_XD = 48.4;
 let gourdeAnim = null;
 const moteurGourde = {
   toile: null, ctx: null, dpr: 1, raf: 0, dernier: 0, reste: 0, visible: true, sombre: false, chemins: null,
@@ -6670,32 +6670,35 @@ function etiquetteGourde(ml) {
 }
 function ySurfaceGourde(part) { return GOURDE_VIDE - part * (GOURDE_VIDE - GOURDE_PLEIN); }
 
-/* La forme : le col, l'épaule, le corps aux coins arrondis ; l'intérieur
-   suit, 1,6 px plus loin (les parois) et 3,2 px plus haut (le fond épais). */
+/* La forme : une gourde de sport. Le col, des épaules rondes, un corps
+   légèrement cintré à mi-hauteur (la prise en main), un fond arrondi.
+   L'intérieur suit, 1,6 px plus loin (les parois) et 3,2 px plus haut (le
+   fond épais). */
 function cheminsGourde() {
   const ext = new Path2D(), int = new Path2D(), bordInt = new Path2D();
-  ext.moveTo(22.5, 19.5); ext.lineTo(22.5, 23); ext.bezierCurveTo(22.5, 29, 11, 28.5, 11, 38);
-  ext.lineTo(11, 77); ext.arcTo(11, 84, 18, 84, 7); ext.lineTo(42, 84); ext.arcTo(49, 84, 49, 77, 7);
-  ext.lineTo(49, 38); ext.bezierCurveTo(49, 28.5, 37.5, 29, 37.5, 23); ext.lineTo(37.5, 19.5); ext.closePath();
-  const interieur = p => {
-    p.moveTo(24.1, 19.5); p.lineTo(24.1, 23.4); p.bezierCurveTo(24.1, 29.6, 12.6, 29.4, 12.6, 38.6);
-    p.lineTo(12.6, 75.4); p.arcTo(12.6, 80.8, 18, 80.8, 5.4); p.lineTo(42, 80.8); p.arcTo(47.4, 80.8, 47.4, 75.4, 5.4);
-    p.lineTo(47.4, 38.6); p.bezierCurveTo(47.4, 29.4, 35.9, 29.6, 35.9, 23.4); p.lineTo(35.9, 19.5);
+  const forme = (p, e) => {   // e = 0 : l'extérieur ; e = 1.6 : l'intérieur
+    const g = 10 + e, d = 50 - e, cg = 10.9 + e, cd = 49.1 - e, b = 84 - 2 * e, r = 7.5 - e * 1.3;
+    p.moveTo(22.5 + e, 19.5); p.lineTo(22.5 + e, 22.5 + e * .25); p.bezierCurveTo(22.5 + e, 27.5 + e * .6, g, 27 + e * .8, g, 35 + e * .4);
+    p.lineTo(g, 50); p.bezierCurveTo(g, 55, cg, 56, cg, 60); p.bezierCurveTo(cg, 64, g, 65, g, 70);
+    p.lineTo(g, b - r); p.arcTo(g, b, g + r, b, r); p.lineTo(d - r, b); p.arcTo(d, b, d, b - r, r);
+    p.lineTo(d, 70); p.bezierCurveTo(d, 65, cd, 64, cd, 60); p.bezierCurveTo(cd, 56, d, 55, d, 50);
+    p.lineTo(d, 35 + e * .4); p.bezierCurveTo(d, 27 + e * .8, 37.5 - e, 27.5 + e * .6, 37.5 - e, 22.5 + e * .25); p.lineTo(37.5 - e, 19.5);
   };
-  interieur(int); int.closePath();
-  interieur(bordInt);
+  forme(ext, 0); ext.closePath();
+  forme(int, 1.6); int.closePath();
+  forme(bordInt, 1.6);
   return { ext, int, bordInt };
 }
 function couleursGourde(sombre, atteint) {
   const c = sombre ? {
     ombre: 'rgba(0,0,0,.6)', verreHaut: 'rgba(255,255,255,.075)', verreBas: 'rgba(255,255,255,.035)', paroi: 'rgba(0,0,0,.28)',
-    eau: ['#93ddff', '#3fb2f2', '#1a7ed4', '#0a3f86'], bordEau: 'rgba(0,8,26,.42)', plan: 'rgba(170,226,255,.24)',
+    eau: ['#93ddff', '#3fb2f2', '#1a7ed4', '#0a3f86'], bordEau: 'rgba(0,8,26,.42)', plan: 'rgba(190,234,255,.45)', face: ['rgba(170,230,255,.7)', 'rgba(70,175,240,.9)'],
     trait: 'rgba(255,255,255,.36)', traitInt: 'rgba(255,255,255,.2)', lumiere: .55,
-    bouchon: ['#121418', '#383d44', '#565c64', '#2a2e34', '#101215'], bague: ['#17191d', '#3a3e45', '#1e2125'],
+    bouchon: ['#23272d', '#454b54', '#69707a', '#383d45', '#1d2025'], bague: ['#1d2025', '#41464e', '#25282d'],
     strie: 'rgba(0,0,0,.4)', biseau: 'rgba(255,255,255,.2)', refletBouchon: 'rgba(255,255,255,.18)'
   } : {
     ombre: 'rgba(16,52,92,.24)', verreHaut: 'rgba(255,255,255,.7)', verreBas: 'rgba(228,240,249,.6)', paroi: 'rgba(38,78,118,.12)',
-    eau: ['#a3e6ff', '#52c0f7', '#2290e2', '#0d58ad'], bordEau: 'rgba(3,32,74,.32)', plan: 'rgba(255,255,255,.34)',
+    eau: ['#a3e6ff', '#52c0f7', '#2290e2', '#0d58ad'], bordEau: 'rgba(3,32,74,.32)', plan: 'rgba(255,255,255,.8)', face: ['rgba(232,248,255,.95)', 'rgba(120,205,250,.95)'],
     trait: 'rgba(22,58,96,.32)', traitInt: 'rgba(255,255,255,.8)', lumiere: .95,
     bouchon: ['#bfc5ce', '#eceff3', '#ffffff', '#dde1e6', '#adb4be'], bague: ['#b4bbc5', '#e7ebef', '#bec5ce'],
     strie: 'rgba(40,52,70,.11)', biseau: 'rgba(255,255,255,.95)', refletBouchon: 'rgba(255,255,255,.75)'
@@ -6782,13 +6785,6 @@ function dessinerGourde(now) {
     g = ctx.createRadialGradient(0, 0, 0, 0, 0, r); g.addColorStop(0, 'rgba(255,255,255,.26)'); g.addColorStop(1, 'rgba(255,255,255,0)');
     ctx.fillStyle = g; ctx.beginPath(); ctx.arc(0, 0, r, 0, 7); ctx.fill(); ctx.restore();
   }
-  // Des rais de lumière qui descendent de la surface, très doux.
-  for (let i = 0; i < 3; i++) {
-    const x = 20 + i * 10 + 2.4 * Math.sin(t * 0.4 + i * 2);
-    g = ctx.createLinearGradient(0, haut, 0, haut + 26);
-    g.addColorStop(0, 'rgba(255,255,255,.10)'); g.addColorStop(1, 'rgba(255,255,255,0)');
-    ctx.fillStyle = g; ctx.beginPath(); ctx.moveTo(x - 1.6, haut); ctx.lineTo(x + 1.6, haut); ctx.lineTo(x + 4.5, haut + 26); ctx.lineTo(x - 0.5, haut + 26); ctx.fill();
-  }
   // Les bulles : un fin cercle clair, un point de lumière en haut à gauche.
   m.bulles.forEach(b => {
     ctx.beginPath(); ctx.arc(b.x, b.y, b.r, 0, 7); ctx.fillStyle = 'rgba(255,255,255,.13)'; ctx.fill();
@@ -6796,9 +6792,20 @@ function dessinerGourde(now) {
     ctx.beginPath(); ctx.arc(b.x - b.r * .35, b.y - b.r * .38, b.r * .26, 0, 7); ctx.fillStyle = 'rgba(255,255,255,.85)'; ctx.fill();
   });
   ctx.restore();
-  // La surface vue un peu d'en haut (une bande claire), puis le liseré du ménisque.
+  // La surface vue un peu d'en haut : une face claire entre le bord du fond
+  // (plus haut, en retrait) et le bord de devant, puis le liseré du ménisque.
   const ligne = new Path2D(); ligne.moveTo(pts[0][0], pts[0][1]); courbeGourde(ligne, pts);
-  ctx.save(); ctx.translate(0, 1.3); ctx.lineWidth = 2.5; ctx.strokeStyle = C.plan; ctx.stroke(ligne); ctx.restore();
+  if (m.part > 0.01) {
+    const prof = Math.min(3.4, (GOURDE_VIDE - ySurf) * 0.5), fond = pts.map(([x, y]) => [x, y - prof * Math.sin(Math.PI * (x - GOURDE_XG) / (GOURDE_XD - GOURDE_XG))]);
+    const face = new Path2D(); face.moveTo(pts[0][0], pts[0][1]); courbeGourde(face, fond);
+    for (let i = GOURDE_N; i >= 0; i--) face.lineTo(pts[i][0], pts[i][1]);
+    face.closePath();
+    g = ctx.createLinearGradient(0, haut - prof, 0, haut + 1);
+    g.addColorStop(0, C.face[0]); g.addColorStop(1, C.face[1]);
+    ctx.fillStyle = g; ctx.fill(face);
+    const bord = new Path2D(); bord.moveTo(fond[0][0], fond[0][1]); courbeGourde(bord, fond);
+    ctx.lineWidth = .5; ctx.strokeStyle = C.plan; ctx.stroke(bord);
+  }
   g = ctx.createLinearGradient(GOURDE_XG, 0, GOURDE_XD, 0);
   g.addColorStop(0, 'rgba(255,255,255,.25)'); g.addColorStop(.16, 'rgba(255,255,255,.95)'); g.addColorStop(.84, 'rgba(255,255,255,.95)'); g.addColorStop(1, 'rgba(255,255,255,.25)');
   ctx.lineWidth = .75; ctx.strokeStyle = g; ctx.stroke(ligne);
@@ -6827,9 +6834,19 @@ function dessinerGourde(now) {
       g = ctx.createLinearGradient(0, GOURDE_SOURCE, 0, ySurf);
       g.addColorStop(0, 'rgba(150,220,255,0)'); g.addColorStop(.18, 'rgba(120,208,255,.85)'); g.addColorStop(1, C.eau[1]);
       ctx.fillStyle = g; ctx.fill();
-      ctx.save(); ctx.setLineDash([2.4, 3.6]); ctx.lineDashOffset = -(now - a.t0) * 0.06;
-      ctx.beginPath(); for (let y = haute + 1.5; y < basse - 1; y += 2.5) ctx.lineTo(centre(y) - larg(y) * 0.2, y);
-      ctx.lineWidth = .55; ctx.strokeStyle = 'rgba(255,255,255,.9)'; ctx.stroke(); ctx.restore();
+      // Un reflet continu le long du filet, qui scintille doucement.
+      ctx.beginPath(); for (let y = haute + 1.5; y < basse - 1; y += 2) ctx.lineTo(centre(y) - larg(y) * 0.22, y);
+      g = ctx.createLinearGradient(0, haute, 0, basse);
+      g.addColorStop(0, 'rgba(255,255,255,0)'); g.addColorStop(.25, `rgba(255,255,255,${(.55 + .25 * Math.sin(now / 90)).toFixed(2)})`); g.addColorStop(1, 'rgba(255,255,255,.35)');
+      ctx.lineWidth = .6; ctx.strokeStyle = g; ctx.stroke();
+      // À l'impact : une couronne d'écume qui palpite.
+      if (a.impact != null && basse >= ySurf) {
+        const r = 2.6 + 0.9 * Math.sin(now / 55);
+        ctx.save(); ctx.translate(centre(ySurf), ySurf + .4); ctx.scale(1, .32);
+        g = ctx.createRadialGradient(0, 0, r * .3, 0, 0, r + 1.6);
+        g.addColorStop(0, 'rgba(255,255,255,.75)'); g.addColorStop(.6, 'rgba(255,255,255,.35)'); g.addColorStop(1, 'rgba(255,255,255,0)');
+        ctx.fillStyle = g; ctx.beginPath(); ctx.arc(0, 0, r + 1.6, 0, 7); ctx.fill(); ctx.restore();
+      }
     }
   }
   // 5. Le verre, devant : ses bords accrochent la lumière, de longs reflets.
@@ -6855,12 +6872,17 @@ function dessinerGourde(now) {
     g.addColorStop(0, 'rgba(255,255,255,0)'); g.addColorStop(.2, blanc(opacite)); g.addColorStop(.75, blanc(opacite * .8)); g.addColorStop(1, 'rgba(255,255,255,0)');
     ctx.strokeStyle = g; ctx.lineWidth = l; ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke();
   };
-  reflet(15.6, 40, 15.6, 79, 4, .22);     // le halo du grand reflet
-  reflet(15.6, 40, 15.6, 79, 1.8, .9);    // le grand reflet, à gauche
-  reflet(45.4, 43, 45.4, 76, .9, .5);     // le liseré, à droite
+  reflet(14.6, 38, 14.6, 52, 4, .22);     // le halo du grand reflet, au-dessus de la taille
+  reflet(14.6, 38, 14.6, 52, 1.8, .9);    // le grand reflet, à gauche
+  reflet(15.4, 64, 14.6, 79, 1.4, .55);   // sa suite, sous la taille
+  reflet(46.6, 40, 46.6, 52, .9, .5);     // le liseré, à droite
+  reflet(46.6, 66, 46.6, 77, .9, .4);
+  // Les graduations : un quart, la moitié, trois quarts de l'objectif.
+  ctx.lineWidth = .6; ctx.strokeStyle = C.trait;
+  [.25, .5, .75].forEach(q => { const y = ySurfaceGourde(q); ctx.beginPath(); ctx.moveTo(q === .5 ? 39.5 : 41.5, y); ctx.lineTo(44.6, y); ctx.stroke(); });
   reflet(25.3, 20.2, 25.3, 23.8, .8, .7); // le col
   g = ctx.createLinearGradient(14, 37, 25, 27); g.addColorStop(0, blanc(.05)); g.addColorStop(.5, blanc(.75)); g.addColorStop(1, blanc(.1));
-  ctx.strokeStyle = g; ctx.lineWidth = 1.1; ctx.beginPath(); ctx.moveTo(14.4, 37); ctx.bezierCurveTo(14.8, 32.2, 19.2, 30, 24.6, 27.4); ctx.stroke();
+  ctx.strokeStyle = g; ctx.lineWidth = 1.1; ctx.beginPath(); ctx.moveTo(13.4, 35); ctx.bezierCurveTo(13.8, 30.4, 18.8, 28.6, 24.4, 26.6); ctx.stroke();
   ctx.strokeStyle = blanc(.4); ctx.lineWidth = .8; ctx.beginPath(); ctx.moveTo(17, 82.1); ctx.quadraticCurveTo(30, 83.2, 43, 82.1); ctx.stroke();
   // 6. La bague du col, puis le bouchon (dévissé et posé de côté pendant le versement).
   const cylindre = (x0, x1, couleurs) => {
@@ -6879,6 +6901,13 @@ function dessinerGourde(now) {
   bouchon.moveTo(-7.6, -6.75); bouchon.lineTo(7.6, -6.75); bouchon.quadraticCurveTo(9.9, -6.75, 9.9, -4.45); bouchon.lineTo(9.9, 5.55);
   bouchon.quadraticCurveTo(9.9, 6.75, 8.7, 6.75); bouchon.lineTo(-8.7, 6.75); bouchon.quadraticCurveTo(-9.9, 6.75, -9.9, 5.55); bouchon.lineTo(-9.9, -4.45);
   bouchon.quadraticCurveTo(-9.9, -6.75, -7.6, -6.75); bouchon.closePath();
+  // Bouchon de gourde de sport : une anse pour la porter, un bec pour boire.
+  ctx.strokeStyle = cylindre(-6, 6, C.bouchon); ctx.lineWidth = 1.7;
+  ctx.beginPath(); ctx.moveTo(-5.4, -6.4); ctx.bezierCurveTo(-5.4, -13.2, 5.4, -13.2, 5.4, -6.4); ctx.stroke();
+  ctx.strokeStyle = C.refletBouchon; ctx.lineWidth = .5;
+  ctx.beginPath(); ctx.moveTo(-4.9, -7.6); ctx.bezierCurveTo(-4.6, -11.6, 0, -12.2, 1.8, -11.6); ctx.stroke();
+  const bec = new Path2D(); bec.moveTo(-3.3, -6.75); bec.lineTo(-2.6, -9.2); bec.quadraticCurveTo(0, -10, 2.6, -9.2); bec.lineTo(3.3, -6.75); bec.closePath();
+  ctx.fillStyle = cylindre(-3.3, 3.3, C.bouchon); ctx.fill(bec);
   ctx.fillStyle = cylindre(-9.9, 9.9, C.bouchon); ctx.fill(bouchon);
   ctx.save(); ctx.clip(bouchon);
   // Le moletage : de fines stries, qui défilent quand on le dévisse.
