@@ -9949,3 +9949,18 @@ test("icône d'un aliment : le mot principal décide (premier mot-clé du nom), 
   assert.deepEqual([r.avant, r.ouverte, r.apres, r.ailleurs], ['🍽️', true, '🍕', '🍕']);
   assert.deepEqual(r.garde, { 'plat mystere': '🍕' }, "le choix est retenu par nom d'aliment, dans le profil");
 }));
+
+test("icônes des aliments : presque toutes les recettes et tous leurs ingrédients courants ont la leur ; un mot « contenant » (boulettes de…, crème de…) ne décide pas", () => avecAppli({}, async ({ page }) => {
+  const r = await page.evaluate(async () => {
+    if (typeof chargerRecettes === 'function') { try { await chargerRecettes(); } catch (e) {} }
+    const R = RECETTES_ASKESIS, ing = {};
+    R.forEach(x => (x.ingredients || []).forEach(i => { ing[i.nom] = (ing[i.nom] || 0) + 1; }));
+    const sansIng = Object.entries(ing).filter(([n]) => iconeAlimentAuto(n) === '🍽️');
+    return { total: R.length, sansRecette: R.filter(x => iconeAlimentAuto(x.nom) === '🍽️').length,
+      ingredients: Object.keys(ing).length, sansIngPoids: sansIng.reduce((a, [, c]) => a + c, 0),
+      contenants: ['Boulettes de thon', 'Pain de viande', 'Crème de pois chiches', 'Boulettes de bœuf', 'Crème'].map(iconeAlimentAuto) };
+  });
+  assert.ok(r.total > 1500 && r.sansRecette <= 20, `${r.sansRecette} recettes sans icône sur ${r.total}`);
+  assert.ok(r.sansIngPoids <= 20, `${r.sansIngPoids} usages d'ingrédients sans icône`);
+  assert.deepEqual(r.contenants, ['🐟', '🥩', '🫘', '🥩', '🥛']);
+}));

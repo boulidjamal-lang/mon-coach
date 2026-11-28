@@ -28402,7 +28402,7 @@ const ICONES_ALIMENTS = [
   [/\b(poulet|dinde|volaille|nuggets?|cordon bleu|canard|pintade)\b/, '🍗'], [/\b(crevettes?|gambas|langoustines?|homard|crabe|surimi)\b/, '🦐'],
   [/\b(huitres?|moules?|saint jacques|palourdes?|praires?|clams?|bulots?|bigorneaux?|coquillages?|calamars?|encornets?|seiches?|poulpe|fruits de mer)\b/, '🦪'],
   [/\b(poissons?|saumon|thon|cabillaud|sardines?|maquereaux?|colin|merlu|truite|dorade|hareng|anchois|tilapia|panga|eglefin|haddock)\b/, '🐟'],
-  [/\b(boeuf|steaks?|viandes?|porc|jambon|saucisses?|saucisson|chorizo|agneau|mouton|veau|entrecote|bavette|rumsteck|filet mignon|roti|merguez|chipolatas?|boulettes?|hache)\b/, '🥩'],
+  [/\b(boeuf|steaks?|viandes?|porc|jambon|saucisses?|saucisson|chorizo|agneau|mouton|veau|entrecote|bavette|rumsteck|filet mignon|roti|merguez|chipolatas?)\b/, '🥩'],
   [/\b(huiles?|olives?)\b/, '🫒'],
   [/\b(lentilles?|pois chiches?|pois casses|haricots?(?! (verts?|plats?|beurre)\b)|feves|flageolets|legumineuses|edamame|tofu|tempeh|soja)\b/, '🫘'],
   [/\b(avocats?|guacamole)\b/, '🥑'], [/\b(tomates?)\b/, '🍅'], [/\b(carottes?)\b/, '🥕'], [/\b(brocolis?|chou|choux|chou fleur)\b/, '🥦'], [/\b(champignons?)\b/, '🍄'],
@@ -28414,6 +28414,30 @@ const ICONES_ALIMENTS = [
   [/\b(chataignes?|marrons?)\b/, '🌰'], [/\b(pop ?corn)\b/, '🍿'], [/\b(bretzels?)\b/, '🥨'],
   [/\b(salades?|laitue|epinards?|roquette|mache|endives?|haricots? verts?|haricots? plats?|petits pois|legumes?|ratatouille|crudites|poireaux?|asperges?|artichauts?|celeri|radis|betteraves?|navets?|fenouil)\b/, '🥗'],
   [/\b(sauces?|ketchup|mayonnaise|moutarde|vinaigrette|pesto)\b/, '🥫'], [/\b(sel)\b/, '🧂'],
+  // Recettes et ingrédients de la base (plats du monde, pâtisserie, épicerie).
+  [/\b(farines?|fecule|maizena|amidon|levains?|chapelure|orge perle|millet|ragi|boulghour fin|ameliorant de panification)\b/, '🌾'], [/\b(gingembre)\b/, '🫚'],
+  [/\b(creme (liquide|entiere|epaisse|double|fleurette|fraiche)|babeurre|lassi)\b/, '🥛'], [/\b(creme (catalane|patissiere|anglaise|vegetarienne)|chaudeau|quindim|poudre a creme anglaise)\b/, '🍮'],
+  [/\b(pates? (brisee|feuilletee|sablee|filo|a tarte)|bricks?|briks?|spanakopita|tourtous?)\b/, '🥧'],
+  [/\b(macarons?|meringues?|snickerdoodles?|zimtsterne|bizcochitos|lackerlis|ghribia|craquelins?|dabo kolo|crackers?|graham)\b/, '🍪'],
+  [/\b(churros|chouquettes?)\b/, '🍩'], [/\b(crumbles?|sachertorte|panettone|fiadone|sernik|quatre quarts|galettes? (des rois|comtoise)|vassilopita|galaktoboureko|linzer|kouign|fouace|goyere|scones?|flamusse)\b/, '🍰'],
+  [/\b(fudge|halvah?|halavah|nougats?|makroud|melasse|cassonade|glucose|mimi pougat)\b/, '🍬'],
+  [/\b(galettes?|blinis|lahoh|ploye|mhadjeb|papadams|socca|maaqouda|karantika|placki|rapee|frita)\b/, '🫓'], [/\b(ciabatta|croutons?|welsh)\b/, '🍞'],
+  [/\b(spatzle|knodel|nocken|holzknechtnocken|serviettenknodel)\b/, '🥟'],
+  [/\b(bortsch|gazpacho|chorba|aiga|potee|pot au feu|goulashe?|goulache|porkolt|bigos|navarin|carbonade|stroganoff|hotpot|dal|chana|mjadra|foul|beetenbartsch|golabkis)\b/, '🍲'],
+  [/\b(tabboule|taboule)\b/, '🥗'], [/\b(tapenade|capres)\b/, '🫒'], [/\b(tzatziki|tzadziki)\b/, '🥒'], [/\b(baba ganoush)\b/, '🍆'],
+  [/\b(piperade|shakshuka|chakchouka|petit dejeuner anglais)\b/, '🍳'], [/\b(escalivada)\b/, '🫑'], [/\b(sloppy joes?)\b/, '🍔'],
+  [/\b(polenta|millas|gachas)\b/, '🌽'], [/\b(seitan|edamames)\b/, '🫘'], [/\b(pate vegetal|terrine|tamari|tahini)\b/, '🥫'],
+  [/\b(fondue|aligot|beaufort|maroilles|gorgonzola|pecorino|brocciu|pansettes?)\b/, '🧀'], [/\b(papet|colcannon|manioc|taro|igname)\b/, '🥔'],
+  [/\b(lard|lard fume|lard maigre|pancetta|guanciale)\b/, '🥓'], [/\b(saindoux|graisse vegetale)\b/, '🧈'],
+  [/\b(paleron|faux filets?|contre filet|plat de cotes|lapin|foie|bison|magrets?|picadillo|kibbe|nyama choma|rissoles)\b/, '🥩'], [/\b(coq)\b/, '🍗'],
+  [/\b(brochettes?|koftas?|kofta|kabab|sharmoula)\b/, '🍢'],
+  [/\b(rouget|morue|brandade|acras|fletan|vivaneau|loup|rascasse)\b/, '🐟'], [/\b(cepes?|girolles?|morilles?)\b/, '🍄'],
+  [/\b(blettes?|bok choy|feuilles? de vigne|feuilles? de manioc|saka saka|gombos?|lumanda|rhubarbe|terrine verte)\b/, '🥬'], [/\b(panais)\b/, '🥕'],
+  [/\b(pignons?|arachides?|sesame)\b/, '🥜'], [/\b(limes?)\b/, '🍋'], [/\b(papayes?)\b/, '🥭'], [/\b(prunes?)\b/, '🍑'],
+  [/\b(chow mein|ziti)\b/, '🍝'], [/\b(galettes? de sarrasin)\b/, '🥞'], [/\b(milanaise)\b/, '🥩'], [/\b(yetsom beyaynetu)\b/, '🍛'],
+  [/\b(pains? de viande)\b/, '🥩'], [/\b(palatschinken|kaiserschmarrn|canjeero)\b/, '🥞'],
+  // Mots « contenants » (boulettes de…, crème de…) : faibles, ils ne décident que si rien d'autre n'est reconnu.
+  [/\b(boulettes?|hache|steaks? haches?)\b/, '🥩', true], [/\b(cremes?)\b/, '🥛', true],
   // Noms anglais des produits importés ou des bases en anglais.
   [/\b(proteins?|protein bars?|flapjacks?)\b/, '💪'], [/\b(chicken|turkey)\b/, '🍗'], [/\b(beef|pork|ham|steak|meat|sausages?)\b/, '🥩'],
   [/\b(salmon|tuna|fish|cod)\b/, '🐟'], [/\b(shrimps?|prawns?)\b/, '🦐'], [/\b(eggs?)\b/, '🥚'], [/\b(rice)\b/, '🍚'], [/\b(pasta|noodles)\b/, '🍝'],
@@ -28428,18 +28452,18 @@ const ICONES_ALIMENTS = [
    nom l'emporte ; à égalité, le plus long (« pain au chocolat » plutôt que
    « pain »), puis l'ordre de la liste. L'icône choisie à la main pour cet
    aliment (toucher l'icône dans le journal) passe avant tout. */
-const ICONES_ALIMENTS_G = ICONES_ALIMENTS.map(([re, i]) => [new RegExp(re.source, 'g'), i]);
+const ICONES_ALIMENTS_G = ICONES_ALIMENTS.map(([re, i, faible]) => [new RegExp(re.source, 'g'), i, !!faible]);
 function cleIconeAliment(nom) { return normaliserRecherche(nom).replace(/\s+/g, ' ').trim(); }
 function iconeAlimentAuto(nom) {
   const n = normaliserRecherche(nom);
   if (!n) return '🍽️';
   let mieux = null;
-  ICONES_ALIMENTS_G.forEach(([re, icone], rang) => {
+  ICONES_ALIMENTS_G.forEach(([re, icone, faible], rang) => {
     re.lastIndex = 0;
     let m;
     while ((m = re.exec(n))) {
       if (!m[0].length) { re.lastIndex++; continue; }
-      const c = { pos: m.index, long: m[0].length, rang, icone };
+      const c = { pos: m.index + (faible ? 10000 : 0), long: m[0].length, rang, icone };
       if (!mieux || c.pos < mieux.pos || (c.pos === mieux.pos && (c.long > mieux.long || (c.long === mieux.long && c.rang < mieux.rang)))) mieux = c;
       break;   // la première occurrence de ce mot-clé suffit
     }
