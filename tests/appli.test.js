@@ -9859,3 +9859,24 @@ test("app iPhone : quand le clavier s'ouvre ou se ferme, le haut de la feuille d
   assert.ok(Math.min(...r.descente) >= -2, 'la feuille sort par le haut : ' + r.descente.map(Math.round).join(' '));
   assert.ok(r.montee[r.montee.length - 1] < r.depart, 'la feuille remonte au-dessus du clavier');
 }));
+
+test("séance : un glissement arrivé au seuil remplace ou retire l'exercice même si l'iPhone le finit par « pointercancel »", () => avecAppli({}, async ({ page, dialogues }) => {
+  const r = await page.evaluate(async () => {
+    const exo = toutesLesExercices().find(e => /squat/i.test(e.nom) && e.materiel === 'barre');
+    musculationProgrammes = [{ id: 'p1', nom: 'Jambes', creeLe: Date.now(), maj: Date.now(), exercices: [{ exerciceId: exo.id, series: [{ poids: 60, reps: 8 }] }] }];
+    sauvegarderProgrammes(); allerA('seance'); choisirModeSeance('muscu'); renderApp(); await demarrerSeance('p1');
+    await new Promise(ok => setTimeout(ok, 300));
+    const glisser = (dx) => {
+      const e = document.querySelector('.session-exo-entete'), b = e.getBoundingClientRect();
+      const x = b.left + 20, y = b.top + b.height / 2, o = { bubbles: true, cancelable: true, pointerId: 7, pointerType: 'touch', isPrimary: true };
+      e.dispatchEvent(new PointerEvent('pointerdown', { ...o, clientX: x, clientY: y }));
+      for (let k = 1; k <= 10; k++) e.dispatchEvent(new PointerEvent('pointermove', { ...o, clientX: x + dx * k / 10, clientY: y }));
+      e.dispatchEvent(new PointerEvent('pointercancel', { ...o, clientX: 0, clientY: 0 }));
+    };
+    glisser(220);
+    await new Promise(ok => setTimeout(ok, 200));
+    const picker = document.getElementById('picker-exercices-modal').classList.contains('show') && pickerMode === 'session-remplacer';
+    return { picker };
+  });
+  assert.ok(r.picker, 'glisser à droite jusqu\'au seuil ouvre « Remplacer » même terminé par pointercancel');
+}));
