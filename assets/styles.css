@@ -3500,6 +3500,11 @@ html:root .saisie-rapide-valeur input { width: 100%; max-width: 170px; height: a
 .off-favori { flex: none; width: 40px; height: 40px; border: 0; border-radius: 12px; background: none; cursor: pointer; font-size: 1.15rem; color: var(--text-muted); }
 .off-favori.on { color: #f59e0b; }
 .food-initiale--icone { font-size: 1.05rem; background: var(--piste); }
+button.food-initiale--icone { border: 0; padding: 0; cursor: pointer; font-family: inherit; line-height: 1; }
+button.food-initiale--icone:active { transform: scale(.92); }
+.icone-aliment-grille { display: grid; grid-template-columns: repeat(auto-fill, minmax(44px, 1fr)); gap: 6px; }
+.icone-choix { height: 44px; border: 0; border-radius: 12px; background: var(--piste); font-size: 1.35rem; line-height: 1; cursor: pointer; }
+.icone-choix.choisie { box-shadow: inset 0 0 0 2px var(--accent); background: color-mix(in srgb, var(--accent) 14%, var(--piste)); }
 
 
 /* Progrès : grille des semaines, titres des macros, boutons IA, repères de zones */

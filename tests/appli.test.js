@@ -9929,3 +9929,23 @@ test("app iPhone : une fenêtre avec un champ (ex. « Lancer un défi ») ne ret
   assert.ok(Math.max(...r.montee) <= r.depart + 2, 'la fenêtre retombe avant de remonter : ' + r.depart + ' → ' + r.montee.map(Math.round).join(' '));
   assert.ok(Math.min(...r.descente) >= -2, 'la fenêtre sort par le haut : ' + r.descente.map(Math.round).join(' '));
 }));
+
+test("icône d'un aliment : le mot principal décide (premier mot-clé du nom), noms anglais reconnus ; toucher l'icône du journal la change pour cet aliment", () => avecAppli({}, async ({ page }) => {
+  const r = await page.evaluate(async () => {
+    const auto = ['Alpro Dessert chocolat', 'Lait chocolaté protéiné', 'Skyr Pomme Cuite', 'Tagliatelle saumon', 'Salade de poulet', 'White grapes', 'Chicken breast', 'Pinsa à garnir', 'Riz au lait', 'Pain au chocolat'].map(iconeAliment);
+    getDay(currentDate).meals.lunch = [{ name: 'Plat mystère', grams: 100, unite: 'g', kcal: 100, p: 5, c: 10, f: 3 }];
+    allerA('repas'); renderApp();
+    const b = document.querySelector('#meals-container button.food-initiale--icone');
+    const avant = b && b.textContent;
+    b.click();
+    await new Promise(ok => setTimeout(ok, 200));
+    const ouverte = document.getElementById('icone-aliment-modal').classList.contains('show');
+    [...document.querySelectorAll('#icone-aliment-grille .icone-choix')].find(x => x.textContent === '🍕').click();
+    await new Promise(ok => setTimeout(ok, 200));
+    const apres = document.querySelector('#meals-container button.food-initiale--icone').textContent;
+    return { auto, avant, ouverte, apres, ailleurs: iconeAliment('plat  MYSTÈRE'), garde: JSON.parse(JSON.stringify(userProfile.iconesAliments || {})) };
+  });
+  assert.deepEqual(r.auto, ['🍮', '🥛', '🥣', '🍝', '🥗', '🍇', '🍗', '🍕', '🍮', '🥐']);
+  assert.deepEqual([r.avant, r.ouverte, r.apres, r.ailleurs], ['🍽️', true, '🍕', '🍕']);
+  assert.deepEqual(r.garde, { 'plat mystere': '🍕' }, "le choix est retenu par nom d'aliment, dans le profil");
+}));

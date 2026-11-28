@@ -2676,6 +2676,16 @@
   </div>
 </div>
 
+<div id="icone-aliment-modal" class="modal" role="dialog" aria-modal="true" aria-labelledby="titre-icone-aliment">
+  <div class="modal-content" style="max-width:420px;">
+    <div class="modal-entete">
+      <h3 id="titre-icone-aliment">Icône de l'aliment</h3>
+      <button class="close-modal" onclick="fermerModal('icone-aliment-modal')" aria-label="Fermer">&times;</button>
+    </div>
+    <p class="note" style="margin:0 0 12px;"><b id="icone-aliment-nom"></b> — retenue pour cet aliment, partout dans l'appli.</p>
+    <div class="icone-aliment-grille" id="icone-aliment-grille"></div>
+  </div>
+</div>
 <div id="modal-defi" class="modal" role="dialog" aria-modal="true" aria-labelledby="titre-defi">
   <div class="modal-content" style="max-width:460px;">
     <div class="modal-entete">
@@ -6327,7 +6337,7 @@ function renderMeals(day) {
       return `
       <li class="food-item">
         <div class="food-item-ligne">
-          <span class="food-initiale food-initiale--icone" aria-hidden="true">${iconeAliment(it.name)}</span>
+          <button type="button" class="food-initiale food-initiale--icone" data-nom="${escapeHtml(it.name)}" onclick="choisirIconeAliment(this.dataset.nom)" aria-label="Changer l'icône de ${escapeHtml(it.name)}">${iconeAliment(it.name)}</button>
           <div class="food-info${estRecette ? ' food-info--fixe' : ''}"${estRecette ? '' : ' onclick="ouvrirPoidsAliment(this)"'}
                ${estRecette ? 'title="Poids déterminé par les ingrédients ci-dessous — déplie-les pour ajuster"' : ''}
                data-meal="${mealId}" data-index="${i}" data-grams="${Number(it.grams) || 0}"
@@ -28374,10 +28384,10 @@ const ICONES_ALIMENTS = [
   [/\b(donuts?|beignets?)\b/, '🍩'], [/\b(glaces?|sorbets?|creme glacee|esquimau)\b/, '🍦'],
   [/\b(gateaux?|tartes?|tartelettes?|fondant|brownies?|muffins?|cakes?|patisseries?|eclairs?|tiramisu|cheesecake|clafoutis|financiers?|madeleines?)\b/, '🍰'],
   [/\b(quiches?|tourtes?|friands?|feuilletes?)\b/, '🥧'],
-  [/\b(flans?|creme dessert|creme brulee|mousse au chocolat|panna cotta|riz au lait)\b/, '🍮'], [/\b(biscuits?|cookies?|sables?|petits? beurres?|speculoos|palets?)\b/, '🍪'],
+  [/\b(flans?|desserts?|puddings?|creme dessert|creme brulee|mousse au chocolat|panna cotta|riz au lait|semoule au lait|liegeois|danette)\b/, '🍮'], [/\b(biscuits?|cookies?|sables?|petits? beurres?|speculoos|palets?)\b/, '🍪'],
   [/\b(flocons|avoine|cereales|muesli|granola|corn flakes|porridge)\b/, '🥣'],
   [/\b(chocolats?|cacao|nutella|pate a tartiner|kinder|twix|snickers|bounty)\b/, '🍫'], [/\b(bonbons?|confiseries?|sucre|sucettes?|caramels?|guimauves?|haribo)\b/, '🍬'], [/\b(miel|confitures?)\b/, '🍯'],
-  [/\b(pizzas?)\b/, '🍕'], [/\b(burgers?|hamburgers?|cheeseburgers?)\b/, '🍔'], [/\b(hot dogs?)\b/, '🌭'], [/\b(kebabs?|durum|shawarma|gyros|pitas?)\b/, '🥙'],
+  [/\b(pizzas?|pinsas?|focaccias?|calzones?)\b/, '🍕'], [/\b(burgers?|hamburgers?|cheeseburgers?)\b/, '🍔'], [/\b(hot dogs?)\b/, '🌭'], [/\b(kebabs?|durum|shawarma|gyros|pitas?)\b/, '🥙'],
   [/\b(wraps?|burritos?|fajitas?)\b/, '🌯'], [/\b(tacos?|quesadillas?|nachos)\b/, '🌮'], [/\b(sandwichs?|sandwiches|paninis?|croques?|jambon beurre)\b/, '🥪'],
   [/\b(sushis?|makis?|sashimis?|california|poke)\b/, '🍣'], [/\b(nouilles|ramen|pho|udon|soba|pad thai|vermicelles?)\b/, '🍜'], [/\b(raviolis?|gyozas?|nems?|dim sum|samoussas?)\b/, '🥟'],
   [/\b(falafels?|houmous|hummus)\b/, '🧆'], [/\b(soupes?|potages?|veloutes?|bouillons?|gaspacho|minestrone)\b/, '🍲'],
@@ -28403,12 +28413,67 @@ const ICONES_ALIMENTS = [
   [/\b(ananas)\b/, '🍍'], [/\b(mangues?)\b/, '🥭'], [/\b(kiwis?)\b/, '🥝'], [/\b(raisins?)\b/, '🍇'], [/\b(pasteques?|melons?)\b/, '🍉'], [/\b(fruits?|dattes?|figues?|pruneaux?)\b/, '🍇'],
   [/\b(chataignes?|marrons?)\b/, '🌰'], [/\b(pop ?corn)\b/, '🍿'], [/\b(bretzels?)\b/, '🥨'],
   [/\b(salades?|laitue|epinards?|roquette|mache|endives?|haricots? verts?|haricots? plats?|petits pois|legumes?|ratatouille|crudites|poireaux?|asperges?|artichauts?|celeri|radis|betteraves?|navets?|fenouil)\b/, '🥗'],
-  [/\b(sauces?|ketchup|mayonnaise|moutarde|vinaigrette|pesto)\b/, '🥫'], [/\b(sel)\b/, '🧂']
+  [/\b(sauces?|ketchup|mayonnaise|moutarde|vinaigrette|pesto)\b/, '🥫'], [/\b(sel)\b/, '🧂'],
+  // Noms anglais des produits importés ou des bases en anglais.
+  [/\b(proteins?|protein bars?|flapjacks?)\b/, '💪'], [/\b(chicken|turkey)\b/, '🍗'], [/\b(beef|pork|ham|steak|meat|sausages?)\b/, '🥩'],
+  [/\b(salmon|tuna|fish|cod)\b/, '🐟'], [/\b(shrimps?|prawns?)\b/, '🦐'], [/\b(eggs?)\b/, '🥚'], [/\b(rice)\b/, '🍚'], [/\b(pasta|noodles)\b/, '🍝'],
+  [/\b(bread|toast|wraps?)\b/, '🍞'], [/\b(cheese)\b/, '🧀'], [/\b(milk|lben|leben|ayran|lait fermente|lait ribot)\b/, '🥛'], [/\b(yogh?urt|greek)\b/, '🥣'],
+  [/\b(oats?|oatmeal|cereals?)\b/, '🥣'], [/\b(grapes?)\b/, '🍇'], [/\b(apples?)\b/, '🍎'], [/\b(bananas?)\b/, '🍌'], [/\b(strawberr(y|ies)|raspberr(y|ies)|berries)\b/, '🍓'],
+  [/\b(blueberr(y|ies))\b/, '🫐'], [/\b(oranges?)\b/, '🍊'], [/\b(potato(es)?|fries)\b/, '🥔'], [/\b(chocolate|choc)\b/, '🍫'], [/\b(peanuts?|almonds?|nuts|cashews?)\b/, '🥜'],
+  [/\b(coffee)\b/, '☕'], [/\b(juice)\b/, '🧃'], [/\b(cookies?|biscuits?)\b/, '🍪'], [/\b(cake|brownie|muffin)\b/, '🍰'], [/\b(salad|vegetables?|veggies?)\b/, '🥗']
 ];
-function iconeAliment(nom) {
+/* Le mot principal décide : dans « Skyr pomme cuite » c'est le skyr, dans
+   « Alpro dessert chocolat » le dessert, dans « Tagliatelles saumon » les
+   pâtes. Parmi les mots-clés trouvés, celui qui vient le plus tôt dans le
+   nom l'emporte ; à égalité, le plus long (« pain au chocolat » plutôt que
+   « pain »), puis l'ordre de la liste. L'icône choisie à la main pour cet
+   aliment (toucher l'icône dans le journal) passe avant tout. */
+const ICONES_ALIMENTS_G = ICONES_ALIMENTS.map(([re, i]) => [new RegExp(re.source, 'g'), i]);
+function cleIconeAliment(nom) { return normaliserRecherche(nom).replace(/\s+/g, ' ').trim(); }
+function iconeAlimentAuto(nom) {
   const n = normaliserRecherche(nom);
-  const t = n && ICONES_ALIMENTS.find(([re]) => re.test(n));
-  return t ? t[1] : '🍽️';
+  if (!n) return '🍽️';
+  let mieux = null;
+  ICONES_ALIMENTS_G.forEach(([re, icone], rang) => {
+    re.lastIndex = 0;
+    let m;
+    while ((m = re.exec(n))) {
+      if (!m[0].length) { re.lastIndex++; continue; }
+      const c = { pos: m.index, long: m[0].length, rang, icone };
+      if (!mieux || c.pos < mieux.pos || (c.pos === mieux.pos && (c.long > mieux.long || (c.long === mieux.long && c.rang < mieux.rang)))) mieux = c;
+      break;   // la première occurrence de ce mot-clé suffit
+    }
+  });
+  return mieux ? mieux.icone : '🍽️';
+}
+function iconeAliment(nom) {
+  const perso = userProfile && userProfile.iconesAliments && userProfile.iconesAliments[cleIconeAliment(nom)];
+  return perso || iconeAlimentAuto(nom);
+}
+/* Choisir l'icône d'un aliment à la main : toutes celles de la liste, plus
+   la proposition automatique. Retenue pour ce nom d'aliment, partout. */
+const ICONES_ALIMENTS_CHOIX = [...new Set(ICONES_ALIMENTS.map(x => x[1]).concat(['🍽️']))];
+function choisirIconeAliment(nom) {
+  const m = document.getElementById('icone-aliment-modal');
+  if (!m || !nom) return;
+  const actuelle = iconeAliment(nom), auto = iconeAlimentAuto(nom), cle = cleIconeAliment(nom);
+  document.getElementById('icone-aliment-nom').textContent = nom;
+  const grille = document.getElementById('icone-aliment-grille');
+  grille.innerHTML = '';
+  ICONES_ALIMENTS_CHOIX.forEach(ic => {
+    const b = document.createElement('button');
+    b.type = 'button'; b.className = 'icone-choix' + (ic === actuelle ? ' choisie' : ''); b.textContent = ic;
+    b.setAttribute('aria-pressed', String(ic === actuelle));
+    b.onclick = () => {
+      const l = Object.assign({}, userProfile.iconesAliments || {});
+      if (ic === auto) delete l[cle]; else l[cle] = ic;
+      if (Object.keys(l).length) userProfile.iconesAliments = l; else delete userProfile.iconesAliments;
+      saveData(); fermerModal('icone-aliment-modal'); renderApp();
+      if (typeof feuilleAjoutOuverte === 'function' && feuilleAjoutOuverte()) dessinerFeuilleAjout();
+    };
+    grille.appendChild(b);
+  });
+  ouvrirModal('icone-aliment-modal');
 }
 /* =====================================================================
    PROGRÈS — période en pastille, onglet Résumé, constats, force,
